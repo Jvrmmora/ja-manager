@@ -29,30 +29,30 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAgeRange, setSelectedAgeRange] = useState('');
 
-  console.log('App render - youngList length:', youngList.length, 'loading:', loading, 'error:', error);
+  // console.log('App render - youngList length:', youngList.length, 'loading:', loading, 'error:', error);
 
   // Función para obtener jóvenes del backend
   const fetchYoung = async () => {
     try {
       setLoading(true);
-      console.log('Iniciando fetch de jóvenes...');
+      // console.log('Iniciando fetch de jóvenes...');
       
       const response = await fetch('/api/young');
-      console.log('Response status:', response.status);
+      // console.log('Response status:', response.status);
       
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
       const result = await response.json();
-      console.log('Datos recibidos completos:', result);
+      // console.log('Datos recibidos completos:', result);
       
       // El backend retorna: { success: true, data: { data: [jovenes] } }
       const youngArray = result.success && result.data && Array.isArray(result.data.data) 
         ? result.data.data 
         : [];
       
-      console.log('Array procesado:', youngArray);
+      // console.log('Array procesado:', youngArray);
       
       setYoungList(youngArray);
       setError(null); // Limpiar error anterior si lo había
@@ -178,10 +178,11 @@ function App() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {/* Debug info temporal */}
+        {/* Debug info temporal - COMENTADO
         <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-4 text-xs">
           Debug: youngList: {youngList.length}, loading: {loading.toString()}, error: {error || 'null'}
         </div>
+        */}
         {/* Estadísticas rápidas */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow-md p-4 text-center">
