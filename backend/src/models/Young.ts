@@ -54,6 +54,52 @@ const youngSchema = new Schema<IYoungDocument>(
         message: 'URL de imagen no válida',
       },
     },
+    gender: {
+      type: String,
+      required: [true, 'El género es obligatorio'],
+      enum: {
+        values: ['masculino', 'femenino'],
+        message: 'El género debe ser masculino o femenino',
+      },
+    },
+    role: {
+      type: String,
+      required: [true, 'El rol es obligatorio'],
+      enum: {
+        values: [
+          'lider juvenil',
+          'colaborador', 
+          'director',
+          'subdirector',
+          'club guias',
+          'club conquistadores',
+          'club aventureros',
+          'escuela sabatica'
+        ],
+        message: 'Rol no válido',
+      },
+    },
+    email: {
+      type: String,
+      required: [true, 'El email es obligatorio'],
+      unique: true,
+      trim: true,
+      lowercase: true,
+      match: [
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        'Formato de email no válido',
+      ],
+    },
+    skills: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: function (skills: string[]) {
+          return skills.every(skill => skill.trim().length >= 2);
+        },
+        message: 'Cada habilidad debe tener al menos 2 caracteres',
+      },
+    },
   },
   {
     timestamps: true,

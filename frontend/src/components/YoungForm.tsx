@@ -5,6 +5,10 @@ interface YoungFormData {
   ageRange: string;
   phone: string;
   birthday: string;
+  gender: 'masculino' | 'femenino';
+  role: 'lider juvenil' | 'colaborador' | 'director' | 'subdirector' | 'club guias' | 'club conquistadores' | 'club aventureros' | 'escuela sabatica';
+  email: string;
+  skills: string[];
   profileImage?: File;
 }
 
@@ -20,9 +24,14 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
     ageRange: '',
     phone: '',
     birthday: '',
+    gender: 'masculino',
+    role: 'colaborador',
+    email: '',
+    skills: [],
   });
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [skillInput, setSkillInput] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -49,6 +58,30 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
     }
   };
 
+  const addSkill = () => {
+    if (skillInput.trim() && !formData.skills.includes(skillInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        skills: [...prev.skills, skillInput.trim()]
+      }));
+      setSkillInput('');
+    }
+  };
+
+  const removeSkill = (skillToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      skills: prev.skills.filter(skill => skill !== skillToRemove)
+    }));
+  };
+
+  const handleSkillKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addSkill();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -67,6 +100,10 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
         ageRange: '',
         phone: '',
         birthday: '',
+        gender: 'masculino',
+        role: 'colaborador',
+        email: '',
+        skills: [],
       });
       setImagePreview(null);
       onClose();
@@ -191,6 +228,123 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
               className="form-input"
               required
             />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="form-label">
+              Email *
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              className="form-input"
+              placeholder="ejemplo@correo.com"
+              required
+            />
+          </div>
+
+          {/* Género */}
+          <div>
+            <label className="form-label">
+              Género *
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="gender"
+                  value="masculino"
+                  checked={formData.gender === 'masculino'}
+                  onChange={handleInputChange}
+                  className="mr-2 text-blue-600"
+                />
+                Masculino
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="gender"
+                  value="femenino"
+                  checked={formData.gender === 'femenino'}
+                  onChange={handleInputChange}
+                  className="mr-2 text-blue-600"
+                />
+                Femenino
+              </label>
+            </div>
+          </div>
+
+          {/* Rol */}
+          <div>
+            <label className="form-label">
+              Rol en la Iglesia *
+            </label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleInputChange}
+              className="form-input"
+              required
+            >
+              <option value="colaborador">Colaborador</option>
+              <option value="lider juvenil">Líder Juvenil</option>
+              <option value="director">Director</option>
+              <option value="subdirector">Subdirector</option>
+              <option value="club guias">Club Guías</option>
+              <option value="club conquistadores">Club Conquistadores</option>
+              <option value="club aventureros">Club Aventureros</option>
+              <option value="escuela sabatica">Escuela Sabática</option>
+            </select>
+          </div>
+
+          {/* Habilidades */}
+          <div>
+            <label className="form-label">
+              Habilidades y Talentos
+            </label>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyPress={handleSkillKeyPress}
+                  className="form-input flex-1"
+                  placeholder="Ej: Música, Liderazgo, Enseñanza..."
+                />
+                <button
+                  type="button"
+                  onClick={addSkill}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Agregar
+                </button>
+              </div>
+              
+              {/* Tags de habilidades */}
+              {formData.skills.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.skills.map((skill, index) => (
+                    <span
+                      key={index}
+                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                    >
+                      {skill}
+                      <button
+                        type="button"
+                        onClick={() => removeSkill(skill)}
+                        className="text-blue-600 hover:text-blue-800 font-bold"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Botones */}

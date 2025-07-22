@@ -23,6 +23,8 @@ export class YoungController {
         limit,
         search,
         ageRange,
+        gender,
+        role,
         sortBy,
         sortOrder,
       }: PaginationQuery = value;
@@ -34,11 +36,20 @@ export class YoungController {
         filters.$or = [
           { fullName: { $regex: search, $options: 'i' } },
           { phone: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
         ];
       }
 
       if (ageRange) {
         filters.ageRange = ageRange;
+      }
+
+      if (gender) {
+        filters.gender = gender;
+      }
+
+      if (role) {
+        filters.role = role;
       }
 
       // Configurar ordenamiento
@@ -65,6 +76,10 @@ export class YoungController {
         ageRange: doc.ageRange,
         phone: doc.phone,
         birthday: doc.birthday,
+        gender: doc.gender,
+        role: doc.role,
+        email: doc.email,
+        skills: doc.skills || [],
         ...(doc.profileImage && { profileImage: doc.profileImage }),
         createdAt: doc.createdAt || new Date(),
         updatedAt: doc.updatedAt || new Date(),

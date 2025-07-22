@@ -5,6 +5,10 @@ export interface IYoung {
   phone: string;
   birthday: Date;
   profileImage?: string;
+  gender: 'masculino' | 'femenino';
+  role: 'lider juvenil' | 'colaborador' | 'director' | 'subdirector' | 'club guias' | 'club conquistadores' | 'club aventureros' | 'escuela sabatica';
+  email: string;
+  skills: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -25,7 +29,9 @@ export interface PaginationQuery {
   limit?: number;
   search?: string;
   ageRange?: string;
-  sortBy?: 'fullName' | 'birthday' | 'createdAt';
+  gender?: string;
+  role?: string;
+  sortBy?: 'fullName' | 'birthday' | 'email' | 'role' | 'gender' | 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
 }
 
