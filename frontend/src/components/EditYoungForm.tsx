@@ -38,8 +38,15 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
   // Cargar datos del joven al abrir el formulario
   useEffect(() => {
     if (isOpen && young) {
-      const birthdayDate = new Date(young.birthday);
-      const formattedBirthday = birthdayDate.toISOString().split('T')[0];
+      // Formatear la fecha evitando problemas de zona horaria
+      let formattedBirthday: string;
+      const birthdayStr = young.birthday.toString();
+      if (birthdayStr.includes('T')) {
+        formattedBirthday = birthdayStr.split('T')[0];
+      } else {
+        const birthdayDate = new Date(young.birthday);
+        formattedBirthday = birthdayDate.toISOString().split('T')[0];
+      }
       
       setFormData({
         fullName: young.fullName,

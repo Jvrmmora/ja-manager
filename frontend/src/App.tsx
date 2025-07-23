@@ -4,6 +4,7 @@ import YoungForm from './components/YoungForm';
 import EditYoungForm from './components/EditYoungForm';
 import YoungCard from './components/YoungCard';
 import FilterBar from './components/FilterBar';
+import BirthdayDashboard from './components/BirthdayDashboard';
 import type { IYoung, PaginationQuery } from './types';
 
 interface YoungFormData {
@@ -25,6 +26,7 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingYoung, setEditingYoung] = useState<IYoung | null>(null);
+  const [showBirthdayDashboard, setShowBirthdayDashboard] = useState(false);
   const [filters, setFilters] = useState<PaginationQuery>({
     page: 1,
     limit: 10,
@@ -246,10 +248,23 @@ function App() {
             <div className="text-2xl font-bold text-purple-600">{stats.newThisMonth}</div>
             <div className="text-gray-600 text-sm">Nuevos Este Mes</div>
           </div>
-          <div className="bg-white rounded-lg shadow-md p-4 text-center">
-            <div className="text-2xl font-bold text-orange-600">{stats.birthdays}</div>
-            <div className="text-gray-600 text-sm">Cumpleaños Este Mes</div>
-          </div>
+          <button
+            onClick={() => setShowBirthdayDashboard(true)}
+            className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-md p-4 text-center hover:shadow-lg transition-all duration-200 cursor-pointer group text-white transform hover:scale-105"
+          >
+            <div className="flex items-center justify-center mb-2">
+              <span className="text-2xl mr-2">🎂</span>
+              <div className="text-2xl font-bold group-hover:text-orange-100">
+                {stats.birthdays}
+              </div>
+            </div>
+            <div className="text-orange-100 text-sm group-hover:text-white">
+              Cumpleaños Este Mes: {new Date().toLocaleDateString('es-ES', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('es-ES', { month: 'long' }).slice(1)}
+            </div>
+            <div className="mt-1 text-xs text-orange-200 group-hover:text-orange-100">
+              Haz clic para ver detalles
+            </div>
+          </button>
         </div>
 
         {/* Filtros */}
@@ -342,6 +357,15 @@ function App() {
           }}
           onSubmit={handleUpdateYoung}
           young={editingYoung}
+        />
+      )}
+
+      {/* Dashboard de Cumpleaños */}
+      {showBirthdayDashboard && (
+        <BirthdayDashboard
+          isOpen={showBirthdayDashboard}
+          onClose={() => setShowBirthdayDashboard(false)}
+          youngList={youngList}
         />
       )}
     </div>

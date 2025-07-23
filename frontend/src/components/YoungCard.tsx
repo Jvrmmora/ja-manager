@@ -19,7 +19,16 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
   };
 
   const formatDate = (date: Date | string) => {
-    const d = new Date(date);
+    // Si viene como string, parsearlo correctamente evitando problemas de zona horaria
+    let d: Date;
+    if (typeof date === 'string') {
+      // Para fechas en formato YYYY-MM-DD, agregar la hora local para evitar problemas de zona horaria
+      const dateParts = date.split('T')[0]; // Tomar solo la parte de fecha
+      d = new Date(dateParts + 'T12:00:00'); // Agregar mediodía para evitar cambios de zona horaria
+    } else {
+      d = new Date(date);
+    }
+    
     return d.toLocaleDateString('es-ES', {
       year: 'numeric',
       month: 'long',
