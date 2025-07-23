@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import PhoneInput from './PhoneInput';
+
 
 interface YoungFormData {
   fullName: string;
@@ -204,14 +206,10 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
             <label className="form-label">
               Teléfono *
             </label>
-            <input
-              type="tel"
-              name="phone"
+            <PhoneInput
               value={formData.phone}
-              onChange={handleInputChange}
-              className="form-input"
-              placeholder="Ej: +52 55 1234 5678"
-              required
+              onChange={(value) => setFormData({ ...formData, phone: value })}
+              placeholder="Escribe tu número"
             />
           </div>
 
