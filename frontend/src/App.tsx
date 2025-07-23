@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import YoungForm from './components/YoungForm';
+import EditYoungForm from './components/EditYoungForm';
 import YoungCard from './components/YoungCard';
 import FilterBar from './components/FilterBar';
 import type { IYoung, PaginationQuery } from './types';
@@ -22,6 +23,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingYoung, setEditingYoung] = useState<IYoung | null>(null);
   const [filters, setFilters] = useState<PaginationQuery>({
     page: 1,
     limit: 10,
@@ -123,6 +126,48 @@ function App() {
     } catch (error) {
       console.error('Error:', error);
       alert('Error al eliminar el joven. Por favor, intenta de nuevo.');
+    }
+  };
+
+  // Función para abrir el formulario de edición
+  const handleEditYoung = (young: IYoung) => {
+    setEditingYoung(young);
+    setShowEditForm(true);
+  };
+
+  // Función para actualizar un joven
+  const handleUpdateYoung = async (id: string, formData: YoungFormData) => {
+    try {
+      const form = new FormData();
+      form.append('fullName', formData.fullName);
+      form.append('ageRange', formData.ageRange);
+      form.append('phone', formData.phone);
+      form.append('birthday', formData.birthday);
+      form.append('gender', formData.gender);
+      form.append('role', formData.role);
+      form.append('email', formData.email);
+      form.append('skills', JSON.stringify(formData.skills));
+      
+      if (formData.profileImage) {
+        form.append('profileImage', formData.profileImage);
+      }
+
+      const response = await fetch(`/api/young/${id}`, {
+        method: 'PUT',
+        body: form,
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar el joven');
+      }
+
+      // Recargar la lista
+      await fetchYoung();
+      setShowEditForm(false);
+      setEditingYoung(null);
+    } catch (error) {
+      console.error('Error:', error);
+      throw error;
     }
   };
 
@@ -269,6 +314,7 @@ function App() {
                     key={young.id}
                     young={young}
                     onDelete={handleDeleteYoung}
+                    onEdit={handleEditYoung}
                   />
                 ))}
               </div>
@@ -277,12 +323,25 @@ function App() {
         )}
       </main>
 
-      {/* Formulario Modal */}
+      {/* Formulario Modal para Agregar */}
       {showForm && (
         <YoungForm
           isOpen={showForm}
           onClose={() => setShowForm(false)}
           onSubmit={handleAddYoung}
+        />
+      )}
+
+      {/* Formulario Modal para Editar */}
+      {showEditForm && editingYoung && (
+        <EditYoungForm
+          isOpen={showEditForm}
+          onClose={() => {
+            setShowEditForm(false);
+            setEditingYoung(null);
+          }}
+          onSubmit={handleUpdateYoung}
+          young={editingYoung}
         />
       )}
     </div>
