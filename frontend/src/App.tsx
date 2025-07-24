@@ -23,18 +23,34 @@ interface YoungFormData {
 // Hook para scroll infinito automático
 const useInfiniteScroll = (callback: () => void, hasMore: boolean, loading: boolean) => {
   useEffect(() => {
+    let timeoutId: number;
+    
     const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 1000; // 1000px antes del final
-      
-      if (isNearBottom && hasMore && !loading) {
-        console.log('🔄 Scroll infinito activado - cargando más elementos');
-        callback();
+      // Limpiar timeout anterior
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
+      
+      // Debounce de 200ms para evitar múltiples llamadas
+      timeoutId = setTimeout(() => {
+        const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+        const isNearBottom = scrollTop + clientHeight >= scrollHeight - 1000; // 1000px antes del final
+        
+        if (isNearBottom && hasMore && !loading) {
+          console.log('🔄 Scroll infinito activado - cargando más elementos');
+          callback();
+        }
+      }, 200);
     };
 
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [callback, hasMore, loading]);
 };
 
@@ -51,6 +67,8 @@ function App() {
   const [showBirthdayDashboard, setShowBirthdayDashboard] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [nextPageToLoad, setNextPageToLoad] = useState(2); // Track próxima página para cargar
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // Prevenir múltiples llamadas simultáneas
   const [filters, setFilters] = useState<PaginationQuery>({
     page: 1,
     limit: 10,
@@ -114,6 +132,12 @@ function App() {
   // Función para obtener jóvenes del backend con paginación
   const fetchYoung = async (page = 1, append = false, customFilters?: PaginationQuery) => {
     try {
+      // Prevenir llamadas duplicadas para la misma página en modo append
+      if (append && page <= currentPage) {
+        console.log('🚫 Evitando carga duplicada de página:', page, 'currentPage:', currentPage);
+        return;
+      }
+      
       if (!append) {
         setLoading(true);
       } else {
@@ -174,17 +198,43 @@ function App() {
       });
       
       if (append) {
-        // Verificar duplicados antes de agregar
+        // Verificar duplicados antes de agregar - usando múltiples criterios
         const currentIds = new Set(youngList.map((y: IYoung) => y.id));
-        const newYoung = youngArray.filter((y: IYoung) => !currentIds.has(y.id));
+        const currentNames = new Set(youngList.map((y: IYoung) => `${y.fullName}-${y.birthday}`));
+        
+        const newYoung = youngArray.filter((y: IYoung) => {
+          const hasIdDuplicate = currentIds.has(y.id);
+          const hasNameBirthdayDuplicate = currentNames.has(`${y.fullName}-${y.birthday}`);
+          const isDuplicate = hasIdDuplicate || hasNameBirthdayDuplicate;
+          
+          if (isDuplicate) {
+            console.log('🚫 Duplicado detectado:', {
+              name: y.fullName,
+              id: y.id,
+              hasIdDuplicate,
+              hasNameBirthdayDuplicate
+            });
+          }
+          
+          return !isDuplicate;
+        });
         
         console.log('➕ Agregando elementos:', {
           totalReceived: youngArray.length,
           duplicatesFiltered: youngArray.length - newYoung.length,
-          newElementsAdded: newYoung.length
+          newElementsAdded: newYoung.length,
+          currentListSize: youngList.length,
+          finalListSize: youngList.length + newYoung.length,
+          receivedIds: youngArray.map((y: IYoung) => y.id),
+          currentIds: Array.from(currentIds),
+          newIds: newYoung.map((y: IYoung) => y.id)
         });
         
-        setYoungList(prev => [...prev, ...newYoung]);
+        if (newYoung.length > 0) {
+          setYoungList(prev => [...prev, ...newYoung]);
+        } else {
+          console.log('⚠️ No hay elementos nuevos para agregar - todos eran duplicados');
+        }
       } else {
         console.log('🔄 Reemplazando lista completa con', youngArray.length, 'elementos');
         setYoungList(youngArray);
@@ -193,17 +243,31 @@ function App() {
       // Verificar si hay más páginas
       if (pagination) {
         setHasMore(pagination.currentPage < pagination.totalPages);
-        setCurrentPage(pagination.currentPage);
+        
+        // Actualizar currentPage y nextPageToLoad
+        if (!append) {
+          setCurrentPage(pagination.currentPage);
+          setNextPageToLoad(pagination.currentPage + 1);
+        } else if (pagination.currentPage > currentPage) {
+          setCurrentPage(pagination.currentPage);
+          setNextPageToLoad(pagination.currentPage + 1);
+        }
+        
         console.log('📊 Paginación:', {
-          currentPage: pagination.currentPage,
+          requestedPage: page,
+          backendCurrentPage: pagination.currentPage,
+          frontendCurrentPage: currentPage,
+          nextPageToLoad: pagination.currentPage + 1,
           totalPages: pagination.totalPages,
           totalItems: pagination.totalItems,
           hasNext: pagination.hasNext,
-          receivedItems: youngArray.length
+          receivedItems: youngArray.length,
+          isAppend: append
         });
       } else {
         setHasMore(youngArray.length === 10); // Si devuelve 10, probablemente hay más
         setCurrentPage(page); // Actualizar página manualmente si no hay paginación
+        setNextPageToLoad(page + 1);
       }
       
       setError(null);
@@ -242,9 +306,11 @@ function App() {
     // Resetear todo el estado de paginación
     setFilters(cleanFilters);
     setCurrentPage(1);
+    setNextPageToLoad(2);
     setHasMore(true);
     setYoungList([]); // Limpiar lista actual
     setLoading(true); // Mostrar loading
+    setIsLoadingMore(false); // Reset loading state
     
     // Aplicar filtros de forma síncrona
     const applyFilters = async () => {
@@ -261,15 +327,30 @@ function App() {
 
   // Función para cargar más elementos
   const loadMore = async () => {
-    if (!hasMore || loadingMore) return;
+    if (!hasMore || loadingMore || isLoadingMore) {
+      console.log('🚫 No se puede cargar más:', { hasMore, loadingMore, isLoadingMore });
+      return;
+    }
     
-    console.log('📄 Cargando más elementos - Página actual:', currentPage, 'Próxima página:', currentPage + 1);
-    await fetchYoung(currentPage + 1, true);
+    setIsLoadingMore(true);
+    
+    console.log('📄 Cargando más elementos:', {
+      currentPage,
+      nextPageToLoad,
+      totalElementsDisplayed: youngList.length
+    });
+    
+    try {
+      await fetchYoung(nextPageToLoad, true);
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   // Función para recargar estadísticas después de operaciones CRUD
   const refreshAllData = async () => {
     setCurrentPage(1);
+    setNextPageToLoad(2);
     setHasMore(true);
     setYoungList([]); // Limpiar lista actual
     await Promise.all([
@@ -391,7 +472,7 @@ function App() {
   }, []); // Sin dependencias, solo al montar
 
   // Scroll infinito automático
-  useInfiniteScroll(loadMore, hasMore, loadingMore);
+  useInfiniteScroll(loadMore, hasMore, loadingMore || isLoadingMore);
 
   // Estadísticas básicas
   const stats = {
@@ -429,6 +510,31 @@ function App() {
   useEffect(() => {
     console.log('🔄 allYoungList cambió:', allYoungList.length, 'elementos');
   }, [allYoungList]);
+
+  // Debug y limpieza de duplicados en youngList
+  useEffect(() => {
+    const uniqueIds = new Set();
+    const duplicates = youngList.filter(young => {
+      const isDuplicate = uniqueIds.has(young.id);
+      uniqueIds.add(young.id);
+      return isDuplicate;
+    });
+    
+    if (duplicates.length > 0) {
+      console.warn('⚠️ Duplicados detectados en youngList:', duplicates);
+      console.log('🧹 Limpiando duplicados...');
+      
+      // Limpiar duplicados manteniendo solo la primera instancia
+      const uniqueYoung = youngList.filter((young, index, arr) => 
+        arr.findIndex(y => y.id === young.id) === index
+      );
+      
+      if (uniqueYoung.length !== youngList.length) {
+        console.log('✅ Duplicados eliminados:', youngList.length - uniqueYoung.length);
+        setYoungList(uniqueYoung);
+      }
+    }
+  }, [youngList]);
 
   return (
     <div className="min-h-screen bg-blue-50">
