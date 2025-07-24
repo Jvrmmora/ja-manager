@@ -2,116 +2,142 @@ import { Request, Response } from 'express';
 import xlsx from 'xlsx';
 import Young from '../models/Young';
 import { uploadToCloudinary } from '../config/cloudinary';
+import { DateTime } from 'luxon';
 
-// Función para procesar fecha de cumpleaños desde Excel
+// Función mejorada para procesar fecha de cumpleaños desde Excel usando Luxon
 const processExcelDate = (dateValue: any): Date => {
   if (!dateValue) {
     // Si no hay fecha, usar 1 de enero del año actual
-    return new Date(new Date().getFullYear(), 0, 1);
+    return DateTime.now().set({ month: 1, day: 1 }).toJSDate();
   }
 
-  // Si es una fecha de Excel (número)
+  // Si es una fecha de Excel (número serial)
   if (typeof dateValue === 'number') {
-    const excelDate = new Date((dateValue - 25569) * 86400 * 1000);
-    // Usar el año actual si solo tenemos día y mes
-    return new Date(new Date().getFullYear(), excelDate.getMonth(), excelDate.getDate());
+    try {
+      // Convertir número serial de Excel a fecha usando Luxon
+      // Excel cuenta desde 1900-01-01, pero tiene un error con 1900 siendo bisiesto
+      const excelEpoch = DateTime.fromObject({ year: 1900, month: 1, day: 1 });
+      
+      let daysToAdd = dateValue - 1; // Excel cuenta desde día 1, no 0
+      
+      // Compensar por el error de Excel con el año 1900 (considera 1900 bisiesto incorrectamente)
+      if (dateValue >= 60) {
+        daysToAdd = dateValue - 2;
+      }
+      
+      const calculatedDate = excelEpoch.plus({ days: daysToAdd });
+      
+      // Solo usar día y mes del año actual
+      const currentYear = DateTime.now().year;
+      const resultDate = calculatedDate.set({ year: currentYear });
+      
+      return resultDate.toJSDate();
+    } catch (error) {
+      console.warn(`Error procesando número serial de Excel: ${dateValue}`, error);
+      return DateTime.now().toJSDate();
+    }
   }
 
-  // Si es un string, intentar parsearlo
+  // Si es un string, intentar parsearlo con Luxon
   if (typeof dateValue === 'string') {
     const dateStr = dateValue.trim();
     
-    // Si contiene un guión y parece ser día-mes (ej: "17-mar")
-    if (dateStr.includes('-')) {
-      const [day, month] = dateStr.split('-');
-      
-      // Mapeo de nombres de meses en español e inglés
-      const monthNames: { [key: string]: number } = {
-        'ene': 0, 'jan': 0, 'enero': 0, 'january': 0,
-        'feb': 1, 'febrero': 1, 'february': 1,
-        'mar': 2, 'marzo': 2, 'march': 2,
-        'abr': 3, 'apr': 3, 'abril': 3, 'april': 3,
-        'may': 4, 'mayo': 4,
-        'jun': 5, 'junio': 5, 'june': 5,
-        'jul': 6, 'julio': 6, 'july': 6,
-        'ago': 7, 'aug': 7, 'agosto': 7, 'august': 7,
-        'sep': 8, 'sept': 8, 'septiembre': 8, 'september': 8,
-        'oct': 9, 'octubre': 9, 'october': 9,
-        'nov': 10, 'noviembre': 10, 'november': 10,
-        'dic': 11, 'dec': 11, 'diciembre': 11, 'december': 11
-      };
-      
-      const monthKey = month.toLowerCase();
-      const monthIndex = monthNames[monthKey];
-      
-      if (monthIndex !== undefined) {
-        const dayNum = parseInt(day);
-        if (!isNaN(dayNum) && dayNum >= 1 && dayNum <= 31) {
-          // Si viene del Excel con formato "17-mar", usar el año actual
-          return new Date(new Date().getFullYear(), monthIndex, dayNum);
-        }
-      }
-    }
-    
-    // Si es formato día/mes o día/mes/año
-    if (dateStr.includes('/')) {
-      const parts = dateStr.split('/');
-      if (parts.length >= 2) {
-        const day = parseInt(parts[0]);
-        const month = parseInt(parts[1]) - 1; // Los meses en JS son 0-indexed
-        let year = new Date().getFullYear(); // Año actual por defecto
+    // Intentar diferentes formatos con Luxon
+    const formats = [
+      'dd-MMM',      // 26-Jan
+      'dd-MMM-yyyy', // 26-Jan-2022
+      'dd/MM',       // 26/01
+      'dd/MM/yyyy',  // 26/01/2022
+      'dd/MM/yy',    // 26/01/22
+      'yyyy-MM-dd',  // 2022-01-26 (ISO)
+      'MM/dd/yyyy',  // 01/26/2022 (formato US)
+      'dd-MM-yyyy',  // 26-01-2022
+      'dd.MM.yyyy'   // 26.01.2022
+    ];
+
+    for (const format of formats) {
+      try {
+        const parsedDate = DateTime.fromFormat(dateStr, format, { locale: 'en' });
         
-        // Si tiene año especificado
-        if (parts.length === 3) {
-          const yearPart = parseInt(parts[2]);
-          // Si el año es de 2 dígitos, asumir que es 20XX
-          if (yearPart < 100) {
-            year = 2000 + yearPart;
-          } else {
-            year = yearPart;
+        if (parsedDate.isValid) {
+          // Si no tiene año o es formato corto, usar año actual
+          if (format === 'dd-MMM' || format === 'dd/MM') {
+            const currentYear = DateTime.now().year;
+            return parsedDate.set({ year: currentYear }).toJSDate();
           }
+          
+          return parsedDate.toJSDate();
         }
-        
-        if (!isNaN(day) && !isNaN(month) && day >= 1 && day <= 31 && month >= 0 && month <= 11) {
-          return new Date(year, month, day);
-        }
+      } catch (error) {
+        // Continuar con el siguiente formato
+        continue;
       }
     }
     
-    // Si es formato ISO o similar
-    const isoDate = new Date(dateStr);
-    if (!isNaN(isoDate.getTime())) {
-      return isoDate;
+    // Intentar con el parser nativo de Luxon
+    try {
+      const luxonDate = DateTime.fromISO(dateStr);
+      if (luxonDate.isValid) {
+        return luxonDate.toJSDate();
+      }
+      
+      // Intentar con formato RFC2822
+      const rfc2822Date = DateTime.fromRFC2822(dateStr);
+      if (rfc2822Date.isValid) {
+        return rfc2822Date.toJSDate();
+      }
+      
+      // Intentar con formato HTTP
+      const httpDate = DateTime.fromHTTP(dateStr);
+      if (httpDate.isValid) {
+        return httpDate.toJSDate();
+      }
+    } catch (error) {
+      console.warn(`Error parseando fecha con Luxon: ${dateStr}`, error);
     }
   }
 
-  // Fallback: usar fecha actual
   console.warn(`No se pudo parsear la fecha: ${dateValue}, usando fecha actual`);
-  return new Date();
+  return DateTime.now().toJSDate();
 };
 
-// Función para determinar rango de edad basado en la fecha de nacimiento
+// Función mejorada para calcular rango de edad usando Luxon
 const calculateAgeRange = (birthday: Date): string => {
-  const today = new Date();
-  let age = today.getFullYear() - birthday.getFullYear();
-  const monthDiff = today.getMonth() - birthday.getMonth();
-  
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthday.getDate())) {
-    age--;
-  }
-
-  // Si la edad es negativa o muy alta, probablemente hay un error en la fecha
-  if (age < 0 || age > 80) {
-    console.warn(`Edad calculada inválida: ${age} años para fecha ${birthday.toISOString()}`);
-    // Usar año actual para el cálculo
-    const correctedBirthday = new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate());
-    age = today.getFullYear() - correctedBirthday.getFullYear();
-    if (today.getMonth() < birthday.getMonth() || 
-        (today.getMonth() === birthday.getMonth() && today.getDate() < birthday.getDate())) {
-      age--;
+  try {
+    const birthdayLuxon = DateTime.fromJSDate(birthday);
+    const today = DateTime.now();
+    
+    if (!birthdayLuxon.isValid) {
+      console.warn('Fecha de cumpleaños inválida, usando rango por defecto');
+      return '22-25';
     }
-  }
 
+    const age = Math.floor(today.diff(birthdayLuxon, 'years').years);
+
+    // Validar que la edad sea razonable
+    if (age < 0 || age > 80) {
+      console.warn(`Edad calculada inválida: ${age} años para fecha ${birthdayLuxon.toISODate()}`);
+      
+      // Si la edad es extraña, probablemente necesitamos usar solo día/mes del año actual
+      const correctedBirthday = birthdayLuxon.set({ year: today.year });
+      const correctedAge = Math.floor(today.diff(correctedBirthday, 'years').years);
+      
+      if (correctedAge >= 0 && correctedAge <= 80) {
+        return getAgeRangeFromAge(correctedAge);
+      }
+      
+      return '22-25'; // Valor por defecto
+    }
+
+    return getAgeRangeFromAge(age);
+  } catch (error) {
+    console.warn('Error calculando edad:', error);
+    return '22-25';
+  }
+};
+
+// Función auxiliar para determinar rango de edad
+const getAgeRangeFromAge = (age: number): string => {
   if (age >= 13 && age <= 15) return '13-15';
   if (age >= 16 && age <= 18) return '16-18';
   if (age >= 19 && age <= 21) return '19-21';
@@ -235,7 +261,7 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
           }
         }
 
-        // Procesar fecha de cumpleaños
+        // Procesar fecha de cumpleaños usando Luxon
         let birthday: Date;
         const birthdayValue = normalizedRow.birthday || normalizedRow.fecha_cumpleanos;
         
@@ -243,17 +269,22 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
         if (typeof birthdayValue === 'string' && birthdayValue.includes('/')) {
           const parts = birthdayValue.split('/');
           if (parts.length === 3) {
-            // Formato dd/mm/yyyy
-            const day = parseInt(parts[0]);
-            const month = parseInt(parts[1]) - 1;
-            let year = parseInt(parts[2]);
-            
-            // Si el año es menor a 1900, asumir que es año actual
-            if (year < 1900) {
-              year = new Date().getFullYear();
+            try {
+              // Formato dd/mm/yyyy
+              const day = parseInt(parts[0]);
+              const month = parseInt(parts[1]);
+              let year = parseInt(parts[2]);
+              
+              // Si el año es menor a 1900, asumir que es año actual
+              if (year < 1900) {
+                year = DateTime.now().year;
+              }
+              
+              const luxonDate = DateTime.fromObject({ year, month, day });
+              birthday = luxonDate.isValid ? luxonDate.toJSDate() : processExcelDate(birthdayValue);
+            } catch (error) {
+              birthday = processExcelDate(birthdayValue);
             }
-            
-            birthday = new Date(year, month, day);
           } else {
             birthday = processExcelDate(birthdayValue);
           }
@@ -286,7 +317,7 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
         // Crear el joven
         const youngData = {
           fullName,
-          phone: phone || `+57300${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`, // Teléfono temporal si no existe
+          phone: phone || `+57300${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`,
           birthday,
           ageRange,
           gender,
@@ -338,12 +369,14 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
 
 export const downloadImportTemplate = async (req: Request, res: Response) => {
   try {
-    // Crear plantilla de Excel con las columnas exactas que espera la API
+    // Usar Luxon para generar fechas de ejemplo más precisas
+    const currentYear = DateTime.now().year;
+    
     const templateData = [
       {
         'Nombre': 'María Fernanda',
         'Apellido': 'Cortés',
-        'Fecha cumpleaños': '26-Jan',
+        'Fecha cumpleaños': '26/01',
         'Rango de edad': '26-30',
         'Celular': '3017291160',
         'Género': 'femenino',
@@ -353,7 +386,7 @@ export const downloadImportTemplate = async (req: Request, res: Response) => {
       {
         'Nombre': 'Diego Mauricio',
         'Apellido': 'Díaz',
-        'Fecha cumpleaños': '17/03/2022',
+        'Fecha cumpleaños': `17/03/${currentYear}`,
         'Rango de edad': '30-35',
         'Celular': '3014470620',
         'Género': 'masculino',
@@ -372,15 +405,22 @@ export const downloadImportTemplate = async (req: Request, res: Response) => {
       }
     ];
 
-    // Crear una segunda hoja con instrucciones
+    // Instrucciones mejoradas con información sobre Luxon
     const instructionsData = [
+      { 'CAMPO': '📅 FORMATOS DE FECHA SOPORTADOS:', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
+      { 'CAMPO': 'DD/MM (día/mes)', 'REQUERIDO': '', 'FORMATO': '26/01', 'EJEMPLO': '26 de enero del año actual' },
+      { 'CAMPO': 'DD/MM/YYYY (día/mes/año)', 'REQUERIDO': '', 'FORMATO': '26/01/1995', 'EJEMPLO': '26 de enero de 1995' },
+      { 'CAMPO': 'DD-MMM (día-mes abreviado)', 'REQUERIDO': '', 'FORMATO': '26-Jan', 'EJEMPLO': '26 de enero del año actual' },
+      { 'CAMPO': 'Número serial de Excel', 'REQUERIDO': '', 'FORMATO': '44587', 'EJEMPLO': 'Se convierte automáticamente' },
+      { 'CAMPO': '', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
+      { 'CAMPO': 'CAMPOS REQUERIDOS:', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
       { 'CAMPO': 'Nombre', 'REQUERIDO': 'SÍ', 'FORMATO': 'Texto', 'EJEMPLO': 'María Fernanda' },
       { 'CAMPO': 'Apellido', 'REQUERIDO': 'NO', 'FORMATO': 'Texto', 'EJEMPLO': 'Cortés' },
-      { 'CAMPO': 'Fecha cumpleaños', 'REQUERIDO': 'NO', 'FORMATO': '26-Jan o 17/03/2022', 'EJEMPLO': '26-Jan' },
+      { 'CAMPO': 'Fecha cumpleaños', 'REQUERIDO': 'NO', 'FORMATO': 'Ver formatos arriba', 'EJEMPLO': '26/01 o 26-Jan' },
       { 'CAMPO': 'Rango de edad', 'REQUERIDO': 'NO', 'FORMATO': '13-15, 16-18, 19-21, 22-25, 26-30, 30+', 'EJEMPLO': '26-30' },
       { 'CAMPO': 'Celular', 'REQUERIDO': 'NO', 'FORMATO': '10 dígitos (se agrega +57)', 'EJEMPLO': '3017291160' },
       { 'CAMPO': 'Género', 'REQUERIDO': 'NO', 'FORMATO': 'masculino o femenino', 'EJEMPLO': 'femenino' },
-      { 'CAMPO': 'Rol', 'REQUERIDO': 'NO', 'FORMATO': 'Ver opciones abajo', 'EJEMPLO': 'lider juvenil' },
+      { 'CAMPO': 'Rol', 'REQUERIDO': 'NO', 'FORMATO': 'Ver roles disponibles abajo', 'EJEMPLO': 'lider juvenil' },
       { 'CAMPO': 'Email', 'REQUERIDO': 'NO', 'FORMATO': 'correo@dominio.com', 'EJEMPLO': 'maria@email.com' },
       { 'CAMPO': '', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
       { 'CAMPO': 'ROLES DISPONIBLES:', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
@@ -404,7 +444,6 @@ export const downloadImportTemplate = async (req: Request, res: Response) => {
     const instructionsSheet = xlsx.utils.json_to_sheet(instructionsData);
     xlsx.utils.book_append_sheet(workbook, instructionsSheet, 'Instrucciones');
 
-    // Generar buffer
     const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

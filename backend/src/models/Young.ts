@@ -21,7 +21,7 @@ const youngSchema = new Schema<IYoungDocument>(
     },
     phone: {
       type: String,
-      required: [true, 'El teléfono es obligatorio'],
+      required:false,
       trim: true,
       match: [
         /^[\+]?[\d\s\-\(\)]{8,15}$/,
@@ -30,18 +30,7 @@ const youngSchema = new Schema<IYoungDocument>(
     },
     birthday: {
       type: Date,
-      required: [true, 'La fecha de cumpleaños es obligatoria'],
-      validate: {
-        validator: function (date: Date) {
-          const today = new Date();
-          const minAge = new Date();
-          minAge.setFullYear(today.getFullYear() - 50);
-          const maxAge = new Date();
-          maxAge.setFullYear(today.getFullYear() - 10);
-          return date >= minAge && date <= maxAge;
-        },
-        message: 'La fecha de cumpleaños debe estar entre 10 y 50 años atrás',
-      },
+      required: false,
     },
     profileImage: {
       type: String,

@@ -23,10 +23,9 @@ export const createYoungSchema = Joi.object({
   phone: Joi.string()
     .trim()
     .pattern(/^[\+]?[\d\s\-\(\)]{8,15}$/)
-    .required()
+    .optional()
     .messages({
       'string.pattern.base': 'Formato de teléfono no válido',
-      'any.required': 'El teléfono es obligatorio',
     }),
 
   birthday: Joi.date()
@@ -119,17 +118,15 @@ export const updateYoungSchema = Joi.object({
     .trim()
     .pattern(/^[\+]?[\d\s\-\(\)]{8,15}$/)
     .optional()
+    .allow(null, '')
     .messages({
       'string.pattern.base': 'Formato de teléfono no válido',
     }),
 
   birthday: Joi.date()
-    .max('now')
-    .min(new Date(Date.now() - 50 * 365 * 24 * 60 * 60 * 1000))
     .optional()
     .messages({
-      'date.max': 'La fecha de cumpleaños no puede ser futura',
-      'date.min': 'La fecha de cumpleaños es muy antigua',
+      'date.base': 'Formato de fecha no válido',
     }),
 
   profileImage: Joi.string()
