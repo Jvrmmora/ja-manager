@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import youngRoutes from './routes/youngRoutes';
+import importRoutes from './routes/importRoutes';
 
 dotenv.config();
 
@@ -29,6 +30,9 @@ app.get('/api/health', (_req, res) => {
 
 // Rutas de jóvenes
 app.use('/api/young', youngRoutes);
+
+// Rutas de importación
+app.use('/api/import', importRoutes);
 
 // Ruta por defecto
 app.get('/', (_req, res) => {

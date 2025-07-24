@@ -5,6 +5,7 @@ import EditYoungForm from './components/EditYoungForm';
 import YoungCard from './components/YoungCard';
 import FilterBar from './components/FilterBar';
 import BirthdayDashboard from './components/BirthdayDashboard';
+import ImportModal from './components/ImportModal';
 import type { IYoung, PaginationQuery } from './types';
 
 interface YoungFormData {
@@ -27,6 +28,7 @@ function App() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingYoung, setEditingYoung] = useState<IYoung | null>(null);
   const [showBirthdayDashboard, setShowBirthdayDashboard] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [filters, setFilters] = useState<PaginationQuery>({
     page: 1,
     limit: 10,
@@ -219,15 +221,27 @@ function App() {
                 Plataforma de administración para jóvenes de la iglesia
               </p>
             </div>
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-white text-blue-600 hover:bg-blue-50 font-semibold py-2 px-6 rounded-lg transition-colors flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Agregar Joven
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowImportModal(true)}
+                className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Importar Excel
+              </button>
+              
+              <button
+                onClick={() => setShowForm(true)}
+                className="bg-white text-blue-600 hover:bg-blue-50 font-semibold py-2 px-6 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Agregar Joven
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -366,6 +380,17 @@ function App() {
           isOpen={showBirthdayDashboard}
           onClose={() => setShowBirthdayDashboard(false)}
           youngList={youngList}
+        />
+      )}
+
+      {/* Modal de Importación */}
+      {showImportModal && (
+        <ImportModal
+          isOpen={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => {
+            fetchYoung(); // Recargar la lista después de importar
+          }}
         />
       )}
     </div>
