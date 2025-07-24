@@ -20,15 +20,36 @@ interface YoungFormData {
   profileImage?: File;
 }
 
+// Hook para scroll infinito automático
+const useInfiniteScroll = (callback: () => void, hasMore: boolean, loading: boolean) => {
+  useEffect(() => {
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 1000; // 1000px antes del final
+      
+      if (isNearBottom && hasMore && !loading) {
+        callback();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [callback, hasMore, loading]);
+};
+
 function App() {
   const [youngList, setYoungList] = useState<IYoung[]>([]);
+  const [allYoungList, setAllYoungList] = useState<IYoung[]>([]); // Para estadísticas
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingYoung, setEditingYoung] = useState<IYoung | null>(null);
   const [showBirthdayDashboard, setShowBirthdayDashboard] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<PaginationQuery>({
     page: 1,
     limit: 10,
@@ -36,15 +57,72 @@ function App() {
     sortOrder: 'asc'
   });
 
-  // Función para obtener jóvenes del backend
-  const fetchYoung = async () => {
+  // Función para obtener todos los jóvenes para estadísticas (sin filtros)
+  const fetchAllYoung = async () => {
     try {
-      setLoading(true);
+      console.log('🔍 Obteniendo todos los jóvenes para estadísticas...');
+      
+      let allYoung: IYoung[] = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+      
+      while (hasMorePages) {
+        const params = new URLSearchParams();
+        params.append('page', currentPage.toString());
+        params.append('limit', '100'); // Máximo permitido por el backend
+        // NO aplicar filtros a las estadísticas - queremos el total real
+        
+        const url = `/api/young?${params.toString()}`;
+        console.log(`📡 URL para estadísticas página ${currentPage}:`, url);
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log(`📊 Resultado página ${currentPage}:`, result);
+        
+        const youngArray = result.success && result.data && Array.isArray(result.data.data) 
+          ? result.data.data 
+          : [];
+        
+        allYoung = [...allYoung, ...youngArray];
+        
+        // Verificar si hay más páginas
+        const pagination = result.data?.pagination;
+        if (pagination && pagination.currentPage < pagination.totalPages) {
+          currentPage++;
+        } else {
+          hasMorePages = false;
+        }
+        
+        console.log(`📄 Página ${currentPage - 1}: ${youngArray.length} jóvenes. Total acumulado: ${allYoung.length}`);
+      }
+      
+      console.log('👥 Total jóvenes para estadísticas:', allYoung.length);
+      console.log('📋 Primeros 3 jóvenes:', allYoung.slice(0, 3));
+      setAllYoungList(allYoung);
+      console.log('✅ allYoungList actualizado con', allYoung.length, 'elementos');
+    } catch (err) {
+      console.error('❌ Error en fetchAllYoung:', err);
+    }
+  };
+
+  // Función para obtener jóvenes del backend con paginación
+  const fetchYoung = async (page = 1, append = false) => {
+    try {
+      if (!append) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       
       // Construir query parameters
       const params = new URLSearchParams();
-      if (filters.page) params.append('page', filters.page.toString());
-      if (filters.limit) params.append('limit', filters.limit.toString());
+      params.append('page', page.toString());
+      params.append('limit', '10');
       if (filters.search) params.append('search', filters.search);
       if (filters.ageRange) params.append('ageRange', filters.ageRange);
       if (filters.gender) params.append('gender', filters.gender);
@@ -61,19 +139,58 @@ function App() {
       
       const result = await response.json();
       
-      // El backend retorna: { success: true, data: { data: [jovenes] } }
+      // El backend retorna: { success: true, data: { data: [jovenes], pagination: {...} } }
       const youngArray = result.success && result.data && Array.isArray(result.data.data) 
         ? result.data.data 
         : [];
       
-      setYoungList(youngArray);
+      const pagination = result.data?.pagination;
+      
+      if (append) {
+        setYoungList(prev => [...prev, ...youngArray]);
+      } else {
+        setYoungList(youngArray);
+      }
+      
+      // Verificar si hay más páginas
+      if (pagination) {
+        setHasMore(pagination.currentPage < pagination.totalPages);
+        setCurrentPage(pagination.currentPage);
+      } else {
+        setHasMore(youngArray.length === 10); // Si devuelve 10, probablemente hay más
+      }
+      
       setError(null);
     } catch (err) {
       console.error('Error en fetchYoung:', err);
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  // Función para cargar más elementos
+  const loadMore = async () => {
+    if (!hasMore || loadingMore) return;
+    await fetchYoung(currentPage + 1, true);
+  };
+
+  // Función para reinicializar datos
+  const refreshData = async () => {
+    setCurrentPage(1);
+    setHasMore(true);
+    await fetchYoung(1, false); // Solo recargar los datos paginados
+  };
+
+  // Función para recargar estadísticas después de operaciones CRUD
+  const refreshAllData = async () => {
+    setCurrentPage(1);
+    setHasMore(true);
+    await Promise.all([
+      fetchYoung(1, false),
+      fetchAllYoung()
+    ]);
   };
 
   // Función para agregar nuevo joven
@@ -103,7 +220,7 @@ function App() {
       }
 
       // Recargar la lista
-      await fetchYoung();
+      await refreshAllData();
     } catch (error) {
       console.error('Error:', error);
       throw error;
@@ -126,7 +243,7 @@ function App() {
       }
 
       // Recargar la lista
-      await fetchYoung();
+      await refreshAllData();
     } catch (error) {
       console.error('Error:', error);
       alert('Error al eliminar el joven. Por favor, intenta de nuevo.');
@@ -166,7 +283,7 @@ function App() {
       }
 
       // Recargar la lista
-      await fetchYoung();
+      await refreshAllData();
       setShowEditForm(false);
       setEditingYoung(null);
     } catch (error) {
@@ -175,15 +292,32 @@ function App() {
     }
   };
 
+  // Cargar estadísticas al inicio
   useEffect(() => {
-    fetchYoung();
+    const loadInitialData = async () => {
+      console.log('🚀 Cargando datos iniciales...');
+      await Promise.all([
+        fetchAllYoung(), // Cargar estadísticas
+        fetchYoung(1, false) // Cargar primera página
+      ]);
+    };
+    
+    loadInitialData();
+  }, []); // Sin dependencias, solo al montar
+
+  useEffect(() => {
+    if (filters.page === 1 && filters.limit === 10) return; // Evitar carga inicial duplicada
+    refreshData(); // Solo recargar datos paginados cuando cambien filtros
   }, [filters]); // Actualizar cuando cambien los filtros
+
+  // Scroll infinito automático
+  useInfiniteScroll(loadMore, hasMore, loadingMore);
 
   // Estadísticas básicas
   const stats = {
-    total: Array.isArray(youngList) ? youngList.length : 0,
-    active: Array.isArray(youngList) ? youngList.length : 0,
-    newThisMonth: Array.isArray(youngList) ? youngList.filter(young => {
+    total: Array.isArray(allYoungList) ? allYoungList.length : 0,
+    active: Array.isArray(allYoungList) ? allYoungList.length : 0,
+    newThisMonth: Array.isArray(allYoungList) ? allYoungList.filter(young => {
       try {
         if (!young.createdAt) return false;
         const created = new Date(young.createdAt);
@@ -194,7 +328,7 @@ function App() {
         return false;
       }
     }).length : 0,
-    birthdays: Array.isArray(youngList) ? youngList.filter(young => {
+    birthdays: Array.isArray(allYoungList) ? allYoungList.filter(young => {
       try {
         if (!young.birthday) return false;
         const birthday = new Date(young.birthday);
@@ -206,6 +340,15 @@ function App() {
       }
     }).length : 0
   };
+
+  // Debug de estadísticas
+  console.log('📊 Estado actual de allYoungList:', allYoungList.length, 'jóvenes');
+  console.log('📊 Estadísticas calculadas:', stats);
+  
+  // Debug adicional para monitorear cambios en allYoungList
+  useEffect(() => {
+    console.log('🔄 allYoungList cambió:', allYoungList.length, 'elementos');
+  }, [allYoungList]);
 
   return (
     <div className="min-h-screen bg-blue-50">
@@ -306,7 +449,7 @@ function App() {
             </div>
             <p className="text-red-700 mt-1">{error}</p>
             <button 
-              onClick={fetchYoung}
+              onClick={() => refreshAllData()}
               className="mt-3 text-red-800 hover:text-red-900 font-medium"
             >
               Intentar de nuevo
@@ -337,16 +480,45 @@ function App() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {youngList.map((young) => (
-                  <YoungCard
-                    key={young.id}
-                    young={young}
-                    onDelete={handleDeleteYoung}
-                    onEdit={handleEditYoung}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {youngList.map((young) => (
+                    <YoungCard
+                      key={young.id}
+                      young={young}
+                      onDelete={handleDeleteYoung}
+                      onEdit={handleEditYoung}
+                    />
+                  ))}
+                </div>
+                
+                {/* Botón Cargar Más / Estado final */}
+                <div className="flex justify-center mt-8">
+                  {loadingMore ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      <span className="ml-3 text-gray-600">Cargando más jóvenes...</span>
+                    </div>
+                  ) : hasMore ? (
+                    <button
+                      onClick={loadMore}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+                    >
+                      Cargar más jóvenes
+                    </button>
+                  ) : (
+                    youngList.length > 0 && (
+                      <div className="text-center text-gray-500">
+                        <svg className="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="font-medium">¡Has visto todos los jóvenes!</p>
+                        <p className="text-sm mt-1">No hay más elementos para mostrar</p>
+                      </div>
+                    )
+                  )}
+                </div>
+              </>
             )}
           </>
         )}
@@ -379,7 +551,7 @@ function App() {
         <BirthdayDashboard
           isOpen={showBirthdayDashboard}
           onClose={() => setShowBirthdayDashboard(false)}
-          youngList={youngList}
+          youngList={allYoungList}
         />
       )}
 
@@ -389,7 +561,7 @@ function App() {
           isOpen={showImportModal}
           onClose={() => setShowImportModal(false)}
           onSuccess={() => {
-            fetchYoung(); // Recargar la lista después de importar
+            refreshAllData(); // Recargar la lista después de importar
           }}
         />
       )}
