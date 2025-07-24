@@ -24,6 +24,7 @@ export const createYoungSchema = Joi.object({
     .trim()
     .pattern(/^[\+]?[\d\s\-\(\)]{8,15}$/)
     .optional()
+    .allow('') // Permitir string vacío
     .messages({
       'string.pattern.base': 'Formato de teléfono no válido',
     }),

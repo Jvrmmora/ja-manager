@@ -44,8 +44,15 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
   const handleCountryChange = (country: typeof countries[0]) => {
     setSelectedCountry(country);
-    const fullNumber = `${country.code}${phoneNumber}`.replace(/\s/g, '');
-    onChange(fullNumber);
+    
+    // Solo enviar el código de país si hay un número
+    if (phoneNumber.trim()) {
+      const fullNumber = `${country.code}${phoneNumber}`.replace(/\s/g, '');
+      onChange(fullNumber);
+    } else {
+      // Si está vacío, mantener vacío
+      onChange('');
+    }
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,8 +74,15 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
     }
     
     setPhoneNumber(inputValue);
-    const fullNumber = `${selectedCountry.code}${inputValue}`.replace(/\s/g, '');
-    onChange(fullNumber);
+    
+    // Solo enviar el código de país si hay un número
+    if (inputValue.trim()) {
+      const fullNumber = `${selectedCountry.code}${inputValue}`.replace(/\s/g, '');
+      onChange(fullNumber);
+    } else {
+      // Si está vacío, enviar string vacío
+      onChange('');
+    }
   };
 
   return (

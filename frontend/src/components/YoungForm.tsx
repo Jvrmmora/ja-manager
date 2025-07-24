@@ -87,7 +87,7 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.fullName || !formData.ageRange || !formData.phone || !formData.birthday) {
+    if (!formData.fullName || !formData.ageRange || !formData.birthday) {
       alert('Por favor, completa todos los campos obligatorios');
       return;
     }
@@ -204,7 +204,7 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
           {/* Teléfono */}
           <div>
             <label className="form-label">
-              Teléfono *
+              Teléfono (opcional)
             </label>
             <PhoneInput
               value={formData.phone}

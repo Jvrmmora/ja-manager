@@ -235,7 +235,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
           {/* Teléfono */}
           <div>
             <label className="form-label">
-              Teléfono *
+              Teléfono (opcional)
             </label>
             <PhoneInput
               value={formData.phone}
