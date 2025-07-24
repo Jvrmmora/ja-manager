@@ -58,6 +58,8 @@ export const createYoungSchema = Joi.object({
   role: Joi.string()
     .valid(
       'lider juvenil',
+      'simpatizante',
+      'joven adventista',
       'colaborador', 
       'director',
       'subdirector',

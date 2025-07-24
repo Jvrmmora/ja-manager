@@ -92,6 +92,8 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
             <option value="">Todos</option>
             <option value="colaborador">Colaborador</option>
             <option value="lider juvenil">Líder Juvenil</option>
+            <option value="joven adventista">Joven Adventista</option>
+            <option value="simpatizante">Simpatizante</option>
             <option value="director">Director</option>
             <option value="subdirector">Subdirector</option>
             <option value="club guias">Club Guías</option>

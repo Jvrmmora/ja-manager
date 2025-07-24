@@ -305,11 +305,11 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
         }
 
         // Procesar rol
-        let role: any = 'colaborador';
+        let role: any = 'joven adventista';
         if (normalizedRow.role) {
           const roleStr = normalizedRow.role.toString().toLowerCase();
           const roles = ['lider juvenil', 'colaborador', 'director', 'subdirector', 
-                        'club guias', 'club conquistadores', 'club aventureros', 'escuela sabatica'];
+                        'club guias', 'club conquistadores', 'club aventureros', 'escuela sabatica', 'joven adventista', 'simpatizante'];
           const foundRole = roles.find(r => roleStr.includes(r.replace(' ', '')));
           if (foundRole) role = foundRole;
         }

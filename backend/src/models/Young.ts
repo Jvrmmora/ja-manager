@@ -57,7 +57,9 @@ const youngSchema = new Schema<IYoungDocument>(
       enum: {
         values: [
           'lider juvenil',
+          'simpatizante',
           'colaborador', 
+          'joven adventista',
           'director',
           'subdirector',
           'club guias',

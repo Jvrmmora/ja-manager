@@ -14,7 +14,7 @@ interface YoungFormData {
   phone: string;
   birthday: string;
   gender: 'masculino' | 'femenino';
-  role: 'lider juvenil' | 'colaborador' | 'director' | 'subdirector' | 'club guias' | 'club conquistadores' | 'club aventureros' | 'escuela sabatica';
+  role: 'lider juvenil' | 'colaborador' | 'director' | 'subdirector' | 'club guias' | 'club conquistadores' | 'club aventureros' | 'escuela sabatica' | 'joven adventista' | 'simpatizante';
   email: string;
   skills: string[];
   profileImage?: File;

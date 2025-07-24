@@ -8,7 +8,7 @@ interface YoungFormData {
   phone: string;
   birthday: string;
   gender: 'masculino' | 'femenino';
-  role: 'lider juvenil' | 'colaborador' | 'director' | 'subdirector' | 'club guias' | 'club conquistadores' | 'club aventureros' | 'escuela sabatica';
+  role: 'lider juvenil' | 'colaborador' | 'director' | 'subdirector' | 'club guias' | 'club conquistadores' | 'club aventureros' | 'escuela sabatica' | 'joven adventista' | 'simpatizante';
   email: string;
   skills: string[];
   profileImage?: File;
@@ -289,6 +289,8 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
             >
               <option value="colaborador">Colaborador</option>
               <option value="lider juvenil">Líder Juvenil</option>
+              <option value="joven adventista">Joven Adventista</option>
+              <option value="simpatizante">Simpatizante</option>
               <option value="director">Director</option>
               <option value="subdirector">Subdirector</option>
               <option value="club guias">Club Guías</option>
