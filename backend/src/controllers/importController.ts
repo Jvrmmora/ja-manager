@@ -256,8 +256,22 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
           phone = (normalizedRow.phone || normalizedRow.celular).toString().trim();
           // Limpiar y formatear teléfono
           phone = phone.replace(/[^\d+]/g, '');
-          if (!phone.startsWith('+57') && phone.length === 10) {
+          
+          // Si no tiene indicativo y tiene 10 dígitos, agregar +57 (Colombia)
+          if (!phone.startsWith('+') && phone.length === 10) {
             phone = '+57' + phone;
+          }
+          // Si ya tiene indicativo válido (+57, +1, etc.), mantenerlo
+          else if (phone.startsWith('+')) {
+            // Ya tiene formato correcto
+            phone = phone;
+          }
+          // Si no tiene + pero empieza con código de país conocido
+          else if (phone.startsWith('57') && phone.length === 12) {
+            phone = '+' + phone;
+          }
+          else if (phone.startsWith('1') && phone.length === 11) {
+            phone = '+' + phone;
           }
         }
 
@@ -319,12 +333,12 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
         // Crear el joven
         const youngData = {
           fullName,
-          phone: phone || `+57300${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`,
+          phone: phone || `+57`,
           birthday,
           ageRange,
           gender,
           role,
-          email: normalizedRow.email || `${fullName.toLowerCase().replace(/\s+/g, '.')}@temp.com`,
+          email: normalizedRow.email || `sin-email@example.com`,
           skills: []
         };
 
