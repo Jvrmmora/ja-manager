@@ -70,16 +70,18 @@ const youngSchema = new Schema<IYoungDocument>(
         message: 'Rol no válido',
       },
     },
-    email: {
-      type: String,
-      required: false,
-      trim: true,
-      lowercase: true,
-      match: [
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        'Formato de email no válido',
-      ],
-    },
+   email: {
+    type: String,
+    required: false,
+    trim: true,
+    lowercase: true,
+    default: null,
+    sparse: true, // Permite múltiples valores null
+    match: [
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      'Por favor ingrese un email válido'
+    ]
+  },
     skills: {
       type: [String],
       default: [],
