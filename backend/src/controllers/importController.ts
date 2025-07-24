@@ -116,7 +116,7 @@ const calculateAgeRange = (birthday: Date): string => {
 
     // Validar que la edad sea razonable
     if (age < 0 || age > 80) {
-      console.warn(`Edad calculada inválida: ${age} años para fecha ${birthdayLuxon.toISODate()}`);
+
       
       // Si la edad es extraña, probablemente necesitamos usar solo día/mes del año actual
       const correctedBirthday = birthdayLuxon.set({ year: today.year });
@@ -155,6 +155,7 @@ const normalizeColumnName = (name: string): string => {
     .replace(/[óòöô]/g, 'o')
     .replace(/[úùüû]/g, 'u')
     .replace(/ñ/g, 'n')
+    .replace(/ç/g, 'c')
     .replace(/\s+/g, '_')
     .replace(/[^a-z0-9_]/g, '');
 };
@@ -233,12 +234,7 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
         // Combinar nombre y apellido si están separados
         let fullName = '';
         if (normalizedRow.fullName) {
-          fullName = normalizedRow.fullName.toString().trim();
-        } else if (normalizedRow.nombre) {
-          fullName = normalizedRow.nombre.toString().trim();
-          if (normalizedRow.lastName || normalizedRow.apellido) {
-            fullName += ` ${(normalizedRow.lastName || normalizedRow.apellido).toString().trim()}`;
-          }
+          fullName = normalizedRow.fullName.toString().trim() + (normalizedRow.lastName ? ` ${normalizedRow.lastName.toString().trim()}` : '');
         }
 
         if (!fullName) {
@@ -333,12 +329,12 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
         // Crear el joven
         const youngData = {
           fullName,
-          phone: phone || `+57`,
+          phone: phone,
           birthday,
           ageRange,
           gender,
           role,
-          email: normalizedRow.email || `sin-email-${DateTime.now().toMillis()}@example.com`,
+          email: normalizedRow.email,
           skills: []
         };
 

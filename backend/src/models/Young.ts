@@ -72,8 +72,7 @@ const youngSchema = new Schema<IYoungDocument>(
     },
     email: {
       type: String,
-      required: [true, 'El email es obligatorio'],
-      unique: true,
+      required: false,
       trim: true,
       lowercase: true,
       match: [

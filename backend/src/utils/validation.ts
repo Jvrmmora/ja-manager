@@ -78,7 +78,7 @@ export const createYoungSchema = Joi.object({
     .email()
     .trim()
     .lowercase()
-    .required()
+    .optional()
     .messages({
       'string.email': 'Formato de email no válido',
       'any.required': 'El email es obligatorio',
