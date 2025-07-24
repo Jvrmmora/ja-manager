@@ -271,7 +271,6 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
               onChange={handleInputChange}
               className="form-input"
               placeholder="ejemplo@correo.com"
-              required
             />
           </div>
 

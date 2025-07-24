@@ -171,6 +171,11 @@ export class YoungController {
         profileImage: profileImageUrl || undefined,
       };
 
+      // Filtrar email vacío
+      if (!youngData.email || !youngData.email.trim()) {
+        delete youngData.email;
+      }
+
       const newYoung = new Young(youngData);
       const savedYoung = await newYoung.save();
 
@@ -214,6 +219,11 @@ export class YoungController {
       }
 
       let updateData = { ...value };
+
+      // Filtrar email vacío
+      if (!updateData.email || !updateData.email.trim()) {
+        delete updateData.email;
+      }
 
       // Manejar actualización de imagen
       if (req.file) {

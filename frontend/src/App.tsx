@@ -369,7 +369,12 @@ function App() {
       form.append('birthday', formData.birthday);
       form.append('gender', formData.gender);
       form.append('role', formData.role);
-      form.append('email', formData.email);
+      
+      // Solo incluir email si tiene un valor válido
+      if (formData.email && formData.email.trim()) {
+        form.append('email', formData.email);
+      }
+      
       form.append('skills', JSON.stringify(formData.skills));
       
       if (formData.profileImage) {
@@ -432,7 +437,12 @@ function App() {
       form.append('birthday', formData.birthday);
       form.append('gender', formData.gender);
       form.append('role', formData.role);
-      form.append('email', formData.email);
+      
+      // Solo incluir email si tiene un valor válido
+      if (formData.email && formData.email.trim()) {
+        form.append('email', formData.email);
+      }
+      
       form.append('skills', JSON.stringify(formData.skills));
       
       if (formData.profileImage) {

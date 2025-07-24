@@ -79,9 +79,9 @@ export const createYoungSchema = Joi.object({
     .trim()
     .lowercase()
     .optional()
+    .allow('', null)
     .messages({
       'string.email': 'Formato de email no válido',
-      'any.required': 'El email es obligatorio',
     }),
 
   skills: Joi.array()
@@ -171,6 +171,7 @@ export const updateYoungSchema = Joi.object({
     .trim()
     .lowercase()
     .optional()
+    .allow('', null)
     .messages({
       'string.email': 'Formato de email no válido',
     }),
