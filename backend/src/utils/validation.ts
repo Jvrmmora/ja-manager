@@ -48,11 +48,11 @@ export const createYoungSchema = Joi.object({
     }),
 
   gender: Joi.string()
-    .valid('masculino', 'femenino')
-    .required()
+    .valid('masculino', 'femenino', '')
+    .optional()
+    .allow('')
     .messages({
-      'any.only': 'El género debe ser masculino o femenino',
-      'any.required': 'El género es obligatorio',
+      'any.only': 'El género debe ser masculino, femenino o no especificado',
     }),
 
   role: Joi.string()
@@ -141,10 +141,11 @@ export const updateYoungSchema = Joi.object({
     }),
 
   gender: Joi.string()
-    .valid('masculino', 'femenino')
+    .valid('masculino', 'femenino', '')
     .optional()
+    .allow('')
     .messages({
-      'any.only': 'El género debe ser masculino o femenino',
+      'any.only': 'El género debe ser masculino, femenino o no especificado',
     }),
 
   role: Joi.string()

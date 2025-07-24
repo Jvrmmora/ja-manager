@@ -45,10 +45,10 @@ const youngSchema = new Schema<IYoungDocument>(
     },
     gender: {
       type: String,
-      required: [true, 'El género es obligatorio'],
+      required: false,
       enum: {
-        values: ['masculino', 'femenino'],
-        message: 'El género debe ser masculino o femenino',
+        values: ['masculino', 'femenino', ''],
+        message: 'El género debe ser masculino, femenino o no especificado',
       },
     },
     role: {

@@ -7,7 +7,7 @@ interface YoungFormData {
   ageRange: string;
   phone: string;
   birthday: string;
-  gender: 'masculino' | 'femenino';
+  gender: 'masculino' | 'femenino' | '';
   role: 'lider juvenil' | 'colaborador' | 'director' | 'subdirector' | 'club guias' | 'club conquistadores' | 'club aventureros' | 'escuela sabatica' | 'joven adventista' | 'simpatizante';
   email: string;
   skills: string[];
@@ -26,7 +26,7 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
     ageRange: '',
     phone: '',
     birthday: '',
-    gender: 'masculino',
+    gender: '',
     role: 'colaborador',
     email: '',
     skills: [],
@@ -102,7 +102,7 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
         ageRange: '',
         phone: '',
         birthday: '',
-        gender: 'masculino',
+        gender: '',
         role: 'colaborador',
         email: '',
         skills: [],
@@ -247,9 +247,20 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
           {/* Género */}
           <div>
             <label className="form-label">
-              Género *
+              Género (opcional)
             </label>
             <div className="flex gap-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="gender"
+                  value=""
+                  checked={formData.gender === ''}
+                  onChange={handleInputChange}
+                  className="mr-2 text-blue-600"
+                />
+                No especificado
+              </label>
               <label className="flex items-center">
                 <input
                   type="radio"

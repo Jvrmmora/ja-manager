@@ -101,7 +101,9 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
           </div>
           <div>
             <span className="text-gray-500 font-medium">Género:</span>
-            <span className="ml-2 text-gray-800 capitalize">{young.gender}</span>
+            <span className="ml-2 text-gray-800 capitalize">
+              {young.gender || 'No especificado'}
+            </span>
           </div>
         </div>
 

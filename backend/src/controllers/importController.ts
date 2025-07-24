@@ -296,11 +296,13 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
         const ageRange = normalizedRow.ageRange || calculateAgeRange(birthday);
 
         // Procesar género
-        let gender: 'masculino' | 'femenino' = 'masculino';
+        let gender = '';
         if (normalizedRow.gender) {
-          const genderStr = normalizedRow.gender.toString().toLowerCase();
+          const genderStr = normalizedRow.gender.toString().toLowerCase().trim();
           if (genderStr.includes('f') || genderStr.includes('mujer') || genderStr.includes('fem')) {
             gender = 'femenino';
+          } else if (genderStr.includes('m') || genderStr.includes('hombre') || genderStr.includes('masc')) {
+            gender = 'masculino';
           }
         }
 
