@@ -338,7 +338,7 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
           ageRange,
           gender,
           role,
-          email: normalizedRow.email || `sin-email@example.com`,
+          email: normalizedRow.email || `sin-email-${DateTime.now().toMillis()}@example.com`,
           skills: []
         };
 
