@@ -32,25 +32,28 @@ export class YoungController {
       // Construir filtros
       const filters: any = {};
       
-      if (search) {
+      if (search && search.trim() !== '') {
         filters.$or = [
-          { fullName: { $regex: search, $options: 'i' } },
-          { phone: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } },
+          { fullName: { $regex: search.trim(), $options: 'i' } },
+          { phone: { $regex: search.trim(), $options: 'i' } },
+          { email: { $regex: search.trim(), $options: 'i' } },
         ];
       }
 
-      if (ageRange) {
+      if (ageRange && ageRange !== '') {
         filters.ageRange = ageRange;
       }
 
-      if (gender) {
+      if (gender && gender !== '') {
         filters.gender = gender;
       }
 
-      if (role) {
+      if (role && role !== '') {
         filters.role = role;
       }
+
+      console.log('🔍 Filtros aplicados:', filters);
+      console.log('📄 Parámetros recibidos:', { search, ageRange, gender, role, sortBy, sortOrder, page, limit });
 
       // Configurar ordenamiento
       const sort: any = {};

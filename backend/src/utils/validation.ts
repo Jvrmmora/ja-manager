@@ -192,17 +192,21 @@ export const updateYoungSchema = Joi.object({
 export const querySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
-  search: Joi.string().trim().max(100).optional(),
+  search: Joi.string().trim().max(100).optional().allow(''),
   ageRange: Joi.string()
     .valid('13-15', '16-18', '19-21', '22-25', '26-30', '30+')
-    .optional(),
+    .optional()
+    .allow(''),
   gender: Joi.string()
     .valid('masculino', 'femenino')
-    .optional(),
+    .optional()
+    .allow(''),
   role: Joi.string()
     .valid(
       'lider juvenil',
+      'simpatizante',
       'colaborador', 
+      'joven adventista',
       'director',
       'subdirector',
       'club guias',
@@ -210,7 +214,8 @@ export const querySchema = Joi.object({
       'club aventureros',
       'escuela sabatica'
     )
-    .optional(),
+    .optional()
+    .allow(''),
   sortBy: Joi.string()
     .valid('fullName', 'birthday', 'email', 'role', 'gender', 'createdAt', 'updatedAt')
     .default('fullName'),

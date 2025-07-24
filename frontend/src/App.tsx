@@ -28,6 +28,7 @@ const useInfiniteScroll = (callback: () => void, hasMore: boolean, loading: bool
       const isNearBottom = scrollTop + clientHeight >= scrollHeight - 1000; // 1000px antes del final
       
       if (isNearBottom && hasMore && !loading) {
+        console.log('🔄 Scroll infinito activado - cargando más elementos');
         callback();
       }
     };
@@ -111,7 +112,7 @@ function App() {
   };
 
   // Función para obtener jóvenes del backend con paginación
-  const fetchYoung = async (page = 1, append = false) => {
+  const fetchYoung = async (page = 1, append = false, customFilters?: PaginationQuery) => {
     try {
       if (!append) {
         setLoading(true);
@@ -119,18 +120,36 @@ function App() {
         setLoadingMore(true);
       }
       
+      const activeFilters = customFilters || filters;
+      
       // Construir query parameters
       const params = new URLSearchParams();
       params.append('page', page.toString());
       params.append('limit', '10');
-      if (filters.search) params.append('search', filters.search);
-      if (filters.ageRange) params.append('ageRange', filters.ageRange);
-      if (filters.gender) params.append('gender', filters.gender);
-      if (filters.role) params.append('role', filters.role);
-      if (filters.sortBy) params.append('sortBy', filters.sortBy);
-      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
+      
+      // Solo agregar filtros si tienen valores válidos
+      if (activeFilters.search && activeFilters.search.trim()) {
+        params.append('search', activeFilters.search.trim());
+      }
+      if (activeFilters.ageRange && activeFilters.ageRange !== '') {
+        params.append('ageRange', activeFilters.ageRange);
+      }
+      if (activeFilters.gender && activeFilters.gender !== '') {
+        params.append('gender', activeFilters.gender);
+      }
+      if (activeFilters.role && activeFilters.role !== '') {
+        params.append('role', activeFilters.role);
+      }
+      if (activeFilters.sortBy) {
+        params.append('sortBy', activeFilters.sortBy);
+      }
+      if (activeFilters.sortOrder) {
+        params.append('sortOrder', activeFilters.sortOrder);
+      }
       
       const url = `/api/young?${params.toString()}`;
+      console.log('📡 Llamando API con URL:', url);
+      
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -138,17 +157,36 @@ function App() {
       }
       
       const result = await response.json();
+      console.log('📊 Respuesta del servidor:', result);
       
-      // El backend retorna: { success: true, data: { data: [jovenes], pagination: {...} } }
       const youngArray = result.success && result.data && Array.isArray(result.data.data) 
         ? result.data.data 
         : [];
       
       const pagination = result.data?.pagination;
       
+      console.log('📊 Datos recibidos:', {
+        page: page,
+        append: append,
+        receivedCount: youngArray.length,
+        currentListCount: youngList.length,
+        youngIds: youngArray.map((y: IYoung) => y.id),
+      });
+      
       if (append) {
-        setYoungList(prev => [...prev, ...youngArray]);
+        // Verificar duplicados antes de agregar
+        const currentIds = new Set(youngList.map((y: IYoung) => y.id));
+        const newYoung = youngArray.filter((y: IYoung) => !currentIds.has(y.id));
+        
+        console.log('➕ Agregando elementos:', {
+          totalReceived: youngArray.length,
+          duplicatesFiltered: youngArray.length - newYoung.length,
+          newElementsAdded: newYoung.length
+        });
+        
+        setYoungList(prev => [...prev, ...newYoung]);
       } else {
+        console.log('🔄 Reemplazando lista completa con', youngArray.length, 'elementos');
         setYoungList(youngArray);
       }
       
@@ -156,8 +194,16 @@ function App() {
       if (pagination) {
         setHasMore(pagination.currentPage < pagination.totalPages);
         setCurrentPage(pagination.currentPage);
+        console.log('📊 Paginación:', {
+          currentPage: pagination.currentPage,
+          totalPages: pagination.totalPages,
+          totalItems: pagination.totalItems,
+          hasNext: pagination.hasNext,
+          receivedItems: youngArray.length
+        });
       } else {
         setHasMore(youngArray.length === 10); // Si devuelve 10, probablemente hay más
+        setCurrentPage(page); // Actualizar página manualmente si no hay paginación
       }
       
       setError(null);
@@ -170,23 +216,62 @@ function App() {
     }
   };
 
+  // Función específica para aplicar filtros
+  const fetchYoungWithFilters = async (filtersToApply: PaginationQuery) => {
+    await fetchYoung(1, false, filtersToApply);
+  };
+
+  // Función para manejar cambios en filtros
+  const handleFiltersChange = (newFilters: PaginationQuery) => {
+    console.log('🔄 Aplicando nuevos filtros:', newFilters);
+    
+    // Limpiar filtros vacíos para evitar problemas
+    const cleanFilters = {
+      page: 1,
+      limit: 10,
+      sortBy: newFilters.sortBy || 'fullName',
+      sortOrder: newFilters.sortOrder || 'asc',
+      ...(newFilters.search && newFilters.search.trim() && { search: newFilters.search.trim() }),
+      ...(newFilters.ageRange && { ageRange: newFilters.ageRange }),
+      ...(newFilters.gender && { gender: newFilters.gender }),
+      ...(newFilters.role && { role: newFilters.role }),
+    };
+    
+    console.log('🧹 Filtros limpiados:', cleanFilters);
+    
+    // Resetear todo el estado de paginación
+    setFilters(cleanFilters);
+    setCurrentPage(1);
+    setHasMore(true);
+    setYoungList([]); // Limpiar lista actual
+    setLoading(true); // Mostrar loading
+    
+    // Aplicar filtros de forma síncrona
+    const applyFilters = async () => {
+      try {
+        await fetchYoungWithFilters(cleanFilters);
+      } catch (error) {
+        console.error('Error aplicando filtros:', error);
+        setLoading(false);
+      }
+    };
+    
+    applyFilters();
+  };
+
   // Función para cargar más elementos
   const loadMore = async () => {
     if (!hasMore || loadingMore) return;
+    
+    console.log('📄 Cargando más elementos - Página actual:', currentPage, 'Próxima página:', currentPage + 1);
     await fetchYoung(currentPage + 1, true);
-  };
-
-  // Función para reinicializar datos
-  const refreshData = async () => {
-    setCurrentPage(1);
-    setHasMore(true);
-    await fetchYoung(1, false); // Solo recargar los datos paginados
   };
 
   // Función para recargar estadísticas después de operaciones CRUD
   const refreshAllData = async () => {
     setCurrentPage(1);
     setHasMore(true);
+    setYoungList([]); // Limpiar lista actual
     await Promise.all([
       fetchYoung(1, false),
       fetchAllYoung()
@@ -305,11 +390,6 @@ function App() {
     loadInitialData();
   }, []); // Sin dependencias, solo al montar
 
-  useEffect(() => {
-    if (filters.page === 1 && filters.limit === 10) return; // Evitar carga inicial duplicada
-    refreshData(); // Solo recargar datos paginados cuando cambien filtros
-  }, [filters]); // Actualizar cuando cambien los filtros
-
   // Scroll infinito automático
   useInfiniteScroll(loadMore, hasMore, loadingMore);
 
@@ -427,8 +507,40 @@ function App() {
         {/* Filtros */}
         <FilterBar 
           filters={filters} 
-          onFiltersChange={setFilters} 
+          onFiltersChange={handleFiltersChange} 
         />
+
+        {/* Debug de filtros activos */}
+        {(filters.search || filters.ageRange || filters.gender || filters.role) && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <h4 className="text-sm font-medium text-blue-800 mb-2">Filtros activos:</h4>
+            <div className="flex flex-wrap gap-2">
+              {filters.search && (
+                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                  Búsqueda: "{filters.search}"
+                </span>
+              )}
+              {filters.ageRange && (
+                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                  Edad: {filters.ageRange}
+                </span>
+              )}
+              {filters.gender && (
+                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                  Género: {filters.gender}
+                </span>
+              )}
+              {filters.role && (
+                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                  Rol: {filters.role}
+                </span>
+              )}
+            </div>
+            <div className="mt-2 text-xs text-blue-600">
+              Mostrando {youngList.length} resultados | Página actual: {currentPage} | Hay más: {hasMore ? 'Sí' : 'No'}
+            </div>
+          </div>
+        )}
 
         {/* Loading State */}
         {loading && (

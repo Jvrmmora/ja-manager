@@ -187,7 +187,7 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
                   {months[selectedMonth]} {new Date().getFullYear()}
                 </h3>
                 <p className="text-orange-600">
-                  {filteredYoung.length} cumpleaños{filteredYoung.length !== 1 ? 'es' : ''} este mes
+                  {filteredYoung.length} cumpleaños este mes
                 </p>
               </div>
               <div className="text-3xl">🎉</div>
