@@ -12,9 +12,7 @@ services:
       - key: PORT
         value: 10000
       - key: MONGODB_URI
-        fromDatabase:
-          name: youth-management
-          property: connectionString
+        sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
@@ -36,9 +34,3 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://ja-manager-backend.onrender.com
-
-databases:
-  - name: ja-manager-db
-    databaseName: ja_manager
-    user: admin
-    plan: free
