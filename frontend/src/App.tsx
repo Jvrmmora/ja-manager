@@ -6,6 +6,7 @@ import YoungCard from './components/YoungCard';
 import FilterBar from './components/FilterBar';
 import BirthdayDashboard from './components/BirthdayDashboard';
 import ImportModal from './components/ImportModal';
+import { apiRequest } from './services/api';
 import type { IYoung, PaginationQuery } from './types';
 
 interface YoungFormData {
@@ -91,10 +92,10 @@ function App() {
         params.append('limit', '100'); // Máximo permitido por el backend
         // NO aplicar filtros a las estadísticas - queremos el total real
         
-        const url = `/api/young?${params.toString()}`;
+        const url = `api/young?${params.toString()}`;
         console.log(`📡 URL para estadísticas página ${currentPage}:`, url);
         
-        const response = await fetch(url);
+        const response = await apiRequest(url);
         
         if (!response.ok) {
           throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -171,10 +172,10 @@ function App() {
         params.append('sortOrder', activeFilters.sortOrder);
       }
       
-      const url = `/api/young?${params.toString()}`;
+      const url = `api/young?${params.toString()}`;
       console.log('📡 Llamando API con URL:', url);
       
-      const response = await fetch(url);
+      const response = await apiRequest(url);
       
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -381,9 +382,10 @@ function App() {
         form.append('profileImage', formData.profileImage);
       }
 
-      const response = await fetch('/api/young', {
+      const response = await apiRequest('api/young', {
         method: 'POST',
         body: form,
+        headers: {} // Eliminar Content-Type para multipart/form-data
       });
 
       if (!response.ok) {
@@ -405,7 +407,7 @@ function App() {
     }
 
     try {
-      const response = await fetch(`/api/young/${id}`, {
+      const response = await apiRequest(`api/young/${id}`, {
         method: 'DELETE',
       });
 
@@ -449,9 +451,10 @@ function App() {
         form.append('profileImage', formData.profileImage);
       }
 
-      const response = await fetch(`/api/young/${id}`, {
+      const response = await apiRequest(`api/young/${id}`, {
         method: 'PUT',
         body: form,
+        headers: {} // Eliminar Content-Type para multipart/form-data
       });
 
       if (!response.ok) {

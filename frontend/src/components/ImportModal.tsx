@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiRequest, apiUpload } from '../services/api';
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
 
   const downloadTemplate = async () => {
     try {
-      const response = await fetch('http://localhost:4500/api/import/template');
+      const response = await apiRequest('api/import/template');
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -56,10 +57,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:4500/api/import/import', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await apiUpload('api/import/import', formData);
 
       const data = await response.json();
 

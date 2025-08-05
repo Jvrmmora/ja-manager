@@ -15,8 +15,11 @@ COPY . .
 # Compilar TypeScript
 RUN npm run build
 
-# Exponer puerto
-EXPOSE 5000
+# Crear directorio uploads
+RUN mkdir -p uploads
+
+# Exponer puerto (Render usa PORT del environment)
+EXPOSE $PORT
 
 # Variables de entorno por defecto
 ENV NODE_ENV=production

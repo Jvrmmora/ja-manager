@@ -200,6 +200,87 @@ CORS_ORIGINS=https://tu-dominio.com
 4. Push a la rama (`git push origin feature/AmazingFeature`)
 5. Abrir un Pull Request
 
+## � Despliegue en Producción
+
+### Opción 1: Render (Recomendada)
+
+Este proyecto está configurado para desplegarse fácilmente en Render usando Docker:
+
+#### Preparación:
+1. **Subir código a GitHub**:
+   ```bash
+   git add .
+   git commit -m "Configuración para despliegue en Render"
+   git push origin main
+   ```
+
+2. **En Render Dashboard**:
+   - Conecta tu repositorio de GitHub
+   - Render detectará automáticamente el `render.yaml`
+   - Los servicios se crearán automáticamente
+
+#### Variables de entorno en Render:
+Configura estas variables en el panel de Render:
+
+**Backend:**
+```
+CLOUDINARY_CLOUD_NAME=tu_cloud_name
+CLOUDINARY_API_KEY=tu_api_key
+CLOUDINARY_API_SECRET=tu_secret
+JWT_SECRET=tu_jwt_secret_super_seguro_cambiar_en_produccion
+```
+
+**Frontend:**
+```
+VITE_API_URL=https://ja-manager-backend.onrender.com
+```
+
+#### URLs de servicios:
+- **Backend**: `https://ja-manager-backend.onrender.com`
+- **Frontend**: `https://ja-manager-frontend.onrender.com`
+- **Database**: MongoDB proporcionado por Render
+
+### Opción 2: Vercel + Render (Híbrida)
+
+#### Backend en Render:
+- Sigue los pasos anteriores solo para el backend
+
+#### Frontend en Vercel:
+1. **Conecta el repositorio** en Vercel
+2. **Configuración**:
+   - Root Directory: `frontend`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+   - Install Command: `npm install`
+
+3. **Variables de entorno en Vercel**:
+   ```
+   VITE_API_URL=https://tu-backend.onrender.com
+   ```
+
+### Estructura de archivos para despliegue:
+```
+├── render.yaml                 # Configuración de Render
+├── backend/
+│   ├── Dockerfile             # Docker para backend
+│   └── .env.example          # Variables de ejemplo
+├── frontend/
+│   ├── Dockerfile            # Docker para frontend
+│   ├── nginx.conf           # Configuración Nginx
+│   ├── .env.development     # Variables para desarrollo
+│   └── .env.production      # Variables para producción
+```
+
+### Verificación del despliegue:
+1. **Backend Health Check**: `GET /api/health`
+2. **Frontend**: Acceso a la aplicación web
+3. **Base de datos**: Conexión automática desde backend
+
+### Solución de problemas comunes:
+- **CORS Error**: Verificar `CORS_ORIGIN` en variables del backend
+- **API 404**: Verificar `VITE_API_URL` en variables del frontend  
+- **Build Error**: Verificar logs en Render/Vercel dashboard
+
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
@@ -207,8 +288,8 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 ## 🙏 Agradecimientos
 
 - **Cloudinary** por el almacenamiento gratuito de imágenes
-- **MongoDB Atlas** por la base de datos gratuita
-- **Vercel/Netlify** por el hosting gratuito
+- **Render** por el hosting gratuito con Docker
+- **MongoDB** por la base de datos
 - Comunidad de desarrolladores por las librerías open source
 
 ---
