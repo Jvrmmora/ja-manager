@@ -16,12 +16,17 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
   };
 
   const clearFilters = () => {
-    onFiltersChange({
+    const clearedFilters: PaginationQuery = {
       page: 1,
-      limit: filters.limit,
       sortBy: 'fullName',
       sortOrder: 'asc'
-    });
+    };
+    
+    if (filters.limit !== undefined) {
+      clearedFilters.limit = filters.limit;
+    }
+    
+    onFiltersChange(clearedFilters);
   };
 
   const hasActiveFilters = !!(filters.search || filters.ageRange || filters.gender || filters.role);
