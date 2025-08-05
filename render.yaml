@@ -13,7 +13,7 @@ services:
         value: 10000
       - key: MONGODB_URI
         fromDatabase:
-          name: ja-manager-db
+          name: youth-management
           property: connectionString
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
