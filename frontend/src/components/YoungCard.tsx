@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { IYoung } from '../types';
+import ImageModal from './ImageModal';
 
 interface YoungCardProps {
   young: IYoung;
@@ -8,6 +9,8 @@ interface YoungCardProps {
 }
 
 const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const handleDelete = () => {
     if (window.confirm(`¿Estás seguro de que deseas eliminar a ${young.fullName}?`)) {
       onDelete(young.id!);
@@ -16,6 +19,12 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
 
   const handleEdit = () => {
     onEdit(young);
+  };
+
+  const handleImageClick = () => {
+    if (young.profileImage) {
+      setIsModalOpen(true);
+    }
   };
 
   const formatDate = (date: Date | string) => {
@@ -48,13 +57,42 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
       <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-white">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center overflow-hidden">
+            <div 
+              className={`relative w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center overflow-hidden group ${
+                young.profileImage ? 'cursor-pointer' : ''
+              }`}
+              onClick={handleImageClick}
+            >
               {young.profileImage ? (
-                <img
-                  src={young.profileImage}
-                  alt={young.fullName}
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  <img
+                    src={young.profileImage}
+                    alt={young.fullName}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  />
+                  {/* Overlay con ícono de ojo */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center">
+                    <svg 
+                      className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" 
+                      />
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" 
+                      />
+                    </svg>
+                  </div>
+                </>
               ) : (
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -155,6 +193,16 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
           </span>
         </div>
       </div>
+
+      {/* Modal para mostrar imagen */}
+      {young.profileImage && (
+        <ImageModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          imageUrl={young.profileImage}
+          altText={`Foto de perfil de ${young.fullName}`}
+        />
+      )}
     </div>
   );
 };
