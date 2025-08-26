@@ -33,11 +33,32 @@ export class YoungController {
       const filters: any = {};
       
       if (search && search.trim() !== '') {
-        filters.$or = [
-          { fullName: { $regex: search.trim(), $options: 'i' } },
-          { phone: { $regex: search.trim(), $options: 'i' } },
-          { email: { $regex: search.trim(), $options: 'i' } },
-        ];
+        const searchTerm = search.trim();
+        
+        // Si la búsqueda contiene espacios, buscar la frase completa y también palabras individuales
+        if (searchTerm.includes(' ')) {
+          const words = searchTerm.split(/\s+/).filter(word => word.length > 0);
+          
+          filters.$or = [
+            // Buscar la frase completa
+            { fullName: { $regex: searchTerm, $options: 'i' } },
+            { phone: { $regex: searchTerm, $options: 'i' } },
+            { email: { $regex: searchTerm, $options: 'i' } },
+            // Buscar que el nombre contenga todas las palabras (en cualquier orden)
+            {
+              $and: words.map(word => ({
+                fullName: { $regex: word, $options: 'i' }
+              }))
+            }
+          ];
+        } else {
+          // Búsqueda simple para una sola palabra
+          filters.$or = [
+            { fullName: { $regex: searchTerm, $options: 'i' } },
+            { phone: { $regex: searchTerm, $options: 'i' } },
+            { email: { $regex: searchTerm, $options: 'i' } },
+          ];
+        }
       }
 
       if (ageRange && ageRange !== '') {

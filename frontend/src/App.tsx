@@ -296,7 +296,8 @@ function App() {
       limit: 10,
       sortBy: newFilters.sortBy || 'fullName',
       sortOrder: newFilters.sortOrder || 'asc',
-      ...(newFilters.search && newFilters.search.trim() && { search: newFilters.search.trim() }),
+      // NO hacer trim del search aquí, dejarlo como está para permitir espacios
+      ...(newFilters.search !== undefined && newFilters.search !== '' && { search: newFilters.search }),
       ...(newFilters.ageRange && { ageRange: newFilters.ageRange }),
       ...(newFilters.gender && { gender: newFilters.gender }),
       ...(newFilters.role && { role: newFilters.role }),
