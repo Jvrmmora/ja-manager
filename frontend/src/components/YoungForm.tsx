@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import PhoneInput from './PhoneInput';
+import GroupSelect from './GroupSelect';
 
 
 interface YoungFormData {
@@ -12,6 +13,7 @@ interface YoungFormData {
   email: string;
   skills: string[];
   profileImage?: File;
+  group?: number | '' | undefined;
 }
 
 interface YoungFormProps {
@@ -30,6 +32,7 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
     role: 'colaborador',
     email: '',
     skills: [],
+  group: undefined,
   });
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -39,7 +42,7 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+  [name]: value
     }));
   };
 
@@ -309,6 +312,18 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
               <option value="club aventureros">Club Aventureros</option>
               <option value="escuela sabatica">Escuela Sabática</option>
             </select>
+          </div>
+
+          {/* Grupo opcional */}
+          <div>
+            <label className="form-label">Grupo (opcional)</label>
+            <div className="relative">
+              {/* lazy load GroupSelect to avoid circular imports */}
+              <GroupSelect
+                value={formData.group}
+                onChange={(v: number | undefined) => setFormData(prev => ({ ...prev, group: v }))}
+              />
+            </div>
           </div>
 
           {/* Habilidades */}

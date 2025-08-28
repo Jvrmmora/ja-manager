@@ -2,6 +2,18 @@ import React, { useState } from 'react';
 import type { IYoung } from '../types';
 import ImageModal from './ImageModal';
 
+// Mapeo de colores por grupo
+const getGroupColor = (group?: number | null): string => {
+  switch (group) {
+    case 1: return '#34C759'; // green
+    case 2: return '#FF9500'; // orange
+    case 3: return '#FFCC00'; // yellow
+    case 4: return '#0EA5E9'; // blue-ish
+    case 5: return '#9CA3AF'; // gray
+    default: return '#7C3AED'; // violet for unspecified
+  }
+};
+
 interface YoungCardProps {
   young: IYoung;
   onDelete: (id: string) => void;
@@ -57,74 +69,53 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
       <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-white">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-4">
-            <div 
-              className={`relative w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center overflow-hidden group ${
-                young.profileImage ? 'cursor-pointer' : ''
-              }`}
-              onClick={handleImageClick}
-            >
-              {young.profileImage ? (
-                <>
-                  <img
-                    src={young.profileImage}
-                    alt={young.fullName}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                  />
-                  {/* Overlay con ícono de ojo */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center">
-                    <svg 
-                      className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" 
-                      />
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" 
-                      />
-                    </svg>
-                  </div>
-                </>
-              ) : (
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              )}
+            <div className="relative" style={{ width: 64, height: 64 }}>
+              <div
+                className={`w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center ${
+                  young.profileImage ? 'cursor-pointer' : ''
+                } overflow-hidden group`}
+                onClick={handleImageClick}
+              >
+                {young.profileImage ? (
+                  <>
+                    <img
+                      src={young.profileImage}
+                      alt={young.fullName}
+                      className="w-full h-full object-cover rounded-full transition-transform duration-300 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center rounded-full">
+                      <svg
+                        className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </div>
+                  </>
+                ) : (
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                )}
+
+              </div>
+
+              <div style={{ position: 'absolute', bottom: -4, right: -4, zIndex: 30 }}>
+                <span
+                  title={young.group ? `Grupo ${young.group}` : 'Sin grupo'}
+                  className={`inline-block w-3 h-3 rounded-full border-2 border-white`}
+                  style={{ backgroundColor: getGroupColor(young.group) }}
+                />
+              </div>
             </div>
+
             <div>
               <h3 className="text-xl font-semibold">{young.fullName}</h3>
               <p className="text-blue-100">{capitalizeRole(young.role)}</p>
             </div>
-          </div>
-          
-          <div className="flex gap-2">
-            <button
-              onClick={handleEdit}
-              className="text-white hover:text-blue-200 transition-colors p-1"
-              title="Editar joven"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
-            
-            <button
-              onClick={handleDelete}
-              className="text-white hover:text-red-200 transition-colors p-1"
-              title="Eliminar joven"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
           </div>
         </div>
       </div>

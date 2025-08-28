@@ -7,6 +7,8 @@ export interface IYoung {
   profileImage?: string;
   gender: 'masculino' | 'femenino' | '';
   role: 'lider juvenil' | 'colaborador' | 'director' | 'subdirector' | 'club guias' | 'club conquistadores' | 'club aventureros' | 'escuela sabatica' | 'joven adventista' | 'simpatizante';
+  // Grupo opcional (1..5)
+  group?: number;
   email: string;
   skills: string[];
   createdAt?: Date;

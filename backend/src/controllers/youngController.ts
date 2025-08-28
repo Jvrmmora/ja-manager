@@ -102,6 +102,7 @@ export class YoungController {
         birthday: doc.birthday,
         gender: doc.gender,
         role: doc.role,
+  group: doc.group,
         email: doc.email,
         skills: doc.skills || [],
         ...(doc.profileImage && { profileImage: doc.profileImage }),

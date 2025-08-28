@@ -92,6 +92,13 @@ const youngSchema = new Schema<IYoungDocument>(
         message: 'Cada habilidad debe tener al menos 2 caracteres',
       },
     },
+    // Grupo para clasificación interna (1..5)
+    group: {
+      type: Number,
+      required: false,
+      min: [1, 'El grupo debe ser entre 1 y 5'],
+      max: [5, 'El grupo debe ser entre 1 y 5'],
+    },
   },
   {
     timestamps: true,

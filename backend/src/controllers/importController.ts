@@ -219,6 +219,10 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
       'mail': 'email'
     };
 
+  // Añadir mapeo para 'grupo'
+  columnMapping['grupo'] = 'group';
+  columnMapping['group'] = 'group';
+
     for (let i = 0; i < data.length; i++) {
       try {
         const row: any = data[i];
@@ -335,6 +339,15 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
           gender,
           role,
           email: normalizedRow.email,
+          // Si el valor de grupo está presente y es un número válido, intentar parsearlo
+          group: (() => {
+            const g = normalizedRow.group || normalizedRow.grupo;
+            if (g === undefined || g === null || g === '') return undefined;
+            const parsed = parseInt(g.toString(), 10);
+            if (!isNaN(parsed) && parsed >= 1 && parsed <= 5) return parsed;
+            results.warnings.push(`Fila ${i + 1}: valor de grupo inválido (${g}), se ignorará`);
+            return undefined;
+          })(),
           skills: []
         };
 
@@ -379,6 +392,38 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
   }
 };
 
+export const exportYoungsToExcel = async (req: Request, res: Response) => {
+  try {
+    const youngs = await Young.find().lean();
+
+    const rows = youngs.map(y => ({
+      Nombre: y.fullName || '',
+      Apellido: '',
+      'Fecha cumpleaños': y.birthday ? new Date(y.birthday).toISOString().split('T')[0] : '',
+      'Rango de edad': y.ageRange || '',
+      'Celular': y.phone || '',
+      'Género': y.gender || '',
+      'Rol': y.role || '',
+      'Email': y.email || '',
+      'Habilidades': Array.isArray(y.skills) ? y.skills.join(', ') : '',
+      'Grupo': y.group !== undefined ? String(y.group) : ''
+    }));
+
+    const workbook = xlsx.utils.book_new();
+    const worksheet = xlsx.utils.json_to_sheet(rows);
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Jóvenes');
+
+    const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=jovenes_export.xlsx');
+    res.send(buffer);
+  } catch (error: any) {
+    console.error('Error exporting to Excel:', error);
+    res.status(500).json({ success: false, message: 'Error al exportar', error: error.message });
+  }
+};
+
 export const downloadImportTemplate = async (req: Request, res: Response) => {
   try {
     // Usar Luxon para generar fechas de ejemplo más precisas
@@ -389,11 +434,12 @@ export const downloadImportTemplate = async (req: Request, res: Response) => {
         'Nombre': 'María Fernanda',
         'Apellido': 'Cortés',
         'Fecha cumpleaños': '26/01',
-        'Rango de edad': '26-30',
+  'Rango de edad': '26-30',
         'Celular': '3017291160',
         'Género': 'femenino',
         'Rol': 'lider juvenil',
-        'Email': 'maria.fernanda@email.com'
+  'Email': 'maria.fernanda@email.com',
+  'Grupo': '1'
       },
       {
         'Nombre': 'Diego Mauricio',
@@ -403,7 +449,8 @@ export const downloadImportTemplate = async (req: Request, res: Response) => {
         'Celular': '3014470620',
         'Género': 'masculino',
         'Rol': 'director',
-        'Email': 'diego.mauricio@email.com'
+  'Email': 'diego.mauricio@email.com',
+  'Grupo': '3'
       },
       {
         'Nombre': 'Santiago',
@@ -413,7 +460,8 @@ export const downloadImportTemplate = async (req: Request, res: Response) => {
         'Celular': '3012291049',
         'Género': 'masculino',
         'Rol': 'colaborador',
-        'Email': 'santiago.bayona@email.com'
+  'Email': 'santiago.bayona@email.com',
+  'Grupo': ''
       }
     ];
 

@@ -19,17 +19,18 @@ interface YoungFormData {
   email: string;
   skills: string[];
   profileImage?: File;
+  group?: number | '' | undefined;
 }
 
 // Hook para scroll infinito automático
 const useInfiniteScroll = (callback: () => void, hasMore: boolean, loading: boolean) => {
   useEffect(() => {
-    let timeoutId: number;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     
     const handleScroll = () => {
       // Limpiar timeout anterior
       if (timeoutId) {
-        clearTimeout(timeoutId);
+        clearTimeout(timeoutId as ReturnType<typeof setTimeout>);
       }
       
       // Debounce de 200ms para evitar múltiples llamadas
@@ -46,12 +47,12 @@ const useInfiniteScroll = (callback: () => void, hasMore: boolean, loading: bool
 
     window.addEventListener('scroll', handleScroll);
     
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
+      return () => {
+        window.removeEventListener('scroll', handleScroll);
+        if (timeoutId) {
+          clearTimeout(timeoutId as ReturnType<typeof setTimeout>);
+        }
+      };
   }, [callback, hasMore, loading]);
 };
 
@@ -371,6 +372,9 @@ function App() {
       form.append('birthday', formData.birthday);
       form.append('gender', formData.gender);
       form.append('role', formData.role);
+      if (formData.group !== undefined && formData.group !== '') {
+        form.append('group', String(formData.group));
+      }
       
       // Solo incluir email si tiene un valor válido
       if (formData.email && formData.email.trim()) {
@@ -440,6 +444,9 @@ function App() {
       form.append('birthday', formData.birthday);
       form.append('gender', formData.gender);
       form.append('role', formData.role);
+      if (formData.group !== undefined && formData.group !== '') {
+        form.append('group', String(formData.group));
+      }
       
       // Solo incluir email si tiene un valor válido
       if (formData.email && formData.email.trim()) {

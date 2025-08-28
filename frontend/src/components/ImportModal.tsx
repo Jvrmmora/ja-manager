@@ -49,6 +49,28 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await apiRequest('api/import/export');
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'jovenes_export.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        alert('Error al exportar: ' + response.statusText);
+      }
+    } catch (error) {
+      console.error('Error exporting:', error);
+      alert('Error al exportar los jóvenes');
+    }
+  };
+
   const handleImport = async () => {
     if (!file) return;
 
@@ -134,6 +156,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
 
               {/* Descargar plantilla */}
               <div className="text-center">
+                <div className="flex justify-center gap-3">
                 <button
                   onClick={downloadTemplate}
                   className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors inline-flex items-center"
@@ -143,6 +166,17 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
                   </svg>
                   Descargar Plantilla Excel
                 </button>
+                <button
+                  onClick={handleExport}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors inline-flex items-center"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v6a4 4 0 004 4h10a4 4 0 004-4V7M8 7V4a2 2 0 012-2h4a2 2 0 012 2v3" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 12v6m0 0l-3-3m3 3l3-3" />
+                  </svg>
+                  Exportar Jóvenes
+                </button>
+                </div>
               </div>
 
               {/* Subir archivo */}

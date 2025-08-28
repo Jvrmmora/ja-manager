@@ -97,6 +97,12 @@ export const createYoungSchema = Joi.object({
     )
     .default([])
     .optional(),
+  
+  group: Joi.number().integer().min(1).max(5).optional().messages({
+    'number.base': 'El grupo debe ser un número',
+    'number.min': 'El grupo debe ser entre 1 y 5',
+    'number.max': 'El grupo debe ser entre 1 y 5',
+  }),
 });
 
 export const updateYoungSchema = Joi.object({
@@ -188,6 +194,11 @@ export const updateYoungSchema = Joi.object({
         })
     )
     .optional(),
+  group: Joi.number().integer().min(1).max(5).optional().messages({
+    'number.base': 'El grupo debe ser un número',
+    'number.min': 'El grupo debe ser entre 1 y 5',
+    'number.max': 'El grupo debe ser entre 1 y 5',
+  }),
 });
 
 export const querySchema = Joi.object({
@@ -223,4 +234,7 @@ export const querySchema = Joi.object({
   sortOrder: Joi.string()
     .valid('asc', 'desc')
     .default('asc'),
+  group: Joi.number().integer().min(1).max(5).optional().allow('').messages({
+    'number.base': 'El grupo debe ser un número entre 1 y 5',
+  }),
 });
