@@ -66,15 +66,16 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
       {/* Header con imagen de perfil */}
-      <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-white">
+      <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 p-4 sm:p-6 text-white">
         <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="relative" style={{ width: 64, height: 64 }}>
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="relative" style={{ width: 56, height: 56 }}>
               <div
-                className={`w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center ${
+                className={`w-14 h-14 sm:w-16 sm:h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center ${
                   young.profileImage ? 'cursor-pointer' : ''
                 } overflow-hidden group`}
                 onClick={handleImageClick}
+                style={{ width: 56, height: 56 }}
               >
                 {young.profileImage ? (
                   <>
@@ -85,7 +86,7 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
                     />
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center rounded-full">
                       <svg
-                        className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        className="w-5 h-5 sm:w-6 sm:h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -96,7 +97,7 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
                     </div>
                   </>
                 ) : (
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 )}
@@ -112,18 +113,40 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
               </div>
             </div>
 
-            <div>
-              <h3 className="text-xl font-semibold">{young.fullName}</h3>
-              <p className="text-blue-100">{capitalizeRole(young.role)}</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg sm:text-xl font-semibold truncate">{young.fullName}</h3>
+              <p className="text-blue-100 text-sm sm:text-base truncate">{capitalizeRole(young.role)}</p>
             </div>
+          </div>
+          
+          {/* Botones de acción */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleEdit}
+              className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors"
+              title="Editar joven"
+            >
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+            <button
+              onClick={handleDelete}
+              className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors"
+              title="Eliminar joven"
+            >
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
 
       {/* Cuerpo con información */}
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
         {/* Información básica */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 text-sm">
           <div>
             <span className="text-gray-500 font-medium">Edad:</span>
             <span className="ml-2 text-gray-800">{young.ageRange} años</span>
@@ -139,21 +162,21 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
         {/* Contacto */}
         <div className="space-y-2">
           <div className="flex items-center text-sm">
-            <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
             </svg>
-            <span className="text-gray-800">{young.phone}</span>
+            <span className="text-gray-800 truncate">{young.phone}</span>
           </div>
           
           <div className="flex items-center text-sm">
-            <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
             </svg>
-            <span className="text-gray-800">{young.email}</span>
+            <span className="text-gray-800 truncate">{young.email}</span>
           </div>
 
           <div className="flex items-center text-sm">
-            <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0h6m-6 0l1 12a2 2 0 002 2h2a2 2 0 002-2l1-12m-6 0H6a2 2 0 00-2 2v0a2 2 0 002 2h1" />
             </svg>
             <span className="text-gray-800">{formatDate(young.birthday)}</span>
@@ -164,7 +187,7 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
         {young.skills && young.skills.length > 0 && (
           <div>
             <span className="text-sm font-medium text-gray-500 block mb-2">Habilidades:</span>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1 sm:gap-2">
               {young.skills.map((skill, index) => (
                 <span
                   key={index}
