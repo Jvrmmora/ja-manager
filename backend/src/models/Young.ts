@@ -1,7 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import bcrypt from 'bcryptjs';
 import { IYoung } from '../types';
 
-interface IYoungDocument extends Omit<IYoung, 'id' | '_id'>, Document {}
+interface IYoungDocument extends Omit<IYoung, 'id' | '_id'>, Document {
+  comparePassword(candidatePassword: string): Promise<boolean>;
+  generatePlaca(): string;
+}
 
 const youngSchema = new Schema<IYoungDocument>(
   {
@@ -10,6 +14,35 @@ const youngSchema = new Schema<IYoungDocument>(
       required: [true, 'El nombre completo es obligatorio'],
       trim: true,
       maxlength: [100, 'El nombre no puede exceder 100 caracteres'],
+    },
+    // Nueva placa única
+    placa: {
+      type: String,
+      unique: true,
+      sparse: true, // Permite que algunos documentos no tengan placa
+      trim: true,
+      match: [
+        /^@MOD[A-Z]{4}\d{3}$/,
+        'Formato de placa no válido. Debe ser @MODxxxx### (ej: @MODJAVI001)',
+      ],
+    },
+    // Nueva contraseña encriptada
+    password: {
+      type: String,
+      required: false,
+      minlength: [8, 'La contraseña debe tener al menos 8 caracteres'],
+    },
+    // Nuevo ID del rol
+    role_id: {
+      type: Schema.Types.ObjectId,
+      ref: 'Role',
+      required: false,
+    },
+    // Nuevo nombre del rol
+    role_name: {
+      type: String,
+      required: false,
+      trim: true,
     },
     ageRange: {
       type: String,
@@ -106,11 +139,66 @@ const youngSchema = new Schema<IYoungDocument>(
   }
 );
 
+// Middleware para encriptar la contraseña antes de guardar
+youngSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  
+  if (this.password) {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
+  
+  next();
+});
+
+// Middleware para generar placa automáticamente si no existe
+youngSchema.pre('save', async function(next) {
+  if (!this.placa && this.role_name === 'Super Admin') {
+    this.placa = this.generatePlaca();
+  }
+  next();
+});
+
 // Índices para mejorar el rendimiento
 youngSchema.index({ fullName: 'text' });
 youngSchema.index({ ageRange: 1 });
 youngSchema.index({ birthday: 1 });
 youngSchema.index({ createdAt: -1 });
+youngSchema.index({ placa: 1 });
+youngSchema.index({ email: 1 });
+youngSchema.index({ role_id: 1 });
+
+// Método para comparar contraseñas
+youngSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+  if (!this.password) return false;
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Método para generar placa única
+youngSchema.methods.generatePlaca = function(): string {
+  const nameWords = this.fullName.trim().split(' ');
+  let initials = '';
+  
+  // Tomar las primeras 4 letras del primer nombre o primeros nombres
+  const firstName = nameWords[0];
+  initials = firstName.substring(0, 4).toUpperCase();
+  
+  // Si no tiene 4 letras, completar con letras del segundo nombre
+  if (initials.length < 4 && nameWords.length > 1) {
+    const secondName = nameWords[1];
+    initials += secondName.substring(0, 4 - initials.length).toUpperCase();
+  }
+  
+  // Completar con X si aún no tiene 4 letras
+  while (initials.length < 4) {
+    initials += 'X';
+  }
+  
+  // Por ahora usar 001, luego implementaremos el consecutivo
+  const consecutive = '001';
+  
+  return `@MOD${initials}${consecutive}`;
+};
 
 // Método para obtener la edad actual
 youngSchema.methods.getCurrentAge = function(): number {

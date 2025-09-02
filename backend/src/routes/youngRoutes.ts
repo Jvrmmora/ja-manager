@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { YoungController } from '../controllers/youngController';
 import { upload, handleMulterError } from '../middleware/upload';
+import { authenticateAndAuthorize } from '../middleware/auth';
 
 const router = Router();
 
@@ -17,12 +18,12 @@ const parseFormData = (req: any, res: any, next: any) => {
   next();
 };
 
-// Rutas para jóvenes
-router.get('/', YoungController.getAllYoung);
-router.get('/stats', YoungController.getStats);
-router.get('/:id', YoungController.getYoungById);
-router.post('/', upload.single('profileImage'), handleMulterError, parseFormData, YoungController.createYoung);
-router.put('/:id', upload.single('profileImage'), handleMulterError, parseFormData, YoungController.updateYoung);
-router.delete('/:id', YoungController.deleteYoung);
+// Rutas para jóvenes (todas protegidas con autenticación y autorización)
+router.get('/', ...authenticateAndAuthorize('young:read'), YoungController.getAllYoung);
+router.get('/stats', ...authenticateAndAuthorize('young:stats'), YoungController.getStats);
+router.get('/:id', ...authenticateAndAuthorize('young:read'), YoungController.getYoungById);
+router.post('/', ...authenticateAndAuthorize('young:create'), upload.single('profileImage'), handleMulterError, parseFormData, YoungController.createYoung);
+router.put('/:id', ...authenticateAndAuthorize('young:update'), upload.single('profileImage'), handleMulterError, parseFormData, YoungController.updateYoung);
+router.delete('/:id', ...authenticateAndAuthorize('young:delete'), YoungController.deleteYoung);
 
 export default router;

@@ -5,7 +5,10 @@ import mongoose from 'mongoose';
 import swaggerUi from 'swagger-ui-express';
 import youngRoutes from './routes/youngRoutes';
 import importRoutes from './routes/importRoutes';
+import authRoutes from './routes/authRoutes';
 import { specs } from './config/swagger';
+import { DatabaseSeeder } from './seeders/DatabaseSeeder';
+import { authenticateToken } from './middleware/auth';
 
 dotenv.config();
 
@@ -32,7 +35,16 @@ app.use(express.json());
 
 // Conectar a MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/youth-management')
-  .then(() => console.log('✅ Conectado a MongoDB'))
+  .then(async () => {
+    console.log('✅ Conectado a MongoDB');
+    
+    // Ejecutar seeders para datos iniciales
+    try {
+      await DatabaseSeeder.runAllSeeders();
+    } catch (error) {
+      console.error('⚠️  Error ejecutando seeders:', error);
+    }
+  })
   .catch((error) => console.error('❌ Error conectando a MongoDB:', error));
 
 // Health check - debe ir ANTES de las rutas de young
@@ -51,11 +63,12 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs, {
   explorer: true
 }));
 
-// Rutas de jóvenes
-app.use('/api/young', youngRoutes);
+// Rutas de autenticación (sin middleware de autenticación)
+app.use('/api/auth', authRoutes);
 
-// Rutas de importación
-app.use('/api/import', importRoutes);
+// Rutas protegidas que requieren autenticación
+app.use('/api/young', authenticateToken, youngRoutes);
+app.use('/api/import', authenticateToken, importRoutes);
 
 // Ruta por defecto
 app.get('/', (_req, res) => {
@@ -64,17 +77,20 @@ app.get('/', (_req, res) => {
     version: '1.0.0',
     documentation: '/api/docs',
     endpoints: [
-      'GET /api/health',
+      'GET /api/health - Verificar estado',
       'GET /api/docs - Documentación Swagger',
-      'GET /api/young - Obtener jóvenes',
-      'POST /api/young - Crear joven',
-      'GET /api/young/stats - Estadísticas',
-      'GET /api/young/:id - Obtener joven por ID',
-      'PUT /api/young/:id - Actualizar joven',
-      'DELETE /api/young/:id - Eliminar joven',
-      'POST /api/import/import - Importar desde Excel',
-      'GET /api/import/template - Descargar plantilla',
-      'GET /api/import/export - Exportar a Excel'
+      'POST /api/auth/login - Iniciar sesión',
+      'GET /api/auth/profile - Perfil usuario (autenticado)',
+      'POST /api/auth/logout - Cerrar sesión (autenticado)',
+      'GET /api/young - Obtener jóvenes (autenticado)',
+      'POST /api/young - Crear joven (autenticado)',
+      'GET /api/young/stats - Estadísticas (autenticado)',
+      'GET /api/young/:id - Obtener joven por ID (autenticado)',
+      'PUT /api/young/:id - Actualizar joven (autenticado)',
+      'DELETE /api/young/:id - Eliminar joven (autenticado)',
+      'POST /api/import/import - Importar desde Excel (autenticado)',
+      'GET /api/import/template - Descargar plantilla (autenticado)',
+      'GET /api/import/export - Exportar a Excel (autenticado)'
     ]
   });
 });

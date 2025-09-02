@@ -1,6 +1,10 @@
 export interface IYoung {
   _id?: string;
   fullName: string;
+  placa?: string;
+  password?: string;
+  role_id?: string;
+  role_name?: string;
   ageRange: string;
   phone: string;
   birthday: Date;
@@ -13,6 +17,40 @@ export interface IYoung {
   skills: string[];
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+export interface IRole {
+  _id?: string;
+  name: string;
+  description: string;
+  scopes: string[];
+  created_at: Date;
+  updated_at?: Date | null;
+  deleted_at?: Date | null;
+}
+
+export interface IAuthUser {
+  username: string; // placa o email
+  email: string;
+  fullName: string;
+  role_id: string;
+  role_name: string;
+}
+
+export interface ILoginRequest {
+  username: string; // puede ser email o placa
+  password: string;
+}
+
+export interface ILoginResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    token: string;
+    user: IAuthUser;
+    expiresIn: string;
+  };
+  error?: string;
 }
 
 export interface IYoungCreate extends Omit<IYoung, '_id' | 'createdAt' | 'updatedAt'> {}
