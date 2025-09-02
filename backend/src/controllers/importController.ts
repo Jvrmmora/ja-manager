@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import xlsx from 'xlsx';
+import mongoose from 'mongoose';
 import Young from '../models/Young';
 import { uploadToCloudinary } from '../config/cloudinary';
 import { DateTime } from 'luxon';
@@ -185,12 +186,14 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
     const results = {
       total: data.length,
       imported: 0,
+      updated: 0,
       errors: [] as any[],
       warnings: [] as string[]
     };
 
-    // Mapeo de columnas comunes
+    // Mapeo de columnas comunes (agregar ID)
     const columnMapping: { [key: string]: string } = {
+      'id': 'id',
       'nombre': 'fullName',
       'name': 'fullName',
       'nombres': 'fullName',
@@ -216,12 +219,10 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
       'cargo': 'role',
       'email': 'email',
       'correo': 'email',
-      'mail': 'email'
+      'mail': 'email',
+      'grupo': 'group',
+      'group': 'group'
     };
-
-  // Añadir mapeo para 'grupo'
-  columnMapping['grupo'] = 'group';
-  columnMapping['group'] = 'group';
 
     for (let i = 0; i < data.length; i++) {
       try {
@@ -351,21 +352,66 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
           skills: []
         };
 
-        // Verificar si ya existe un joven con el mismo nombre
-        const existingYoung = await Young.findOne({ 
-          fullName: { $regex: new RegExp(`^${fullName}$`, 'i') }
-        });
+        // Modo híbrido: buscar por ID o crear nuevo
+        let young;
+        let isUpdate = false;
 
-        if (existingYoung) {
-          results.warnings.push(`Fila ${i + 1}: ${fullName} ya existe en la base de datos`);
-          continue;
+        if (normalizedRow.id) {
+          // Validar que el ID sea un ObjectId válido
+          if (mongoose.Types.ObjectId.isValid(normalizedRow.id)) {
+            young = await Young.findById(normalizedRow.id);
+            if (young) {
+              isUpdate = true;
+              // Actualizar datos existentes
+              Object.assign(young, youngData);
+            }
+          } else {
+            results.errors.push({
+              row: i + 1,
+              error: 'ID inválido',
+              data: row
+            });
+            continue;
+          }
         }
 
-        // Crear el nuevo joven
-        const newYoung = new Young(youngData);
-        await newYoung.save();
+        if (!young) {
+          // Verificar email duplicado solo para nuevos registros
+          if (youngData.email) {
+            const existingByEmail = await Young.findOne({ email: youngData.email });
+            if (existingByEmail) {
+              results.errors.push({
+                row: i + 1,
+                error: `Email ${youngData.email} ya existe en la base de datos`,
+                data: row
+              });
+              continue;
+            }
+          }
+
+          // Verificar nombre duplicado solo para nuevos registros
+          const existingByName = await Young.findOne({ 
+            fullName: { $regex: new RegExp(`^${fullName}$`, 'i') }
+          });
+
+          if (existingByName) {
+            results.warnings.push(`Fila ${i + 1}: ${fullName} ya existe en la base de datos`);
+            continue;
+          }
+
+          // Crear nuevo joven
+          young = new Young(youngData);
+        }
+
+        // Validar y guardar
+        await young.validate();
+        await young.save();
         
-        results.imported++;
+        if (isUpdate) {
+          results.updated++;
+        } else {
+          results.imported++;
+        }
 
       } catch (error: any) {
         results.errors.push({
@@ -378,7 +424,13 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: `Importación completada. ${results.imported} de ${results.total} registros importados.`,
+      message: `Importación completada. Creados: ${results.imported}, Actualizados: ${results.updated}, Total procesados: ${results.imported + results.updated} de ${results.total}`,
+      summary: {
+        total: results.total,
+        created: results.imported,
+        updated: results.updated,
+        errors: results.errors.length
+      },
       data: results
     });
 
@@ -394,9 +446,10 @@ export const importYoungFromExcel = async (req: Request, res: Response) => {
 
 export const exportYoungsToExcel = async (req: Request, res: Response) => {
   try {
-    const youngs = await Young.find().lean();
+    const youngs = await Young.find({}).sort({ fullName: 1 });
 
     const rows = youngs.map(y => ({
+      ID: (y._id as any).toString(), 
       Nombre: y.fullName || '',
       Apellido: '',
       'Fecha cumpleaños': y.birthday ? new Date(y.birthday).toISOString().split('T')[0] : '',
@@ -431,17 +484,19 @@ export const downloadImportTemplate = async (req: Request, res: Response) => {
     
     const templateData = [
       {
+        'ID': '', // Vacío para nuevos registros
         'Nombre': 'María Fernanda',
         'Apellido': 'Cortés',
         'Fecha cumpleaños': '26/01',
-  'Rango de edad': '26-30',
+        'Rango de edad': '26-30',
         'Celular': '3017291160',
         'Género': 'femenino',
         'Rol': 'lider juvenil',
-  'Email': 'maria.fernanda@email.com',
-  'Grupo': '1'
+        'Email': 'maria.fernanda@email.com',
+        'Grupo': '1'
       },
       {
+        'ID': '', // Vacío para nuevos registros
         'Nombre': 'Diego Mauricio',
         'Apellido': 'Díaz',
         'Fecha cumpleaños': `17/03/${currentYear}`,
@@ -449,10 +504,11 @@ export const downloadImportTemplate = async (req: Request, res: Response) => {
         'Celular': '3014470620',
         'Género': 'masculino',
         'Rol': 'director',
-  'Email': 'diego.mauricio@email.com',
-  'Grupo': '3'
+        'Email': 'diego.mauricio@email.com',
+        'Grupo': '3'
       },
       {
+        'ID': '', // Vacío para nuevos registros
         'Nombre': 'Santiago',
         'Apellido': 'Bayona',
         'Fecha cumpleaños': '11-Apr',
@@ -460,13 +516,17 @@ export const downloadImportTemplate = async (req: Request, res: Response) => {
         'Celular': '3012291049',
         'Género': 'masculino',
         'Rol': 'colaborador',
-  'Email': 'santiago.bayona@email.com',
-  'Grupo': ''
+        'Email': 'santiago.bayona@email.com',
+        'Grupo': ''
       }
     ];
 
-    // Instrucciones mejoradas con información sobre Luxon
+    // Instrucciones mejoradas con información sobre Luxon e ID
     const instructionsData = [
+      { 'CAMPO': '🆔 CAMPO ID (PARA ACTUALIZAR):', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
+      { 'CAMPO': 'Deje vacío para crear nuevos', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
+      { 'CAMPO': 'Use ID exportado para actualizar', 'REQUERIDO': '', 'FORMATO': '6501a2b3c4d5e6f7g8h9i0j1', 'EJEMPLO': 'ID de MongoDB' },
+      { 'CAMPO': '', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
       { 'CAMPO': '📅 FORMATOS DE FECHA SOPORTADOS:', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
       { 'CAMPO': 'DD/MM (día/mes)', 'REQUERIDO': '', 'FORMATO': '26/01', 'EJEMPLO': '26 de enero del año actual' },
       { 'CAMPO': 'DD/MM/YYYY (día/mes/año)', 'REQUERIDO': '', 'FORMATO': '26/01/1995', 'EJEMPLO': '26 de enero de 1995' },
@@ -474,6 +534,7 @@ export const downloadImportTemplate = async (req: Request, res: Response) => {
       { 'CAMPO': 'Número serial de Excel', 'REQUERIDO': '', 'FORMATO': '44587', 'EJEMPLO': 'Se convierte automáticamente' },
       { 'CAMPO': '', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
       { 'CAMPO': 'CAMPOS REQUERIDOS:', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
+      { 'CAMPO': 'ID', 'REQUERIDO': 'NO', 'FORMATO': 'ObjectId de MongoDB', 'EJEMPLO': 'Vacío para crear, ID para actualizar' },
       { 'CAMPO': 'Nombre', 'REQUERIDO': 'SÍ', 'FORMATO': 'Texto', 'EJEMPLO': 'María Fernanda' },
       { 'CAMPO': 'Apellido', 'REQUERIDO': 'NO', 'FORMATO': 'Texto', 'EJEMPLO': 'Cortés' },
       { 'CAMPO': 'Fecha cumpleaños', 'REQUERIDO': 'NO', 'FORMATO': 'Ver formatos arriba', 'EJEMPLO': '26/01 o 26-Jan' },
@@ -482,6 +543,7 @@ export const downloadImportTemplate = async (req: Request, res: Response) => {
       { 'CAMPO': 'Género', 'REQUERIDO': 'NO', 'FORMATO': 'masculino o femenino', 'EJEMPLO': 'femenino' },
       { 'CAMPO': 'Rol', 'REQUERIDO': 'NO', 'FORMATO': 'Ver roles disponibles abajo', 'EJEMPLO': 'lider juvenil' },
       { 'CAMPO': 'Email', 'REQUERIDO': 'NO', 'FORMATO': 'correo@dominio.com', 'EJEMPLO': 'maria@email.com' },
+      { 'CAMPO': 'Grupo', 'REQUERIDO': 'NO', 'FORMATO': 'Número 1-5', 'EJEMPLO': '1, 2, 3, 4 o 5' },
       { 'CAMPO': '', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
       { 'CAMPO': 'ROLES DISPONIBLES:', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
       { 'CAMPO': '- lider juvenil', 'REQUERIDO': '', 'FORMATO': '', 'EJEMPLO': '' },
