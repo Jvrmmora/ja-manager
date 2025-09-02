@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { IYoung } from '../types';
+import MultiGroupSelect from './MultiGroupSelect';
 
 interface BirthdayDashboardProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface BirthdayDashboardProps {
 const BirthdayDashboard: React.FC<BirthdayDashboardProps> = ({ isOpen, onClose, youngList }) => {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [filteredYoung, setFilteredYoung] = useState<IYoung[]>([]);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
 
   const months = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -18,14 +20,31 @@ const BirthdayDashboard: React.FC<BirthdayDashboardProps> = ({ isOpen, onClose, 
 
   const currentMonth = months[new Date().getMonth()];
 
+  // Resetear filtro de grupos cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
-      // Filtrar jóvenes por mes de cumpleaños
+      setSelectedGroups([]);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Filtrar jóvenes por mes de cumpleaños y grupo
       const filtered = youngList.filter(young => {
         try {
+          // Filtro por mes de cumpleaños
           if (!young.birthday) return false;
           const birthday = new Date(young.birthday);
-          return birthday.getMonth() === selectedMonth;
+          const monthMatch = birthday.getMonth() === selectedMonth;
+          
+          // Filtro por grupo (si hay grupos seleccionados)
+          let groupMatch = true;
+          if (selectedGroups.length > 0) {
+            groupMatch = young.group !== undefined && 
+                        selectedGroups.includes(young.group.toString());
+          }
+          
+          return monthMatch && groupMatch;
         } catch (err) {
           console.error('Error filtering birthdays:', err);
           return false;
@@ -41,7 +60,7 @@ const BirthdayDashboard: React.FC<BirthdayDashboardProps> = ({ isOpen, onClose, 
 
       setFilteredYoung(filtered);
     }
-  }, [isOpen, selectedMonth, youngList]);
+  }, [isOpen, selectedMonth, selectedGroups, youngList]);
 
   const formatBirthday = (date: Date | string) => {
     // Si viene como string, parsearlo correctamente evitando problemas de zona horaria
@@ -179,6 +198,27 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
             </div>
           </div>
 
+          {/* Filtro de grupos */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Filtrar por grupo:
+            </label>
+            <div className="flex flex-wrap gap-3">
+              <MultiGroupSelect
+                value={selectedGroups}
+                onChange={setSelectedGroups}
+              />
+              {selectedGroups.length > 0 && (
+                <button
+                  onClick={() => setSelectedGroups([])}
+                  className="px-3 py-2 text-sm text-orange-600 hover:text-orange-800 border border-orange-300 hover:border-orange-400 rounded-lg transition-colors"
+                >
+                  Limpiar filtro
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Estadísticas del mes */}
           <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-between">
@@ -188,6 +228,11 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
                 </h3>
                 <p className="text-orange-600">
                   {filteredYoung.length} cumpleaños este mes
+                  {selectedGroups.length > 0 && (
+                    <span className="text-orange-500 text-sm ml-2">
+                      (Grupos: {selectedGroups.map(g => `Nivel ${g}`).join(', ')})
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="text-3xl">🎉</div>

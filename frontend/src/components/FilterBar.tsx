@@ -120,7 +120,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
         {/* Filtro por grupos */}
         <div className="w-full sm:w-auto">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Grupo (opcional)
+            Grupo
           </label>
           <MultiGroupSelect
             value={filters.groups || []}

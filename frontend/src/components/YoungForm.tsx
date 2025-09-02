@@ -243,7 +243,6 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
               onChange={handleInputChange}
               className="form-input"
               placeholder="ejemplo@correo.com"
-              required
             />
           </div>
 
