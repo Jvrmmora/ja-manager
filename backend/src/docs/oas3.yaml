@@ -20,7 +20,7 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: http://localhost:5000/api
+  - url: http://localhost:4500/api
     description: Servidor de desarrollo
   - url: https://your-production-url.com/api
     description: Servidor de producción
@@ -28,6 +28,8 @@ servers:
 tags:
   - name: Health
     description: Endpoints para verificar el estado de la API
+  - name: Authentication
+    description: Operaciones de autenticación y autorización con JWT
   - name: Young
     description: Operaciones CRUD para gestión de jóvenes
   - name: Import/Export
@@ -49,11 +51,99 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /auth/login:
+    post:
+      summary: Iniciar sesión
+      description: Autentica un usuario usando email/placa y contraseña, retorna un token JWT
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingCredentials:
+                  summary: Credenciales faltantes
+                  value:
+                    error: "Email/placa y contraseña son requeridos"
+                invalidCredentials:
+                  summary: Credenciales inválidas
+                  value:
+                    error: "Credenciales inválidas"
+        '404':
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Usuario no encontrado"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/profile:
+    get:
+      summary: Obtener perfil del usuario autenticado
+      description: Retorna la información del perfil del usuario autenticado
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil del usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/logout:
+    post:
+      summary: Cerrar sesión
+      description: Invalida el token JWT del usuario (logout del lado del cliente)
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logout exitoso"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /young:
     get:
       summary: Obtener todos los jóvenes
       description: Retorna una lista paginada de todos los jóvenes registrados con filtros opcionales
       tags: [Young]
+      security:
+        - bearerAuth: []
       parameters:
         - name: page
           in: query
@@ -134,6 +224,8 @@ paths:
                       pages:
                         type: integer
                         example: 15
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -141,6 +233,8 @@ paths:
       summary: Crear un nuevo joven
       description: Crea un nuevo registro de joven. Acepta FormData para subida de imagen
       tags: [Young]
+      security:
+        - bearerAuth: []
       requestBody:
         content:
           multipart/form-data:
@@ -237,6 +331,8 @@ paths:
       summary: Obtener estadísticas de jóvenes
       description: Retorna estadísticas agregadas de los jóvenes registrados
       tags: [Young]
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Estadísticas obtenidas exitosamente
@@ -252,6 +348,8 @@ paths:
       summary: Obtener un joven por ID
       description: Retorna la información de un joven específico
       tags: [Young]
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -276,6 +374,8 @@ paths:
       summary: Actualizar un joven
       description: Actualiza la información de un joven existente. Acepta FormData para subida de imagen
       tags: [Young]
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -377,6 +477,8 @@ paths:
       summary: Eliminar un joven
       description: Elimina un joven del sistema. También elimina su imagen de perfil de Cloudinary si existe
       tags: [Young]
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -406,6 +508,8 @@ paths:
       summary: Importar jóvenes desde Excel
       description: Permite importar múltiples jóvenes desde un archivo Excel (.xlsx o .xls)
       tags: [Import/Export]
+      security:
+        - bearerAuth: []
       requestBody:
         content:
           multipart/form-data:
@@ -459,6 +563,8 @@ paths:
       summary: Descargar plantilla de Excel
       description: Descarga un archivo Excel con la plantilla para importar jóvenes
       tags: [Import/Export]
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Plantilla descargada exitosamente
@@ -481,6 +587,8 @@ paths:
       summary: Exportar jóvenes a Excel
       description: Exporta todos los jóvenes registrados a un archivo Excel
       tags: [Import/Export]
+      security:
+        - bearerAuth: []
       parameters:
         - name: ageRange
           in: query
@@ -799,6 +907,111 @@ components:
                 type: string
                 example: El nombre completo es obligatorio
 
+    # Esquemas de Autenticación
+    LoginRequest:
+      type: object
+      required:
+        - password
+      properties:
+        username:
+          type: string
+          description: Puedes usar email o placa
+          example: "jvrm.mora@gmail.com"
+        password:
+          type: string
+          minLength: 8
+          description: Contraseña del usuario
+          example: "Pinzon280615*"
+      description: Credenciales de login. Se debe proporcionar email O placa junto con la contraseña
+
+    LoginResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Login exitoso"
+        token:
+          type: string
+          description: Token JWT para autenticación
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        expiresIn:
+          type: string
+          description: Tiempo de expiración del token
+          example: "10d"
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        fullName:
+          type: string
+          example: "Javier Montaño"
+        email:
+          type: string
+          format: email
+          example: "jvrm.mora@gmail.com"
+        placa:
+          type: string
+          example: "@MODJAVI001"
+        role_name:
+          type: string
+          example: "Super Admin"
+        role_id:
+          type: string
+          example: "507f1f77bcf86cd799439012"
+        ageRange:
+          type: string
+          example: "22-25"
+        phone:
+          type: string
+          example: "+57 300 123 4567"
+        birthday:
+          type: string
+          format: date
+          example: "1998-06-28"
+        profileImage:
+          type: string
+          format: uri
+          example: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+        gender:
+          type: string
+          enum: [masculino, femenino, ""]
+          example: "masculino"
+        role:
+          type: string
+          example: "lider juvenil"
+        skills:
+          type: array
+          items:
+            type: string
+          example: ["Liderazgo", "Música", "Predicación"]
+        group:
+          type: number
+          minimum: 1
+          maximum: 5
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:30:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:30:00.000Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Mensaje de error
+          example: "Credenciales inválidas"
+        details:
+          type: string
+          description: Detalles adicionales del error
+          example: "El email o contraseña proporcionados son incorrectos"
+
   responses:
     NotFound:
       description: Recurso no encontrado
@@ -820,3 +1033,47 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: No autorizado - Token JWT inválido o expirado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            tokenMissing:
+              summary: Token faltante
+              value:
+                error: "Token de acceso requerido"
+                details: "Debe proporcionar un token JWT válido en el header Authorization"
+            tokenInvalid:
+              summary: Token inválido
+              value:
+                error: "Token inválido"
+                details: "El token JWT proporcionado no es válido"
+            tokenExpired:
+              summary: Token expirado
+              value:
+                error: "Token expirado"
+                details: "El token JWT ha expirado, por favor inicie sesión nuevamente"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token JWT para autenticación. Obtenga el token usando el endpoint POST /auth/login.
+        
+        **Ejemplo de uso:**
+        ```
+        Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        ```
+        
+        **Scopes disponibles:**
+        - `young:read` - Leer información de jóvenes
+        - `young:write` - Crear y actualizar jóvenes
+        - `young:delete` - Eliminar jóvenes
+        - `import:read` - Descargar plantillas y exportar datos
+        - `import:write` - Importar datos desde Excel
+        - `admin:all` - Acceso completo a todas las funciones

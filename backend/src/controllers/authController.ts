@@ -26,7 +26,7 @@ export class AuthController {
           { email: username.toLowerCase() },
           { placa: username.toUpperCase() }
         ]
-      }).populate('role_id');
+      });
 
       if (!user) {
         return res.status(401).json({
@@ -64,12 +64,21 @@ export class AuthController {
         });
       }
 
-      // Crear payload del token
+      // Crear payload del token - asegurar que role_id sea solo el ID
+      let roleId: string;
+      if (typeof user.role_id === 'object') {
+        // Si role_id es un objeto (poblado), extraer el _id
+        roleId = (user.role_id as any)._id.toString();
+      } else {
+        // Si role_id es un string/ObjectId, convertir a string
+        roleId = user.role_id.toString();
+      }
+
       const tokenPayload: IAuthUser = {
         username: user.placa || user.email,
         email: user.email,
         fullName: user.fullName,
-        role_id: user.role_id.toString(),
+        role_id: roleId, // Usar el ID extraído correctamente
         role_name: user.role_name
       };
 
@@ -81,7 +90,6 @@ export class AuthController {
         message: 'Inicio de sesión exitoso',
         data: {
           token,
-          user: tokenPayload,
           expiresIn: JWTService.getExpirationTime()
         }
       });
@@ -158,7 +166,6 @@ export class AuthController {
    */
   static async logout(req: Request, res: Response) {
     try {
-      // En una implementación más robusta, aquí se agregaría el token a una blacklist
       res.json({
         success: true,
         message: 'Sesión cerrada exitosamente'
