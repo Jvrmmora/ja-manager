@@ -71,6 +71,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [nextPageToLoad, setNextPageToLoad] = useState(2); // Track próxima página para cargar
   const [isLoadingMore, setIsLoadingMore] = useState(false); // Prevenir múltiples llamadas simultáneas
+  const [filteredTotal, setFilteredTotal] = useState<number | null>(null); // Total de resultados filtrados
   const [filters, setFilters] = useState<PaginationQuery>({
     page: 1,
     limit: 10,
@@ -255,6 +256,8 @@ function App() {
         if (!append) {
           setCurrentPage(pagination.currentPage);
           setNextPageToLoad(pagination.currentPage + 1);
+          // Actualizar el total filtrado solo cuando no estamos agregando datos
+          setFilteredTotal(pagination.totalItems);
         } else if (pagination.currentPage > currentPage) {
           setCurrentPage(pagination.currentPage);
           setNextPageToLoad(pagination.currentPage + 1);
@@ -311,6 +314,20 @@ function App() {
     };
     
     console.log('🧹 Filtros limpiados:', cleanFilters);
+    
+    // Verificar si los filtros están completamente vacíos (sin filtros activos)
+    const noActiveFilters = !(
+      (cleanFilters.search && cleanFilters.search.trim()) ||
+      cleanFilters.ageRange ||
+      cleanFilters.gender ||
+      cleanFilters.role ||
+      (cleanFilters.groups && cleanFilters.groups.length > 0)
+    );
+    
+    // Si no hay filtros activos, resetear el total filtrado
+    if (noActiveFilters) {
+      setFilteredTotal(null);
+    }
     
     // Resetear todo el estado de paginación
     setFilters(cleanFilters);
@@ -501,9 +518,32 @@ function App() {
   // Scroll infinito automático
   useInfiniteScroll(loadMore, hasMore, loadingMore || isLoadingMore);
 
+  // Helper para determinar si hay filtros activos
+  const hasActiveFilters = () => {
+    return !!(
+      (filters.search && filters.search.trim()) ||
+      (filters.ageRange && filters.ageRange !== '') ||
+      (filters.gender && filters.gender !== '') ||
+      (filters.role && filters.role !== '') ||
+      (filters.groups && filters.groups.length > 0)
+    );
+  };
+
   // Estadísticas básicas
+  const hasActiveFiltersResult = hasActiveFilters();
+  const totalToShow = hasActiveFiltersResult && filteredTotal !== null 
+    ? filteredTotal 
+    : (Array.isArray(allYoungList) ? allYoungList.length : 0);
+  
+  console.log('📊 Cálculo de stats:', {
+    hasActiveFilters: hasActiveFiltersResult,
+    filteredTotal,
+    allYoungListLength: Array.isArray(allYoungList) ? allYoungList.length : 0,
+    totalToShow
+  });
+  
   const stats = {
-    total: Array.isArray(allYoungList) ? allYoungList.length : 0,
+    total: totalToShow,
     active: Array.isArray(allYoungList) ? allYoungList.length : 0,
     newThisMonth: Array.isArray(allYoungList) ? allYoungList.filter(young => {
       try {
