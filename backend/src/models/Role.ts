@@ -53,7 +53,7 @@ const roleSchema = new Schema<IRole>(
 );
 
 // Índices
-roleSchema.index({ name: 1 });
 roleSchema.index({ deleted_at: 1 });
+// Nota: name ya tiene índice automático por unique: true
 
 export default mongoose.model<IRole>('Role', roleSchema);

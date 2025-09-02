@@ -164,9 +164,8 @@ youngSchema.index({ fullName: 'text' });
 youngSchema.index({ ageRange: 1 });
 youngSchema.index({ birthday: 1 });
 youngSchema.index({ createdAt: -1 });
-youngSchema.index({ placa: 1 });
-youngSchema.index({ email: 1 });
 youngSchema.index({ role_id: 1 });
+// Nota: placa y email ya tienen índices automáticos por unique: true
 
 // Método para comparar contraseñas
 youngSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
