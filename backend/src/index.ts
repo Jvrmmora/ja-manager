@@ -2,8 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import swaggerUi from 'swagger-ui-express';
 import youngRoutes from './routes/youngRoutes';
 import importRoutes from './routes/importRoutes';
+import { specs } from './config/swagger';
 
 dotenv.config();
 
@@ -42,6 +44,13 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+// Documentación Swagger
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Youth Management API Documentation',
+  explorer: true
+}));
+
 // Rutas de jóvenes
 app.use('/api/young', youngRoutes);
 
@@ -53,12 +62,19 @@ app.get('/', (_req, res) => {
   res.json({ 
     message: 'Youth Management Platform API',
     version: '1.0.0',
+    documentation: '/api/docs',
     endpoints: [
       'GET /api/health',
-      'GET /api/young',
-      'POST /api/young',
-      'PUT /api/young/:id',
-      'DELETE /api/young/:id'
+      'GET /api/docs - Documentación Swagger',
+      'GET /api/young - Obtener jóvenes',
+      'POST /api/young - Crear joven',
+      'GET /api/young/stats - Estadísticas',
+      'GET /api/young/:id - Obtener joven por ID',
+      'PUT /api/young/:id - Actualizar joven',
+      'DELETE /api/young/:id - Eliminar joven',
+      'POST /api/import/import - Importar desde Excel',
+      'GET /api/import/template - Descargar plantilla',
+      'GET /api/import/export - Exportar a Excel'
     ]
   });
 });

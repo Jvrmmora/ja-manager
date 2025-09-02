@@ -1,0 +1,822 @@
+openapi: 3.0.0
+info:
+  title: Youth Management API
+  version: 1.0.0
+  description: |
+    API REST para la gestión de jóvenes de iglesia. Permite crear, leer, actualizar y eliminar información de jóvenes, así como importar/exportar datos desde Excel.
+    
+    ## Características principales:
+    - CRUD completo para gestión de jóvenes
+    - Subida de imágenes a Cloudinary
+    - Importación/exportación desde Excel
+    - Filtros y búsqueda avanzada
+    - Estadísticas agregadas
+    
+  contact:
+    name: Javier Montaño
+    email: "jvrm.mora@gmail.com"
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000/api
+    description: Servidor de desarrollo
+  - url: https://your-production-url.com/api
+    description: Servidor de producción
+
+tags:
+  - name: Health
+    description: Endpoints para verificar el estado de la API
+  - name: Young
+    description: Operaciones CRUD para gestión de jóvenes
+  - name: Import/Export
+    description: Operaciones para importar y exportar datos desde Excel
+
+paths:
+  /health:
+    get:
+      summary: Verificar estado de la API
+      description: Endpoint para verificar que la API está funcionando correctamente
+      tags: [Health]
+      responses:
+        '200':
+          description: API funcionando correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /young:
+    get:
+      summary: Obtener todos los jóvenes
+      description: Retorna una lista paginada de todos los jóvenes registrados con filtros opcionales
+      tags: [Young]
+      parameters:
+        - name: page
+          in: query
+          description: Número de página
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Número de elementos por página
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: search
+          in: query
+          description: Búsqueda por nombre
+          schema:
+            type: string
+        - name: ageRange
+          in: query
+          description: Filtrar por rango de edad
+          schema:
+            type: string
+            enum: 
+              - "13-15"
+              - "16-18"
+              - "19-21"
+              - "22-25"
+              - "26-30"
+              - "30+"
+        - name: role
+          in: query
+          description: Filtrar por rol
+          schema:
+            type: string
+        - name: gender
+          in: query
+          description: Filtrar por género
+          schema:
+            type: string
+            enum: 
+              - masculino
+              - femenino
+        - name: group
+          in: query
+          description: Filtrar por grupo
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+      responses:
+        '200':
+          description: Lista de jóvenes obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Young'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 10
+                      total:
+                        type: integer
+                        example: 150
+                      pages:
+                        type: integer
+                        example: 15
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      summary: Crear un nuevo joven
+      description: Crea un nuevo registro de joven. Acepta FormData para subida de imagen
+      tags: [Young]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - fullName
+                - ageRange
+                - role
+              properties:
+                fullName:
+                  type: string
+                  description: Nombre completo del joven
+                  example: Juan Pérez García
+                ageRange:
+                  type: string
+                  enum: 
+                    - "13-15"
+                    - "16-18"
+                    - "19-21"
+                    - "22-25"
+                    - "26-30"
+                    - "30+"
+                  description: Rango de edad
+                  example: "19-21"
+                phone:
+                  type: string
+                  description: Número de teléfono
+                  example: "+1234567890"
+                birthday:
+                  type: string
+                  format: date
+                  description: Fecha de nacimiento
+                  example: "2000-05-15"
+                gender:
+                  type: string
+                  enum: 
+                    - masculino
+                    - femenino
+                    - ""
+                  description: Género
+                  example: masculino
+                role:
+                  type: string
+                  enum: 
+                    - lider juvenil
+                    - simpatizante
+                    - colaborador
+                    - joven adventista
+                    - director
+                    - subdirector
+                    - club guias
+                    - club conquistadores
+                    - club aventureros
+                    - escuela sabatica
+                  description: Rol en la iglesia
+                  example: joven adventista
+                email:
+                  type: string
+                  format: email
+                  description: Correo electrónico
+                  example: juan.perez@email.com
+                skills:
+                  type: string
+                  description: Habilidades en formato JSON string
+                  example: '["música", "predicación", "liderazgo"]'
+                group:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: Grupo para clasificación
+                  example: 3
+                profileImage:
+                  type: string
+                  format: binary
+                  description: Imagen de perfil (archivo)
+          application/json:
+            schema:
+              $ref: '#/components/schemas/YoungInput'
+      responses:
+        '201':
+          description: Joven creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Young'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /young/stats:
+    get:
+      summary: Obtener estadísticas de jóvenes
+      description: Retorna estadísticas agregadas de los jóvenes registrados
+      tags: [Young]
+      responses:
+        '200':
+          description: Estadísticas obtenidas exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YoungStats'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /young/{id}:
+    get:
+      summary: Obtener un joven por ID
+      description: Retorna la información de un joven específico
+      tags: [Young]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID único del joven
+          schema:
+            type: string
+          example: 507f1f77bcf86cd799439011
+      responses:
+        '200':
+          description: Joven encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Young'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      summary: Actualizar un joven
+      description: Actualiza la información de un joven existente. Acepta FormData para subida de imagen
+      tags: [Young]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID único del joven
+          schema:
+            type: string
+          example: 507f1f77bcf86cd799439011
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  description: Nombre completo del joven
+                  example: Juan Pérez García
+                ageRange:
+                  type: string
+                  enum: 
+                    - "13-15"
+                    - "16-18"
+                    - "19-21"
+                    - "22-25"
+                    - "26-30"
+                    - "30+"
+                  description: Rango de edad
+                  example: "19-21"
+                phone:
+                  type: string
+                  description: Número de teléfono
+                  example: "+1234567890"
+                birthday:
+                  type: string
+                  format: date
+                  description: Fecha de nacimiento
+                  example: "2000-05-15"
+                gender:
+                  type: string
+                  enum: 
+                    - masculino
+                    - femenino
+                    - ""
+                  description: Género
+                  example: masculino
+                role:
+                  type: string
+                  enum: 
+                    - lider juvenil
+                    - simpatizante
+                    - colaborador
+                    - joven adventista
+                    - director
+                    - subdirector
+                    - club guias
+                    - club conquistadores
+                    - club aventureros
+                    - escuela sabatica
+                  description: Rol en la iglesia
+                  example: joven adventista
+                email:
+                  type: string
+                  format: email
+                  description: Correo electrónico
+                  example: juan.perez@email.com
+                skills:
+                  type: string
+                  description: Habilidades en formato JSON string
+                  example: '["música", "predicación", "liderazgo"]'
+                group:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: Grupo para clasificación
+                  example: 3
+                profileImage:
+                  type: string
+                  format: binary
+                  description: Imagen de perfil (archivo)
+          application/json:
+            schema:
+              $ref: '#/components/schemas/YoungInput'
+      responses:
+        '200':
+          description: Joven actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Young'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      summary: Eliminar un joven
+      description: Elimina un joven del sistema. También elimina su imagen de perfil de Cloudinary si existe
+      tags: [Young]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID único del joven
+          schema:
+            type: string
+          example: 507f1f77bcf86cd799439011
+      responses:
+        '200':
+          description: Joven eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Joven eliminado exitosamente
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /import/import:
+    post:
+      summary: Importar jóvenes desde Excel
+      description: Permite importar múltiples jóvenes desde un archivo Excel (.xlsx o .xls)
+      tags: [Import/Export]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel con datos de jóvenes
+      responses:
+        '200':
+          description: Jóvenes importados exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Jóvenes importados exitosamente
+                  imported:
+                    type: integer
+                    description: Número de jóvenes importados
+                    example: 25
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        row:
+                          type: integer
+                          description: Número de fila con error
+                        error:
+                          type: string
+                          description: Descripción del error
+                    description: Lista de errores encontrados durante la importación
+        '400':
+          description: Error en el formato del archivo o datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /import/template:
+    get:
+      summary: Descargar plantilla de Excel
+      description: Descarga un archivo Excel con la plantilla para importar jóvenes
+      tags: [Import/Export]
+      responses:
+        '200':
+          description: Plantilla descargada exitosamente
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              description: Nombre del archivo de descarga
+              schema:
+                type: string
+                example: 'attachment; filename="plantilla_jovenes.xlsx"'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /import/export:
+    get:
+      summary: Exportar jóvenes a Excel
+      description: Exporta todos los jóvenes registrados a un archivo Excel
+      tags: [Import/Export]
+      parameters:
+        - name: ageRange
+          in: query
+          description: Filtrar por rango de edad (opcional)
+          schema:
+            type: string
+            enum: 
+              - "13-15"
+              - "16-18"
+              - "19-21"
+              - "22-25"
+              - "26-30"
+              - "30+"
+        - name: role
+          in: query
+          description: Filtrar por rol (opcional)
+          schema:
+            type: string
+        - name: gender
+          in: query
+          description: Filtrar por género (opcional)
+          schema:
+            type: string
+            enum: 
+              - masculino
+              - femenino
+        - name: group
+          in: query
+          description: Filtrar por grupo (opcional)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+      responses:
+        '200':
+          description: Archivo Excel generado exitosamente
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              description: Nombre del archivo de descarga
+              schema:
+                type: string
+                example: 'attachment; filename="jovenes_2023-12-01.xlsx"'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  schemas:
+    Young:
+      type: object
+      required: 
+        - fullName
+        - ageRange
+        - role
+      properties:
+        id:
+          type: string
+          description: ID único del joven
+          example: 507f1f77bcf86cd799439011
+        fullName:
+          type: string
+          description: Nombre completo del joven
+          maxLength: 100
+          example: Juan Pérez García
+        ageRange:
+          type: string
+          enum: 
+            - "13-15"
+            - "16-18"
+            - "19-21"
+            - "22-25"
+            - "26-30"
+            - "30+"
+          description: Rango de edad del joven
+          example: "19-21"
+        phone:
+          type: string
+          description: Número de teléfono
+          pattern: '^[\+]?[\d\s\-\(\)]{8,15}$'
+          example: "+1234567890"
+        birthday:
+          type: string
+          format: date
+          description: Fecha de nacimiento
+          example: "2000-05-15"
+        profileImage:
+          type: string
+          format: uri
+          description: URL de la imagen de perfil (Cloudinary)
+          example: https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg
+        gender:
+          type: string
+          enum: 
+            - masculino
+            - femenino
+            - ""
+          description: Género del joven
+          example: masculino
+        role:
+          type: string
+          enum: 
+            - lider juvenil
+            - simpatizante
+            - colaborador
+            - joven adventista
+            - director
+            - subdirector
+            - club guias
+            - club conquistadores
+            - club aventureros
+            - escuela sabatica
+          description: Rol del joven en la iglesia
+          example: joven adventista
+        email:
+          type: string
+          format: email
+          description: Correo electrónico
+          example: juan.perez@email.com
+        skills:
+          type: array
+          items:
+            type: string
+          description: Habilidades del joven
+          example: 
+            - música
+            - predicación
+            - liderazgo
+        group:
+          type: number
+          minimum: 1
+          maximum: 5
+          description: Grupo para clasificación interna (1-5)
+          example: 3
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del registro
+          example: "2023-12-01T10:30:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de última actualización
+          example: "2023-12-01T15:45:00.000Z"
+
+    YoungInput:
+      type: object
+      required: 
+        - fullName
+        - ageRange
+        - role
+      properties:
+        fullName:
+          type: string
+          description: Nombre completo del joven
+          maxLength: 100
+          example: Juan Pérez García
+        ageRange:
+          type: string
+          enum: 
+            - "13-15"
+            - "16-18"
+            - "19-21"
+            - "22-25"
+            - "26-30"
+            - "30+"
+          description: Rango de edad del joven
+          example: "19-21"
+        phone:
+          type: string
+          description: Número de teléfono
+          example: "+1234567890"
+        birthday:
+          type: string
+          format: date
+          description: Fecha de nacimiento
+          example: "2000-05-15"
+        gender:
+          type: string
+          enum: 
+            - masculino
+            - femenino
+            - ""
+          description: Género del joven
+          example: masculino
+        role:
+          type: string
+          enum:
+            - lider juvenil
+            - simpatizante
+            - colaborador
+            - joven adventista
+            - director
+            - subdirector
+            - club guias
+            - club conquistadores
+            - club aventureros
+            - escuela sabatica
+          description: Rol del joven en la iglesia
+          example: joven adventista
+        email:
+          type: string
+          format: email
+          description: Correo electrónico
+          example: juan.perez@email.com
+        skills:
+          type: array
+          items:
+            type: string
+          description: Habilidades del joven
+          example: 
+            - música
+            - predicación
+            - liderazgo
+        group:
+          type: number
+          minimum: 1
+          maximum: 5
+          description: Grupo para clasificación interna (1-5)
+          example: 3
+
+    YoungStats:
+      type: object
+      properties:
+        total:
+          type: number
+          description: Total de jóvenes registrados
+          example: 150
+        byAgeRange:
+          type: object
+          properties:
+            "13-15":
+              type: number
+              example: 25
+            "16-18":
+              type: number
+              example: 40
+            "19-21":
+              type: number
+              example: 35
+            "22-25":
+              type: number
+              example: 30
+            "26-30":
+              type: number
+              example: 15
+            "30+":
+              type: number
+              example: 5
+        byRole:
+          type: object
+          additionalProperties:
+            type: number
+          example:
+            joven adventista: 80
+            lider juvenil: 20
+            colaborador: 25
+            simpatizante: 25
+        byGender:
+          type: object
+          properties:
+            masculino:
+              type: number
+              example: 75
+            femenino:
+              type: number
+              example: 70
+            "":
+              type: number
+              example: 5
+
+    HealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: Youth Management API funcionando correctamente
+        timestamp:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:30:00.000Z"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Mensaje de error
+          example: Recurso no encontrado
+        details:
+          type: string
+          description: Detalles adicionales del error
+          example: El joven con ID 507f1f77bcf86cd799439011 no existe
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Error de validación
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: fullName
+              message:
+                type: string
+                example: El nombre completo es obligatorio
+
+  responses:
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ValidationError:
+      description: Error de validación
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+
+    ServerError:
+      description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
