@@ -11,11 +11,6 @@ export const connectDatabase = async (): Promise<void> => {
       mongoLogger.query(collection, method, query, { doc });
     });
 
-    // Event listeners para logging
-    mongoose.connection.on('connecting', () => {
-      mongoLogger.connection('🔄 Conectando a MongoDB...');
-    });
-
     mongoose.connection.on('connected', () => {
       mongoLogger.connection('✅ Conectado exitosamente', {
         database: mongoose.connection.db?.databaseName,
