@@ -35,6 +35,12 @@ export interface IAuthUser {
   fullName: string;
   role_id: string;
   role_name: string;
+  exp?: number; // Para JWT expiration timestamp
+}
+
+export interface IDecodedToken extends IAuthUser {
+  exp: number;
+  iat: number;
 }
 
 export interface ILoginRequest {

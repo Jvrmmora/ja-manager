@@ -9,6 +9,20 @@ import authRoutes from './routes/authRoutes';
 import { specs } from './config/swagger';
 import { DatabaseSeeder } from './seeders/DatabaseSeeder';
 import { authenticateToken } from './middleware/auth';
+import { connectDatabase } from './config/database';
+import logger from './utils/logger';
+import { 
+  httpLoggingMiddleware, 
+  requestLoggingMiddleware, 
+  errorLoggingMiddleware 
+} from './middleware/logging';
+import { 
+  globalErrorHandler, 
+  notFoundHandler, 
+  jsonErrorHandler,
+  contentTypeValidator,
+  timeoutHandler
+} from './middleware/errorMiddleware';
 
 dotenv.config();
 
@@ -31,21 +45,30 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
+
+// Middleware de timeout global
+app.use(timeoutHandler(30000)); // 30 segundos
+
+// Middleware de logging HTTP
+app.use(httpLoggingMiddleware);
+
+// Middleware de parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Middleware de validación de Content-Type
+app.use(contentTypeValidator);
+
+// Middleware de logging detallado (solo en desarrollo)
+if (process.env.NODE_ENV !== 'production') {
+  app.use(requestLoggingMiddleware);
+}
+
+// Middleware de manejo de errores JSON
+app.use(jsonErrorHandler);
 
 // Conectar a MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/youth-management')
-  .then(async () => {
-    console.log('✅ Conectado a MongoDB');
-    
-    // Ejecutar seeders para datos iniciales
-    try {
-      await DatabaseSeeder.runAllSeeders();
-    } catch (error) {
-      console.error('⚠️  Error ejecutando seeders:', error);
-    }
-  })
-  .catch((error) => console.error('❌ Error conectando a MongoDB:', error));
+connectDatabase();
 
 // Health check - debe ir ANTES de las rutas de young
 app.get('/api/health', (_req, res) => {
@@ -95,20 +118,25 @@ app.get('/', (_req, res) => {
   });
 });
 
-// Middleware de manejo de errores - usar _ para parámetros no utilizados
-app.use((error: any, _req: any, res: any, _next: any) => {
-  console.error('❌ Error:', error);
-  res.status(500).json({ 
-    error: 'Error interno del servidor',
-    message: process.env.NODE_ENV === 'development' ? error.message : 'Algo salió mal'
-  });
-});
+// Middleware de logging de errores
+app.use(errorLoggingMiddleware);
+
+// Middleware para rutas no encontradas
+app.use(notFoundHandler);
+
+// Middleware global de manejo de errores (debe ir al final)
+app.use(globalErrorHandler);
 
 // Iniciar servidor
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-  console.log(`📱 API disponible en: http://localhost:${PORT}`);
-  console.log(`💚 Health check: http://localhost:${PORT}/api/health`);
+  logger.info(`🚀 Servidor corriendo en puerto ${PORT}`, {
+    port: PORT,
+    env: process.env.NODE_ENV || 'development',
+    nodeVersion: process.version
+  });
+  logger.info(`📱 API disponible en: http://localhost:${PORT}`);
+  logger.info(`💚 Health check: http://localhost:${PORT}/api/health`);
+  logger.info(`📚 Documentación: http://localhost:${PORT}/api/docs`);
 });
 
 export default app;
