@@ -1,5 +1,6 @@
 import React from 'react';
 import type { PaginationQuery } from '../types';
+import MultiGroupSelect from './MultiGroupSelect';
 
 interface FilterBarProps {
   filters: PaginationQuery;
@@ -11,6 +12,14 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
     onFiltersChange({
       ...filters,
       [key]: value || undefined,
+      page: 1 // Reset to first page when filtering
+    });
+  };
+
+  const handleGroupsChange = (groups: string[]) => {
+    onFiltersChange({
+      ...filters,
+      groups: groups.length > 0 ? groups : undefined,
       page: 1 // Reset to first page when filtering
     });
   };
@@ -29,7 +38,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
     onFiltersChange(clearedFilters);
   };
 
-  const hasActiveFilters = !!(filters.search || filters.ageRange || filters.gender || filters.role);
+  const hasActiveFilters = !!(filters.search || filters.ageRange || filters.gender || filters.role || (filters.groups && filters.groups.length > 0));
 
   return (
     <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
@@ -106,6 +115,18 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
             <option value="club aventureros">Club Aventureros</option>
             <option value="escuela sabatica">Escuela Sabática</option>
           </select>
+        </div>
+
+        {/* Filtro por grupos */}
+        <div className="w-full sm:w-auto">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Grupo (opcional)
+          </label>
+          <MultiGroupSelect
+            value={filters.groups || []}
+            onChange={handleGroupsChange}
+            className="w-full sm:w-auto min-w-[200px]"
+          />
         </div>
 
         {/* Ordenar por */}
@@ -185,6 +206,12 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
           {filters.role && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
               Rol: {filters.role}
+            </span>
+          )}
+
+          {filters.groups && filters.groups.length > 0 && (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+              Grupos: {filters.groups.length === 1 ? `Nivel ${filters.groups[0]}` : `${filters.groups.length} grupos`}
             </span>
           )}
         </div>

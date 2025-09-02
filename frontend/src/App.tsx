@@ -166,6 +166,11 @@ function App() {
       if (activeFilters.role && activeFilters.role !== '') {
         params.append('role', activeFilters.role);
       }
+      if (activeFilters.groups && activeFilters.groups.length > 0) {
+        activeFilters.groups.forEach(group => {
+          params.append('groups', group);
+        });
+      }
       if (activeFilters.sortBy) {
         params.append('sortBy', activeFilters.sortBy);
       }
@@ -302,6 +307,7 @@ function App() {
       ...(newFilters.ageRange && { ageRange: newFilters.ageRange }),
       ...(newFilters.gender && { gender: newFilters.gender }),
       ...(newFilters.role && { role: newFilters.role }),
+      ...(newFilters.groups && newFilters.groups.length > 0 && { groups: newFilters.groups }),
     };
     
     console.log('🧹 Filtros limpiados:', cleanFilters);

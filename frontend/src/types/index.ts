@@ -42,6 +42,7 @@ export interface PaginationQuery {
   ageRange?: string;
   gender?: string;
   role?: string;
+  groups?: string[] | undefined; // Array de grupos para filtrar (1-5)
   sortBy?: 'fullName' | 'birthday' | 'email' | 'role' | 'gender' | 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
 }

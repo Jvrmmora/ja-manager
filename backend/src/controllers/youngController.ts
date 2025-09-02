@@ -25,6 +25,7 @@ export class YoungController {
         ageRange,
         gender,
         role,
+        groups,
         sortBy,
         sortOrder,
       }: PaginationQuery = value;
@@ -73,8 +74,16 @@ export class YoungController {
         filters.role = role;
       }
 
+      if (groups && groups.length > 0) {
+        // Convertir strings a números para la consulta
+        // Manejar tanto array como string individual
+        const groupsArray = Array.isArray(groups) ? groups : [groups];
+        const groupNumbers = groupsArray.map(g => parseInt(g, 10));
+        filters.group = { $in: groupNumbers };
+      }
+
       console.log('🔍 Filtros aplicados:', filters);
-      console.log('📄 Parámetros recibidos:', { search, ageRange, gender, role, sortBy, sortOrder, page, limit });
+      console.log('📄 Parámetros recibidos:', { search, ageRange, gender, role, groups, sortBy, sortOrder, page, limit });
 
       // Configurar ordenamiento
       const sort: any = {};

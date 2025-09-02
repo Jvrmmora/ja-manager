@@ -33,6 +33,7 @@ export interface PaginationQuery {
   ageRange?: string;
   gender?: string;
   role?: string;
+  groups?: string[] | string;
   sortBy?: 'fullName' | 'birthday' | 'email' | 'role' | 'gender' | 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
 }

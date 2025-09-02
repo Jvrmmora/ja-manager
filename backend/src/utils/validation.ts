@@ -234,7 +234,13 @@ export const querySchema = Joi.object({
   sortOrder: Joi.string()
     .valid('asc', 'desc')
     .default('asc'),
-  group: Joi.number().integer().min(1).max(5).optional().allow('').messages({
-    'number.base': 'El grupo debe ser un número entre 1 y 5',
-  }),
+  groups: Joi.alternatives()
+    .try(
+      Joi.array().items(Joi.string().valid('1', '2', '3', '4', '5')),
+      Joi.string().valid('1', '2', '3', '4', '5')
+    )
+    .optional()
+    .messages({
+      'alternatives.match': 'Los grupos deben ser números entre 1 y 5',
+    }),
 });
