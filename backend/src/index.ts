@@ -67,8 +67,15 @@ if (process.env.NODE_ENV !== 'production') {
 // Middleware de manejo de errores JSON
 app.use(jsonErrorHandler);
 
-// Conectar a MongoDB
-connectDatabase();
+// Conectar a MongoDB y ejecutar seeders
+connectDatabase().then(async () => {
+  try {
+    // Ejecutar seeders
+    await DatabaseSeeder.runAllSeeders();
+  } catch (error) {
+    logger.error('Error ejecutando seeders:', error);
+  }
+});
 
 // Health check - debe ir ANTES de las rutas de young
 app.get('/api/health', (_req, res) => {

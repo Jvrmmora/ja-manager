@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Young from '../models/Young';
 import Role from '../models/Role';
 import { SCOPES } from '../middleware/auth';
+import logger from '../utils/logger';
 
 export class DatabaseSeeder {
   /**
@@ -12,7 +13,6 @@ export class DatabaseSeeder {
       // Verificar si el rol ya existe
       const existingRole = await Role.findOne({ name: 'Super Admin' });
       if (existingRole) {
-        console.log('✅ Rol Super Admin ya existe');
         return existingRole;
       }
 
@@ -30,11 +30,63 @@ export class DatabaseSeeder {
       });
 
       await superAdminRole.save();
-      console.log('✅ Rol Super Admin creado exitosamente');
+      logger.info('✅ Rol Super Admin creado exitosamente', {
+        context: 'DatabaseSeeder',
+        type: 'role_created',
+        roleName: 'Super Admin'
+      });
       return superAdminRole;
 
     } catch (error) {
-      console.error('❌ Error creando rol Super Admin:', error);
+      logger.error('❌ Error creando rol Super Admin:', error, {
+        context: 'DatabaseSeeder',
+        type: 'role_creation_error'
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Crear rol Young con permisos limitados
+   */
+  static async createYoungRole(): Promise<any> {
+    try {
+      // Verificar si el rol ya existe
+      const existingRole = await Role.findOne({ name: 'Young role' });
+      if (existingRole) {
+        return existingRole;
+      }
+
+      // Scopes específicos para jóvenes
+      const youngScopes = [
+        'young:read',
+        'young:update'
+      ];
+
+      // Crear el rol Young
+      const youngRole = new Role({
+        name: 'Young role',
+        description: 'Role for young members with limited access to view and update their own information',
+        scopes: youngScopes,
+        created_at: new Date(),
+        updated_at: null,
+        deleted_at: null
+      });
+
+      await youngRole.save();
+      logger.info('✅ Rol Young role creado exitosamente', {
+        context: 'DatabaseSeeder',
+        type: 'role_created',
+        roleName: 'Young role',
+        scopes: youngScopes
+      });
+      return youngRole;
+
+    } catch (error) {
+      logger.error('❌ Error creando rol Young role:', error, {
+        context: 'DatabaseSeeder',
+        type: 'role_creation_error'
+      });
       throw error;
     }
   }
@@ -50,7 +102,11 @@ export class DatabaseSeeder {
       });
       
       if (existingUser) {
-        console.log('✅ Usuario Super Admin ya existe');
+        logger.info('✅ Usuario Super Admin ya existe', {
+          context: 'DatabaseSeeder',
+          type: 'user_exists',
+          email: existingUser.email
+        });
         return existingUser;
       }
 
@@ -78,15 +134,25 @@ export class DatabaseSeeder {
       });
 
       await superAdminUser.save();
-      console.log('✅ Usuario Super Admin creado exitosamente');
-      console.log(`📧 Email: ${superAdminUser.email}`);
-      console.log(`🏷️  Placa: ${superAdminUser.placa}`);
-      console.log(`🔑 Contraseña: Pinzon280615*`);
+      logger.info('✅ Usuario Super Admin creado exitosamente', {
+        context: 'DatabaseSeeder',
+        type: 'user_created',
+        email: superAdminUser.email,
+        placa: superAdminUser.placa,
+        credentials: {
+          email: superAdminUser.email,
+          placa: superAdminUser.placa,
+          password: 'Pinzon280615*'
+        }
+      });
       
       return superAdminUser;
 
     } catch (error) {
-      console.error('❌ Error creando usuario Super Admin:', error);
+      logger.error('❌ Error creando usuario Super Admin:', error, {
+        context: 'DatabaseSeeder',
+        type: 'user_creation_error'
+      });
       throw error;
     }
   }
@@ -117,7 +183,10 @@ export class DatabaseSeeder {
       return nextConsecutive.toString().padStart(3, '0');
 
     } catch (error) {
-      console.error('Error generando consecutivo:', error);
+      logger.error('Error generando consecutivo:', error, {
+        context: 'DatabaseSeeder',
+        type: 'consecutive_generation_error'
+      });
       return '001';
     }
   }
@@ -127,18 +196,30 @@ export class DatabaseSeeder {
    */
   static async runAllSeeders() {
     try {
-      console.log('🌱 Iniciando proceso de seeding...');
+      logger.info('🌱 Iniciando proceso de seeding...', {
+        context: 'DatabaseSeeder',
+        type: 'started'
+      });
       
       // Crear rol Super Admin
       await this.createSuperAdminRole();
       
+      // Crear rol Young
+      await this.createYoungRole();
+      
       // Crear usuario Super Admin
       await this.createSuperAdminUser();
       
-      console.log('🎉 Proceso de seeding completado exitosamente');
+      logger.info('🎉 Proceso de seeding completado exitosamente', {
+        context: 'DatabaseSeeder',
+        type: 'completed'
+      });
       
     } catch (error) {
-      console.error('❌ Error en proceso de seeding:', error);
+      logger.error('❌ Error en proceso de seeding:', error, {
+        context: 'DatabaseSeeder',
+        type: 'seeding_error'
+      });
       throw error;
     }
   }
