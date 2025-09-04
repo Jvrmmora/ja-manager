@@ -92,7 +92,8 @@ export class AuthController {
       message: 'Inicio de sesión exitoso',
       data: {
         token,
-        expiresIn: JWTService.getExpirationTime()
+        expiresIn: JWTService.getExpirationTime(),
+        first_login: user.first_login || false
       }
     });
   });

@@ -1012,17 +1012,27 @@ components:
     LoginResponse:
       type: object
       properties:
+        success:
+          type: boolean
+          example: true
         message:
           type: string
-          example: "Login exitoso"
-        token:
-          type: string
-          description: Token JWT para autenticación
-          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        expiresIn:
-          type: string
-          description: Tiempo de expiración del token
-          example: "10d"
+          example: "Inicio de sesión exitoso"
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              description: Token JWT para autenticación
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            expiresIn:
+              type: string
+              description: Tiempo de expiración del token
+              example: "10d"
+            first_login:
+              type: boolean
+              description: Indica si es el primer login del usuario
+              example: true
     UserProfile:
       type: object
       properties:
