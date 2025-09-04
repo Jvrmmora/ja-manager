@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Young from '../models/Young';
 import Role from '../models/Role';
 import { uploadToCloudinary, deleteFromCloudinary, extractPublicId } from '../config/cloudinary';
 import { createYoungSchema, updateYoungSchema, querySchema } from '../utils/validation';
 import { ApiResponse, PaginatedResponse, IYoung, PaginationQuery } from '../types';
-import { asyncHandler, ValidationError, NotFoundError, ConflictError } from '../utils/errorHandler';
+import { asyncHandler, ValidationError, NotFoundError, ConflictError, ForbiddenError } from '../utils/errorHandler';
 import logger from '../utils/logger';
 import bcrypt from 'bcryptjs';
 
@@ -153,33 +154,85 @@ export class YoungController {
   }
 
   // Obtener un joven por ID
-  static async getYoungById(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const young = await Young.findById(id);
+  static getYoungById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    const authUser = (req as any).user; // Usuario autenticado desde el middleware
 
-      if (!young) {
-        res.status(404).json({
-          success: false,
-          message: 'Joven no encontrado',
-        } as ApiResponse);
-        return;
+    logger.info('Obteniendo joven por ID', {
+      context: 'YoungController',
+      method: 'getYoungById',
+      youngId: id,
+      requestedBy: authUser.username,
+      role: authUser.role_name
+    });
+
+    // Validar que se proporcionó el ID
+    if (!id) {
+      throw new ValidationError('ID del joven es requerido');
+    }
+
+    // Validar formato del ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new ValidationError('Formato de ID no válido');
+    }
+
+    // Si es Young role, solo puede ver su propia información
+    if (authUser.role_name === 'Young role') {
+      // Buscar el joven autenticado por su username (placa) o email
+      const authenticatedYoung = await Young.findOne({
+        $or: [
+          { placa: authUser.username },
+          { email: authUser.username }
+        ]
+      });
+
+      if (!authenticatedYoung) {
+        logger.error('Joven autenticado no encontrado', {
+          context: 'YoungController',
+          method: 'getYoungById',
+          username: authUser.username
+        });
+        throw new NotFoundError('Usuario autenticado no encontrado');
       }
 
-      res.status(200).json({
-        success: true,
-        message: 'Joven obtenido exitosamente',
-        data: young,
-      } as ApiResponse<IYoung>);
-    } catch (error) {
-      console.error('Error obteniendo joven:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error interno del servidor',
-        error: 'No se pudo obtener el joven',
-      } as ApiResponse);
+      // Verificar que está intentando acceder a su propio perfil
+      if ((authenticatedYoung._id as mongoose.Types.ObjectId).toString() !== id) {
+        logger.warn('Intento de acceso no autorizado a perfil ajeno', {
+          context: 'YoungController',
+          method: 'getYoungById',
+          requestedId: id,
+          authenticatedId: (authenticatedYoung._id as mongoose.Types.ObjectId).toString(),
+          username: authUser.username
+        });
+        throw new ForbiddenError('No tienes permisos para ver esta información');
+      }
     }
-  }
+
+    // Buscar el joven
+    const young = await Young.findById(id);
+
+    if (!young) {
+      logger.error('Joven no encontrado', {
+        context: 'YoungController',
+        method: 'getYoungById',
+        youngId: id
+      });
+      throw new NotFoundError('Joven no encontrado');
+    }
+
+    logger.info('Joven obtenido exitosamente', {
+      context: 'YoungController',
+      method: 'getYoungById',
+      youngId: id,
+      youngName: young.fullName
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Joven obtenido exitosamente',
+      data: young,
+    } as ApiResponse<IYoung>);
+  });
 
   // Crear un nuevo joven
   static async createYoung(req: Request, res: Response): Promise<void> {
@@ -230,73 +283,141 @@ export class YoungController {
   }
 
   // Actualizar un joven
-  static async updateYoung(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const { error, value } = updateYoungSchema.validate(req.body);
-      
-      if (error) {
-        res.status(400).json({
-          success: false,
-          message: 'Datos de entrada inválidos',
-          error: error.details[0].message,
-        } as ApiResponse);
-        return;
+  static updateYoung = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    const authUser = (req as any).user; // Usuario autenticado desde el middleware
+    const { error, value } = updateYoungSchema.validate(req.body);
+
+    if (error) {
+      throw new ValidationError(error.details[0].message);
+    }
+
+    logger.info('Actualizando joven', {
+      context: 'YoungController',
+      method: 'updateYoung',
+      youngId: id,
+      requestedBy: authUser.username,
+      role: authUser.role_name,
+      fieldsToUpdate: Object.keys(value)
+    });
+
+    // Validar que se proporcionó el ID
+    if (!id) {
+      throw new ValidationError('ID del joven es requerido');
+    }
+
+    // Validar formato del ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new ValidationError('Formato de ID no válido');
+    }
+
+    let updateData = { ...value };
+
+    // Si es Young role, aplicar restricciones
+    if (authUser.role_name === 'Young role') {
+      // Buscar el joven autenticado por su username (placa) o email
+      const authenticatedYoung = await Young.findOne({
+        $or: [
+          { placa: authUser.username },
+          { email: authUser.username }
+        ]
+      });
+
+      if (!authenticatedYoung) {
+        logger.error('Joven autenticado no encontrado', {
+          context: 'YoungController',
+          method: 'updateYoung',
+          username: authUser.username
+        });
+        throw new NotFoundError('Usuario autenticado no encontrado');
       }
 
-      const existingYoung = await Young.findById(id);
-      if (!existingYoung) {
-        res.status(404).json({
-          success: false,
-          message: 'Joven no encontrado',
-        } as ApiResponse);
-        return;
+      // Verificar que está intentando actualizar su propio perfil
+      if ((authenticatedYoung._id as mongoose.Types.ObjectId).toString() !== id) {
+        logger.warn('Intento de actualización no autorizada de perfil ajeno', {
+          context: 'YoungController',
+          method: 'updateYoung',
+          requestedId: id,
+          authenticatedId: (authenticatedYoung._id as mongoose.Types.ObjectId).toString(),
+          username: authUser.username
+        });
+        throw new ForbiddenError('No tienes permisos para actualizar esta información');
       }
 
-      let updateData = { ...value };
+      // Campos restringidos que Young role NO puede modificar
+      const restrictedFields = [
+        'role_id',
+        'role_name', 
+        'placa',
+        'password',
+        'first_login'
+      ];
 
-      // Filtrar email vacío
-      if (!updateData.email || !updateData.email.trim()) {
-        delete updateData.email;
-      }
-
-      // Manejar actualización de imagen
-      if (req.file) {
-        // Eliminar imagen anterior si existe
-        if (existingYoung.profileImage) {
-          try {
-            const publicId = extractPublicId(existingYoung.profileImage);
-            await deleteFromCloudinary(publicId);
-          } catch (deleteError) {
-            console.error('Error eliminando imagen anterior:', deleteError);
-          }
-        }
-
-        // Subir nueva imagen
-        const newImageUrl = await uploadToCloudinary(req.file.buffer);
-        updateData.profileImage = newImageUrl;
-      }
-
-      const updatedYoung = await Young.findByIdAndUpdate(
-        id,
-        updateData,
-        { new: true, runValidators: true }
+      // Verificar si intenta modificar campos restringidos
+      const attemptingRestrictedFields = restrictedFields.filter(field => 
+        updateData.hasOwnProperty(field)
       );
 
-      res.status(200).json({
-        success: true,
-        message: 'Joven actualizado exitosamente',
-        data: updatedYoung,
-      } as ApiResponse<IYoung>);
-    } catch (error) {
-      console.error('Error actualizando joven:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error interno del servidor',
-        error: 'No se pudo actualizar el joven',
-      } as ApiResponse);
+      if (attemptingRestrictedFields.length > 0) {
+        logger.warn('Intento de modificar campos restringidos', {
+          context: 'YoungController',
+          method: 'updateYoung',
+          restrictedFields: attemptingRestrictedFields,
+          username: authUser.username
+        });
+        throw new ForbiddenError(
+          `No puedes modificar los siguientes campos: ${attemptingRestrictedFields.join(', ')}`
+        );
+      }
     }
-  }
+
+    const existingYoung = await Young.findById(id);
+    if (!existingYoung) {
+      throw new NotFoundError('Joven no encontrado');
+    }
+
+    // Filtrar email vacío
+    if (!updateData.email || !updateData.email.trim()) {
+      delete updateData.email;
+    }
+
+    // Manejar actualización de imagen
+    if (req.file) {
+      // Eliminar imagen anterior si existe
+      if (existingYoung.profileImage) {
+        try {
+          const publicId = extractPublicId(existingYoung.profileImage);
+          await deleteFromCloudinary(publicId);
+        } catch (deleteError) {
+          console.error('Error eliminando imagen anterior:', deleteError);
+        }
+      }
+
+      // Subir nueva imagen
+      const newImageUrl = await uploadToCloudinary(req.file.buffer);
+      updateData.profileImage = newImageUrl;
+    }
+
+    const updatedYoung = await Young.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    logger.info('Joven actualizado exitosamente', {
+      context: 'YoungController',
+      method: 'updateYoung',
+      youngId: id,
+      youngName: updatedYoung?.fullName,
+      updatedFields: Object.keys(updateData)
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Joven actualizado exitosamente',
+      data: updatedYoung,
+    } as ApiResponse<IYoung>);
+  });
 
   // Eliminar un joven
   static async deleteYoung(req: Request, res: Response): Promise<void> {
