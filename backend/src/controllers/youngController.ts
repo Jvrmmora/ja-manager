@@ -6,6 +6,7 @@ import { createYoungSchema, updateYoungSchema, querySchema } from '../utils/vali
 import { ApiResponse, PaginatedResponse, IYoung, PaginationQuery } from '../types';
 import { asyncHandler, ValidationError, NotFoundError, ConflictError } from '../utils/errorHandler';
 import logger from '../utils/logger';
+import bcrypt from 'bcryptjs';
 
 export class YoungController {
   // Obtener todos los jóvenes con paginación y filtros
@@ -456,6 +457,13 @@ export class YoungController {
     // Generar la placa
     const newPlaca = `@MOD${initials}${consecutiveFormatted}`;
 
+    // Generar contraseña por defecto basada en la placa
+    // Tomar los primeros 6 caracteres después del @ (MOD + iniciales)
+    const placaWithoutAt = newPlaca.substring(1); // Remover el @
+    const placaPrefix = placaWithoutAt.substring(0, 6); // Tomar los primeros 6 caracteres
+    const defaultPassword = `Pass${placaPrefix}`;
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
     // Buscar el rol "Young role"
     const youngRole = await Role.findById('68ba05fbd120dfcc43047cf1');
     if (!youngRole) {
@@ -467,11 +475,12 @@ export class YoungController {
       throw new NotFoundError('Rol Young role no encontrado en el sistema');
     }
 
-    // Actualizar el joven con la nueva placa, rol y first_login
+    // Actualizar el joven con la nueva placa, contraseña, rol y first_login
     const updatedYoung = await Young.findByIdAndUpdate(
       id,
       {
         placa: newPlaca,
+        password: hashedPassword,
         role_id: youngRole._id,
         role_name: youngRole.name,
         first_login: true
@@ -479,19 +488,26 @@ export class YoungController {
       { new: true, runValidators: true }
     );
 
-    logger.info('Placa generada exitosamente', {
+    logger.info('Placa y contraseña generadas exitosamente', {
       context: 'YoungController',
       method: 'generatePlaca',
       youngId: id,
       youngName: young.fullName,
       placa: newPlaca,
-      consecutive: nextConsecutive
+      consecutive: nextConsecutive,
+      passwordGenerated: true,
+      defaultPasswordPattern: `Pass${placaPrefix}`
     });
 
     res.json({
       success: true,
-      message: 'Placa generada exitosamente',
-      data: updatedYoung
+      message: 'Placa y contraseña generadas exitosamente',
+      data: {
+        id: updatedYoung?.id,
+        fullName: updatedYoung?.fullName,
+        placa: newPlaca,
+        tempPassword: defaultPassword
+      }
     });
   });
 }

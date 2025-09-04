@@ -146,17 +146,7 @@ export class DatabaseSeeder {
       });
 
       await superAdminUser.save();
-      logger.info('✅ Usuario Super Admin creado exitosamente', {
-        context: 'DatabaseSeeder',
-        type: 'user_created',
-        email: superAdminUser.email,
-        placa: superAdminUser.placa,
-        credentials: {
-          email: superAdminUser.email,
-          placa: superAdminUser.placa,
-          password: 'Pinzon280615*'
-        }
-      });
+    
       
       return superAdminUser;
 

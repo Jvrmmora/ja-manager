@@ -505,8 +505,8 @@ paths:
 
   /young/{id}/generate-placa:
     put:
-      summary: Generar placa para un joven
-      description: Genera una placa única para un joven
+      summary: Generar placa y contraseña para un joven
+      description: Genera una placa única y contraseña temporal para un joven
       tags: [Young]
       security:
         - bearerAuth: []
@@ -520,7 +520,7 @@ paths:
           example: 507f1f77bcf86cd799439011
       responses:
         '200':
-          description: Placa generada exitosamente
+          description: Placa y contraseña generadas exitosamente
           content:
             application/json:
               schema:
@@ -531,9 +531,26 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: Placa generada exitosamente
+                    example: Placa y contraseña generadas exitosamente
                   data:
-                    $ref: '#/components/schemas/Young'
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: ID único del joven
+                        example: "507f1f77bcf86cd799439011"
+                      fullName:
+                        type: string
+                        description: Nombre completo del joven
+                        example: "Javier Mora"
+                      placa:
+                        type: string
+                        description: Placa única generada
+                        example: "@MODJAVI001"
+                      tempPassword:
+                        type: string
+                        description: Contraseña temporal generada
+                        example: "PassMODJAV"
         '400':
           $ref: '#/components/responses/ValidationError'
         '404':
