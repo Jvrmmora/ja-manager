@@ -10,14 +10,24 @@ export class DatabaseSeeder {
    */
   static async createSuperAdminRole(): Promise<any> {
     try {
+      // Obtener todos los scopes disponibles
+      const allScopes = Object.keys(SCOPES);
+
       // Verificar si el rol ya existe
       const existingRole = await Role.findOne({ name: 'Super Admin' });
       if (existingRole) {
+        // Actualizar scopes si el rol ya existe (para incluir nuevos scopes)
+        existingRole.scopes = allScopes;
+        existingRole.updated_at = new Date();
+        await existingRole.save();
+        logger.info('✅ Rol Super Admin actualizado con nuevos scopes', {
+          context: 'DatabaseSeeder',
+          type: 'role_updated',
+          roleName: 'Super Admin',
+          scopesCount: allScopes.length
+        });
         return existingRole;
       }
-
-      // Obtener todos los scopes disponibles
-      const allScopes = Object.keys(SCOPES);
 
       // Crear el rol Super Admin
       const superAdminRole = new Role({
@@ -33,7 +43,9 @@ export class DatabaseSeeder {
       logger.info('✅ Rol Super Admin creado exitosamente', {
         context: 'DatabaseSeeder',
         type: 'role_created',
-        roleName: 'Super Admin'
+        roleName: 'Super Admin',
+        scopesCount: allScopes.length,
+        scopes: allScopes
       });
       return superAdminRole;
 

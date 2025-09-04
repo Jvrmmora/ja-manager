@@ -58,6 +58,19 @@ export const contentTypeValidator = (req: Request, res: Response, next: NextFunc
       return next();
     }
     
+    // Excluir endpoints que no requieren body JSON
+    const excludeContentTypeValidation = [
+      '/generate-placa' // Endpoint que solo usa parámetros URL
+    ];
+    
+    const shouldExclude = excludeContentTypeValidation.some(path => 
+      req.path.includes(path)
+    );
+    
+    if (shouldExclude) {
+      return next();
+    }
+    
     // Validar que sea application/json
     if (!contentType?.includes('application/json')) {
       const error = new AppError(

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Young from '../models/Young';
+import Role from '../models/Role';
 import { uploadToCloudinary, deleteFromCloudinary, extractPublicId } from '../config/cloudinary';
 import { createYoungSchema, updateYoungSchema, querySchema } from '../utils/validation';
 import { ApiResponse, PaginatedResponse, IYoung, PaginationQuery } from '../types';
@@ -381,4 +382,110 @@ export class YoungController {
       } as ApiResponse);
     }
   }
+
+  // Generar placa para un joven
+  static generatePlaca = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+
+    // Validar que se proporcionó el ID
+    if (!id) {
+      throw new ValidationError('ID del joven es requerido');
+    }
+
+    // Buscar el joven por ID
+    const young = await Young.findById(id);
+    if (!young) {
+      throw new NotFoundError('Joven no encontrado');
+    }
+
+    // Validar que tiene nombre completo
+    if (!young.fullName || young.fullName.trim() === '') {
+      throw new ValidationError('El joven debe tener un nombre completo para generar la placa');
+    }
+
+    // Validar que no tenga placa ya asignada
+    if (young.placa) {
+      throw new ConflictError(`El joven ya tiene una placa asignada: ${young.placa}`);
+    }
+
+    // Generar las iniciales (primeras 3 letras del primer nombre)
+    const nameWords = young.fullName.trim().split(' ');
+    const firstName = nameWords[0];
+    let initials = firstName.substring(0, 3).toUpperCase();
+
+    // Si no tiene 3 letras, completar con letras del segundo nombre
+    if (initials.length < 3 && nameWords.length > 1) {
+      const secondName = nameWords[1];
+      initials += secondName.substring(0, 3 - initials.length).toUpperCase();
+    }
+
+    // Completar con X si aún no tiene 3 letras
+    while (initials.length < 3) {
+      initials += 'X';
+    }
+
+    // Generar el siguiente consecutivo
+    const existingPlaques = await Young.find({
+      placa: { $regex: /^@MOD/ }
+    }).select('placa').sort({ placa: -1 }).limit(10);
+
+    let nextConsecutive = 1;
+    if (existingPlaques.length > 0) {
+      // Extraer números consecutivos y encontrar el máximo
+      const consecutives = existingPlaques
+        .map(young => {
+          const match = young.placa?.match(/(\d{3})$/);
+          return match ? parseInt(match[1], 10) : 0;
+        })
+        .filter(num => num > 0);
+
+      if (consecutives.length > 0) {
+        nextConsecutive = Math.max(...consecutives) + 1;
+      }
+    }
+
+    // Formatear consecutivo con ceros a la izquierda
+    const consecutiveFormatted = nextConsecutive.toString().padStart(3, '0');
+
+    // Generar la placa
+    const newPlaca = `@MOD${initials}${consecutiveFormatted}`;
+
+    // Buscar el rol "Young role"
+    const youngRole = await Role.findById('68ba05fbd120dfcc43047cf1');
+    if (!youngRole) {
+      logger.error('Rol Young role no encontrado', {
+        context: 'YoungController',
+        method: 'generatePlaca',
+        youngId: id
+      });
+      throw new NotFoundError('Rol Young role no encontrado en el sistema');
+    }
+
+    // Actualizar el joven con la nueva placa, rol y first_login
+    const updatedYoung = await Young.findByIdAndUpdate(
+      id,
+      {
+        placa: newPlaca,
+        role_id: youngRole._id,
+        role_name: youngRole.name,
+        first_login: true
+      },
+      { new: true, runValidators: true }
+    );
+
+    logger.info('Placa generada exitosamente', {
+      context: 'YoungController',
+      method: 'generatePlaca',
+      youngId: id,
+      youngName: young.fullName,
+      placa: newPlaca,
+      consecutive: nextConsecutive
+    });
+
+    res.json({
+      success: true,
+      message: 'Placa generada exitosamente',
+      data: updatedYoung
+    });
+  });
 }

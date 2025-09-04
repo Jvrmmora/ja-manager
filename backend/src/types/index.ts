@@ -15,6 +15,7 @@ export interface IYoung {
   group?: number;
   email: string;
   skills: string[];
+  first_login?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

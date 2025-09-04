@@ -503,6 +503,57 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /young/{id}/generate-placa:
+    put:
+      summary: Generar placa para un joven
+      description: Genera una placa única para un joven
+      tags: [Young]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID único del joven
+          schema:
+            type: string
+          example: 507f1f77bcf86cd799439011
+      responses:
+        '200':
+          description: Placa generada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Placa generada exitosamente
+                  data:
+                    $ref: '#/components/schemas/Young'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflicto - El joven ya tiene placa asignada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: El joven ya tiene una placa asignada
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /import/import:
     post:
       summary: Importar jóvenes desde Excel
@@ -652,6 +703,19 @@ components:
           type: string
           description: ID único del joven
           example: 507f1f77bcf86cd799439011
+        placa:
+          type: string
+          description: Placa única del joven (formato @MODxxx000)
+          pattern: '^@MOD[A-Z]{3}\d{3}$'
+          example: "@MODJUA001"
+        role_id:
+          type: string
+          description: ID del rol asignado al joven
+          example: 507f1f77bcf86cd799439011
+        role_name:
+          type: string
+          description: Nombre del rol asignado
+          example: "Young role"
         fullName:
           type: string
           description: Nombre completo del joven
@@ -726,6 +790,10 @@ components:
           maximum: 5
           description: Grupo para clasificación interna (1-5)
           example: 3
+        first_login:
+          type: boolean
+          description: Indica si es el primer login del usuario
+          example: false
         createdAt:
           type: string
           format: date-time

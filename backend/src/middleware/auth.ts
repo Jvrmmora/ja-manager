@@ -22,6 +22,9 @@ export const SCOPES = {
   'young:delete': 'Eliminar jóvenes',
   'young:stats': 'Ver estadísticas de jóvenes',
   
+  // Placa management
+  'placa:generate': 'Generar placa para jóvenes',
+  
   // Import/Export endpoints
   'import:read': 'Descargar plantillas y exportar datos',
   'import:create': 'Importar datos desde Excel',

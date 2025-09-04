@@ -132,6 +132,11 @@ const youngSchema = new Schema<IYoungDocument>(
       min: [1, 'El grupo debe ser entre 1 y 5'],
       max: [5, 'El grupo debe ser entre 1 y 5'],
     },
+    // Campo para controlar primer login
+    first_login: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
