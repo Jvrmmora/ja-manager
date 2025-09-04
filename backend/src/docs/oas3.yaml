@@ -705,9 +705,9 @@ components:
           example: 507f1f77bcf86cd799439011
         placa:
           type: string
-          description: Placa única del joven (formato @MODxxx000)
-          pattern: '^@MOD[A-Z]{3}\d{3}$'
-          example: "@MODJUA001"
+          description: Placa única del joven (formato @MODxx### a @MODxxxx###)
+          pattern: '^@MOD[A-Z]{2,4}\d{3}$'
+          example: "@MODJAVI001"
         role_id:
           type: string
           description: ID del rol asignado al joven

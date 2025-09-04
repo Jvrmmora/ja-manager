@@ -408,20 +408,26 @@ export class YoungController {
       throw new ConflictError(`El joven ya tiene una placa asignada: ${young.placa}`);
     }
 
-    // Generar las iniciales (primeras 3 letras del primer nombre)
+    // Generar las iniciales (de 2 a 4 letras según la longitud del nombre)
     const nameWords = young.fullName.trim().split(' ');
     const firstName = nameWords[0];
-    let initials = firstName.substring(0, 3).toUpperCase();
+    let initials = '';
 
-    // Si no tiene 3 letras, completar con letras del segundo nombre
-    if (initials.length < 3 && nameWords.length > 1) {
-      const secondName = nameWords[1];
-      initials += secondName.substring(0, 3 - initials.length).toUpperCase();
-    }
-
-    // Completar con X si aún no tiene 3 letras
-    while (initials.length < 3) {
-      initials += 'X';
+    // Tomar un máximo de 4 letras del primer nombre
+    if (firstName.length >= 4) {
+      initials = firstName.substring(0, 4).toUpperCase();
+    } else if (firstName.length >= 2) {
+      initials = firstName.toUpperCase();
+      
+      // Si tenemos segundo nombre y no llegamos a 4 letras, completar con el segundo
+      if (nameWords.length > 1 && initials.length < 4) {
+        const secondName = nameWords[1];
+        const remainingLength = Math.min(4 - initials.length, secondName.length);
+        initials += secondName.substring(0, remainingLength).toUpperCase();
+      }
+    } else {
+      // Nombre muy corto (menos de 2 letras), no es válido
+      throw new ValidationError('El nombre debe tener al menos 2 letras para generar una placa válida');
     }
 
     // Generar el siguiente consecutivo

@@ -22,8 +22,8 @@ const youngSchema = new Schema<IYoungDocument>(
       sparse: true, // Permite que algunos documentos no tengan placa
       trim: true,
       match: [
-        /^@MOD[A-Z]{4}\d{3}$/,
-        'Formato de placa no válido. Debe ser @MODxxxx### (ej: @MODJAVI001)',
+        /^@MOD[A-Z]{2,4}\d{3}$/,
+        'Formato de placa no válido. Debe ser @MODxx###, @MODxxx### o @MODxxxx### (ej: @MODJAVI001)',
       ],
     },
     // Nueva contraseña encriptada
@@ -181,21 +181,24 @@ youngSchema.methods.comparePassword = async function(candidatePassword: string):
 // Método para generar placa única
 youngSchema.methods.generatePlaca = function(): string {
   const nameWords = this.fullName.trim().split(' ');
+  const firstName = nameWords[0];
   let initials = '';
   
-  // Tomar las primeras 4 letras del primer nombre o primeros nombres
-  const firstName = nameWords[0];
-  initials = firstName.substring(0, 4).toUpperCase();
-  
-  // Si no tiene 4 letras, completar con letras del segundo nombre
-  if (initials.length < 4 && nameWords.length > 1) {
-    const secondName = nameWords[1];
-    initials += secondName.substring(0, 4 - initials.length).toUpperCase();
-  }
-  
-  // Completar con X si aún no tiene 4 letras
-  while (initials.length < 4) {
-    initials += 'X';
+  // Tomar un máximo de 4 letras del primer nombre
+  if (firstName.length >= 4) {
+    initials = firstName.substring(0, 4).toUpperCase();
+  } else if (firstName.length >= 2) {
+    initials = firstName.toUpperCase();
+    
+    // Si tenemos segundo nombre y no llegamos a 4 letras, completar con el segundo
+    if (nameWords.length > 1 && initials.length < 4) {
+      const secondName = nameWords[1];
+      const remainingLength = Math.min(4 - initials.length, secondName.length);
+      initials += secondName.substring(0, remainingLength).toUpperCase();
+    }
+  } else {
+    // Nombre muy corto, usar mínimo 2 caracteres
+    initials = firstName.toUpperCase().padEnd(2, 'X');
   }
   
   // Por ahora usar 001, luego implementaremos el consecutivo
