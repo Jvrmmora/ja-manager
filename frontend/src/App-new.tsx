@@ -17,28 +17,19 @@ function App() {
 
   const checkAuthStatus = async () => {
     try {
-      console.log('🔍 Verificando estado de autenticación...');
       const authenticated = authService.isAuthenticated();
-      console.log('🔍 ¿Está autenticado?', authenticated);
-      
       if (authenticated) {
         // Obtener información del usuario
         const userInfo = authService.getUserInfo();
-        console.log('👤 Información del usuario:', userInfo);
-        
         if (userInfo) {
           setIsAuthenticated(true);
           setUserRole(userInfo.role_name);
-          console.log('✅ Usuario autenticado con rol:', userInfo.role_name);
         } else {
           // Token inválido o expirado
-          console.log('❌ No se pudo obtener información del usuario, haciendo logout');
           authService.logout();
           setIsAuthenticated(false);
           setUserRole(null);
         }
-      } else {
-        console.log('❌ Usuario no autenticado');
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
@@ -51,22 +42,12 @@ function App() {
   };
 
   const handleLoginSuccess = () => {
-    console.log('🎉 Login exitoso, actualizando estado...');
     setIsAuthenticated(true);
     const userInfo = authService.getUserInfo();
-    console.log('👤 Información del usuario después del login:', userInfo);
     setUserRole(userInfo?.role_name || null);
-    console.log('🔄 Rol establecido:', userInfo?.role_name || null);
   };
 
-  console.log('🎯 Renderizando App - Estado actual:', { 
-    loading, 
-    isAuthenticated, 
-    userRole 
-  });
-
   if (loading) {
-    console.log('⏳ Mostrando loading...');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -75,20 +56,15 @@ function App() {
   }
 
   if (!isAuthenticated) {
-    console.log('🔐 Mostrando login...');
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
   // Decidir qué dashboard mostrar basado en el role
-  console.log('🏠 Decidiendo dashboard para rol:', userRole);
-  
   if (userRole === 'Young role') {
-    console.log('👤 Mostrando YoungDashboard');
     return <YoungDashboard />;
   }
 
   // Super Admin o roles administrativos
-  console.log('👑 Mostrando HomePage (Admin)');
   return <HomePage />;
 }
 
