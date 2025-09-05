@@ -25,6 +25,7 @@ router.get('/:id', ...authenticateAndAuthorize('young:read'), YoungController.ge
 router.post('/', ...authenticateAndAuthorize('young:create'), upload.single('profileImage'), handleMulterError, parseFormData, YoungController.createYoung);
 router.put('/:id', ...authenticateAndAuthorize('young:update'), upload.single('profileImage'), handleMulterError, parseFormData, YoungController.updateYoung);
 router.put('/:id/generate-placa', ...authenticateAndAuthorize('placa:generate'), YoungController.generatePlaca);
+router.put('/:id/reset-password', ...authenticateAndAuthorize('password:reset'), YoungController.resetPassword);
 router.delete('/:id', ...authenticateAndAuthorize('young:delete'), YoungController.deleteYoung);
 
 export default router;

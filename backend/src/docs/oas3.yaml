@@ -571,6 +571,98 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /young/{id}/reset-password:
+    put:
+      summary: Resetear contraseña de un joven
+      description: Permite resetear la contraseña de un joven (solo en primer login)
+      tags: [Young]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID único del joven
+          schema:
+            type: string
+          example: 507f1f77bcf86cd799439011
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - new_password
+              properties:
+                current_password:
+                  type: string
+                  description: "Contraseña actual (OBLIGATORIA para Young role, IGNORADA para Super Admin)"
+                  example: "PassMODJAV"
+                new_password:
+                  type: string
+                  description: Nueva contraseña (8-50 caracteres, debe incluir mayúscula, minúscula y número)
+                  example: "MiNuevaPassword123"
+      responses:
+        '200':
+          description: Contraseña reseteada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Contraseña actualizada exitosamente
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: ID único del joven
+                        example: "507f1f77bcf86cd799439011"
+                      fullName:
+                        type: string
+                        description: Nombre completo del joven
+                        example: "Javier Mora"
+                      first_login:
+                        type: boolean
+                        description: Indica si es el primer login (siempre false después del reset)
+                        example: false
+        '400':
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "La nueva contraseña debe tener entre 8-50 caracteres, incluir al menos una mayúscula, una minúscula y un número"
+        '403':
+          description: Sin permisos para cambiar esta contraseña
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "No tienes permisos para cambiar esta contraseña"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /import/import:
     post:
       summary: Importar jóvenes desde Excel

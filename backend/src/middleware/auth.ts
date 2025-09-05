@@ -25,6 +25,9 @@ export const SCOPES = {
   // Placa management
   'placa:generate': 'Generar placa para jóvenes',
   
+  // Password management
+  'password:reset': 'Resetear contraseñas',
+  
   // Import/Export endpoints
   'import:read': 'Descargar plantillas y exportar datos',
   'import:create': 'Importar datos desde Excel',

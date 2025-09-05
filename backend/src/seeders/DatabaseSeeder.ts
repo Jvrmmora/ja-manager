@@ -72,7 +72,8 @@ export class DatabaseSeeder {
       // Scopes específicos para jóvenes
       const youngScopes = [
         'young:read',
-        'young:update'
+        'young:update',
+        'password:reset'
       ];
 
       // Crear el rol Young

@@ -631,4 +631,148 @@ export class YoungController {
       }
     });
   });
+
+  // Resetear contraseña de un joven
+  static resetPassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    const { current_password, new_password } = req.body;
+    const authUser = (req as any).user; // Usuario autenticado desde el middleware
+
+    logger.info('Iniciando reseteo de contraseña', {
+      context: 'YoungController',
+      method: 'resetPassword',
+      youngId: id,
+      requestedBy: authUser.username,
+      role: authUser.role_name
+    });
+
+    // Validaciones básicas
+    if (!id) {
+      throw new ValidationError('ID del joven es requerido');
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new ValidationError('Formato de ID no válido');
+    }
+
+    // Validar campos requeridos según el rol
+    if (!new_password) {
+      throw new ValidationError('Nueva contraseña es requerida');
+    }
+
+    // Para Young role, current_password es obligatoria
+    if (authUser.role_name === 'Young role' && !current_password) {
+      throw new ValidationError('Contraseña actual es requerida para jóvenes');
+    }
+
+    // Validar formato de la nueva contraseña
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,50}$/;
+    if (!passwordRegex.test(new_password)) {
+      throw new ValidationError(
+        'La nueva contraseña debe tener entre 8-50 caracteres, incluir al menos una mayúscula, una minúscula y un número'
+      );
+    }
+
+    // Buscar el joven por ID
+    const young = await Young.findById(id);
+    if (!young) {
+      throw new NotFoundError('Joven no encontrado');
+    }
+
+    // Validación: el usuario debe tener placa activa
+    if (!young.placa) {
+      throw new ValidationError('El joven debe tener una placa asignada para resetear su contraseña');
+    }
+
+    // Validación: debe ser el primer login
+    if (!young.first_login) {
+      throw new ValidationError('Solo se puede resetear la contraseña en el primer login');
+    }
+
+    // Si es Young role, validar que solo puede cambiar su propia contraseña
+    if (authUser.role_name === 'Young role') {
+      // Buscar el joven autenticado por su username (placa) o email
+      const authenticatedYoung = await Young.findOne({
+        $or: [
+          { placa: authUser.username },
+          { email: authUser.username }
+        ]
+      });
+
+      if (!authenticatedYoung) {
+        logger.error('Joven autenticado no encontrado', {
+          context: 'YoungController',
+          method: 'resetPassword',
+          username: authUser.username
+        });
+        throw new NotFoundError('Usuario autenticado no encontrado');
+      }
+
+      // Verificar que está intentando cambiar su propia contraseña
+      if ((authenticatedYoung._id as mongoose.Types.ObjectId).toString() !== id) {
+        logger.warn('Intento de cambio de contraseña no autorizado', {
+          context: 'YoungController',
+          method: 'resetPassword',
+          requestedId: id,
+          authenticatedId: (authenticatedYoung._id as mongoose.Types.ObjectId).toString(),
+          username: authUser.username
+        });
+        throw new ForbiddenError('No tienes permisos para cambiar esta contraseña');
+      }
+
+      // Verificar contraseña actual (solo para Young role)
+      const isCurrentPasswordValid = await young.comparePassword(current_password);
+      if (!isCurrentPasswordValid) {
+        logger.warn('Contraseña actual incorrecta', {
+          context: 'YoungController',
+          method: 'resetPassword',
+          youngId: id,
+          requestedBy: authUser.username
+        });
+        throw new ValidationError('La contraseña actual es incorrecta');
+      }
+    } else {
+      // Para Super Admin, siempre omitir validación de current_password
+      logger.info('Admin omitiendo validación de contraseña actual', {
+        context: 'YoungController',
+        method: 'resetPassword',
+        youngId: id,
+        requestedBy: authUser.username,
+        role: authUser.role_name
+      });
+    }
+
+    // Hashear la nueva contraseña
+    const hashedNewPassword = await bcrypt.hash(new_password, 10);
+
+    // Actualizar la contraseña y marcar que ya no es el primer login
+    const updatedYoung = await Young.findByIdAndUpdate(
+      id,
+      {
+        password: hashedNewPassword,
+        first_login: false, // Ya no es el primer login después del reset
+        updatedAt: new Date()
+      },
+      { new: true, runValidators: true }
+    );
+
+    logger.info('Contraseña reseteada exitosamente', {
+      context: 'YoungController',
+      method: 'resetPassword',
+      youngId: id,
+      youngName: young.fullName,
+      requestedBy: authUser.username,
+      role: authUser.role_name
+    });
+
+    res.json({
+      success: true,
+      message: 'Contraseña actualizada exitosamente',
+      data: {
+        id: updatedYoung?.id,
+        fullName: updatedYoung?.fullName,
+        first_login: false
+      }
+    });
+  });
 }
