@@ -233,21 +233,25 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
         </div>
 
         {/* Habilidades */}
-        {young.skills && young.skills.length > 0 && (
-          <div>
-            <span className="text-sm font-medium text-gray-500 block mb-2">Habilidades:</span>
-            <div className="flex flex-wrap gap-1 sm:gap-2">
-              {young.skills.map((skill, index) => (
+        <div>
+          <span className="text-sm font-medium text-gray-500 block mb-2">Habilidades:</span>
+          <div className="flex flex-wrap gap-1 sm:gap-2">
+            {young.skills && young.skills.length > 0 ? (
+              young.skills.map((skill, index) => (
                 <span
                   key={index}
                   className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs font-medium"
                 >
                   {skill}
                 </span>
-              ))}
-            </div>
+              ))
+            ) : (
+              <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded-full text-xs font-medium">
+                Sin asignar
+              </span>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Línea divisoria */}
         <div className="border-t border-gray-100"></div>
