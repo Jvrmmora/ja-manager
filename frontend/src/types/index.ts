@@ -11,6 +11,7 @@ export interface IYoung {
   group?: number;
   email: string;
   skills: string[];
+  placa?: string; // Placa generada del joven
   createdAt?: Date;
   updatedAt?: Date;
 }

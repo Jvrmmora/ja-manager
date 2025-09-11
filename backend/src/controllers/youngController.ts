@@ -116,9 +116,10 @@ export class YoungController {
         birthday: doc.birthday,
         gender: doc.gender,
         role: doc.role,
-  group: doc.group,
+        group: doc.group,
         email: doc.email,
         skills: doc.skills || [],
+        placa: doc.placa, // ✅ Agregar campo placa
         ...(doc.profileImage && { profileImage: doc.profileImage }),
         createdAt: doc.createdAt || new Date(),
         updatedAt: doc.updatedAt || new Date(),

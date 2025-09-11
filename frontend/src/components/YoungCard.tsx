@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { IYoung } from '../types';
 import ImageModal from './ImageModal';
+import Tooltip from './Tooltip';
+import { generatePlaca } from '../services/api';
 
 // Mapeo de colores por grupo
 const getGroupColor = (group?: number | null): string => {
@@ -18,10 +20,14 @@ interface YoungCardProps {
   young: IYoung;
   onDelete: (id: string) => void;
   onEdit: (young: IYoung) => void;
+  onYoungUpdate?: (updatedYoung: IYoung) => void; // Callback para actualizar el joven
+  onShowSuccess?: (message: string) => void; // Callback para mostrar toast de éxito
+  onShowError?: (message: string) => void; // Callback para mostrar toast de error
 }
 
-const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
+const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungUpdate, onShowSuccess, onShowError }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isGeneratingPlaca, setIsGeneratingPlaca] = useState(false);
 
   const handleDelete = () => {
     if (window.confirm(`¿Estás seguro de que deseas eliminar a ${young.fullName}?`)) {
@@ -36,6 +42,49 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
   const handleImageClick = () => {
     if (young.profileImage) {
       setIsModalOpen(true);
+    }
+  };
+
+  // Función para generar placa
+  const handleGeneratePlaca = async () => {
+    if (!young.id) return;
+
+    setIsGeneratingPlaca(true);
+    try {
+      const response = await generatePlaca(young.id);
+      
+      if (response.success && response.data) {
+        // Actualizar el joven con la nueva placa
+        const updatedYoung = { ...young, placa: response.data.placa };
+        if (onYoungUpdate) {
+          onYoungUpdate(updatedYoung);
+        }
+        if (onShowSuccess) {
+          onShowSuccess(`Placa generada exitosamente: ${response.data.placa}`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error al generar placa:', error);
+      if (onShowError) {
+        onShowError(`Error al generar placa: ${error.message}`);
+      }
+    } finally {
+      setIsGeneratingPlaca(false);
+    }
+  };
+
+  // Función para copiar placa al portapapeles
+  const handleCopyPlaca = async (placa: string) => {
+    try {
+      await navigator.clipboard.writeText(placa);
+      if (onShowSuccess) {
+        onShowSuccess(`Placa copiada: ${placa}`);
+      }
+    } catch (error) {
+      console.error('Error al copiar placa:', error);
+      if (onShowError) {
+        onShowError('Error al copiar placa al portapapeles');
+      }
     }
   };
 
@@ -200,8 +249,56 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit }) => {
           </div>
         )}
 
+        {/* Línea divisoria */}
+        <div className="border-t border-gray-100"></div>
+
+        {/* Placa */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-500">Tu Placa:</span>
+          
+          {young.placa ? (
+            <Tooltip content="Clic para copiar" position="top">
+              <button
+                onClick={() => handleCopyPlaca(young.placa!)}
+                className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-lg text-sm font-medium transition-colors cursor-pointer border border-blue-200"
+              >
+                {young.placa}
+              </button>
+            </Tooltip>
+          ) : (
+            <Tooltip content="Generar" position="top">
+              <button
+                onClick={handleGeneratePlaca}
+                disabled={isGeneratingPlaca}
+                className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                  isGeneratingPlaca 
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                    : 'bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-200'
+                }`}
+              >
+                {isGeneratingPlaca ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generando...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Sin placa
+                  </>
+                )}
+              </button>
+            </Tooltip>
+          )}
+        </div>
+
         {/* Fecha de registro */}
-        <div className="pt-2 border-t border-gray-100">
+        <div className="pt-2">
           <span className="text-xs text-gray-400">
             Registrado el {formatDate(young.createdAt || new Date())}
           </span>

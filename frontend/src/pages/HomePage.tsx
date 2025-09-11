@@ -7,7 +7,9 @@ import BirthdayDashboard from '../components/BirthdayDashboard';
 import ImportModal from '../components/ImportModal';
 import ProfileDropdown from '../components/ProfileDropdown';
 import StatsCards from '../components/StatsCards';
+import ToastContainer from '../components/ToastContainer';
 import { apiRequest } from '../services/api';
+import { useToast } from '../hooks/useToast';
 import type { IYoung, PaginationQuery } from '../types';
 
 interface YoungFormData {
@@ -79,6 +81,9 @@ function HomePage() {
     sortBy: 'fullName',
     sortOrder: 'asc'
   });
+
+  // Hook para manejo de toasts
+  const { toasts, showSuccess, showError, removeToast } = useToast();
 
   // Función para obtener todos los jóvenes para estadísticas (sin filtros)
   const fetchAllYoung = async () => {
@@ -411,6 +416,23 @@ function HomePage() {
     setShowImportModal(false);
   };
 
+  // Función para actualizar un joven en la lista local
+  const handleYoungUpdate = (updatedYoung: IYoung) => {
+    // Actualizar en la lista de visualización
+    setYoungList(prevList => 
+      prevList.map(young => 
+        young.id === updatedYoung.id ? updatedYoung : young
+      )
+    );
+    
+    // Actualizar en la lista completa para estadísticas
+    setAllYoungList(prevList => 
+      prevList.map(young => 
+        young.id === updatedYoung.id ? updatedYoung : young
+      )
+    );
+  };
+
   const displayTotal = filteredTotal !== null ? filteredTotal : allYoungList.length;
 
   return (
@@ -552,6 +574,9 @@ function HomePage() {
                     young={young}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    onYoungUpdate={handleYoungUpdate}
+                    onShowSuccess={showSuccess}
+                    onShowError={showError}
                   />
                 ))}
               </div>
@@ -612,6 +637,9 @@ function HomePage() {
             youngList={allYoungList}
           />
         )}
+
+        {/* Toast Container */}
+        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       </div>
     </div>
   );

@@ -80,3 +80,17 @@ export const apiUpload = async (
 };
 
 export default API_BASE_URL;
+
+// Función específica para generar placa
+export const generatePlaca = async (youngId: string): Promise<any> => {
+  const response = await apiRequest(`young/${youngId}/generate-placa`, {
+    method: 'PUT'
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Error al generar la placa');
+  }
+
+  return response.json();
+};
