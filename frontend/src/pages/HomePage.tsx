@@ -8,7 +8,7 @@ import ImportModal from '../components/ImportModal';
 import ProfileDropdown from '../components/ProfileDropdown';
 import StatsCards from '../components/StatsCards';
 import ToastContainer from '../components/ToastContainer';
-import { apiRequest } from '../services/api';
+import { apiRequest, apiUpload, debugAuthState } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import type { IYoung, PaginationQuery } from '../types';
 
@@ -279,6 +279,9 @@ function HomePage() {
 
   const handleSubmit = async (data: YoungFormData) => {
     try {
+      console.log('✨ Iniciando creación de joven');
+      debugAuthState(); // Debug del estado de autenticación
+      
       const formData = new FormData();
       formData.append('fullName', data.fullName);
       formData.append('ageRange', data.ageRange);
@@ -297,10 +300,8 @@ function HomePage() {
         formData.append('profileImage', data.profileImage);
       }
 
-      const response = await apiRequest('young', {
-        method: 'POST',
-        body: formData,
-      });
+      // Usar apiUpload para enviar FormData con posibles archivos
+      const response = await apiUpload('young', formData);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -328,6 +329,9 @@ function HomePage() {
     if (!editingYoung) return;
 
     try {
+      console.log('🔄 Iniciando actualización de joven:', id);
+      debugAuthState(); // Debug del estado de autenticación
+      
       const formData = new FormData();
       formData.append('fullName', data.fullName);
       formData.append('ageRange', data.ageRange);
@@ -346,9 +350,9 @@ function HomePage() {
         formData.append('profileImage', data.profileImage);
       }
 
-      const response = await apiRequest(`young/${id}`, {
+      // Usar apiUpload para enviar FormData con posibles archivos
+      const response = await apiUpload(`young/${id}`, formData, {
         method: 'PUT',
-        body: formData,
       });
 
       if (!response.ok) {
@@ -385,6 +389,9 @@ function HomePage() {
     }
 
     try {
+      console.log('🗑️ Iniciando eliminación de joven:', id);
+      debugAuthState(); // Debug del estado de autenticación
+      
       const response = await apiRequest(`young/${id}`, {
         method: 'DELETE',
       });

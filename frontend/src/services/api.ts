@@ -34,6 +34,7 @@ export const apiRequest = async (
   const token = getAuthToken();
   
   console.log(`📡 API Request to: ${url}`);
+  console.log(`🔑 Token presente:`, token ? 'SÍ' : 'NO');
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -43,6 +44,9 @@ export const apiRequest = async (
   // Agregar token de autorización si existe
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    console.log(`🔐 Authorization header agregado`);
+  } else {
+    console.warn(`⚠️ No hay token disponible para la petición a ${endpoint}`);
   }
   
   return fetch(url, {
@@ -61,6 +65,7 @@ export const apiUpload = async (
   const token = getAuthToken();
   
   console.log(`📡 API Upload to: ${url}`);
+  console.log(`🔑 Token presente:`, token ? 'SÍ' : 'NO');
   
   const headers: Record<string, string> = {
     ...options.headers as Record<string, string>,
@@ -69,6 +74,9 @@ export const apiUpload = async (
   // Agregar token de autorización si existe
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    console.log(`🔐 Authorization header agregado para upload`);
+  } else {
+    console.warn(`⚠️ No hay token disponible para el upload a ${endpoint}`);
   }
   
   return fetch(url, {
@@ -80,6 +88,21 @@ export const apiUpload = async (
 };
 
 export default API_BASE_URL;
+
+// Función para debug - verificar estado de autenticación
+export const debugAuthState = (): void => {
+  const token = getAuthToken();
+  const userRole = localStorage.getItem('userRole');
+  const userInfo = localStorage.getItem('userInfo');
+  
+  console.log('🔍 Estado de autenticación:');
+  console.log('- Token presente:', token ? 'SÍ' : 'NO');
+  if (token) {
+    console.log('- Token (primeros 20 chars):', token.substring(0, 20) + '...');
+  }
+  console.log('- Rol de usuario:', userRole);
+  console.log('- Info de usuario:', userInfo ? 'Presente' : 'No presente');
+};
 
 // Función específica para generar placa
 export const generatePlaca = async (youngId: string): Promise<any> => {
