@@ -20,9 +20,11 @@ interface YoungFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: YoungFormData) => Promise<void>;
+  onShowSuccess?: (message: string) => void;
+  onShowError?: (message: string) => void;
 }
 
-const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
+const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShowSuccess, onShowError }) => {
   const [formData, setFormData] = useState<YoungFormData>({
     fullName: '',
     ageRange: '',
@@ -91,7 +93,7 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
     e.preventDefault();
     
     if (!formData.fullName || !formData.ageRange || !formData.birthday) {
-      alert('Por favor, completa todos los campos obligatorios');
+      onShowError?.('Por favor, completa todos los campos obligatorios');
       return;
     }
 
@@ -114,7 +116,7 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit }) => {
       onClose();
     } catch (error) {
       console.error('Error al guardar:', error);
-      alert('Error al guardar el joven. Por favor, intenta de nuevo.');
+      onShowError?.('Error al guardar el joven. Por favor, intenta de nuevo.');
     } finally {
       setLoading(false);
     }

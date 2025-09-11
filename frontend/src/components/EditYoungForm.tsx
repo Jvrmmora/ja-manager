@@ -21,9 +21,11 @@ interface EditYoungFormProps {
   onClose: () => void;
   onSubmit: (id: string, data: YoungFormData) => Promise<void>;
   young: IYoung;
+  onShowSuccess?: (message: string) => void;
+  onShowError?: (message: string) => void;
 }
 
-const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit, young }) => {
+const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit, young, onShowSuccess, onShowError }) => {
   const [formData, setFormData] = useState<YoungFormData>({
     fullName: '',
     ageRange: '',
@@ -123,7 +125,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
     
     // Validaciones básicas
     if (!formData.fullName.trim()) {
-      alert('El nombre completo es obligatorio');
+      onShowError?.('El nombre completo es obligatorio');
       return;
     }
 
@@ -146,7 +148,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
       onClose();
     } catch (error) {
       console.error('Error:', error);
-      alert('Error al actualizar el joven. Por favor, intenta de nuevo.');
+      onShowError?.('Error al actualizar el joven. Por favor, intenta de nuevo.');
     } finally {
       setLoading(false);
     }

@@ -316,12 +316,12 @@ function HomePage() {
       fetchAllYoung(); // Actualizar estadísticas también
       setShowForm(false);
 
-      // Mostrar mensaje de éxito (puedes implementar un toast aquí)
-      alert('¡Joven registrado exitosamente!');
+      // Mostrar mensaje de éxito
+      showSuccess('¡Joven registrado exitosamente!');
 
     } catch (err) {
       console.error('❌ Error al crear joven:', err);
-      alert(err instanceof Error ? err.message : 'Error desconocido al crear el joven');
+      showError(err instanceof Error ? err.message : 'Error desconocido al crear el joven');
     }
   };
 
@@ -370,11 +370,11 @@ function HomePage() {
       setEditingYoung(null);
 
       // Mostrar mensaje de éxito
-      alert('¡Joven actualizado exitosamente!');
+      showSuccess('¡Joven actualizado exitosamente!');
 
     } catch (err) {
       console.error('❌ Error al actualizar joven:', err);
-      alert(err instanceof Error ? err.message : 'Error desconocido al actualizar el joven');
+      showError(err instanceof Error ? err.message : 'Error desconocido al actualizar el joven');
     }
   };
 
@@ -408,11 +408,11 @@ function HomePage() {
       fetchAllYoung(); // Actualizar estadísticas también
 
       // Mostrar mensaje de éxito
-      alert('¡Joven eliminado exitosamente!');
+      showSuccess('¡Joven eliminado exitosamente!');
 
     } catch (err) {
       console.error('❌ Error al eliminar joven:', err);
-      alert(err instanceof Error ? err.message : 'Error desconocido al eliminar el joven');
+      showError(err instanceof Error ? err.message : 'Error desconocido al eliminar el joven');
     }
   };
 
@@ -618,6 +618,8 @@ function HomePage() {
             isOpen={showForm}
             onSubmit={handleSubmit}
             onClose={() => setShowForm(false)}
+            onShowSuccess={showSuccess}
+            onShowError={showError}
           />
         )}
 
@@ -630,6 +632,8 @@ function HomePage() {
               setShowEditForm(false);
               setEditingYoung(null);
             }}
+            onShowSuccess={showSuccess}
+            onShowError={showError}
           />
         )}
 
@@ -638,6 +642,8 @@ function HomePage() {
             isOpen={showImportModal}
             onClose={() => setShowImportModal(false)}
             onSuccess={handleImportSuccess}
+            onShowSuccess={showSuccess}
+            onShowError={showError}
           />
         )}
 

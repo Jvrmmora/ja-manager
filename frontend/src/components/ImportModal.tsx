@@ -5,6 +5,8 @@ interface ImportModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  onShowSuccess?: (message: string) => void;
+  onShowError?: (message: string) => void;
 }
 
 interface ImportResult {
@@ -18,7 +20,7 @@ interface ImportResult {
   warnings: string[];
 }
 
-const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess, onShowSuccess, onShowError }) => {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -63,11 +65,11 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       } else {
-        alert('Error al exportar: ' + response.statusText);
+        onShowError?.('Error al exportar: ' + response.statusText);
       }
     } catch (error) {
       console.error('Error exporting:', error);
-      alert('Error al exportar los jóvenes');
+      onShowError?.('Error al exportar los jóvenes');
     }
   };
 
@@ -90,11 +92,11 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
           onSuccess();
         }
       } else {
-        alert('Error: ' + data.message);
+        onShowError?.('Error: ' + data.message);
       }
     } catch (error) {
       console.error('Error importing file:', error);
-      alert('Error al importar el archivo');
+      onShowError?.('Error al importar el archivo');
     } finally {
       setLoading(false);
     }
