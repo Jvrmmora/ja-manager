@@ -137,8 +137,8 @@ export class YoungController {
             currentPage,
             totalPages,
             totalItems,
-            hasNext: currentPage < totalPages,
-            hasPrev: currentPage > 1,
+            hasNextPage: currentPage < totalPages,
+            hasPreviousPage: currentPage > 1,
           },
         },
       };

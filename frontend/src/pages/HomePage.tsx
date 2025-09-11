@@ -593,9 +593,13 @@ function HomePage() {
             {/* Indicador de fin de resultados */}
             {!hasMore && youngList.length > 0 && (
               <div className="text-center py-8">
-                <p className="text-sm text-gray-500">
-                  ✅ Has visto todos los jóvenes ({displayTotal} total{displayTotal !== 1 ? 'es' : ''})
-                </p>
+                <div className="text-center text-gray-500">
+                  <svg className="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <p className="font-medium text-sm sm:text-base">¡Has visto todos los jóvenes!</p>
+                  <p className="text-xs sm:text-sm mt-1">No hay más elementos para mostrar</p>
+                </div>
               </div>
             )}
           </>
