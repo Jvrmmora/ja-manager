@@ -115,9 +115,9 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
       {/* Header con imagen de perfil */}
-      <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 p-4 sm:p-6 text-white">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3 sm:space-x-4">
+      <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 p-4 sm:p-6 text-white min-h-[120px] sm:min-h-[130px]">
+        <div className="flex items-start justify-between gap-3 h-full">
+          <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
             <div className="relative" style={{ width: 56, height: 56 }}>
               <div
                 className={`w-14 h-14 sm:w-16 sm:h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center ${
@@ -162,17 +162,32 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
               </div>
             </div>
 
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg sm:text-xl font-semibold truncate">{young.fullName}</h3>
-              <p className="text-blue-100 text-sm sm:text-base truncate">{capitalizeRole(young.role)}</p>
+            <div className="flex-1 min-w-0 pr-3">
+              <h3 
+                className="text-lg sm:text-xl font-semibold text-white leading-tight break-words"
+                style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  wordBreak: 'break-word',
+                  hyphens: 'auto'
+                }}
+                title={young.fullName}
+              >
+                {young.fullName}
+              </h3>
+              <p className="text-blue-100 text-sm sm:text-base truncate mt-1">
+                {capitalizeRole(young.role)}
+              </p>
             </div>
           </div>
           
           {/* Botones de acción */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={handleEdit}
-              className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors"
+              className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors flex-shrink-0"
               title="Editar joven"
             >
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,7 +196,7 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
             </button>
             <button
               onClick={handleDelete}
-              className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors"
+              className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors flex-shrink-0"
               title="Eliminar joven"
             >
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
