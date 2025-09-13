@@ -42,34 +42,34 @@ const GroupSelect: React.FC<Props> = ({ value, onChange, className }) => {
       <button
         type="button"
         onClick={() => setOpen(s => !s)}
-        className="w-full border rounded-lg px-3 py-2 flex items-center justify-between bg-white"
+        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 flex items-center justify-between bg-white dark:bg-gray-700"
       >
         <div className="flex items-center gap-3">
           <span className="inline-block w-3 h-3 rounded-full border-2 border-white" style={{ backgroundColor: getColor(value) }} />
-          <span className="text-sm text-gray-800">{value ? `${value} — Nivel ${value}` : 'No asignado'}</span>
+          <span className="text-sm text-gray-800 dark:text-gray-200">{value ? `${value} — Nivel ${value}` : 'No asignado'}</span>
         </div>
-        <svg className={`w-4 h-4 text-gray-500 transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className={`w-4 h-4 text-gray-500 dark:text-gray-400 transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {open && (
-        <div className="mt-2 bg-white border rounded-lg shadow-md z-50 absolute w-full">
+        <div className="mt-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-md z-50 absolute w-full">
           <button
             onClick={() => handleSelect(undefined)}
-            className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3"
+            className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-3"
           >
             <span className="inline-block w-3 h-3 rounded-full border-2 border-white" style={{ backgroundColor: '#7C3AED' }} />
-            <span className="text-sm">No asignado</span>
+            <span className="text-sm text-gray-800 dark:text-gray-200">No asignado</span>
           </button>
           {OPTIONS.map(opt => (
             <button
               key={opt.value}
               onClick={() => handleSelect(opt.value)}
-              className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3"
+              className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-3"
             >
               <span className="inline-block w-3 h-3 rounded-full border-2 border-white" style={{ backgroundColor: opt.color }} />
-              <span className="text-sm">{opt.label}</span>
+              <span className="text-sm text-gray-800 dark:text-gray-200">{opt.label}</span>
             </button>
           ))}
         </div>

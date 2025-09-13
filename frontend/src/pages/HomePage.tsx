@@ -8,6 +8,7 @@ import ImportModal from '../components/ImportModal';
 import ProfileDropdown from '../components/ProfileDropdown';
 import StatsCards from '../components/StatsCards';
 import ToastContainer from '../components/ToastContainer';
+import ThemeToggle from '../components/ThemeToggle';
 import { apiRequest, apiUpload, debugAuthState } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import type { IYoung, PaginationQuery } from '../types';
@@ -443,9 +444,9 @@ function HomePage() {
   const displayTotal = filteredTotal !== null ? filteredTotal : allYoungList.length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header con ProfileDropdown */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo y título */}
@@ -456,13 +457,16 @@ function HomePage() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">JA Manager</h1>
-                <p className="text-sm text-gray-500 hidden sm:block">Dashboard de Administración</p>
+                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">JA Manager</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">Dashboard de Administración</p>
               </div>
             </div>
 
-            {/* Profile Dropdown */}
-            <ProfileDropdown />
+            {/* Profile Dropdown y Theme Toggle */}
+            <div className="flex items-center space-x-4">
+              <ThemeToggle />
+              <ProfileDropdown />
+            </div>
           </div>
         </div>
       </header>
@@ -472,9 +476,9 @@ function HomePage() {
         {showBirthdayDashboard && (
           <div className="mb-8">
             {/* <BirthdayDashboard /> */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h2 className="text-xl font-semibold mb-4">🎂 Dashboard de Cumpleaños</h2>
-              <p className="text-gray-600">Próximamente: Vista de cumpleaños</p>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-900/20">
+              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">🎂 Dashboard de Cumpleaños</h2>
+              <p className="text-gray-600 dark:text-gray-400">Próximamente: Vista de cumpleaños</p>
             </div>
           </div>
         )}
@@ -512,8 +516,8 @@ function HomePage() {
               onClick={() => setShowBirthdayDashboard(!showBirthdayDashboard)}
               className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                 showBirthdayDashboard 
-                  ? 'bg-yellow-600 text-white hover:bg-yellow-700' 
-                  : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                  ? 'bg-yellow-600 text-white hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800' 
+                  : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-900/50'
               }`}
             >
               🎂 {showBirthdayDashboard ? 'Ocultar Cumpleaños' : 'Ver Cumpleaños'}
@@ -521,14 +525,14 @@ function HomePage() {
           </div>
 
           {/* Contador de resultados */}
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
             {loading ? (
               <span>Cargando...</span>
             ) : (
               <span>
                 Mostrando {youngList.length} de {displayTotal} jóvenes
                 {filteredTotal !== null && filteredTotal < allYoungList.length && (
-                  <span className="text-blue-600 ml-1">(filtrados)</span>
+                  <span className="text-blue-600 dark:text-blue-400 ml-1">(filtrados)</span>
                 )}
               </span>
             )}
@@ -540,7 +544,7 @@ function HomePage() {
 
         {/* Contenido principal */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
             ❌ {error}
           </div>
         )}
@@ -554,13 +558,13 @@ function HomePage() {
           <>
             {youngList.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay jóvenes registrados</h3>
-                <p className="text-gray-600 mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No hay jóvenes registrados</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
                   {filteredTotal !== null && allYoungList.length > 0 
                     ? 'No se encontraron jóvenes con los filtros aplicados'
                     : 'Comienza agregando jóvenes a la plataforma'
@@ -593,15 +597,15 @@ function HomePage() {
             {loadingMore && (
               <div className="text-center py-8">
                 <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <p className="mt-2 text-sm text-gray-600">Cargando más jóvenes...</p>
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Cargando más jóvenes...</p>
               </div>
             )}
 
             {/* Indicador de fin de resultados */}
             {!hasMore && youngList.length > 0 && (
               <div className="text-center py-8">
-                <div className="text-center text-gray-500">
-                  <svg className="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-center text-gray-500 dark:text-gray-400">
+                  <svg className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
                   <p className="font-medium text-sm sm:text-base">¡Has visto todos los jóvenes!</p>

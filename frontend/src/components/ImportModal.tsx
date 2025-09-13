@@ -118,7 +118,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess, o
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6">
           <div className="flex justify-between items-center">
@@ -140,13 +140,13 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess, o
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)] bg-white dark:bg-gray-800">
           {step === 'upload' ? (
             <div className="space-y-6">
               {/* Instrucciones */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-800 mb-2">📋 Instrucciones</h3>
-                <ul className="text-sm text-blue-700 space-y-1">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">📋 Instrucciones</h3>
+                <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
                   <li>• Descarga la plantilla de Excel y úsala como referencia</li>
                   <li>• Los campos requeridos son: <strong>Nombre</strong></li>
                   <li>• Para fechas de cumpleaños usa formato: <strong>15-Mar</strong> o <strong>15/03</strong></li>
@@ -182,17 +182,17 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess, o
               </div>
 
               {/* Subir archivo */}
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8">
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8">
                 <div className="text-center">
-                  <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                  <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                     <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   <div className="mt-4">
                     <label htmlFor="file-upload" className="cursor-pointer">
-                      <span className="mt-2 block text-sm font-medium text-gray-900">
+                      <span className="mt-2 block text-sm font-medium text-gray-900 dark:text-white">
                         {file ? file.name : 'Selecciona un archivo Excel'}
                       </span>
-                      <span className="mt-1 block text-xs text-gray-500">
+                      <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
                         Excel (.xlsx, .xls) hasta 10MB
                       </span>
                     </label>
@@ -214,7 +214,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess, o
                   <button
                     onClick={handleImport}
                     disabled={loading}
-                    className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white font-medium py-3 px-6 rounded-lg transition-colors inline-flex items-center"
+                    className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition-colors inline-flex items-center"
                   >
                     {loading ? (
                       <>
@@ -240,25 +240,25 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess, o
             <div className="space-y-6">
               {/* Resultados */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600">{result?.total || 0}</div>
-                  <div className="text-sm text-blue-700">Total de filas</div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{result?.total || 0}</div>
+                  <div className="text-sm text-blue-700 dark:text-blue-300">Total de filas</div>
                 </div>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600">{result?.imported || 0}</div>
-                  <div className="text-sm text-green-700">Importados exitosamente</div>
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">{result?.imported || 0}</div>
+                  <div className="text-sm text-green-700 dark:text-green-300">Importados exitosamente</div>
                 </div>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-red-600">{result?.errors?.length || 0}</div>
-                  <div className="text-sm text-red-700">Errores</div>
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">{result?.errors?.length || 0}</div>
+                  <div className="text-sm text-red-700 dark:text-red-300">Errores</div>
                 </div>
               </div>
 
               {/* Advertencias */}
               {result?.warnings && result.warnings.length > 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Advertencias</h4>
-                  <ul className="text-sm text-yellow-700 space-y-1">
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+                  <h4 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">⚠️ Advertencias</h4>
+                  <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
                     {result.warnings.map((warning, index) => (
                       <li key={index}>• {warning}</li>
                     ))}
@@ -268,11 +268,11 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess, o
 
               {/* Errores */}
               {result?.errors && result.errors.length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-red-800 mb-2">❌ Errores</h4>
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
+                  <h4 className="font-semibold text-red-800 dark:text-red-300 mb-2">❌ Errores</h4>
                   <div className="max-h-40 overflow-y-auto">
                     {result.errors.map((error, index) => (
-                      <div key={index} className="text-sm text-red-700 mb-2 p-2 bg-red-100 rounded">
+                      <div key={index} className="text-sm text-red-700 dark:text-red-300 mb-2 p-2 bg-red-100 dark:bg-red-900/30 rounded">
                         <strong>Fila {error.row}:</strong> {error.error}
                       </div>
                     ))}
@@ -284,13 +284,13 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess, o
               <div className="flex gap-4 justify-center">
                 <button
                   onClick={() => setStep('upload')}
-                  className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                  className="bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                 >
                   Importar Otro Archivo
                 </button>
                 <button
                   onClick={handleClose}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                  className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                 >
                   Cerrar
                 </button>

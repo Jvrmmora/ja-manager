@@ -38,22 +38,22 @@ const StatsCards: React.FC<StatsCardsProps> = ({ youngList, onBirthdayClick }) =
       title: 'Total Jóvenes',
       value: totalYoung,
       color: 'blue',
-      bgColor: 'bg-white',
-      textColor: 'text-blue-600'
+      bgColor: 'bg-white dark:bg-gray-800',
+      textColor: 'text-blue-600 dark:text-blue-400'
     },
     {
       title: 'Activos',
       value: activeYoung,
       color: 'green',
-      bgColor: 'bg-white',
-      textColor: 'text-green-600'
+      bgColor: 'bg-white dark:bg-gray-800',
+      textColor: 'text-green-600 dark:text-green-400'
     },
     {
       title: 'Nuevos Este Mes',
       value: newThisMonth,
       color: 'purple',
-      bgColor: 'bg-white',
-      textColor: 'text-purple-600'
+      bgColor: 'bg-white dark:bg-gray-800',
+      textColor: 'text-purple-600 dark:text-purple-400'
     },
     {
       title: 'Cumpleaños Este Mes: Septiembre',
@@ -71,7 +71,7 @@ const StatsCards: React.FC<StatsCardsProps> = ({ youngList, onBirthdayClick }) =
       {stats.map((stat, index) => (
         <div
           key={index}
-          className={`${stat.bgColor} rounded-lg p-6 shadow-sm border border-gray-200 ${
+          className={`${stat.bgColor} rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700 ${
             stat.color === 'orange' ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
           }`}
           onClick={stat.color === 'orange' ? onBirthdayClick : undefined}
@@ -80,7 +80,7 @@ const StatsCards: React.FC<StatsCardsProps> = ({ youngList, onBirthdayClick }) =
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <p className={`text-sm font-medium ${
-                stat.color === 'orange' ? 'text-white' : 'text-gray-600'
+                stat.color === 'orange' ? 'text-white' : 'text-gray-600 dark:text-gray-400'
               }`}>
                 {stat.title}
               </p>

@@ -3,6 +3,7 @@ import './App.css';
 import Login from './components/Login';
 import HomePage from './pages/HomePage';
 import YoungDashboard from './pages/YoungDashboard';
+import { ThemeProvider } from './context/ThemeContext';
 // import LoadingSpinner from './components/LoadingSpinner';
 import { authService } from './services/auth';
 
@@ -68,28 +69,41 @@ function App() {
   if (loading) {
     console.log('⏳ Mostrando loading...');
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
+      <ThemeProvider>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </ThemeProvider>
     );
   }
 
   if (!isAuthenticated) {
     console.log('🔐 Mostrando login...');
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <ThemeProvider>
+        <Login onLoginSuccess={handleLoginSuccess} />
+      </ThemeProvider>
+    );
   }
 
   // Decidir qué dashboard mostrar basado en el role
   console.log('🏠 Decidiendo dashboard para rol:', userRole);
   
-  if (userRole === 'Young role') {
-    console.log('👤 Mostrando YoungDashboard');
-    return <YoungDashboard />;
-  }
-
-  // Super Admin o roles administrativos
-  console.log('👑 Mostrando HomePage (Admin)');
-  return <HomePage />;
+  return (
+    <ThemeProvider>
+      {userRole === 'Young role' ? (
+        <>
+          {console.log('👤 Mostrando YoungDashboard')}
+          <YoungDashboard />
+        </>
+      ) : (
+        <>
+          {console.log('👑 Mostrando HomePage (Admin)')}
+          <HomePage />
+        </>
+      )}
+    </ThemeProvider>
+  );
 }
 
 export default App;

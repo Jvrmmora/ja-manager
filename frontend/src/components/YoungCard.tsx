@@ -113,9 +113,9 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-xl transition-shadow">
       {/* Header con imagen de perfil */}
-      <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 p-4 sm:p-6 text-white min-h-[120px] sm:min-h-[130px]">
+      <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 p-4 sm:p-6 text-white min-h-[120px] sm:min-h-[130px]">
         <div className="flex items-start justify-between gap-3 h-full">
           <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
             <div className="relative" style={{ width: 56, height: 56 }}>
@@ -212,12 +212,12 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
         {/* Información básica */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4 text-sm">
           <div>
-            <span className="text-gray-500 font-medium">Edad:</span>
-            <span className="ml-2 text-gray-800">{young.ageRange} años</span>
+            <span className="text-gray-500 dark:text-gray-400 font-medium">Edad:</span>
+            <span className="ml-2 text-gray-800 dark:text-gray-200">{young.ageRange} años</span>
           </div>
           <div>
-            <span className="text-gray-500 font-medium">Género:</span>
-            <span className="ml-2 text-gray-800 capitalize">
+            <span className="text-gray-500 dark:text-gray-400 font-medium">Género:</span>
+            <span className="ml-2 text-gray-800 dark:text-gray-200 capitalize">
               {young.gender || 'No especificado'}
             </span>
           </div>
@@ -226,17 +226,17 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
         {/* Contacto */}
         <div className="space-y-2">
           <div className="flex items-center text-sm">
-            <svg className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
             </svg>
-            <span className="text-gray-800 truncate">{young.phone}</span>
+            <span className="text-gray-800 dark:text-gray-200 truncate">{young.phone}</span>
           </div>
           
           <div className="flex items-center text-sm">
-            <svg className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
             </svg>
-            <span className="text-gray-800 truncate">{young.email}</span>
+            <span className="text-gray-800 dark:text-gray-200 truncate">{young.email}</span>
           </div>
 
           <div className="flex items-center text-sm">
@@ -249,19 +249,19 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
 
         {/* Habilidades */}
         <div>
-          <span className="text-sm font-medium text-gray-500 block mb-2">Habilidades:</span>
+          <span className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-2">Habilidades:</span>
           <div className="flex flex-wrap gap-1 sm:gap-2">
             {young.skills && young.skills.length > 0 ? (
               young.skills.map((skill, index) => (
                 <span
                   key={index}
-                  className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs font-medium"
+                  className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-medium"
                 >
                   {skill}
                 </span>
               ))
             ) : (
-              <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded-full text-xs font-medium">
+              <span className="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full text-xs font-medium">
                 Sin asignar
               </span>
             )}
@@ -269,17 +269,17 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
         </div>
 
         {/* Línea divisoria */}
-        <div className="border-t border-gray-100"></div>
+        <div className="border-t border-gray-100 dark:border-gray-700"></div>
 
         {/* Placa */}
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-500">Tu Placa:</span>
+          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Tu Placa:</span>
           
           {young.placa ? (
             <Tooltip content="Clic para copiar" position="top">
               <button
                 onClick={() => handleCopyPlaca(young.placa!)}
-                className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-lg text-sm font-medium transition-colors cursor-pointer border border-blue-200"
+                className="bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-lg text-sm font-medium transition-colors cursor-pointer border border-blue-200 dark:border-blue-700"
               >
                 {young.placa}
               </button>
@@ -291,8 +291,8 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
                 disabled={isGeneratingPlaca}
                 className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                   isGeneratingPlaca 
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                    : 'bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-200'
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                    : 'bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-900/50 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-700'
                 }`}
               >
                 {isGeneratingPlaca ? (
@@ -317,8 +317,9 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
         </div>
 
         {/* Fecha de registro */}
+        {/* Fecha de registro */}
         <div className="pt-2">
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-400 dark:text-gray-500">
             Registrado el {formatDate(young.createdAt || new Date())}
           </span>
         </div>

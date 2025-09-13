@@ -126,12 +126,12 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold text-gray-800">Registrar Nuevo Joven</h3>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white">Registrar Nuevo Joven</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -142,11 +142,11 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Imagen de perfil */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Foto de Perfil (opcional)
             </label>
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+              <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden">
                 {imagePreview ? (
                   <img 
                     src={imagePreview} 
@@ -154,7 +154,7 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 )}
@@ -163,7 +163,7 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
-                className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                className="text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400 dark:hover:file:bg-blue-900/50"
               />
             </div>
           </div>
@@ -261,9 +261,9 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
                   value=""
                   checked={formData.gender === ''}
                   onChange={handleInputChange}
-                  className="mr-2 text-blue-600"
+                  className="mr-2 text-blue-600 dark:text-blue-400"
                 />
-                No especificado
+                <span className="text-gray-700 dark:text-gray-300">No especificado</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -272,9 +272,9 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
                   value="masculino"
                   checked={formData.gender === 'masculino'}
                   onChange={handleInputChange}
-                  className="mr-2 text-blue-600"
+                  className="mr-2 text-blue-600 dark:text-blue-400"
                 />
-                Masculino
+                <span className="text-gray-700 dark:text-gray-300">Masculino</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -283,9 +283,9 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
                   value="femenino"
                   checked={formData.gender === 'femenino'}
                   onChange={handleInputChange}
-                  className="mr-2 text-blue-600"
+                  className="mr-2 text-blue-600 dark:text-blue-400"
                 />
-                Femenino
+                <span className="text-gray-700 dark:text-gray-300">Femenino</span>
               </label>
             </div>
           </div>
@@ -345,7 +345,7 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
                 <button
                   type="button"
                   onClick={addSkill}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition-colors"
                 >
                   Agregar
                 </button>
@@ -357,13 +357,13 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
                   {formData.skills.map((skill, index) => (
                     <span
                       key={index}
-                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                      className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full text-sm flex items-center gap-2"
                     >
                       {skill}
                       <button
                         type="button"
                         onClick={() => removeSkill(skill)}
-                        className="text-blue-600 hover:text-blue-800 font-bold"
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 font-bold"
                       >
                         ×
                       </button>
@@ -379,14 +379,14 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors"
               disabled={loading}
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
               {loading ? (
