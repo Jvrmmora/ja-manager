@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import ProfileDropdown from '../components/ProfileDropdown';
 import ThemeToggle from '../components/ThemeToggle';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 import { authService } from '../services/auth';
 
 const YoungDashboard: React.FC = () => {
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
 
   useEffect(() => {
     // Obtener información del usuario
@@ -17,6 +20,22 @@ const YoungDashboard: React.FC = () => {
       return userInfo.fullName.split(' ')[0];
     }
     return 'Usuario';
+  };
+
+  const handleOpenChangePassword = () => {
+    setShowChangePasswordModal(true);
+  };
+
+  const handleCloseChangePassword = () => {
+    setShowChangePasswordModal(false);
+  };
+
+  const handlePasswordChangeSuccess = () => {
+    setPasswordChangeSuccess(true);
+    // Mostrar mensaje de éxito por 5 segundos
+    setTimeout(() => {
+      setPasswordChangeSuccess(false);
+    }, 5000);
   };
 
   return (
@@ -45,7 +64,7 @@ const YoungDashboard: React.FC = () => {
             {/* Theme Toggle y Profile Dropdown */}
             <div className="flex items-center space-x-4">
               <ThemeToggle />
-              <ProfileDropdown />
+              <ProfileDropdown onChangePassword={handleOpenChangePassword} />
             </div>
           </div>
         </div>
@@ -96,10 +115,7 @@ const YoungDashboard: React.FC = () => {
                       Te recomendamos cambiar tu contraseña temporal por una personalizada para mayor seguridad.
                     </p>
                     <button
-                      onClick={() => {
-                        // TODO: Implementar modal de cambio de contraseña
-                        console.log('Abrir modal de cambio de contraseña');
-                      }}
+                      onClick={handleOpenChangePassword}
                       className="bg-orange-600 dark:bg-orange-700 text-white px-4 py-2 rounded-lg hover:bg-orange-700 dark:hover:bg-orange-800 transition-colors mr-4"
                     >
                       Cambiar Contraseña
@@ -147,6 +163,26 @@ const YoungDashboard: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Mensaje de éxito */}
+      {passwordChangeSuccess && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            ¡Contraseña cambiada exitosamente!
+          </div>
+        </div>
+      )}
+
+      {/* Modal de cambio de contraseña */}
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={handleCloseChangePassword}
+        onSuccess={handlePasswordChangeSuccess}
+        youngId={userInfo?.id || ''}
+      />
     </div>
   );
 };

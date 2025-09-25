@@ -4,9 +4,10 @@ import { authService } from '../services/auth';
 
 interface ProfileDropdownProps {
   className?: string;
+  onChangePassword?: () => void;
 }
 
-const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '' }) => {
+const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onChangePassword }) => {
   // const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -163,23 +164,31 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '' }) => 
               <span>Mi Perfil</span>
             </button>
 
-            {userInfo?.role_name === 'Young role' && authService.isFirstLogin() && (
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  // TODO: Implementar cambio de contraseña
-                  console.log('Cambiar contraseña');
-                }}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m0 0a2 2 0 01-2 2m2-2a2 2 0 00-2-2m2 2H9m6 0V9a2 2 0 00-2-2M9 7v10a2 2 0 002 2h6a2 2 0 002-2V9a2 2 0 00-2-2H9z" />
-                </svg>
-                <span>Cambiar Contraseña</span>
-                <span className="ml-auto text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 px-2 py-0.5 rounded">
-                  Requerido
-                </span>
-              </button>
+            {userInfo?.role_name === 'Young role' && (
+              <div>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    onChangePassword?.();
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m0 0a2 2 0 01-2 2m2-2a2 2 0 00-2-2m2 2H9m6 0V9a2 2 0 00-2-2M9 7v10a2 2 0 002 2h6a2 2 0 002-2V9a2 2 0 00-2-2H9z" />
+                  </svg>
+                  <span>Cambiar Contraseña</span>
+                  {authService.isFirstLogin() && (
+                    <span className="ml-auto text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 px-2 py-0.5 rounded">
+                      Requerido
+                    </span>
+                  )}
+                </button>
+                <div className="px-4 py-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                    ¿Olvidaste tu contraseña actual? Contacta a un admin.
+                  </p>
+                </div>
+              </div>
             )}
 
             <div className="border-t border-gray-100 dark:border-gray-700 my-2"></div>

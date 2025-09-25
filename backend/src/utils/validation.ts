@@ -244,3 +244,27 @@ export const querySchema = Joi.object({
       'alternatives.match': 'Los grupos deben ser números entre 1 y 5',
     }),
 });
+
+// Esquema para resetear contraseña
+export const resetPasswordSchema = Joi.object({
+  current_password: Joi.string()
+    .min(1)
+    .optional()
+    .messages({
+      'string.empty': 'La contraseña actual no puede estar vacía',
+      'string.min': 'La contraseña actual debe tener al menos 1 caracter',
+    }),
+  
+  new_password: Joi.string()
+    .min(8)
+    .max(50)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,50}$/)
+    .required()
+    .messages({
+      'string.empty': 'La nueva contraseña es obligatoria',
+      'string.min': 'La nueva contraseña debe tener al menos 8 caracteres',
+      'string.max': 'La nueva contraseña no puede exceder 50 caracteres',
+      'string.pattern.base': 'La nueva contraseña debe incluir al menos una mayúscula, una minúscula y un número',
+      'any.required': 'La nueva contraseña es obligatoria',
+    }),
+});

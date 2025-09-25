@@ -117,3 +117,38 @@ export const generatePlaca = async (youngId: string): Promise<any> => {
 
   return response.json();
 };
+
+// Función para cambiar contraseña
+export const changePassword = async (youngId: string, currentPassword: string, newPassword: string): Promise<any> => {
+  const response = await apiRequest(`young/${youngId}/reset-password`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Error al cambiar la contraseña');
+  }
+
+  return response.json();
+};
+
+// Función para generar nueva contraseña (solo admins)
+export const generateNewPassword = async (youngId: string, newPassword: string): Promise<any> => {
+  const response = await apiRequest(`young/${youngId}/reset-password`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      new_password: newPassword
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Error al generar nueva contraseña');
+  }
+
+  return response.json();
+};

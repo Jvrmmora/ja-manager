@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import Young from '../models/Young';
 import Role from '../models/Role';
 import { uploadToCloudinary, deleteFromCloudinary, extractPublicId } from '../config/cloudinary';
-import { createYoungSchema, updateYoungSchema, querySchema } from '../utils/validation';
+import { createYoungSchema, updateYoungSchema, querySchema, resetPasswordSchema } from '../utils/validation';
 import { ApiResponse, PaginatedResponse, IYoung, PaginationQuery } from '../types';
 import { asyncHandler, ValidationError, NotFoundError, ConflictError, ForbiddenError } from '../utils/errorHandler';
 import logger from '../utils/logger';
@@ -636,8 +636,15 @@ export class YoungController {
   // Resetear contraseña de un joven
   static resetPassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
-    const { current_password, new_password } = req.body;
     const authUser = (req as any).user; // Usuario autenticado desde el middleware
+
+    // Validar el cuerpo de la petición con Joi
+    const { error, value } = resetPasswordSchema.validate(req.body);
+    if (error) {
+      throw new ValidationError(error.details[0].message);
+    }
+
+    const { current_password, new_password } = value;
 
     logger.info('Iniciando reseteo de contraseña', {
       context: 'YoungController',
@@ -683,11 +690,6 @@ export class YoungController {
     // Validación: el usuario debe tener placa activa
     if (!young.placa) {
       throw new ValidationError('El joven debe tener una placa asignada para resetear su contraseña');
-    }
-
-    // Validación: debe ser el primer login
-    if (!young.first_login) {
-      throw new ValidationError('Solo se puede resetear la contraseña en el primer login');
     }
 
     // Si es Young role, validar que solo puede cambiar su propia contraseña

@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import type { IYoung } from '../types';
 import ImageModal from './ImageModal';
 import Tooltip from './Tooltip';
+import GeneratePasswordModal from './GeneratePasswordModal';
 import { generatePlaca } from '../services/api';
+import { authService } from '../services/auth';
 
 // Mapeo de colores por grupo
 const getGroupColor = (group?: number | null): string => {
@@ -28,6 +30,11 @@ interface YoungCardProps {
 const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungUpdate, onShowSuccess, onShowError }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGeneratingPlaca, setIsGeneratingPlaca] = useState(false);
+  const [showGeneratePasswordModal, setShowGeneratePasswordModal] = useState(false);
+  
+  // Obtener información del usuario actual
+  const currentUser = authService.getUserInfo();
+  const isAdmin = currentUser?.role_name === 'Super Admin';
 
   const handleDelete = () => {
     if (window.confirm(`¿Estás seguro de que deseas eliminar a ${young.fullName}?`)) {
@@ -43,6 +50,17 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
     if (young.profileImage) {
       setIsModalOpen(true);
     }
+  };
+
+  // Función para abrir modal de generar contraseña
+  const handleOpenGeneratePassword = () => {
+    setShowGeneratePasswordModal(true);
+  };
+
+  // Función para manejar éxito de generación de contraseña
+  const handlePasswordGenerated = (newPassword: string) => {
+    setShowGeneratePasswordModal(false);
+    onShowSuccess?.(`Nueva contraseña generada para ${young.fullName}: ${newPassword}`);
   };
 
   // Función para generar placa
@@ -275,16 +293,32 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Tu Placa:</span>
           
-          {young.placa ? (
-            <Tooltip content="Clic para copiar" position="top">
-              <button
-                onClick={() => handleCopyPlaca(young.placa!)}
-                className="bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-lg text-sm font-medium transition-colors cursor-pointer border border-blue-200 dark:border-blue-700"
-              >
-                {young.placa}
-              </button>
-            </Tooltip>
-          ) : (
+          <div className="flex items-center gap-2">
+            {young.placa ? (
+              <>
+                <Tooltip content="Clic para copiar" position="top">
+                  <button
+                    onClick={() => handleCopyPlaca(young.placa!)}
+                    className="bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-lg text-sm font-medium transition-colors cursor-pointer border border-blue-200 dark:border-blue-700"
+                  >
+                    {young.placa}
+                  </button>
+                </Tooltip>
+                {/* Botón para generar nueva contraseña (solo admins) */}
+                {isAdmin && (
+                  <Tooltip content="Generar nueva contraseña" position="top">
+                    <button
+                      onClick={handleOpenGeneratePassword}
+                      className="bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 text-green-800 dark:text-green-300 px-2 py-1 rounded-lg text-sm font-medium transition-colors border border-green-200 dark:border-green-700"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m0 0a2 2 0 01-2 2m2-2a2 2 0 00-2-2m2 2H9m6 0V9a2 2 0 00-2-2M9 7v10a2 2 0 002 2h6a2 2 0 002-2V9a2 2 0 00-2-2H9z" />
+                      </svg>
+                    </button>
+                  </Tooltip>
+                )}
+              </>
+            ) : (
             <Tooltip content="Generar" position="top">
               <button
                 onClick={handleGeneratePlaca}
@@ -313,7 +347,8 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
                 )}
               </button>
             </Tooltip>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Fecha de registro */}
@@ -334,6 +369,15 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
           altText={`Foto de perfil de ${young.fullName}`}
         />
       )}
+
+      {/* Modal para generar nueva contraseña */}
+      <GeneratePasswordModal
+        isOpen={showGeneratePasswordModal}
+        onClose={() => setShowGeneratePasswordModal(false)}
+        onSuccess={handlePasswordGenerated}
+        youngId={young.id || ''}
+        youngName={young.fullName}
+      />
     </div>
   );
 };
