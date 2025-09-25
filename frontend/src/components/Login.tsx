@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import { authService } from '../services/auth';
 import ThemeToggle from './ThemeToggle';
 
+// Importar la imagen
+import logo from '../assets/logos/logo.png';
+
 interface LoginProps {
   onLoginSuccess?: () => void;
 }
@@ -76,11 +79,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         <div className="relative z-10 flex flex-col justify-center items-center w-full p-12 text-center">
           {/* Logo */}
           <div className="mb-8">
-            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-              <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L13.09 6.26L18 7L13.09 7.74L12 12L10.91 7.74L6 7L10.91 6.26L12 2ZM4 9L5.5 12.5L9 14L5.5 15.5L4 19L2.5 15.5L-1 14L2.5 12.5L4 9Z"/>
-              </svg>
-            </div>
+            <img src={logo} alt="JA Manager Logo" className="w-32 h-32 mx-auto" />
           </div>
 
           {/* Título y descripción */}
@@ -95,14 +94,19 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             Conecta, organiza y administra de manera eficiente.
           </p>
 
-          {/* Imagen placeholder */}
-          <div className="mt-8 w-64 h-48 bg-white/10 rounded-lg border-2 border-dashed border-white/30 flex items-center justify-center">
-            <div className="text-center text-white/60">
-              <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <p className="text-sm">Agregar imagen aquí</p>
-              <p className="text-xs mt-1">/src/assets/images/</p>
+          {/* Imagen */}
+          <div className="mt-8">
+            <div className="w-64 h-48 bg-white/10 rounded-lg overflow-hidden backdrop-blur-sm">
+              {/* Placeholder temporal - quitar cuando tengas la imagen */}
+              <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-white/30">
+                <div className="text-center text-white/60">
+                  <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-sm">Agregar imagen aquí</p>
+                  <p className="text-xs mt-1">mario.png</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -113,10 +117,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         <div className="w-full max-w-md space-y-8">
           {/* Logo móvil */}
           <div className="lg:hidden text-center">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L13.09 6.26L18 7L13.09 7.74L12 12L10.91 7.74L6 7L10.91 6.26L12 2ZM4 9L5.5 12.5L9 14L5.5 15.5L4 19L2.5 15.5L-1 14L2.5 12.5L4 9Z"/>
-              </svg>
+            <div className="w-16 h-16 mx-auto mb-4">
+              <img src={logo} alt="JA Manager Logo" className="w-full h-full object-contain" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">JA Manager</h2>
           </div>

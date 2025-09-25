@@ -3,6 +3,7 @@ import ProfileDropdown from '../components/ProfileDropdown';
 import ThemeToggle from '../components/ThemeToggle';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { authService } from '../services/auth';
+import logo from '../assets/logos/logo.png';
 
 const YoungDashboard: React.FC = () => {
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -46,10 +47,8 @@ const YoungDashboard: React.FC = () => {
           <div className="flex justify-between items-center h-16">
             {/* Logo y título */}
             <div className="flex items-center space-x-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2L13.09 6.26L18 7L13.09 7.74L12 12L10.91 7.74L6 7L10.91 6.26L12 2ZM4 9L5.5 12.5L9 14L5.5 15.5L4 19L2.5 15.5L-1 14L2.5 12.5L4 9Z"/>
-                </svg>
+              <div className="w-8 h-8">
+                <img src={logo} alt="JA Manager Logo" className="w-full h-full object-contain" />
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
