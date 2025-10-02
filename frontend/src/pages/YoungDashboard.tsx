@@ -23,6 +23,21 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
     // Obtener información del usuario
     const user = authService.getUserInfo();
     setUserInfo(user);
+
+    // Escuchar cambios en userInfo (cuando se actualiza el perfil)
+    const handleUserInfoUpdate = () => {
+      console.log('📝 YoungDashboard - detectado cambio en userInfo');
+      const updatedUser = authService.getUserInfo();
+      setUserInfo(updatedUser);
+      console.log('🔄 YoungDashboard - userInfo actualizado:', updatedUser);
+    };
+
+    // Escuchar el evento personalizado
+    window.addEventListener('userInfoUpdated', handleUserInfoUpdate);
+
+    return () => {
+      window.removeEventListener('userInfoUpdated', handleUserInfoUpdate);
+    };
   }, []);
 
   const getFirstName = () => {

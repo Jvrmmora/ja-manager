@@ -6,10 +6,11 @@ import FilterBar from '../components/FilterBar';
 import BirthdayDashboard from '../components/BirthdayDashboard';
 import ImportModal from '../components/ImportModal';
 import ProfileDropdown from '../components/ProfileDropdown';
+import ProfileModal from '../components/ProfileModal';
 import StatsCards from '../components/StatsCards';
 import ToastContainer from '../components/ToastContainer';
 import ThemeToggle from '../components/ThemeToggle';
-import { apiRequest, apiUpload, debugAuthState } from '../services/api';
+import { apiRequest, apiUpload, debugAuthState, getCurrentUserProfile } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import type { IYoung, PaginationQuery } from '../types';
 import logo from '../assets/logos/logo.png';
@@ -73,6 +74,8 @@ function HomePage() {
   const [editingYoung, setEditingYoung] = useState<IYoung | null>(null);
   const [showBirthdayDashboard, setShowBirthdayDashboard] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [currentUser, setCurrentUser] = useState<IYoung | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [nextPageToLoad, setNextPageToLoad] = useState(2); // Track próxima página para cargar
   const [isLoadingMore, setIsLoadingMore] = useState(false); // Prevenir múltiples llamadas simultáneas
@@ -442,6 +445,29 @@ function HomePage() {
     );
   };
 
+  // Funciones para manejar el perfil del usuario admin
+  const handleOpenProfile = async () => {
+    try {
+      console.log('👤 Abriendo perfil de admin...');
+      const userData = await getCurrentUserProfile();
+      console.log('👤 Datos del usuario admin obtenidos:', userData);
+      setCurrentUser(userData);
+      setShowProfileModal(true);
+    } catch (error) {
+      console.error('Error al obtener el perfil del admin:', error);
+      showError('Error al cargar el perfil');
+    }
+  };
+
+  const handleCloseProfile = () => {
+    setShowProfileModal(false);
+  };
+
+  const handleProfileUpdated = (updatedUser: IYoung) => {
+    setCurrentUser(updatedUser);
+    showSuccess('Perfil actualizado exitosamente');
+  };
+
   const displayTotal = filteredTotal !== null ? filteredTotal : allYoungList.length;
 
   return (
@@ -464,7 +490,7 @@ function HomePage() {
             {/* Profile Dropdown y Theme Toggle */}
             <div className="flex items-center space-x-4">
               <ThemeToggle />
-              <ProfileDropdown />
+              <ProfileDropdown onOpenProfile={handleOpenProfile} />
             </div>
           </div>
         </div>
@@ -660,6 +686,14 @@ function HomePage() {
 
         {/* Toast Container */}
         <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+
+        {/* Modal de perfil del admin */}
+        <ProfileModal
+          isOpen={showProfileModal}
+          onClose={handleCloseProfile}
+          young={currentUser}
+          onProfileUpdated={handleProfileUpdated}
+        />
       </div>
     </div>
   );

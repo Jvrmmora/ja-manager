@@ -117,15 +117,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          setSuccess('Perfil actualizado exitosamente');
-          
           // Actualizar localStorage con la información actualizada
           authService.updateUserInfo(result.data);
           
           onProfileUpdated(result.data);
-          setTimeout(() => {
-            onClose();
-          }, 1500);
+          onClose(); // Cerrar inmediatamente
         } else {
           throw new Error(result.message || 'Error al actualizar el perfil');
         }
@@ -148,15 +144,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   console.log('✅ ProfileModal - rendering modal for user:', young.fullName);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Mi Perfil</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Mi Perfil</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -169,30 +165,35 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6">
           {/* Photo Section */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Foto de Perfil
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Foto de Perfil (opcional)
             </label>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
+            <div className="space-y-4">
+              {/* Vista previa de la imagen */}
+              <div className="flex justify-center">
                 {previewUrl ? (
                   <img
                     src={previewUrl}
                     alt="Foto de perfil"
-                    className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+                    className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
                   />
                 ) : (
-                  <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center border-2 border-gray-200">
-                    <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-24 h-24 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border-2 border-gray-200 dark:border-gray-600">
+                    <svg className="w-10 h-10 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
                         d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
                 )}
-                <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors">
-                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </div>
+              
+              {/* Botón Choose File */}
+              <div className="flex justify-center">
+                <label className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer transition-colors">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
+                  Choose File
                   <input
                     type="file"
                     accept="image/*"
@@ -201,13 +202,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   />
                 </label>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">
-                  Haz clic en el ícono del lápiz para cambiar tu foto
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
+              
+              {/* Información sobre el archivo */}
+              <div className="text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Formatos soportados: JPG, PNG (máx. 5MB)
                 </p>
+                {selectedFile && (
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                    Archivo seleccionado: {selectedFile.name}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -215,7 +220,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           {/* Form Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Nombre Completo *
               </label>
               <input
@@ -224,12 +229,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 value={formData.fullName}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Teléfono *
               </label>
               <PhoneInput
@@ -239,7 +244,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Fecha de Nacimiento *
               </label>
               <input
@@ -248,12 +253,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 value={formData.birthday}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Email
               </label>
               <input
@@ -261,30 +266,30 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
 
           {/* Info Readonly */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Información del Sistema</h3>
+          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Información del Sistema</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-500">Placa:</span>
-                <span className="ml-2 font-mono text-blue-600">{young.placa || 'No asignada'}</span>
+                <span className="text-gray-500 dark:text-gray-400">Placa:</span>
+                <span className="ml-2 font-mono text-blue-600 dark:text-blue-400">{young.placa || 'No asignada'}</span>
               </div>
               <div>
-                <span className="text-gray-500">Rol:</span>
-                <span className="ml-2 text-gray-700">{young.role_name || young.role}</span>
+                <span className="text-gray-500 dark:text-gray-400">Rol:</span>
+                <span className="ml-2 text-gray-700 dark:text-gray-300">{young.role_name || young.role}</span>
               </div>
               <div>
-                <span className="text-gray-500">Rango de Edad:</span>
-                <span className="ml-2 text-gray-700">{young.ageRange}</span>
+                <span className="text-gray-500 dark:text-gray-400">Rango de Edad:</span>
+                <span className="ml-2 text-gray-700 dark:text-gray-300">{young.ageRange}</span>
               </div>
               <div>
-                <span className="text-gray-500">Miembro desde:</span>
-                <span className="ml-2 text-gray-700">
+                <span className="text-gray-500 dark:text-gray-400">Miembro desde:</span>
+                <span className="ml-2 text-gray-700 dark:text-gray-300">
                   {young.createdAt ? new Date(young.createdAt).toLocaleDateString() : 'No disponible'}
                 </span>
               </div>
@@ -293,14 +298,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
           {/* Messages */}
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-600">{success}</p>
+            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-sm text-green-600 dark:text-green-400">{success}</p>
             </div>
           )}
 
@@ -309,14 +314,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? 'Guardando...' : 'Guardar Cambios'}
             </button>
