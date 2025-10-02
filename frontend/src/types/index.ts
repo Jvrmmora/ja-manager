@@ -3,17 +3,19 @@ export interface IYoung {
   fullName: string;
   ageRange: string;
   phone: string;
-  birthday: Date;
+  birthday: Date | string;
   profileImage?: string;
   gender: 'masculino' | 'femenino' | '';
   role: 'lider juvenil' | 'colaborador' | 'director' | 'subdirector' | 'club guias' | 'club conquistadores' | 'club aventureros' | 'escuela sabatica' | 'joven adventista' | 'simpatizante';
+  role_name?: string; // Nombre del rol del sistema
+  role_id?: string; // ID del rol
   // Grupo opcional 1..5
   group?: number;
   email: string;
   skills: string[];
   placa?: string; // Placa generada del joven
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 
 export interface IYoungCreate extends Omit<IYoung, 'id' | 'createdAt' | 'updatedAt'> {}

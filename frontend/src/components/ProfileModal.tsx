@@ -39,14 +39,28 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('🔍 ProfileModal - young changed:', young);
     if (young) {
+      let birthdayValue = '';
+      if (young.birthday) {
+        const date = typeof young.birthday === 'string' ? new Date(young.birthday) : young.birthday;
+        birthdayValue = date.toISOString().split('T')[0];
+      }
+      
       setFormData({
         fullName: young.fullName || '',
         phone: young.phone || '',
-        birthday: young.birthday ? new Date(young.birthday).toISOString().split('T')[0] : '',
+        birthday: birthdayValue,
         email: young.email || ''
       });
       setPreviewUrl(young.profileImage || null);
+      console.log('✅ ProfileModal - formData set:', {
+        fullName: young.fullName,
+        phone: young.phone,
+        birthday: birthdayValue,
+        email: young.email,
+        profileImage: young.profileImage
+      });
     }
   }, [young]);
 
@@ -126,7 +140,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     }
   };
 
-  if (!isOpen || !young) return null;
+  if (!isOpen || !young) {
+    console.log('🚫 ProfileModal - not rendering:', { isOpen, young: !!young });
+    return null;
+  }
+
+  console.log('✅ ProfileModal - rendering modal for user:', young.fullName);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -257,7 +276,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
               </div>
               <div>
                 <span className="text-gray-500">Rol:</span>
-                <span className="ml-2 text-gray-700">{young.role}</span>
+                <span className="ml-2 text-gray-700">{young.role_name || young.role}</span>
               </div>
               <div>
                 <span className="text-gray-500">Rango de Edad:</span>

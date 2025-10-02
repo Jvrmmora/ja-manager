@@ -50,11 +50,10 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
 
   const handleOpenProfile = async () => {
     try {
-      const response = await getCurrentUserProfile();
-      if (response.success) {
-        setCurrentUser(response.data);
-        setShowProfileModal(true);
-      }
+      const userData = await getCurrentUserProfile();
+      console.log('👤 Datos del usuario obtenidos:', userData);
+      setCurrentUser(userData);
+      setShowProfileModal(true);
     } catch (error) {
       console.error('Error al obtener el perfil:', error);
     }
