@@ -14,6 +14,38 @@ function App() {
 
   useEffect(() => {
     checkAuthStatus();
+
+    // Escuchar cambios en el localStorage
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'userInfo' && event.newValue) {
+        console.log('📝 Detectado cambio en userInfo, actualizando rol...');
+        try {
+          const updatedUserInfo = JSON.parse(event.newValue);
+          setUserRole(updatedUserInfo.role_name);
+          console.log('🔄 Rol actualizado por storage event:', updatedUserInfo.role_name);
+        } catch (error) {
+          console.error('Error parsing updated user info:', error);
+        }
+      }
+    };
+
+    // Escuchar eventos personalizados para actualizaciones internas
+    const handleUserInfoUpdate = () => {
+      console.log('📝 Evento personalizado de actualización de perfil detectado');
+      const userInfo = authService.getUserInfo();
+      if (userInfo) {
+        setUserRole(userInfo.role_name);
+        console.log('🔄 Rol actualizado por evento personalizado:', userInfo.role_name);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('userInfoUpdated', handleUserInfoUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userInfoUpdated', handleUserInfoUpdate);
+    };
   }, []);
 
   const checkAuthStatus = async () => {
@@ -60,6 +92,14 @@ function App() {
     console.log('🔄 Rol establecido:', userInfo?.role_name || null);
   };
 
+  const handleProfileUpdate = () => {
+    console.log('📝 Perfil actualizado, refrescando información del usuario...');
+    const userInfo = authService.getUserInfo();
+    console.log('👤 Nueva información del usuario:', userInfo);
+    setUserRole(userInfo?.role_name || null);
+    console.log('🔄 Nuevo rol establecido:', userInfo?.role_name || null);
+  };
+
   console.log('🎯 Renderizando App - Estado actual:', { 
     loading, 
     isAuthenticated, 
@@ -94,7 +134,7 @@ function App() {
       {userRole === 'Young role' ? (
         <>
           {console.log('👤 Mostrando YoungDashboard')}
-          <YoungDashboard />
+          <YoungDashboard onProfileUpdate={handleProfileUpdate} />
         </>
       ) : (
         <>

@@ -2,13 +2,22 @@ import React, { useEffect, useState } from 'react';
 import ProfileDropdown from '../components/ProfileDropdown';
 import ThemeToggle from '../components/ThemeToggle';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import ProfileModal from '../components/ProfileModal';
 import { authService } from '../services/auth';
+import { getCurrentUserProfile } from '../services/api';
+import type { IYoung } from '../types';
 import logo from '../assets/logos/logo.png';
 
-const YoungDashboard: React.FC = () => {
+interface YoungDashboardProps {
+  onProfileUpdate?: () => void;
+}
+
+const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
+  const [currentUser, setCurrentUser] = useState<IYoung | null>(null);
 
   useEffect(() => {
     // Obtener información del usuario
@@ -39,6 +48,30 @@ const YoungDashboard: React.FC = () => {
     }, 5000);
   };
 
+  const handleOpenProfile = async () => {
+    try {
+      const response = await getCurrentUserProfile();
+      if (response.success) {
+        setCurrentUser(response.data);
+        setShowProfileModal(true);
+      }
+    } catch (error) {
+      console.error('Error al obtener el perfil:', error);
+    }
+  };
+
+  const handleCloseProfile = () => {
+    setShowProfileModal(false);
+  };
+
+  const handleProfileUpdated = (updatedUser: IYoung) => {
+    setCurrentUser(updatedUser);
+    // Actualizar también userInfo para reflejar cambios en la UI
+    setUserInfo((prevInfo: any) => ({ ...prevInfo, ...updatedUser }));
+    // Notificar al componente padre que el perfil se actualizó
+    onProfileUpdate?.();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -63,7 +96,10 @@ const YoungDashboard: React.FC = () => {
             {/* Theme Toggle y Profile Dropdown */}
             <div className="flex items-center space-x-4">
               <ThemeToggle />
-              <ProfileDropdown onChangePassword={handleOpenChangePassword} />
+              <ProfileDropdown 
+                onChangePassword={handleOpenChangePassword}
+                onOpenProfile={handleOpenProfile}
+              />
             </div>
           </div>
         </div>
@@ -74,10 +110,32 @@ const YoungDashboard: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
           {/* Mensaje de bienvenida */}
           <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L9 7m5 3v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-4a2 2 0 012-2h2.5l3.5-3.5z" />
-              </svg>
+            {/* Foto de perfil con botón de editar */}
+            <div className="relative inline-block mb-6">
+              <div className="w-24 h-24 rounded-full overflow-hidden mx-auto bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                {userInfo?.profileImage ? (
+                  <img
+                    src={userInfo.profileImage}
+                    alt={userInfo.fullName || 'Foto de perfil'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                )}
+              </div>
+              {/* Botón de editar foto */}
+              <button
+                onClick={handleOpenProfile}
+                className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-lg"
+                title="Editar perfil"
+              >
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </button>
             </div>
             
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
@@ -181,6 +239,14 @@ const YoungDashboard: React.FC = () => {
         onClose={handleCloseChangePassword}
         onSuccess={handlePasswordChangeSuccess}
         youngId={userInfo?.id || ''}
+      />
+
+      {/* Modal de perfil */}
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={handleCloseProfile}
+        young={currentUser}
+        onProfileUpdated={handleProfileUpdated}
       />
     </div>
   );

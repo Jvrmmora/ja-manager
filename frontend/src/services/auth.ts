@@ -19,20 +19,20 @@ export interface UserProfile {
   success: boolean;
   message: string;
   data: {
-    user: {
-      id: string;
-      fullName: string;
-      email: string;
-      placa?: string;
-      ageRange?: string;
-      phone?: string;
-      birthday?: string;
-      profileImage?: string;
-      role_name: string;
-      groups?: number;
-      createdAt: string;
-      updatedAt: string;
-    };
+    id: string;
+    fullName: string;
+    email: string;
+    placa?: string;
+    ageRange?: string;
+    phone?: string;
+    birthday?: string;
+    profileImage?: string;
+    role_name: string;
+    role: string;
+    role_id: string;
+    groups?: number;
+    createdAt: string;
+    updatedAt: string;
   };
 }
 
@@ -60,9 +60,10 @@ class AuthService {
         // Obtener información del usuario
         try {
           const profile = await this.getProfile();
-          localStorage.setItem('userRole', profile.data.user.role_name);
-          localStorage.setItem('userInfo', JSON.stringify(profile.data.user));
+          localStorage.setItem('userRole', profile.data.role_name);
+          localStorage.setItem('userInfo', JSON.stringify(profile.data));
           localStorage.setItem('firstLogin', data.data.first_login.toString());
+          console.log('✅ Perfil guardado correctamente:', profile.data);
         } catch (profileError) {
           console.error('Error obteniendo perfil después del login:', profileError);
         }
@@ -142,6 +143,29 @@ class AuthService {
    */
   isFirstLogin(): boolean {
     return localStorage.getItem('firstLogin') === 'true';
+  }
+
+  /**
+   * Actualizar información del usuario en localStorage
+   */
+  updateUserInfo(updatedUserData: any): void {
+    try {
+      const currentUserInfo = this.getUserInfo();
+      const mergedUserInfo = { ...currentUserInfo, ...updatedUserData };
+      localStorage.setItem('userInfo', JSON.stringify(mergedUserInfo));
+      
+      // También actualizar userRole si está presente en los datos actualizados
+      if (mergedUserInfo.role_name) {
+        localStorage.setItem('userRole', mergedUserInfo.role_name);
+        console.log('🔄 UserRole actualizado a:', mergedUserInfo.role_name);
+      }
+      
+      // Disparar evento personalizado para notificar el cambio
+      window.dispatchEvent(new CustomEvent('userInfoUpdated'));
+      console.log('📝 Evento userInfoUpdated disparado con datos:', mergedUserInfo);
+    } catch (error) {
+      console.error('Error actualizando información del usuario:', error);
+    }
   }
 
   /**

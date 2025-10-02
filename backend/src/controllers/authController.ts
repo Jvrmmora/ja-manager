@@ -131,17 +131,22 @@ export class AuthController {
         success: true,
         message: 'Perfil obtenido exitosamente',
         data: {
-          user: {
-            id: user._id,
-            fullName: user.fullName,
-            email: user.email,
-            placa: user.placa,
-            role_name: user.role_name,
-            role_id: user.role_id,
-            profileImage: user.profileImage,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt
-          }
+          id: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          phone: user.phone,
+          birthday: user.birthday,
+          ageRange: user.ageRange,
+          gender: user.gender,
+          placa: user.placa,
+          role: user.role,
+          role_name: user.role_name,
+          role_id: user.role_id,
+          group: user.group,
+          skills: user.skills,
+          profileImage: user.profileImage,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
         }
       });
 

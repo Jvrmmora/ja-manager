@@ -5,9 +5,10 @@ import { authService } from '../services/auth';
 interface ProfileDropdownProps {
   className?: string;
   onChangePassword?: () => void;
+  onOpenProfile?: () => void;
 }
 
-const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onChangePassword }) => {
+const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onChangePassword, onOpenProfile }) => {
   // const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -153,8 +154,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onCha
             <button
               onClick={() => {
                 setIsOpen(false);
-                // TODO: Implementar navegación al perfil
-                console.log('Navegar al perfil');
+                onOpenProfile?.();
               }}
               className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3"
             >

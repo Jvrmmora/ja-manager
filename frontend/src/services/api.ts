@@ -152,3 +152,18 @@ export const generateNewPassword = async (youngId: string, newPassword: string):
 
   return response.json();
 };
+
+// Función para obtener el perfil del usuario logueado
+export const getCurrentUserProfile = async (): Promise<any> => {
+  const response = await apiRequest(`auth/profile`, {
+    method: 'GET'
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Error al obtener el perfil del usuario');
+  }
+
+  const result = await response.json();
+  return result.data; // Devolver directamente los datos del usuario
+};
