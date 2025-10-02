@@ -69,6 +69,7 @@ export class AuthController {
     }
 
     const tokenPayload: IAuthUser = {
+      userId: (user._id as any).toString(),
       username: user.placa || user.email,
       email: user.email,
       fullName: user.fullName,
@@ -111,13 +112,8 @@ export class AuthController {
         });
       }
 
-      // Buscar información completa del usuario
-      const user = await Young.findOne({
-        $or: [
-          { email: req.user.email },
-          { placa: req.user.username }
-        ]
-      }).populate('role_id').select('-password');
+      // Buscar información completa del usuario por ID directamente desde el token
+      const user = await Young.findById(req.user.userId).populate('role_id').select('-password');
 
       if (!user) {
         return res.status(404).json({

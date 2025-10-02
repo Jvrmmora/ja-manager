@@ -179,30 +179,13 @@ export class YoungController {
 
     // Si es Young role, solo puede ver su propia información
     if (authUser.role_name === 'Young role') {
-      // Buscar el joven autenticado por su username (placa) o email
-      const authenticatedYoung = await Young.findOne({
-        $or: [
-          { placa: authUser.username },
-          { email: authUser.username }
-        ]
-      });
-
-      if (!authenticatedYoung) {
-        logger.error('Joven autenticado no encontrado', {
-          context: 'YoungController',
-          method: 'getYoungById',
-          username: authUser.username
-        });
-        throw new NotFoundError('Usuario autenticado no encontrado');
-      }
-
-      // Verificar que está intentando acceder a su propio perfil
-      if ((authenticatedYoung._id as mongoose.Types.ObjectId).toString() !== id) {
+      // Verificar que está intentando acceder a su propio perfil usando el userId del token
+      if (authUser.userId !== id) {
         logger.warn('Intento de acceso no autorizado a perfil ajeno', {
           context: 'YoungController',
           method: 'getYoungById',
           requestedId: id,
-          authenticatedId: (authenticatedYoung._id as mongoose.Types.ObjectId).toString(),
+          authenticatedId: authUser.userId,
           username: authUser.username
         });
         throw new ForbiddenError('No tienes permisos para ver esta información');
@@ -316,30 +299,13 @@ export class YoungController {
 
     // Si es Young role, aplicar restricciones
     if (authUser.role_name === 'Young role') {
-      // Buscar el joven autenticado por su username (placa) o email
-      const authenticatedYoung = await Young.findOne({
-        $or: [
-          { placa: authUser.username },
-          { email: authUser.username }
-        ]
-      });
-
-      if (!authenticatedYoung) {
-        logger.error('Joven autenticado no encontrado', {
-          context: 'YoungController',
-          method: 'updateYoung',
-          username: authUser.username
-        });
-        throw new NotFoundError('Usuario autenticado no encontrado');
-      }
-
-      // Verificar que está intentando actualizar su propio perfil
-      if ((authenticatedYoung._id as mongoose.Types.ObjectId).toString() !== id) {
+      // Verificar que está intentando actualizar su propio perfil usando el userId del token
+      if (authUser.userId !== id) {
         logger.warn('Intento de actualización no autorizada de perfil ajeno', {
           context: 'YoungController',
           method: 'updateYoung',
           requestedId: id,
-          authenticatedId: (authenticatedYoung._id as mongoose.Types.ObjectId).toString(),
+          authenticatedId: authUser.userId,
           username: authUser.username
         });
         throw new ForbiddenError('No tienes permisos para actualizar esta información');
@@ -694,30 +660,13 @@ export class YoungController {
 
     // Si es Young role, validar que solo puede cambiar su propia contraseña
     if (authUser.role_name === 'Young role') {
-      // Buscar el joven autenticado por su username (placa) o email
-      const authenticatedYoung = await Young.findOne({
-        $or: [
-          { placa: authUser.username },
-          { email: authUser.username }
-        ]
-      });
-
-      if (!authenticatedYoung) {
-        logger.error('Joven autenticado no encontrado', {
-          context: 'YoungController',
-          method: 'resetPassword',
-          username: authUser.username
-        });
-        throw new NotFoundError('Usuario autenticado no encontrado');
-      }
-
-      // Verificar que está intentando cambiar su propia contraseña
-      if ((authenticatedYoung._id as mongoose.Types.ObjectId).toString() !== id) {
+      // Verificar que está intentando cambiar su propia contraseña usando el userId del token
+      if (authUser.userId !== id) {
         logger.warn('Intento de cambio de contraseña no autorizado', {
           context: 'YoungController',
           method: 'resetPassword',
           requestedId: id,
-          authenticatedId: (authenticatedYoung._id as mongoose.Types.ObjectId).toString(),
+          authenticatedId: authUser.userId,
           username: authUser.username
         });
         throw new ForbiddenError('No tienes permisos para cambiar esta contraseña');

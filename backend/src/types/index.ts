@@ -31,6 +31,7 @@ export interface IRole {
 }
 
 export interface IAuthUser {
+  userId: string; // ID único del usuario
   username: string; // placa o email
   email: string;
   fullName: string;
