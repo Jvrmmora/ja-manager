@@ -389,10 +389,6 @@ function HomePage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este joven?')) {
-      return;
-    }
-
     try {
       console.log('🗑️ Iniciando eliminación de joven:', id);
       debugAuthState(); // Debug del estado de autenticación

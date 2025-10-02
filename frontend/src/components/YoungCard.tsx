@@ -3,6 +3,7 @@ import type { IYoung } from '../types';
 import ImageModal from './ImageModal';
 import Tooltip from './Tooltip';
 import GeneratePasswordModal from './GeneratePasswordModal';
+import DeleteConfirmModal from './DeleteConfirmModal';
 import { generatePlaca } from '../services/api';
 import { authService } from '../services/auth';
 
@@ -31,14 +32,32 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGeneratingPlaca, setIsGeneratingPlaca] = useState(false);
   const [showGeneratePasswordModal, setShowGeneratePasswordModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Obtener información del usuario actual
   const currentUser = authService.getUserInfo();
   const isAdmin = currentUser?.role_name === 'Super Admin';
 
+  // Función para abrir modal de confirmación de eliminación
   const handleDelete = () => {
-    if (window.confirm(`¿Estás seguro de que deseas eliminar a ${young.fullName}?`)) {
-      onDelete(young.id!);
+    setShowDeleteModal(true);
+  };
+
+  // Función para confirmar y ejecutar la eliminación
+  const handleConfirmDelete = async () => {
+    if (!young.id) return;
+
+    setIsDeleting(true);
+    try {
+      // Llamar a la función onDelete del padre que maneja la eliminación completa
+      await onDelete(young.id);
+      setShowDeleteModal(false);
+    } catch (error: any) {
+      console.error('Error al eliminar joven:', error);
+      // El error ya se maneja en el componente padre (HomePage)
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -377,6 +396,15 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
         onSuccess={handlePasswordGenerated}
         youngId={young.id || ''}
         youngName={young.fullName}
+      />
+
+      {/* Modal de confirmación para eliminar */}
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        youngName={young.fullName}
+        loading={isDeleting}
       />
     </div>
   );
