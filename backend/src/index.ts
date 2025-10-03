@@ -6,6 +6,8 @@ import swaggerUi from 'swagger-ui-express';
 import youngRoutes from './routes/youngRoutes';
 import importRoutes from './routes/importRoutes';
 import authRoutes from './routes/authRoutes';
+import qrRoutes from './routes/qrRoutes';
+import attendanceRoutes from './routes/attendanceRoutes';
 import { specs } from './config/swagger';
 import { DatabaseSeeder } from './seeders/DatabaseSeeder';
 import { authenticateToken } from './middleware/auth';
@@ -99,6 +101,8 @@ app.use('/api/auth', authRoutes);
 // Rutas protegidas que requieren autenticación
 app.use('/api/young', authenticateToken, youngRoutes);
 app.use('/api/import', authenticateToken, importRoutes);
+app.use('/api/qr', authenticateToken, qrRoutes);
+app.use('/api/attendance', authenticateToken, attendanceRoutes);
 
 // Ruta por defecto
 app.get('/', (_req, res) => {
@@ -120,7 +124,14 @@ app.get('/', (_req, res) => {
       'DELETE /api/young/:id - Eliminar joven (autenticado)',
       'POST /api/import/import - Importar desde Excel (autenticado)',
       'GET /api/import/template - Descargar plantilla (autenticado)',
-      'GET /api/import/export - Exportar a Excel (autenticado)'
+      'GET /api/import/export - Exportar a Excel (autenticado)',
+      'POST /api/qr/generate - Generar QR del día (admin)',
+      'GET /api/qr/current - Obtener QR activo (autenticado)',
+      'GET /api/qr/stats - Estadísticas QR (autenticado)',
+      'POST /api/attendance/scan - Escanear QR y registrar (joven)',
+      'GET /api/attendance/my-history - Mi historial (joven)',
+      'GET /api/attendance/today - Lista del día (admin)',
+      'GET /api/attendance/stats - Estadísticas asistencia (admin)'
     ]
   });
 });

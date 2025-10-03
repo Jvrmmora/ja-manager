@@ -94,3 +94,28 @@ export interface PaginatedResponse<T> {
     hasPreviousPage: boolean;
   };
 }
+
+export interface IQRCode {
+  _id?: string;
+  code: string;
+  generatedBy: string;
+  generatedAt: Date;
+  expiresAt: Date;
+  isActive: boolean;
+  dailyDate: string;
+  usageCount: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface IAttendance {
+  _id?: string;
+  youngId: string;
+  qrCodeId: string;
+  attendanceDate: string;
+  scannedAt: Date;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}

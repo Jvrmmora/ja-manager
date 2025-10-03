@@ -3,6 +3,9 @@ import ProfileDropdown from '../components/ProfileDropdown';
 import ThemeToggle from '../components/ThemeToggle';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import ProfileModal from '../components/ProfileModal';
+import AnimatedScanButton from '../components/AnimatedScanButton';
+import QRScanner from '../components/QRScanner';
+import AttendanceHistory from '../components/AttendanceHistory';
 import { authService } from '../services/auth';
 import { getCurrentUserProfile } from '../services/api';
 import type { IYoung } from '../types';
@@ -18,6 +21,11 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
   const [currentUser, setCurrentUser] = useState<IYoung | null>(null);
+  
+  // Nuevos estados para QR y asistencias
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [attendanceRefresh, setAttendanceRefresh] = useState(0);
+  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     // Obtener información del usuario
@@ -84,6 +92,24 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
     setUserInfo((prevInfo: any) => ({ ...prevInfo, ...updatedUser }));
     // Notificar al componente padre que el perfil se actualizó
     onProfileUpdate?.();
+  };
+
+  // Funciones para manejar el scanner QR
+  const handleOpenQRScanner = () => {
+    setIsScanning(true);
+    setShowQRScanner(true);
+  };
+
+  const handleCloseQRScanner = () => {
+    setShowQRScanner(false);
+    setIsScanning(false);
+  };
+
+  const handleQRScanSuccess = (data: any) => {
+    console.log('✅ Asistencia registrada exitosamente:', data);
+    // Refrescar el historial de asistencias
+    setAttendanceRefresh(prev => prev + 1);
+    handleCloseQRScanner();
   };
 
   return (
@@ -205,31 +231,22 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
               </div>
             )}
 
-            {/* Espacio para contenido futuro */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-              <div className="bg-gray-50 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
-                <svg className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Próximamente</h3>
-                <p className="text-gray-600 dark:text-gray-300">Nuevas funcionalidades estarán disponibles pronto</p>
-              </div>
+            {/* Botón de registrar asistencia debajo de la placa */}
+            <div className="mb-8">
+              <AnimatedScanButton
+                onClick={handleOpenQRScanner}
+                isScanning={isScanning}
+                className="max-w-md mx-auto"
+              />
+            </div>
 
-              <div className="bg-gray-50 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
-                <svg className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a1 1 0 01-1-1V9a1 1 0 01-1-1z" />
-                </svg>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">En Desarrollo</h3>
-                <p className="text-gray-600 dark:text-gray-300">Más contenido se agregará aquí</p>
-              </div>
-
-              <div className="bg-gray-50 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center md:col-span-2 lg:col-span-1">
-                <svg className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Funciones Avanzadas</h3>
-                <p className="text-gray-600 dark:text-gray-300">Características especiales próximamente</p>
-              </div>
+            {/* Historial de asistencias */}
+            <div className="mt-8">
+              <AttendanceHistory
+                compact={false}
+                className="max-w-4xl mx-auto"
+                key={attendanceRefresh} // Para forzar re-render cuando se actualiza
+              />
             </div>
           </div>
         </div>
@@ -261,6 +278,13 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
         onClose={handleCloseProfile}
         young={currentUser}
         onProfileUpdated={handleProfileUpdated}
+      />
+
+      {/* Scanner QR */}
+      <QRScanner
+        isOpen={showQRScanner}
+        onClose={handleCloseQRScanner}
+        onSuccess={handleQRScanSuccess}
       />
     </div>
   );

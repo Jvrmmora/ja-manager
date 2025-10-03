@@ -10,6 +10,8 @@ import ProfileModal from '../components/ProfileModal';
 import StatsCards from '../components/StatsCards';
 import ToastContainer from '../components/ToastContainer';
 import ThemeToggle from '../components/ThemeToggle';
+import QRGenerator from '../components/QRGenerator';
+import AttendanceList from '../components/AttendanceList';
 import { apiRequest, apiUpload, debugAuthState, getCurrentUserProfile } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import type { IYoung, PaginationQuery } from '../types';
@@ -76,6 +78,12 @@ function HomePage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<IYoung | null>(null);
+  
+  // Estados para QR y asistencias
+  const [showQRSection, setShowQRSection] = useState(false);
+  const [showAttendanceSection, setShowAttendanceSection] = useState(false);
+  const [attendanceRefresh, setAttendanceRefresh] = useState(0);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [nextPageToLoad, setNextPageToLoad] = useState(2); // Track próxima página para cargar
   const [isLoadingMore, setIsLoadingMore] = useState(false); // Prevenir múltiples llamadas simultáneas
@@ -591,6 +599,34 @@ function HomePage() {
             >
               🎂 {showBirthdayDashboard ? 'Ocultar Cumpleaños' : 'Ver Cumpleaños'}
             </button>
+
+            <button
+              onClick={() => setShowQRSection(!showQRSection)}
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                showQRSection 
+                  ? 'bg-purple-600 text-white hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800' 
+                  : 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-900/50'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+              </svg>
+              {showQRSection ? 'Ocultar QR' : 'Gestión QR'}
+            </button>
+
+            <button
+              onClick={() => setShowAttendanceSection(!showAttendanceSection)}
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                showAttendanceSection 
+                  ? 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800' 
+                  : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              {showAttendanceSection ? 'Ocultar Asistencias' : 'Ver Asistencias'}
+            </button>
           </div>
 
           {/* Contador de resultados */}
@@ -726,6 +762,62 @@ function HomePage() {
             onClose={() => setShowBirthdayDashboard(false)}
             youngList={allYoungList}
           />
+        )}
+
+        {/* Sección de Gestión QR */}
+        {showQRSection && (
+          <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    Gestión de Código QR
+                  </h2>
+                  <button
+                    onClick={() => setShowQRSection(false)}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <QRGenerator
+                  onSuccess={() => {
+                    showSuccess('QR generado exitosamente');
+                    setAttendanceRefresh(prev => prev + 1);
+                  }}
+                  onError={(error) => showError(error)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sección de Lista de Asistencias */}
+        {showAttendanceSection && (
+          <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    Asistencias del Día
+                  </h2>
+                  <button
+                    onClick={() => setShowAttendanceSection(false)}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <AttendanceList
+                  refreshTrigger={attendanceRefresh}
+                />
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Toast Container */}

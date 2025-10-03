@@ -49,3 +49,64 @@ export interface PaginationQuery {
   sortBy?: 'fullName' | 'birthday' | 'email' | 'role' | 'gender' | 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
 }
+
+// Tipos para QR y Asistencias
+export interface IQRCode {
+  _id: string;
+  code: string;
+  generatedBy: string;
+  generatedAt: Date | string;
+  expiresAt: Date | string;
+  isActive: boolean;
+  dailyDate: string;
+  usageCount: number;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
+export interface IAttendance {
+  _id: string;
+  youngId: string;
+  qrCodeId: string;
+  attendanceDate: string;
+  scannedAt: Date | string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
+export interface QRGenerateResponse {
+  qrCode: IQRCode;
+  qrImage: string; // Base64 data URL
+  qrUrl: string;
+}
+
+export interface AttendanceHistoryResponse {
+  attendances: IAttendance[];
+  stats: {
+    totalAttendances: number;
+    thisMonthAttendances: number;
+    hasAttendanceToday: boolean;
+    todayAttendance?: IAttendance;
+  };
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+export interface TodayAttendancesResponse {
+  attendances: Array<IAttendance & {
+    youngId: IYoung;
+  }>;
+  date: string;
+  stats: {
+    totalPresent: number;
+    totalYoung: number;
+    attendancePercentage: number;
+  };
+}
