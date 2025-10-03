@@ -219,35 +219,30 @@ export class YoungController {
   });
 
   // Crear un nuevo joven
-  static async createYoung(req: Request, res: Response): Promise<void> {
+  static createYoung = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { error, value } = createYoungSchema.validate(req.body);
+    if (error) {
+      throw new ValidationError(error.details[0].message);
+    }
+
+    let profileImageUrl = '';
+
+    // Subir imagen si se proporciona
+    if (req.file) {
+      profileImageUrl = await uploadToCloudinary(req.file.buffer);
+    }
+
+    const youngData = {
+      ...value,
+      profileImage: profileImageUrl || undefined,
+    };
+
+    // Filtrar email vacío
+    if (!youngData.email || !youngData.email.trim()) {
+      delete youngData.email;
+    }
+
     try {
-      const { error, value } = createYoungSchema.validate(req.body);
-      if (error) {
-        res.status(400).json({
-          success: false,
-          message: 'Datos de entrada inválidos',
-          error: error.details[0].message,
-        } as ApiResponse);
-        return;
-      }
-
-      let profileImageUrl = '';
-
-      // Subir imagen si se proporciona
-      if (req.file) {
-        profileImageUrl = await uploadToCloudinary(req.file.buffer);
-      }
-
-      const youngData = {
-        ...value,
-        profileImage: profileImageUrl || undefined,
-      };
-
-      // Filtrar email vacío
-      if (!youngData.email || !youngData.email.trim()) {
-        delete youngData.email;
-      }
-
       const newYoung = new Young(youngData);
       const savedYoung = await newYoung.save();
 
@@ -256,15 +251,24 @@ export class YoungController {
         message: 'Joven creado exitosamente',
         data: savedYoung,
       } as ApiResponse<IYoung>);
-    } catch (error) {
-      console.error('Error creando joven:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error interno del servidor',
-        error: 'No se pudo crear el joven',
-      } as ApiResponse);
+    } catch (error: any) {
+      // Manejo específico para email duplicado
+      if (error.code === 11000 && error.keyPattern?.email) {
+        throw new ConflictError(
+          'Este email ya está registrado en el sistema',
+          { field: 'email', value: youngData.email }
+        );
+      }
+      // Manejo específico para placa duplicada
+      if (error.code === 11000 && error.keyPattern?.placa) {
+        throw new ConflictError(
+          'Esta placa ya está registrada en el sistema',
+          { field: 'placa', value: youngData.placa }
+        );
+      }
+      throw error;
     }
-  }
+  });
 
   // Actualizar un joven
   static updateYoung = asyncHandler(async (req: Request, res: Response): Promise<void> => {
@@ -365,25 +369,43 @@ export class YoungController {
       updateData.profileImage = newImageUrl;
     }
 
-    const updatedYoung = await Young.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    );
+    try {
+      const updatedYoung = await Young.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true, runValidators: true }
+      );
 
-    logger.info('Joven actualizado exitosamente', {
-      context: 'YoungController',
-      method: 'updateYoung',
-      youngId: id,
-      youngName: updatedYoung?.fullName,
-      updatedFields: Object.keys(updateData)
-    });
+      logger.info('Joven actualizado exitosamente', {
+        context: 'YoungController',
+        method: 'updateYoung',
+        youngId: id,
+        youngName: updatedYoung?.fullName,
+        updatedFields: Object.keys(updateData)
+      });
 
-    res.status(200).json({
-      success: true,
-      message: 'Joven actualizado exitosamente',
-      data: updatedYoung,
-    } as ApiResponse<IYoung>);
+      res.status(200).json({
+        success: true,
+        message: 'Joven actualizado exitosamente',
+        data: updatedYoung,
+      } as ApiResponse<IYoung>);
+    } catch (error: any) {
+      // Manejo específico para email duplicado
+      if (error.code === 11000 && error.keyPattern?.email) {
+        throw new ConflictError(
+          'Este email ya está registrado por otro usuario',
+          { field: 'email', value: updateData.email }
+        );
+      }
+      // Manejo específico para placa duplicada
+      if (error.code === 11000 && error.keyPattern?.placa) {
+        throw new ConflictError(
+          'Esta placa ya está registrada por otro usuario',
+          { field: 'placa', value: updateData.placa }
+        );
+      }
+      throw error;
+    }
   });
 
   // Eliminar un joven

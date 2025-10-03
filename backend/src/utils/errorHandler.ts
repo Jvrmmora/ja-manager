@@ -189,10 +189,23 @@ export class ErrorHandler {
     const field = Object.keys(error.keyValue)[0];
     const value = error.keyValue[field];
     
-    return new ConflictError(
-      `El valor '${value}' ya existe para el campo '${field}'`,
-      { field, value }
-    );
+    // Mensajes personalizados para campos específicos
+    let message = '';
+    switch (field) {
+      case 'email':
+        message = 'Este email ya está registrado en el sistema';
+        break;
+      case 'placa':
+        message = 'Esta placa ya está registrada en el sistema';
+        break;
+      case 'name':
+        message = 'Este nombre ya existe en el sistema';
+        break;
+      default:
+        message = `El valor '${value}' ya existe para el campo '${field}'`;
+    }
+    
+    return new ConflictError(message, { field, value });
   }
 }
 

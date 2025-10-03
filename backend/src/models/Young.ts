@@ -109,7 +109,8 @@ const youngSchema = new Schema<IYoungDocument>(
     trim: true,
     lowercase: true,
     default: null,
-    sparse: true, // Permite múltiples valores null
+    unique: true,
+    sparse: true, // Permite múltiples valores null pero emails únicos
     match: [
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
       'Por favor ingrese un email válido'

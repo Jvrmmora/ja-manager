@@ -310,7 +310,16 @@ function HomePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al guardar el joven');
+        
+        // Manejo específico para errores de duplicación
+        if (response.status === 409 && errorData.error?.details?.field === 'email') {
+          throw new Error('Este email ya está registrado en el sistema. Por favor, usa un email diferente.');
+        }
+        if (response.status === 409 && errorData.error?.details?.field === 'placa') {
+          throw new Error('Esta placa ya está registrada en el sistema.');
+        }
+        
+        throw new Error(errorData.error?.message || errorData.message || 'Error al guardar el joven');
       }
 
       const result = await response.json();
@@ -362,7 +371,16 @@ function HomePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al actualizar el joven');
+        
+        // Manejo específico para errores de duplicación
+        if (response.status === 409 && errorData.error?.details?.field === 'email') {
+          throw new Error('Este email ya está registrado por otro usuario. Por favor, usa un email diferente.');
+        }
+        if (response.status === 409 && errorData.error?.details?.field === 'placa') {
+          throw new Error('Esta placa ya está registrada por otro usuario.');
+        }
+        
+        throw new Error(errorData.error?.message || errorData.message || 'Error al actualizar el joven');
       }
 
       const result = await response.json();

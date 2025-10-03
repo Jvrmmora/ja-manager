@@ -39,13 +39,36 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [skillInput, setSkillInput] = useState('');
+  const [emailError, setEmailError] = useState<string>('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    // Limpiar error de email cuando se modifica
+    if (name === 'email') {
+      setEmailError('');
+    }
+    
     setFormData(prev => ({
       ...prev,
-  [name]: value
+      [name]: value
     }));
+  };
+
+  const validateEmail = (email: string): boolean => {
+    if (!email.trim()) {
+      setEmailError('El email es requerido');
+      return false;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError('Formato de email inválido');
+      return false;
+    }
+    
+    setEmailError('');
+    return true;
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,6 +120,11 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
       return;
     }
 
+    // Validar email antes de enviar
+    if (!validateEmail(formData.email)) {
+      return;
+    }
+
     try {
       setLoading(true);
       await onSubmit(formData);
@@ -111,12 +139,21 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
         role: 'colaborador',
         email: '',
         skills: [],
+        group: undefined,
       });
       setImagePreview(null);
+      setEmailError('');
       onClose();
     } catch (error) {
       console.error('Error al guardar:', error);
-      onShowError?.('Error al guardar el joven. Por favor, intenta de nuevo.');
+      
+      // Verificar si es un error de email duplicado
+      const errorMessage = error instanceof Error ? error.message : 'Error al guardar el joven';
+      if (errorMessage.includes('email ya está registrado')) {
+        setEmailError(errorMessage);
+      } else {
+        onShowError?.(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -243,9 +280,16 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="form-input"
+              onBlur={() => validateEmail(formData.email)}
+              className={`form-input ${emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
               placeholder="ejemplo@correo.com"
+              required
             />
+            {emailError && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {emailError}
+              </p>
+            )}
           </div>
 
           {/* Género */}
