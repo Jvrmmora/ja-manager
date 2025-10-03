@@ -225,6 +225,40 @@ export class YoungController {
       throw new ValidationError(error.details[0].message);
     }
 
+    // Validar unicidad de email si se proporciona
+    if (value.email && value.email.trim()) {
+      const existingEmail = await Young.findOne({ email: value.email.trim().toLowerCase() });
+      if (existingEmail) {
+        logger.warn('Intento de crear joven con email duplicado', {
+          context: 'YoungController',
+          method: 'createYoung',
+          duplicateEmail: value.email,
+          existingEmailOwner: existingEmail.fullName
+        });
+        throw new ConflictError(
+          'Este email ya está registrado por otro usuario',
+          { field: 'email', value: value.email, existingOwner: existingEmail.fullName }
+        );
+      }
+    }
+
+    // Validar unicidad de teléfono si se proporciona
+    if (value.phone && value.phone.trim()) {
+      const existingPhone = await Young.findOne({ phone: value.phone.trim() });
+      if (existingPhone) {
+        logger.warn('Intento de crear joven con teléfono duplicado', {
+          context: 'YoungController',
+          method: 'createYoung',
+          duplicatePhone: value.phone,
+          existingPhoneOwner: existingPhone.fullName
+        });
+        throw new ConflictError(
+          'Este teléfono ya está registrado por otro usuario',
+          { field: 'phone', value: value.phone, existingOwner: existingPhone.fullName }
+        );
+      }
+    }
+
     let profileImageUrl = '';
 
     // Subir imagen si se proporciona
@@ -352,6 +386,52 @@ export class YoungController {
       delete updateData.email;
     }
 
+    // Validar unicidad de email si se está actualizando
+    if (updateData.email && updateData.email.trim()) {
+      const existingEmail = await Young.findOne({ 
+        email: updateData.email.trim().toLowerCase(),
+        _id: { $ne: id } // Excluir el documento actual
+      });
+      if (existingEmail) {
+        logger.warn('Intento de usar email duplicado', {
+          context: 'YoungController',
+          method: 'updateYoung',
+          requestedBy: authUser.username,
+          role: authUser.role_name,
+          targetId: id,
+          duplicateEmail: updateData.email,
+          existingEmailOwner: existingEmail.fullName
+        });
+        throw new ConflictError(
+          'Este email ya está registrado por otro usuario',
+          { field: 'email', value: updateData.email, existingOwner: existingEmail.fullName }
+        );
+      }
+    }
+
+    // Validar unicidad de teléfono si se está actualizando
+    if (updateData.phone && updateData.phone.trim()) {
+      const existingPhone = await Young.findOne({ 
+        phone: updateData.phone.trim(),
+        _id: { $ne: id } // Excluir el documento actual
+      });
+      if (existingPhone) {
+        logger.warn('Intento de usar teléfono duplicado', {
+          context: 'YoungController',
+          method: 'updateYoung',
+          requestedBy: authUser.username,
+          role: authUser.role_name,
+          targetId: id,
+          duplicatePhone: updateData.phone,
+          existingPhoneOwner: existingPhone.fullName
+        });
+        throw new ConflictError(
+          'Este teléfono ya está registrado por otro usuario',
+          { field: 'phone', value: updateData.phone, existingOwner: existingPhone.fullName }
+        );
+      }
+    }
+
     // Manejar actualización de imagen
     if (req.file) {
       // Eliminar imagen anterior si existe
@@ -402,6 +482,13 @@ export class YoungController {
         throw new ConflictError(
           'Esta placa ya está registrada por otro usuario',
           { field: 'placa', value: updateData.placa }
+        );
+      }
+      // Manejo específico para teléfono duplicado (si en el futuro se agrega índice único)
+      if (error.code === 11000 && error.keyPattern?.phone) {
+        throw new ConflictError(
+          'Este teléfono ya está registrado por otro usuario',
+          { field: 'phone', value: updateData.phone }
         );
       }
       throw error;

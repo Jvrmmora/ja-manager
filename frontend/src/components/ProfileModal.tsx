@@ -35,6 +35,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string>('');
+  const [phoneError, setPhoneError] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -54,6 +56,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         email: young.email || ''
       });
       setPreviewUrl(young.profileImage || null);
+      setError(null);
+      setEmailError('');
+      setPhoneError('');
       console.log('✅ ProfileModal - formData set:', {
         fullName: young.fullName,
         phone: young.phone,
@@ -66,6 +71,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    
+    // Limpiar errores cuando se modifican los campos
+    if (name === 'email') {
+      setEmailError('');
+    }
+    setError(null);
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -73,6 +85,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   };
 
   const handlePhoneChange = (phone: string) => {
+    setPhoneError(''); // Limpiar error de teléfono cuando se cambia
+    setError(null);
     setFormData(prev => ({
       ...prev,
       phone
@@ -127,10 +141,64 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         }
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al actualizar el perfil');
+        console.error('❌ Error response from backend:', {
+          status: response.status,
+          errorData,
+          hasErrorObject: !!errorData.error,
+          hasDetails: !!errorData.error?.details,
+          field: errorData.error?.details?.field,
+          existingOwner: errorData.error?.details?.existingOwner
+        });
+        
+        // Manejo específico para errores de duplicación con información detallada
+        if (response.status === 409 && errorData.error?.details?.field === 'email') {
+          const existingOwner = errorData.error?.details?.existingOwner;
+          const message = existingOwner 
+            ? `Este email ya está registrado por ${existingOwner}. Por favor, usa un email diferente.`
+            : 'Este email ya está registrado por otro usuario. Por favor, usa un email diferente.';
+          throw new Error(message);
+        }
+        if (response.status === 409 && errorData.error?.details?.field === 'phone') {
+          const existingOwner = errorData.error?.details?.existingOwner;
+          const message = existingOwner 
+            ? `Este teléfono ya está registrado por ${existingOwner}. Por favor, usa un teléfono diferente.`
+            : 'Este teléfono ya está registrado por otro usuario. Por favor, usa un teléfono diferente.';
+          throw new Error(message);
+        }
+        if (response.status === 409 && errorData.error?.details?.field === 'placa') {
+          const existingOwner = errorData.error?.details?.existingOwner;
+          const message = existingOwner 
+            ? `Esta placa ya está registrada por ${existingOwner}.`
+            : 'Esta placa ya está registrada por otro usuario.';
+          throw new Error(message);
+        }
+        
+        // Para otros errores, intentar extraer el mensaje del backend
+        const backendMessage = errorData.error?.message || errorData.message;
+        throw new Error(backendMessage || 'Error al actualizar el perfil');
       }
     } catch (err: any) {
-      setError(err.message || 'Error al actualizar el perfil');
+      console.error('Error al actualizar perfil:', err);
+      
+      // Verificar si es un error de duplicados con información específica
+      const errorMessage = err.message || 'Error al actualizar el perfil';
+      
+      // Detectar si es error de email duplicado
+      if (errorMessage.includes('email ya está registrado por') || errorMessage.includes('email ya está registrado')) {
+        setEmailError(errorMessage);
+        setError(null); // No mostrar error general si es específico
+      } 
+      // Detectar si es error de teléfono duplicado  
+      else if (errorMessage.includes('teléfono ya está registrado por') || errorMessage.includes('teléfono ya está registrado')) {
+        setPhoneError(errorMessage);
+        setError(null); // No mostrar error general si es específico
+      } 
+      // Otros errores
+      else {
+        setError(errorMessage);
+        setEmailError('');
+        setPhoneError('');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -240,6 +308,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
               <PhoneInput
                 value={formData.phone}
                 onChange={handlePhoneChange}
+                error={phoneError}
               />
             </div>
 
@@ -266,8 +335,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  emailError 
+                    ? 'border-red-500 dark:border-red-400' 
+                    : 'border-gray-300 dark:border-gray-600'
+                }`}
               />
+              {emailError && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {emailError}
+                </p>
+              )}
             </div>
           </div>
 

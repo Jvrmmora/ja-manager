@@ -40,13 +40,17 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [skillInput, setSkillInput] = useState('');
   const [emailError, setEmailError] = useState<string>('');
+  const [phoneError, setPhoneError] = useState<string>('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // Limpiar error de email cuando se modifica
+    // Limpiar errores cuando se modifican los campos
     if (name === 'email') {
       setEmailError('');
+    }
+    if (name === 'phone') {
+      setPhoneError('');
     }
     
     setFormData(prev => ({
@@ -143,15 +147,24 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
       });
       setImagePreview(null);
       setEmailError('');
+      setPhoneError('');
       onClose();
     } catch (error) {
       console.error('Error al guardar:', error);
       
-      // Verificar si es un error de email duplicado
+      // Verificar si es un error de duplicados con información específica
       const errorMessage = error instanceof Error ? error.message : 'Error al guardar el joven';
-      if (errorMessage.includes('email ya está registrado')) {
+      
+      // Detectar si es error de email duplicado
+      if (errorMessage.includes('email ya está registrado por') || errorMessage.includes('email ya está registrado')) {
         setEmailError(errorMessage);
-      } else {
+      } 
+      // Detectar si es error de teléfono duplicado  
+      else if (errorMessage.includes('teléfono ya está registrado por') || errorMessage.includes('teléfono ya está registrado')) {
+        setPhoneError(errorMessage);
+      } 
+      // Otros errores
+      else {
         onShowError?.(errorMessage);
       }
     } finally {
@@ -250,8 +263,12 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
             </label>
             <PhoneInput
               value={formData.phone}
-              onChange={(value) => setFormData({ ...formData, phone: value })}
+              onChange={(value) => {
+                setFormData({ ...formData, phone: value });
+                setPhoneError(''); // Limpiar error cuando se cambia el valor
+              }}
               placeholder="Escribe tu número"
+              error={phoneError}
             />
           </div>
 
