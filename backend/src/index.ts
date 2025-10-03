@@ -29,11 +29,11 @@ import {
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = parseInt(process.env.PORT || '5000', 10);
 
 // Configurar CORS con variables de entorno
-const corsOrigins = process.env.CORS_ORIGIN 
-  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+const corsOrigins = process.env.CORS_ORIGINS 
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
   : [
       'http://localhost:3000',
       'http://localhost:5173',
@@ -146,13 +146,14 @@ app.use(notFoundHandler);
 app.use(globalErrorHandler);
 
 // Iniciar servidor
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   logger.info(`🚀 Servidor corriendo en puerto ${PORT}`, {
     port: PORT,
     env: process.env.NODE_ENV || 'development',
     nodeVersion: process.version
   });
   logger.info(`📱 API disponible en: http://localhost:${PORT}`);
+  logger.info(`🌐 API disponible en red: http://192.168.1.9:${PORT}`);
   logger.info(`💚 Health check: http://localhost:${PORT}/api/health`);
   logger.info(`📚 Documentación: http://localhost:${PORT}/api/docs`);
 });

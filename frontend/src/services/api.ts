@@ -1,5 +1,5 @@
-// Configuración de la API - Fix temporal
-const API_BASE_URL = 'http://localhost:4500/api'; // import.meta.env.VITE_API_URL || 'http://localhost:4500/api';
+// Configuración de la API
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4500/api';
 
 // Función para obtener el token del localStorage
 const getAuthToken = (): string | null => {
