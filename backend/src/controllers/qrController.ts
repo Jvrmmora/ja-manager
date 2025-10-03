@@ -18,8 +18,9 @@ export const generateDailyQR = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    // Verificar que el usuario es administrador
-    if (req.user?.role_name !== 'admin') {
+    // Verificar que el usuario es administrador (admin o Super Admin)
+    const isAdmin = req.user?.role_name === 'Super Admin';
+    if (!isAdmin) {
       res.status(403).json({
         success: false,
         message: 'Solo los administradores pueden generar códigos QR',

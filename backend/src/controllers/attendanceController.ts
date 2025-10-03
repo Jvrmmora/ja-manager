@@ -27,8 +27,9 @@ export const scanQRAndRegisterAttendance = async (req: Request, res: Response): 
       return;
     }
 
-    // Verificar que el usuario es un joven (no admin)
-    if (req.user?.role_name === 'admin') {
+        // Verificar que el usuario es un joven (no admin)
+    const isAdmin = req.user?.role_name === 'Super Admin';
+    if (isAdmin) {
       res.status(403).json({
         success: false,
         message: 'Los administradores no pueden registrar asistencia',
@@ -191,8 +192,9 @@ export const getTodayAttendances = async (req: Request, res: Response): Promise<
       return;
     }
 
-    // Verificar que el usuario es administrador
-    if (req.user?.role_name !== 'admin') {
+    // Verificar que el usuario es administrador (admin o Super Admin)
+    const isAdmin = req.user?.role_name === 'Super Admin';
+    if (!isAdmin) {
       res.status(403).json({
         success: false,
         message: 'Solo los administradores pueden ver esta información',
@@ -213,10 +215,8 @@ export const getTodayAttendances = async (req: Request, res: Response): Promise<
 
     // Obtener total de jóvenes para estadísticas
     const totalYoung = await Young.countDocuments({
-      role_name: { $ne: 'admin' }
-    });
-
-    res.status(200).json({
+      role_name: { $nin: ['admin', 'Super Admin'] }
+    });    res.status(200).json({
       success: true,
       message: 'Lista de asistencias obtenida exitosamente',
       data: {
@@ -238,7 +238,8 @@ export const getTodayAttendances = async (req: Request, res: Response): Promise<
 // Obtener estadísticas de asistencia por rango de fechas (solo administradores)
 export const getAttendanceStats = async (req: Request, res: Response): Promise<void> => {
   try {
-    if (req.user?.role_name !== 'admin') {
+    const isAdmin = req.user?.role_name === 'Super Admin';
+    if (!isAdmin) {
       res.status(403).json({
         success: false,
         message: 'Solo los administradores pueden ver esta información',
