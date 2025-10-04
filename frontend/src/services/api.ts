@@ -1,5 +1,8 @@
-// Configuración de la API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4500/api';
+// Configuración de la API - TEMPORAL: Apuntar directamente al backend
+const API_BASE_URL = 'http://localhost:4500/api'; // Directo al backend para testing
+
+// Debug: Verificar qué URL está usando
+console.log('🔧 API_BASE_URL TEMPORAL:', API_BASE_URL);
 
 // Función para obtener el token del localStorage
 const getAuthToken = (): string | null => {
@@ -22,6 +25,7 @@ export const removeAuthToken = (): void => {
 export const buildApiUrl = (endpoint: string): string => {
   // Remover slash inicial si existe
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  // Como API_BASE_URL ya incluye /api, solo agregamos el endpoint
   return `${API_BASE_URL}/${cleanEndpoint}`;
 };
 
@@ -217,18 +221,33 @@ export const getQRStats = async (): Promise<any> => {
 
 // Escanear QR y registrar asistencia
 export const scanQRAndRegisterAttendance = async (code: string): Promise<any> => {
-  const response = await apiRequest('attendance/scan', {
-    method: 'POST',
-    body: JSON.stringify({ code })
-  });
+  console.log('🚀 [API] Iniciando scanQRAndRegisterAttendance con código:', code);
+  
+  try {
+    const response = await apiRequest('attendance/scan', {
+      method: 'POST',
+      body: JSON.stringify({ code })
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Error al registrar asistencia');
+    console.log('📡 [API] Respuesta recibida:', {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('❌ [API] Error en respuesta:', errorData);
+      throw new Error(errorData.message || 'Error al registrar asistencia');
+    }
+
+    const result = await response.json();
+    console.log('✅ [API] Resultado exitoso:', result);
+    return result.data;
+  } catch (error) {
+    console.error('💥 [API] Error en scanQRAndRegisterAttendance:', error);
+    throw error;
   }
-
-  const result = await response.json();
-  return result.data;
 };
 
 // Obtener mi historial de asistencias

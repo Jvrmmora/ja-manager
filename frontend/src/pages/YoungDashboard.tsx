@@ -4,7 +4,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import ProfileModal from '../components/ProfileModal';
 import AnimatedScanButton from '../components/AnimatedScanButton';
-import QRScanner from '../components/QRScanner';
+import QRScannerOptimized from '../components/QRScannerOptimized';
 import AttendanceHistory from '../components/AttendanceHistory';
 import { authService } from '../services/auth';
 import { getCurrentUserProfile } from '../services/api';
@@ -105,11 +105,11 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
     setIsScanning(false);
   };
 
+
+  // QRScannerOptimized maneja todo internamente
   const handleQRScanSuccess = (data: any) => {
     console.log('✅ Asistencia registrada exitosamente:', data);
-    // Refrescar el historial de asistencias
     setAttendanceRefresh(prev => prev + 1);
-    handleCloseQRScanner();
   };
 
   return (
@@ -281,7 +281,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
       />
 
       {/* Scanner QR */}
-      <QRScanner
+      <QRScannerOptimized
         isOpen={showQRScanner}
         onClose={handleCloseQRScanner}
         onSuccess={handleQRScanSuccess}

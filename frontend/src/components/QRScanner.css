@@ -1,0 +1,91 @@
+/* Estilos específicos para el QR Scanner optimizado para móviles */
+
+/* Asegurar que el video ocupe todo el espacio disponible */
+.qr-scanner-video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  -webkit-object-fit: cover; /* Safari */
+}
+
+/* Mejorar el rendimiento en móviles */
+.qr-scanner-container {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-perspective: 1000;
+  perspective: 1000;
+}
+
+/* Prevenir zoom en iOS al tocar */
+.qr-scanner-modal {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Mejorar la visibilidad del overlay en diferentes condiciones de luz */
+.qr-scanner-overlay {
+  background: linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.1) 0%,
+    transparent 15%,
+    transparent 85%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+}
+
+/* Animación suave para el marco de escaneo */
+.qr-scan-frame {
+  animation: qr-pulse 2s ease-in-out infinite;
+}
+
+@keyframes qr-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+}
+
+/* Mejorar la legibilidad del texto en la parte inferior */
+.qr-status-text {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Responsividad para pantallas muy pequeñas */
+@media (max-height: 600px) {
+  .qr-scanner-modal {
+    max-height: 90vh;
+  }
+  
+  .qr-scanner-video {
+    aspect-ratio: 1;
+    min-height: 300px;
+  }
+}
+
+/* Optimizaciones para iOS Safari */
+@supports (-webkit-touch-callout: none) {
+  .qr-scanner-video {
+    -webkit-playsinline: true;
+  }
+}
+
+/* Modo oscuro específico para el scanner */
+@media (prefers-color-scheme: dark) {
+  .qr-scanner-overlay {
+    background: linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      transparent 15%,
+      transparent 85%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+  }
+}
