@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { EyeIcon } from '@heroicons/react/24/outline';
 import ProfileDropdown from '../components/ProfileDropdown';
 import ThemeToggle from '../components/ThemeToggle';
 import ChangePasswordModal from '../components/ChangePasswordModal';
@@ -6,8 +7,9 @@ import ProfileModal from '../components/ProfileModal';
 import AnimatedScanButton from '../components/AnimatedScanButton';
 import QRScanner from '../components/QRScanner';
 import AttendanceHistory from '../components/AttendanceHistory';
+import ImageModal from '../components/ImageModal';
 import { authService } from '../services/auth';
-import { getCurrentUserProfile } from '../services/api';
+import { getCurrentUserProfile, getMyAttendanceHistory } from '../services/api';
 import type { IYoung } from '../types';
 import logo from '../assets/logos/logo.png';
 
@@ -26,11 +28,16 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [attendanceRefresh, setAttendanceRefresh] = useState(0);
   const [isScanning, setIsScanning] = useState(false);
+  const [hasAttendanceToday, setHasAttendanceToday] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
 
   useEffect(() => {
     // Obtener información del usuario
     const user = authService.getUserInfo();
     setUserInfo(user);
+
+    // Cargar estado de asistencia del día
+    loadAttendanceStatus();
 
     // Escuchar cambios en userInfo (cuando se actualiza el perfil)
     const handleUserInfoUpdate = () => {
@@ -47,6 +54,24 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
       window.removeEventListener('userInfoUpdated', handleUserInfoUpdate);
     };
   }, []);
+
+  // Función para cargar el estado de asistencia del día
+  const loadAttendanceStatus = async () => {
+    try {
+      const historyData = await getMyAttendanceHistory(1, 1); // Solo necesitamos verificar si hay asistencia hoy
+      setHasAttendanceToday(historyData.stats.hasAttendanceToday || false);
+    } catch (error) {
+      console.error('Error al cargar estado de asistencia:', error);
+      setHasAttendanceToday(false);
+    }
+  };
+
+  // Effect para recargar el estado cuando cambie attendanceRefresh
+  useEffect(() => {
+    if (attendanceRefresh > 0) {
+      loadAttendanceStatus();
+    }
+  }, [attendanceRefresh]);
 
   const getFirstName = () => {
     if (userInfo?.fullName) {
@@ -94,8 +119,20 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
     onProfileUpdate?.();
   };
 
+  // Función para abrir el modal de imagen
+  const handleOpenImageModal = () => {
+    if (userInfo?.profileImage) {
+      setShowImageModal(true);
+    }
+  };
+
   // Funciones para manejar el scanner QR
   const handleOpenQRScanner = () => {
+    // No abrir el scanner si ya se registró asistencia hoy
+    if (hasAttendanceToday) {
+      return;
+    }
+    
     setIsScanning(true);
     setShowQRScanner(true);
   };
@@ -139,6 +176,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
               <ProfileDropdown 
                 onChangePassword={handleOpenChangePassword}
                 onOpenProfile={handleOpenProfile}
+                onViewProfileImage={handleOpenImageModal}
               />
             </div>
           </div>
@@ -152,13 +190,25 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
           <div className="text-center py-12">
             {/* Foto de perfil con botón de editar */}
             <div className="relative inline-block mb-6">
-              <div className="w-24 h-24 rounded-full overflow-hidden mx-auto bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+              <div 
+                className={`relative w-24 h-24 rounded-full overflow-hidden mx-auto bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center ${
+                  userInfo?.profileImage ? 'cursor-pointer group' : ''
+                }`}
+                onClick={handleOpenImageModal}
+                title={userInfo?.profileImage ? 'Ver foto en grande' : ''}
+              >
                 {userInfo?.profileImage ? (
-                  <img
-                    src={userInfo.profileImage}
-                    alt={userInfo.fullName || 'Foto de perfil'}
-                    className="w-full h-full object-cover"
-                  />
+                  <>
+                    <img
+                      src={userInfo.profileImage}
+                      alt={userInfo.fullName || 'Foto de perfil'}
+                      className="w-full h-full object-cover transition-all duration-300 group-hover:scale-110"
+                    />
+                    {/* Overlay con icono de ojo en hover */}
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <EyeIcon className="w-8 h-8 text-white" />
+                    </div>
+                  </>
                 ) : (
                   <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -236,6 +286,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
               <AnimatedScanButton
                 onClick={handleOpenQRScanner}
                 isScanning={isScanning}
+                isCompleted={hasAttendanceToday}
                 className="max-w-md mx-auto"
               />
             </div>
@@ -286,6 +337,16 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
         onClose={handleCloseQRScanner}
         onSuccess={handleQRScanSuccess}
       />
+
+      {/* Modal para ver imagen de perfil en grande */}
+      {userInfo?.profileImage && (
+        <ImageModal
+          isOpen={showImageModal}
+          onClose={() => setShowImageModal(false)}
+          imageUrl={userInfo.profileImage}
+          altText={`Foto de perfil de ${userInfo.fullName || 'Usuario'}`}
+        />
+      )}
     </div>
   );
 };

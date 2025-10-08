@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 interface ImageModalProps {
   isOpen: boolean;
@@ -8,6 +9,8 @@ interface ImageModalProps {
 }
 
 const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageUrl, altText }) => {
+  const { isDark } = useTheme();
+  
   // Cerrar modal con tecla Escape
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -49,7 +52,7 @@ const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageUrl, altT
 
         {/* Imagen */}
         <div 
-          className="bg-white rounded-lg overflow-hidden shadow-2xl"
+          className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-lg overflow-hidden shadow-2xl`}
           onClick={(e) => e.stopPropagation()}
         >
           <img
@@ -67,11 +70,11 @@ const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageUrl, altT
           />
           
           {/* Información de la imagen */}
-          <div className="p-4 bg-gray-50 border-t">
-            <p className="text-sm text-gray-600 text-center">
+          <div className={`p-4 border-t ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+            <p className={`text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
               {altText}
             </p>
-            <p className="text-xs text-gray-400 text-center mt-1">
+            <p className={`text-xs text-center mt-1 ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>
               Haz clic fuera de la imagen o presiona ESC para cerrar
             </p>
           </div>

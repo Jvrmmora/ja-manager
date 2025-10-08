@@ -292,7 +292,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
       // Mostrar éxito
       setModalData({
         success: true,
-        message: '¡Asistencia Registrada!',
+        message: '¡Has registrado tu asistencia hoy satisfactoriamente!',
         subtitle: 'Gracias por asistir a nuestro culto joven',
         date: new Date().toLocaleDateString('es-ES', {
           weekday: 'long',

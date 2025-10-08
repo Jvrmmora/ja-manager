@@ -21,6 +21,37 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [countdown, setCountdown] = useState<string>('');
+
+  // Hook para el contador regresivo
+  useEffect(() => {
+    if (!qrData?.qrCode?.expiresAt) return;
+
+    const updateCountdown = () => {
+      const now = new Date().getTime();
+      const expireTime = new Date(qrData.qrCode.expiresAt).getTime();
+      const timeLeft = expireTime - now;
+
+      if (timeLeft <= 0) {
+        setCountdown('Expirado');
+        return;
+      }
+
+      const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+      setCountdown(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+    };
+
+    // Actualizar inmediatamente
+    updateCountdown();
+
+    // Actualizar cada segundo
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [qrData?.qrCode?.expiresAt]);
 
   useEffect(() => {
     // Cargar QR existente al montar el componente
@@ -171,7 +202,7 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
                   <strong>Generado:</strong> {formatTime(qrData.qrCode.generatedAt)}
                 </p>
                 <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                  <strong>Expira:</strong> {formatTime(qrData.qrCode.expiresAt)}
+                  <strong>Expira:</strong> <span className={countdown === 'Expirado' ? 'text-red-500 font-semibold' : 'text-red-600 font-mono font-semibold'}>{countdown}</span>
                 </p>
               </div>
 
@@ -297,8 +328,8 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
                     ✅ {stats.attendanceCount} personas registradas
                   </motion.p>
                 )}
-                <p className="text-gray-300 text-sm">
-                  Expira a las {formatTime(qrData.qrCode.expiresAt)}
+                <p className="text-lg">
+                  Expira en: <span className={`font-mono font-bold ${countdown === 'Expirado' ? 'text-red-400' : 'text-red-300'}`}>{countdown}</span>
                 </p>
                 <p className="text-gray-400 text-xs mt-4">
                   Presiona ESC o haz clic para salir

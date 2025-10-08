@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { EyeIcon } from '@heroicons/react/24/outline';
 import { authService } from '../services/auth';
 
 interface ProfileDropdownProps {
   className?: string;
   onChangePassword?: () => void;
   onOpenProfile?: () => void;
+  onViewProfileImage?: () => void;
 }
 
-const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onChangePassword, onOpenProfile }) => {
+const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onChangePassword, onOpenProfile, onViewProfileImage }) => {
   // const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -136,13 +138,30 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onCha
           {/* Header del dropdown */}
           <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+              <div 
+                className={`relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center ${
+                  getProfileImage() ? 'cursor-pointer group' : ''
+                }`}
+                onClick={() => {
+                  if (getProfileImage() && onViewProfileImage) {
+                    setIsOpen(false);
+                    onViewProfileImage();
+                  }
+                }}
+                title={getProfileImage() ? 'Ver foto en grande' : ''}
+              >
                 {getProfileImage() ? (
-                  <img
-                    src={getProfileImage()}
-                    alt={getUserDisplayName()}
-                    className="w-full h-full object-cover"
-                  />
+                  <>
+                    <img
+                      src={getProfileImage()}
+                      alt={getUserDisplayName()}
+                      className="w-full h-full object-cover transition-all duration-300 group-hover:scale-110"
+                    />
+                    {/* Overlay con icono de ojo en hover */}
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <EyeIcon className="w-5 h-5 text-white" />
+                    </div>
+                  </>
                 ) : (
                   <span className="text-white font-semibold">
                     {getInitials()}
