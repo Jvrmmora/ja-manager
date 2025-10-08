@@ -124,7 +124,7 @@ const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({
                     ? isDark ? 'text-green-400' : 'text-green-600'
                     : isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  {data.stats.hasAttendanceToday ? '✅ Asistencia registrada hoy' : '⏳ Sin asistencia registrada hoy'}
+                  {data.stats.hasAttendanceToday ? 'Asistencia registrada hoy' : '⏳ Sin asistencia registrada hoy'}
                 </p>
                 {data.stats.todayAttendance && (
                   <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>

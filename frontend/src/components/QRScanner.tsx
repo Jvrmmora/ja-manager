@@ -23,10 +23,9 @@ const QRScanner: React.FC<QRScannerProps> = ({
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cameraState, setCameraState] = useState<'prompt' | 'granted' | 'denied'>('prompt');
-  const [isProcessing, setIsProcessing] = useState(false);
   const { isDark } = useTheme();
 
-  // 🔥 NUEVO: Usar refs para estados críticos que no deben causar re-renders
+  // Usar refs para estados críticos que no deben causar re-renders
   const canScanRef = useRef(false);
   const isProcessingRef = useRef(false);
 
@@ -46,7 +45,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
 
   // Limpiar recursos
   const cleanup = useCallback(() => {
-    // 🔥 LIMPIAR REFS
+    // Limpiar refs
     canScanRef.current = false;
     isProcessingRef.current = false;
     
@@ -106,7 +105,6 @@ const QRScanner: React.FC<QRScannerProps> = ({
   // Solicitar permisos de cámara
   const requestCameraPermission = async () => {
     try {
-      console.log('🔍 Solicitando permisos de cámara...');
       const constraints = {
         video: {
           facingMode: { ideal: 'environment' }, // Preferir cámara trasera
@@ -117,15 +115,12 @@ const QRScanner: React.FC<QRScannerProps> = ({
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('✅ Permisos de cámara obtenidos');
       
       // Cerrar el stream inmediatamente - solo necesitamos los permisos
       stream.getTracks().forEach(track => track.stop());
       
       setCameraState('granted');
-      console.log('📹 Estado de cámara cambiado a granted');
     } catch (error: any) {
-      console.error('Error solicitando permisos:', error);
       setCameraState('denied');
       
       let errorMessage = 'Error al acceder a la cámara';
@@ -153,9 +148,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
 
   // Efecto para inicializar el scanner cuando el video esté disponible
   useEffect(() => {
-    console.log('🔄 Effect triggered:', { cameraState, hasVideoRef: !!videoRef.current, hasScannerRef: !!scannerRef.current, isOpen });
     if (cameraState === 'granted' && videoRef.current && !scannerRef.current && isOpen) {
-      console.log('⚡ Iniciando QR Scanner...');
       // Pequeño delay para asegurar que el elemento video esté completamente renderizado
       const timer = setTimeout(() => {
         initializeQRScanner();
@@ -168,14 +161,12 @@ const QRScanner: React.FC<QRScannerProps> = ({
   // Inicializar QR Scanner
   const initializeQRScanner = async () => {
     if (!videoRef.current) {
-      console.warn('❌ Elemento de video no disponible aún');
       setError('Elemento de video no disponible');
       setIsInitializing(false);
       return;
     }
 
     try {
-      console.log('🚀 Inicializando QR Scanner...');
       setIsInitializing(true);
       
       const config = {
@@ -192,7 +183,6 @@ const QRScanner: React.FC<QRScannerProps> = ({
         videoRef.current,
         (result) => {
           const qrData = typeof result === 'string' ? result : result.data;
-          console.log('🔥 QR DETECTADO EN SCANNER:', qrData);
           handleScanResult(qrData);
         },
         config
@@ -202,18 +192,12 @@ const QRScanner: React.FC<QRScannerProps> = ({
       setIsScanning(true);
       setIsInitializing(false);
       
-      // 🔥 ACTIVAR REFS PARA PERMITIR SCANNING
+      // Activar refs para permitir scanning
       canScanRef.current = true;
       isProcessingRef.current = false;
       
-      console.log('✅ QR Scanner inicializado correctamente', {
-        isScanning: true,
-        isProcessing: false,
-        canScanRef: canScanRef.current,
-        isProcessingRef: isProcessingRef.current
-      });
+      
     } catch (error: any) {
-      console.error('Error inicializando QR Scanner:', error);
       setError(error.message || 'Error al inicializar el escáner QR');
       setIsScanning(false);
       setIsInitializing(false);
@@ -222,59 +206,30 @@ const QRScanner: React.FC<QRScannerProps> = ({
 
   // Manejar resultado del escaneo
   const handleScanResult = async (data: string) => {
-    // 🔥 LOGS SUPER VISIBLES
-    console.log('🔥🔥🔥 FUNCIÓN HANDLESCCANRESULT EJECUTADA EN OPTIMIZED 🔥🔥🔥');
-    console.log('🔥 Datos recibidos:', data);
-    console.log('🔥 Estados actuales:', {
-      isScanning,
-      isProcessing,
-      canScanRef: canScanRef.current,
-      isProcessingRef: isProcessingRef.current,
-      isInitializing,
-      cameraState,
-      error
-    });
-
-    // 🔥 NUEVA LÓGICA: Usar refs en lugar de states
+    // Usar refs en lugar de states para verificaciones
     if (!canScanRef.current || isProcessingRef.current) {
-      console.log('🚫 Ignorando scan - refs dicen no procesar', {
-        canScanRef: canScanRef.current,
-        isProcessingRef: isProcessingRef.current,
-        reason: !canScanRef.current ? 'canScanRef=false' : 'isProcessingRef=true'
-      });
       return;
     }
 
-    // 🔥 VERIFICACIÓN ADICIONAL: Scanner debe existir
+    // Verificación adicional: Scanner debe existir
     if (!scannerRef.current) {
-      console.log('🚫 Ignorando scan - no hay scanner activo');
       return;
     }
 
     try {
-      // � ACTIVAR LOCKS INMEDIATAMENTE
+      // Activar locks inmediatamente
       canScanRef.current = false;
       isProcessingRef.current = true;
-      setIsProcessing(true);
       setIsScanning(false);
-
-      console.log('🔥🔥 INICIANDO PROCESAMIENTO REAL 🔥🔥');
-      console.log('📢 Iniciando procesamiento de QR:', data);
-      
       // Pausar y detener scanner inmediatamente
       if (scannerRef.current) {
         try {
           scannerRef.current.pause();
-          // También detener completamente para prevenir más lecturas
           scannerRef.current.stop();
         } catch (e) {
-          console.warn('Error pausando scanner:', e);
+          // Error pausando scanner - continuar
         }
       }
-
-      console.log('📱 QR escaneado:', data);
-      console.log('📝 Tipo de dato:', typeof data);
-      console.log('📏 Longitud:', data.length);
 
       // Validar QR
       if (!data || data.trim() === '') {
@@ -283,37 +238,31 @@ const QRScanner: React.FC<QRScannerProps> = ({
 
       // Extraer código con múltiples estrategias
       let code: string;
-      console.log('🔍 Iniciando extracción de código...');
       
       try {
         // Estrategia 1: Si es una URL completa
         if (data.includes('http')) {
-          console.log('📄 Detectado como URL:', data);
           const url = new URL(data);
           
           // Buscar en query parameters
           if (url.searchParams.has('code')) {
             code = url.searchParams.get('code') || '';
-            console.log('🎯 Código extraído de query param:', code);
           } 
           // Buscar en path
           else if (data.includes('attendance/scan/')) {
             const match = data.match(/attendance\/scan\/([^/?#]+)/);
             code = match ? match[1] : '';
-            console.log('🎯 Código extraído del path:', code);
           }
           // Buscar cualquier UUID en la URL
           else {
             const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
             const match = data.match(uuidRegex);
             code = match ? match[0] : '';
-            console.log('🎯 UUID encontrado en URL:', code);
           }
         } 
         // Estrategia 2: Si parece un UUID directo
         else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.trim())) {
           code = data.trim();
-          console.log('🎯 Detectado como UUID directo:', code);
         }
         // Estrategia 3: Buscar UUID en cualquier parte del texto
         else {
@@ -321,34 +270,24 @@ const QRScanner: React.FC<QRScannerProps> = ({
           const match = data.match(uuidRegex);
           if (match) {
             code = match[0];
-            console.log('🎯 UUID encontrado en texto:', code);
           } else {
             // Estrategia 4: Usar todo el contenido como código
             code = data.trim();
-            console.log('🎯 Usando contenido completo como código:', code);
           }
         }
       } catch (urlError) {
-        console.log('⚠️ Error parseando URL, usando contenido directo:', urlError);
         // Buscar UUID en el texto
         const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
         const match = data.match(uuidRegex);
         code = match ? match[0] : data.trim();
-        console.log('🎯 Código final tras error:', code);
       }
 
       if (!code) {
-        console.error('❌ No se pudo extraer código válido del QR');
         throw new Error('No se pudo extraer el código del QR');
       }
 
-      console.log('🔍 Código extraído final:', code);
-      console.log('🌐 Llamando a scanQRAndRegisterAttendance...');
-
       // Registrar asistencia
       const result = await scanQRAndRegisterAttendance(code);
-      
-      console.log('✅ Resultado de la API:', result);
       
       // Mostrar éxito
       setModalData({
@@ -374,11 +313,8 @@ const QRScanner: React.FC<QRScannerProps> = ({
       }, 1000);
 
     } catch (error: any) {
-      console.error('❌ Error registrando asistencia:', error);
-      
-      // 🔥 LIMPIAR REFS EN ERROR
+      // Limpiar refs en error
       isProcessingRef.current = false;
-      setIsProcessing(false);
       
       // Mostrar error
       setModalData({
@@ -394,8 +330,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
           try {
             scannerRef.current.start();
             setIsScanning(true);
-            canScanRef.current = true; // 🔥 REACTIVAR REF
-            console.log('🔄 Scanner reactivado después del error');
+            canScanRef.current = true;
           } catch (resumeError) {
             console.error('Error reanudando scanner:', resumeError);
             handleRetry();
@@ -642,35 +577,6 @@ const QRScanner: React.FC<QRScannerProps> = ({
                           </>
                         )}
                       </p>
-                      
-                      {/* DEBUG INFO */}
-                      {process.env.NODE_ENV === 'development' && (
-                        <div className="mt-2 text-xs text-gray-300 space-y-1">
-                          <p>scanning: {isScanning.toString()} | processing: {isProcessing.toString()}</p>
-                          <p>canScanRef: {canScanRef.current.toString()} | procRef: {isProcessingRef.current.toString()}</p>
-                          <p>camera: {cameraState} | error: {error ? 'yes' : 'no'}</p>
-                          {/* Botón de test */}
-                          <button
-                            onClick={() => {
-                              console.log('🧪 TEST: Simulando QR scan en Optimized');
-                              const testQR = 'localhost:3000/attendance/scan?code=test-optimized-123';
-                              console.log('🔍 Estados antes del test:', {
-                                isScanning,
-                                isProcessing,
-                                canScanRef: canScanRef.current,
-                                isProcessingRef: isProcessingRef.current,
-                                isInitializing,
-                                cameraState,
-                                error
-                              });
-                              handleScanResult(testQR);
-                            }}
-                            className="mt-1 bg-yellow-600 text-white px-2 py-1 rounded text-xs"
-                          >
-                            Test Scan
-                          </button>
-                        </div>
-                      )}
                     </motion.div>
                   </div>
                 </div>
