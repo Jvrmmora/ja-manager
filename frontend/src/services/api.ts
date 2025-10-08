@@ -1,8 +1,8 @@
-// Configuración de la API - TEMPORAL: Apuntar directamente al backend
-const API_BASE_URL = 'http://localhost:4500/api'; // Directo al backend para testing
+// Configuración de la API - Usando import.meta.env para Vite
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4500/api';
 
 // Debug: Verificar qué URL está usando
-console.log('🔧 API_BASE_URL TEMPORAL:', API_BASE_URL);
+console.log('🔧 API_BASE_URL:', API_BASE_URL);
 
 // Función para obtener el token del localStorage
 const getAuthToken = (): string | null => {
