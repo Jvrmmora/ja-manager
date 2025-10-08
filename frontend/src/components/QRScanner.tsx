@@ -310,7 +310,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
       // Cerrar scanner
       setTimeout(() => {
         onClose();
-      }, 1000);
+      }, 3000);
 
     } catch (error: any) {
       // Limpiar refs en error
