@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import { JWTService } from '../services/jwtService';
 import Role from '../models/Role';
 import { IAuthUser } from '../types';
@@ -44,6 +45,15 @@ export const SCOPES = {
  */
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // Verificar que la conexión a MongoDB esté activa
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Servicio no disponible',
+        message: 'La base de datos no está disponible en este momento'
+      });
+    }
+
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 

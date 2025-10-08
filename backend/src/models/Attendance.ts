@@ -26,7 +26,6 @@ const attendanceSchema = new Schema<IAttendance>(
     attendanceDate: {
       type: String,
       required: [true, 'La fecha de asistencia es obligatoria'],
-      index: true,
     },
     scannedAt: {
       type: Date,
