@@ -1,14 +1,10 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QrScanner from 'qr-scanner';
 import { XMarkIcon, ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { scanQRAndRegisterAttendance } from '../services/api';
 import AttendanceModal from './AttendanceModal';
-import MobileInstructions from './MobileInstructions';
 import { useTheme } from '../context/ThemeContext';
-import { useCameraPermission } from '../hooks/useCameraPermission';
-import { useDeviceDetection, getMobileOptimizedConfig } from '../hooks/useDeviceDetection';
-import './QRScanner.css';
 
 interface QRScannerProps {
   isOpen: boolean;
@@ -25,12 +21,14 @@ const QRScanner: React.FC<QRScannerProps> = ({
   const scannerRef = useRef<QrScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cameraState, setCameraState] = useState<'prompt' | 'granted' | 'denied'>('prompt');
+  const [isProcessing, setIsProcessing] = useState(false);
   const { isDark } = useTheme();
-  
-  // Hooks personalizados para mejor manejo móvil
-  const { permission, checkSupport, requestPermission, reset } = useCameraPermission();
-  const deviceInfo = useDeviceDetection();
+
+  // 🔥 NUEVO: Usar refs para estados críticos que no deben causar re-renders
+  const canScanRef = useRef(false);
+  const isProcessingRef = useRef(false);
 
   // Estados del modal de resultado
   const [showModal, setShowModal] = useState(false);
@@ -41,152 +39,318 @@ const QRScanner: React.FC<QRScannerProps> = ({
     date?: string;
   } | null>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      // Mostrar instrucciones en móviles la primera vez
-      if (deviceInfo.isMobile && permission.state === 'prompt') {
-        setShowInstructions(true);
-      } else {
-        initializeCamera();
-      }
-    } else {
-      cleanup();
-      setShowInstructions(false);
-    }
+  // Detectar si es dispositivo móvil
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent) || 
+                   ('ontouchstart' in window) || 
+                   (navigator.maxTouchPoints > 0);
 
-    return cleanup;
-  }, [isOpen, deviceInfo.isMobile, permission.state]);
-
-  const cleanup = () => {
+  // Limpiar recursos
+  const cleanup = useCallback(() => {
+    // 🔥 LIMPIAR REFS
+    canScanRef.current = false;
+    isProcessingRef.current = false;
+    
     if (scannerRef.current) {
       try {
         scannerRef.current.destroy();
       } catch (error) {
-        console.warn('Error destroying scanner:', error);
+        console.warn('Error limpiando scanner:', error);
       }
       scannerRef.current = null;
     }
     setIsScanning(false);
     setIsInitializing(false);
-  };
+  }, []);
 
-  const initializeCamera = async () => {
+  // Efecto principal
+  useEffect(() => {
+    if (isOpen) {
+      startScanner();
+    } else {
+      cleanup();
+      setError(null);
+      setCameraState('prompt');
+    }
+
+    return cleanup;
+  }, [isOpen, cleanup]);
+
+  // Inicializar scanner
+  const startScanner = async () => {
     try {
       setIsInitializing(true);
-      
-      // Verificar soporte y permisos
-      const hasSupport = await checkSupport();
-      if (!hasSupport) {
-        return;
+      setError(null);
+
+      // Verificar soporte básico
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Tu navegador no soporta acceso a la cámara');
       }
 
-      // Solicitar permisos
-      const hasPermission = await requestPermission();
-      if (!hasPermission) {
-        return;
+      // Verificar que hay cámaras disponibles
+      const hasCamera = await QrScanner.hasCamera();
+      if (!hasCamera) {
+        throw new Error('No se encontró ninguna cámara en el dispositivo');
       }
 
-      // Inicializar scanner con configuración optimizada
-      await initializeScanner();
+      // Solicitar permisos primero
+      await requestCameraPermission();
 
-    } catch (error) {
-      console.error('Error inicializando cámara:', error);
-    } finally {
+    } catch (error: any) {
+      console.error('Error iniciando scanner:', error);
+      setError(error.message || 'Error al inicializar el escáner');
+      setCameraState('denied');
       setIsInitializing(false);
     }
   };
 
-  const initializeScanner = async () => {
+  // Solicitar permisos de cámara
+  const requestCameraPermission = async () => {
+    try {
+      console.log('🔍 Solicitando permisos de cámara...');
+      const constraints = {
+        video: {
+          facingMode: { ideal: 'environment' }, // Preferir cámara trasera
+          width: { ideal: isMobile ? 720 : 1280, min: 320 },
+          height: { ideal: isMobile ? 720 : 720, min: 240 },
+          frameRate: { ideal: isMobile ? 25 : 30, max: 30 }
+        }
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('✅ Permisos de cámara obtenidos');
+      
+      // Cerrar el stream inmediatamente - solo necesitamos los permisos
+      stream.getTracks().forEach(track => track.stop());
+      
+      setCameraState('granted');
+      console.log('📹 Estado de cámara cambiado a granted');
+    } catch (error: any) {
+      console.error('Error solicitando permisos:', error);
+      setCameraState('denied');
+      
+      let errorMessage = 'Error al acceder a la cámara';
+      
+      switch (error.name) {
+        case 'NotAllowedError':
+          errorMessage = 'Permisos de cámara denegados. Por favor, permite el acceso a la cámara.';
+          break;
+        case 'NotFoundError':
+          errorMessage = 'No se encontró ninguna cámara en el dispositivo';
+          break;
+        case 'NotSupportedError':
+          errorMessage = 'Tu navegador no soporta acceso a la cámara';
+          break;
+        case 'NotReadableError':
+          errorMessage = 'La cámara está siendo usada por otra aplicación';
+          break;
+        default:
+          errorMessage = error.message || errorMessage;
+      }
+      
+      throw new Error(errorMessage);
+    }
+  };
+
+  // Efecto para inicializar el scanner cuando el video esté disponible
+  useEffect(() => {
+    console.log('🔄 Effect triggered:', { cameraState, hasVideoRef: !!videoRef.current, hasScannerRef: !!scannerRef.current, isOpen });
+    if (cameraState === 'granted' && videoRef.current && !scannerRef.current && isOpen) {
+      console.log('⚡ Iniciando QR Scanner...');
+      // Pequeño delay para asegurar que el elemento video esté completamente renderizado
+      const timer = setTimeout(() => {
+        initializeQRScanner();
+      }, 200);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [cameraState, isOpen]);
+
+  // Inicializar QR Scanner
+  const initializeQRScanner = async () => {
     if (!videoRef.current) {
-      console.error('Elemento de video no disponible');
+      console.warn('❌ Elemento de video no disponible aún');
+      setError('Elemento de video no disponible');
+      setIsInitializing(false);
       return;
     }
 
     try {
-      // Configuración optimizada para móviles
-      const config = getMobileOptimizedConfig(deviceInfo);
+      console.log('🚀 Inicializando QR Scanner...');
+      setIsInitializing(true);
+      
+      const config = {
+        onDecodeError: () => {
+          // Ignorar errores de decodificación - son normales
+        },
+        highlightScanRegion: true,
+        highlightCodeOutline: true,
+        preferredCamera: 'environment' as const,
+        maxScansPerSecond: isMobile ? 3 : 5, // Reducir en móviles para mejor rendimiento
+      };
 
-      // Crear el scanner
       scannerRef.current = new QrScanner(
         videoRef.current,
         (result) => {
-          // result puede ser string o un objeto con datos
           const qrData = typeof result === 'string' ? result : result.data;
+          console.log('🔥 QR DETECTADO EN SCANNER:', qrData);
           handleScanResult(qrData);
         },
-        {
-          ...config,
-          onDecodeError: (error: any) => {
-            // Solo log en desarrollo
-            if (process.env.NODE_ENV === 'development') {
-              console.log('Decode error:', error);
-            }
-          },
-        }
+        config
       );
 
-      // Iniciar el scanner
       await scannerRef.current.start();
       setIsScanning(true);
-
-      console.log('✅ Scanner QR inicializado correctamente');
-
+      setIsInitializing(false);
+      
+      // 🔥 ACTIVAR REFS PARA PERMITIR SCANNING
+      canScanRef.current = true;
+      isProcessingRef.current = false;
+      
+      console.log('✅ QR Scanner inicializado correctamente', {
+        isScanning: true,
+        isProcessing: false,
+        canScanRef: canScanRef.current,
+        isProcessingRef: isProcessingRef.current
+      });
     } catch (error: any) {
-      console.error('❌ Error inicializando scanner:', error);
+      console.error('Error inicializando QR Scanner:', error);
+      setError(error.message || 'Error al inicializar el escáner QR');
       setIsScanning(false);
+      setIsInitializing(false);
     }
   };
 
+  // Manejar resultado del escaneo
   const handleScanResult = async (data: string) => {
-    // Evitar múltiples escaneos simultáneos
-    if (!isScanning) return;
-    
+    // 🔥 LOGS SUPER VISIBLES
+    console.log('🔥🔥🔥 FUNCIÓN HANDLESCCANRESULT EJECUTADA EN OPTIMIZED 🔥🔥🔥');
+    console.log('🔥 Datos recibidos:', data);
+    console.log('🔥 Estados actuales:', {
+      isScanning,
+      isProcessing,
+      canScanRef: canScanRef.current,
+      isProcessingRef: isProcessingRef.current,
+      isInitializing,
+      cameraState,
+      error
+    });
+
+    // 🔥 NUEVA LÓGICA: Usar refs en lugar de states
+    if (!canScanRef.current || isProcessingRef.current) {
+      console.log('🚫 Ignorando scan - refs dicen no procesar', {
+        canScanRef: canScanRef.current,
+        isProcessingRef: isProcessingRef.current,
+        reason: !canScanRef.current ? 'canScanRef=false' : 'isProcessingRef=true'
+      });
+      return;
+    }
+
+    // 🔥 VERIFICACIÓN ADICIONAL: Scanner debe existir
+    if (!scannerRef.current) {
+      console.log('🚫 Ignorando scan - no hay scanner activo');
+      return;
+    }
+
     try {
+      // � ACTIVAR LOCKS INMEDIATAMENTE
+      canScanRef.current = false;
+      isProcessingRef.current = true;
+      setIsProcessing(true);
       setIsScanning(false);
+
+      console.log('🔥🔥 INICIANDO PROCESAMIENTO REAL 🔥🔥');
+      console.log('📢 Iniciando procesamiento de QR:', data);
       
-      // Pausar el scanner temporalmente para evitar múltiples scans
+      // Pausar y detener scanner inmediatamente
       if (scannerRef.current) {
-        scannerRef.current.pause();
+        try {
+          scannerRef.current.pause();
+          // También detener completamente para prevenir más lecturas
+          scannerRef.current.stop();
+        } catch (e) {
+          console.warn('Error pausando scanner:', e);
+        }
       }
 
       console.log('📱 QR escaneado:', data);
+      console.log('📝 Tipo de dato:', typeof data);
+      console.log('📏 Longitud:', data.length);
 
-      // Validar que el QR no esté vacío
+      // Validar QR
       if (!data || data.trim() === '') {
         throw new Error('Código QR vacío o inválido');
       }
 
-      // Extraer el código del QR de manera más robusta
+      // Extraer código con múltiples estrategias
       let code: string;
+      console.log('🔍 Iniciando extracción de código...');
       
       try {
-        // Intentar como URL completa
-        if (data.includes('/attendance/scan?code=') || data.includes('code=')) {
+        // Estrategia 1: Si es una URL completa
+        if (data.includes('http')) {
+          console.log('📄 Detectado como URL:', data);
           const url = new URL(data);
-          code = url.searchParams.get('code') || '';
-        } else if (data.includes('attendance/scan/')) {
-          // Formato: .../attendance/scan/CODIGO
-          const match = data.match(/attendance\/scan\/([^/?]+)/);
-          code = match ? match[1] : '';
-        } else {
-          // Asumir que es el código directamente
+          
+          // Buscar en query parameters
+          if (url.searchParams.has('code')) {
+            code = url.searchParams.get('code') || '';
+            console.log('🎯 Código extraído de query param:', code);
+          } 
+          // Buscar en path
+          else if (data.includes('attendance/scan/')) {
+            const match = data.match(/attendance\/scan\/([^/?#]+)/);
+            code = match ? match[1] : '';
+            console.log('🎯 Código extraído del path:', code);
+          }
+          // Buscar cualquier UUID en la URL
+          else {
+            const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+            const match = data.match(uuidRegex);
+            code = match ? match[0] : '';
+            console.log('🎯 UUID encontrado en URL:', code);
+          }
+        } 
+        // Estrategia 2: Si parece un UUID directo
+        else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.trim())) {
           code = data.trim();
+          console.log('🎯 Detectado como UUID directo:', code);
+        }
+        // Estrategia 3: Buscar UUID en cualquier parte del texto
+        else {
+          const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+          const match = data.match(uuidRegex);
+          if (match) {
+            code = match[0];
+            console.log('🎯 UUID encontrado en texto:', code);
+          } else {
+            // Estrategia 4: Usar todo el contenido como código
+            code = data.trim();
+            console.log('🎯 Usando contenido completo como código:', code);
+          }
         }
       } catch (urlError) {
-        // Si no es una URL válida, usar como código directo
-        code = data.trim();
+        console.log('⚠️ Error parseando URL, usando contenido directo:', urlError);
+        // Buscar UUID en el texto
+        const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+        const match = data.match(uuidRegex);
+        code = match ? match[0] : data.trim();
+        console.log('🎯 Código final tras error:', code);
       }
 
       if (!code) {
-        throw new Error('No se pudo extraer el código del QR escaneado');
+        console.error('❌ No se pudo extraer código válido del QR');
+        throw new Error('No se pudo extraer el código del QR');
       }
 
-      console.log('🔍 Código extraído:', code);
+      console.log('🔍 Código extraído final:', code);
+      console.log('🌐 Llamando a scanQRAndRegisterAttendance...');
 
-      // Registrar asistencia con mejor manejo de errores
+      // Registrar asistencia
       const result = await scanQRAndRegisterAttendance(code);
       
-      // Mostrar modal de éxito
+      console.log('✅ Resultado de la API:', result);
+      
+      // Mostrar éxito
       setModalData({
         success: true,
         message: '¡Asistencia Registrada!',
@@ -200,53 +364,40 @@ const QRScanner: React.FC<QRScannerProps> = ({
       });
       setShowModal(true);
 
-      // Callback de éxito
       if (onSuccess) {
         onSuccess(result);
       }
 
-      // Cerrar scanner después de un breve delay
+      // Cerrar scanner
       setTimeout(() => {
         onClose();
-      }, 100);
+      }, 1000);
 
     } catch (error: any) {
       console.error('❌ Error registrando asistencia:', error);
       
-      let errorMessage = 'Ocurrió un error inesperado';
+      // 🔥 LIMPIAR REFS EN ERROR
+      isProcessingRef.current = false;
+      setIsProcessing(false);
       
-      // Manejar diferentes tipos de errores
-      if (error.message) {
-        if (error.message.includes('QR inválido') || error.message.includes('Código QR inválido')) {
-          errorMessage = 'El código QR escaneado no es válido';
-        } else if (error.message.includes('expirado')) {
-          errorMessage = 'Este código QR ha expirado';
-        } else if (error.message.includes('ya registrada')) {
-          errorMessage = 'Tu asistencia ya ha sido registrada';
-        } else if (error.message.includes('conexión') || error.message.includes('network')) {
-          errorMessage = 'Error de conexión. Verifica tu internet';
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
-      // Mostrar modal de error
+      // Mostrar error
       setModalData({
         success: false,
         message: 'Error al Registrar',
-        subtitle: errorMessage
+        subtitle: error.message || 'Ocurrió un error inesperado'
       });
       setShowModal(true);
 
-      // Reanudar el scanner después del error (con un delay más largo)
+      // Reanudar scanner después del error
       setTimeout(() => {
-        if (scannerRef.current && !showModal) {
+        if (scannerRef.current && !isProcessingRef.current) {
           try {
             scannerRef.current.start();
             setIsScanning(true);
+            canScanRef.current = true; // 🔥 REACTIVAR REF
+            console.log('🔄 Scanner reactivado después del error');
           } catch (resumeError) {
             console.error('Error reanudando scanner:', resumeError);
-            // En caso de error, reinicializar completamente
             handleRetry();
           }
         }
@@ -254,45 +405,34 @@ const QRScanner: React.FC<QRScannerProps> = ({
     }
   };
 
+  // Manejar cierre
   const handleClose = () => {
     cleanup();
-    reset(); // Reiniciar estado de permisos
-    setShowInstructions(false);
+    setError(null);
+    setCameraState('prompt');
     onClose();
   };
 
-  const handleRetry = async () => {
-    reset(); // Reiniciar estado de permisos
-    if (deviceInfo.isMobile) {
-      setShowInstructions(true);
-    } else {
-      await initializeCamera();
+  // Reintentar
+  const handleRetry = () => {
+    setError(null);
+    setCameraState('prompt');
+    // Limpiar scanner anterior si existe
+    if (scannerRef.current) {
+      try {
+        scannerRef.current.destroy();
+      } catch (error) {
+        console.warn('Error limpiando scanner anterior:', error);
+      }
+      scannerRef.current = null;
     }
+    startScanner();
   };
 
-  const handleInstructionsContinue = () => {
-    setShowInstructions(false);
-    initializeCamera();
-  };
-
-  const handleInstructionsCancel = () => {
-    setShowInstructions(false);
-    handleClose();
-  };
-
+  // Manejar cierre de modal
   const handleModalClose = () => {
     setShowModal(false);
     setModalData(null);
-    
-    // Si el modal era de error y el scanner sigue activo, reanudar
-    if (modalData && !modalData.success && scannerRef.current) {
-      try {
-        setIsScanning(true);
-        scannerRef.current.start();
-      } catch (error) {
-        console.error('Error reanudando después de cerrar modal:', error);
-      }
-    }
   };
 
   if (!isOpen) return null;
@@ -315,9 +455,14 @@ const QRScanner: React.FC<QRScannerProps> = ({
             initial={{ scale: 0.7, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.7, opacity: 0 }}
-            className={`qr-scanner-modal relative w-full max-w-md mx-auto ${
+            className={`relative w-full max-w-md mx-auto ${
               isDark ? 'bg-gray-800' : 'bg-white'
             } rounded-2xl overflow-hidden shadow-2xl`}
+            style={{ 
+              touchAction: 'manipulation', // Prevenir zoom en móviles
+              WebkitUserSelect: 'none',
+              userSelect: 'none'
+            }}
           >
             {/* Header */}
             <div className={`p-4 border-b ${
@@ -342,18 +487,10 @@ const QRScanner: React.FC<QRScannerProps> = ({
               </div>
             </div>
 
-            {/* Scanner Area */}
+            {/* Content */}
             <div className="relative">
-              {/* Instrucciones para móviles */}
-              {showInstructions && (
-                <MobileInstructions
-                  onContinue={handleInstructionsContinue}
-                  onCancel={handleInstructionsCancel}
-                />
-              )}
-
-              {/* Estado de inicialización */}
-              {!showInstructions && isInitializing && (
+              {/* Inicializando */}
+              {isInitializing && (
                 <div className="p-8 text-center">
                   <motion.div
                     animate={{ rotate: 360 }}
@@ -367,13 +504,13 @@ const QRScanner: React.FC<QRScannerProps> = ({
                   <p className={`text-sm ${
                     isDark ? 'text-gray-300' : 'text-gray-600'
                   }`}>
-                    Inicializando cámara...
+                    {isMobile ? 'Preparando cámara móvil...' : 'Inicializando cámara...'}
                   </p>
                 </div>
               )}
 
-              {/* Error de permisos denegados */}
-              {!showInstructions && permission.state === 'denied' && !isInitializing && (
+              {/* Error */}
+              {error && !isInitializing && (
                 <div className="p-8 text-center">
                   <ExclamationTriangleIcon className={`w-16 h-16 mx-auto mb-4 ${
                     isDark ? 'text-red-400' : 'text-red-500'
@@ -381,137 +518,99 @@ const QRScanner: React.FC<QRScannerProps> = ({
                   <h4 className={`font-semibold mb-2 ${
                     isDark ? 'text-white' : 'text-gray-900'
                   }`}>
-                    Permisos de Cámara Requeridos
+                    {cameraState === 'denied' ? 'Permisos Requeridos' : 'Error de Cámara'}
                   </h4>
                   <p className={`text-sm mb-6 ${
                     isDark ? 'text-gray-300' : 'text-gray-600'
                   }`}>
-                    {permission.error || 'Para escanear códigos QR necesitamos acceso a tu cámara.'}
+                    {error}
                   </p>
                   <div className="space-y-3">
                     <button
                       onClick={handleRetry}
                       className="w-full px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
                     >
-                      Solicitar Permisos Nuevamente
+                      {cameraState === 'denied' ? 'Solicitar Permisos' : 'Reintentar'}
                     </button>
-                    <div className={`text-xs ${
-                      isDark ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      <p>💡 <strong>Consejo:</strong> Si no funciona, revisa la configuración de permisos de tu navegador</p>
-                      {deviceInfo.isMobile && (
-                        <p className="mt-1">📱 En móviles, asegúrate de permitir el acceso a la cámara cuando se solicite</p>
-                      )}
-                    </div>
+                    {isMobile && (
+                      <div className={`text-xs ${
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        <p>💡 En móviles: Permite el acceso cuando tu navegador lo solicite</p>
+                        <p>⚙️ Si no funciona, revisa la configuración de permisos</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* Error de soporte */}
-              {!showInstructions && !permission.isSupported && !isInitializing && (
-                <div className="p-8 text-center">
-                  <ExclamationTriangleIcon className={`w-16 h-16 mx-auto mb-4 ${
-                    isDark ? 'text-yellow-400' : 'text-yellow-500'
-                  }`} />
-                  <h4 className={`font-semibold mb-2 ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}>
-                    No Compatible
-                  </h4>
-                  <p className={`text-sm mb-4 ${
-                    isDark ? 'text-gray-300' : 'text-gray-600'
-                  }`}>
-                    {permission.error || 'Tu navegador no soporta el escáner QR'}
-                  </p>
-                  {deviceInfo.isMobile && (
-                    <div className={`text-xs ${
-                      isDark ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      <p>📱 Intenta abrir este sitio en Chrome o Safari</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Cámara activa y funcionando */}
-              {!showInstructions && permission.state === 'granted' && permission.isSupported && !isInitializing && (
-                <div className="qr-scanner-container relative aspect-square bg-black">
+              {/* Scanner activo */}
+              {cameraState === 'granted' && !error && (
+                <div className="relative aspect-square bg-black">
                   <video
                     ref={videoRef}
-                    className="qr-scanner-video w-full h-full object-cover"
-                    style={{ transform: 'scaleX(-1)' }} // Efecto espejo para mejor UX
+                    className="w-full h-full object-cover"
+                    style={{ 
+                      transform: 'scaleX(-1)', // Efecto espejo
+                      WebkitTransform: 'scaleX(-1)'
+                    }}
                     autoPlay
-                    playsInline // Importante para iOS
-                    muted // Importante para autoplay en móviles
+                    playsInline // Crucial para iOS
+                    muted // Necesario para autoplay
                   />
                   
-                  {/* Overlay de escaneo mejorado */}
-                  <div className="qr-scanner-overlay absolute inset-0 flex items-center justify-center">
+                  {/* Overlay de escaneo */}
+                  <div className="absolute inset-0 flex items-center justify-center">
                     <div className="relative">
-                      {/* Marco de escaneo con animación mejorada */}
-                      <div className="qr-scan-frame w-56 h-56 relative">
-                        {/* Esquinas del marco de escaneo con gradiente */}
-                        <div className="absolute top-0 left-0 w-12 h-12">
-                          <div className="w-full h-1 bg-gradient-to-r from-blue-400 to-white rounded-full"></div>
-                          <div className="w-1 h-full bg-gradient-to-b from-blue-400 to-white rounded-full"></div>
-                        </div>
-                        <div className="absolute top-0 right-0 w-12 h-12">
-                          <div className="w-full h-1 bg-gradient-to-l from-blue-400 to-white rounded-full"></div>
-                          <div className="w-1 h-full bg-gradient-to-b from-blue-400 to-white rounded-full ml-auto"></div>
-                        </div>
-                        <div className="absolute bottom-0 left-0 w-12 h-12">
-                          <div className="w-1 h-full bg-gradient-to-t from-blue-400 to-white rounded-full"></div>
-                          <div className="w-full h-1 bg-gradient-to-r from-blue-400 to-white rounded-full mt-auto"></div>
-                        </div>
-                        <div className="absolute bottom-0 right-0 w-12 h-12">
-                          <div className="w-1 h-full bg-gradient-to-t from-blue-400 to-white rounded-full ml-auto"></div>
-                          <div className="w-full h-1 bg-gradient-to-l from-blue-400 to-white rounded-full mt-auto"></div>
-                        </div>
+                      <div className="w-56 h-56 relative">
+                        {/* Esquinas del marco */}
+                        {[
+                          { top: 0, left: 0, rotate: 0 },
+                          { top: 0, right: 0, rotate: 90 },
+                          { bottom: 0, left: 0, rotate: -90 },
+                          { bottom: 0, right: 0, rotate: 180 }
+                        ].map((corner, i) => (
+                          <motion.div
+                            key={i}
+                            className="absolute w-8 h-8"
+                            style={corner}
+                            animate={{
+                              opacity: [0.7, 1, 0.7],
+                              scale: [1, 1.1, 1]
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              delay: i * 0.2
+                            }}
+                          >
+                            <div className="w-full h-1 bg-blue-400 rounded"></div>
+                            <div className="w-1 h-full bg-blue-400 rounded"></div>
+                          </motion.div>
+                        ))}
                         
-                        {/* Línea de escaneo animada mejorada */}
+                        {/* Línea de escaneo */}
                         <motion.div
-                          className="absolute left-6 right-6 h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-lg"
-                          animate={{ y: [24, 200, 24] }}
+                          className="absolute left-4 right-4 h-0.5 bg-blue-400 shadow-lg"
+                          animate={{ y: [16, 208, 16] }}
                           transition={{
                             duration: 2.5,
                             repeat: Infinity,
                             ease: "easeInOut"
                           }}
                         />
-
-                        {/* Puntos de esquina animados */}
-                        {[
-                          { top: '0%', left: '0%' },
-                          { top: '0%', right: '0%' },
-                          { bottom: '0%', left: '0%' },
-                          { bottom: '0%', right: '0%' }
-                        ].map((position, index) => (
-                          <motion.div
-                            key={index}
-                            className="absolute w-3 h-3 bg-blue-400 rounded-full shadow-lg"
-                            style={position}
-                            animate={{
-                              scale: [1, 1.3, 1],
-                              opacity: [0.7, 1, 0.7]
-                            }}
-                            transition={{
-                              duration: 1.5,
-                              repeat: Infinity,
-                              delay: index * 0.2
-                            }}
-                          />
-                        ))}
                       </div>
                     </div>
                   </div>
 
-                  {/* Estado de escaneo con mejor UX */}
+                  {/* Estado */}
                   <div className="absolute bottom-4 left-0 right-0 text-center">
                     <motion.div
-                      className="qr-status-text bg-black/70 rounded-full px-6 py-3 mx-4 backdrop-blur-sm"
-                      animate={{
-                        scale: isScanning ? [1, 1.02, 1] : 1
-                      }}
+                      className="bg-black/70 rounded-full px-6 py-3 mx-4"
+                      style={{ backdropFilter: 'blur(8px)' }}
+                      animate={isScanning ? {
+                        scale: [1, 1.02, 1]
+                      } : {}}
                       transition={{
                         duration: 1.5,
                         repeat: isScanning ? Infinity : 0
@@ -525,7 +624,16 @@ const QRScanner: React.FC<QRScannerProps> = ({
                               animate={{ scale: [1, 1.5, 1] }}
                               transition={{ duration: 1, repeat: Infinity }}
                             />
-                            Apunta el código QR al centro
+                            Apunta el QR al centro
+                          </>
+                        ) : isInitializing ? (
+                          <>
+                            <motion.div
+                              className="w-2 h-2 bg-blue-400 rounded-full"
+                              animate={{ scale: [1, 1.5, 1] }}
+                              transition={{ duration: 1, repeat: Infinity }}
+                            />
+                            Preparando escáner...
                           </>
                         ) : (
                           <>
@@ -534,6 +642,35 @@ const QRScanner: React.FC<QRScannerProps> = ({
                           </>
                         )}
                       </p>
+                      
+                      {/* DEBUG INFO */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <div className="mt-2 text-xs text-gray-300 space-y-1">
+                          <p>scanning: {isScanning.toString()} | processing: {isProcessing.toString()}</p>
+                          <p>canScanRef: {canScanRef.current.toString()} | procRef: {isProcessingRef.current.toString()}</p>
+                          <p>camera: {cameraState} | error: {error ? 'yes' : 'no'}</p>
+                          {/* Botón de test */}
+                          <button
+                            onClick={() => {
+                              console.log('🧪 TEST: Simulando QR scan en Optimized');
+                              const testQR = 'localhost:3000/attendance/scan?code=test-optimized-123';
+                              console.log('🔍 Estados antes del test:', {
+                                isScanning,
+                                isProcessing,
+                                canScanRef: canScanRef.current,
+                                isProcessingRef: isProcessingRef.current,
+                                isInitializing,
+                                cameraState,
+                                error
+                              });
+                              handleScanResult(testQR);
+                            }}
+                            className="mt-1 bg-yellow-600 text-white px-2 py-1 rounded text-xs"
+                          >
+                            Test Scan
+                          </button>
+                        </div>
+                      )}
                     </motion.div>
                   </div>
                 </div>
