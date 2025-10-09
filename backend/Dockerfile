@@ -15,6 +15,9 @@ COPY . .
 # Compilar TypeScript
 RUN npm run build
 
+# Copiar archivos de documentación que no se compilan con TypeScript
+RUN mkdir -p dist/docs && cp src/docs/oas3.yaml dist/docs/
+
 # Crear directorio uploads
 RUN mkdir -p uploads
 

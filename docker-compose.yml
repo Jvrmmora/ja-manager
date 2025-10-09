@@ -35,7 +35,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_change_in_production}
       CORS_ORIGIN: http://localhost:3000,http://localhost:80
     ports:
-      - "5000:5000"
+      - "5001:5000"
     depends_on:
       - mongodb
     networks:
