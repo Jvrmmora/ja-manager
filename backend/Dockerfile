@@ -6,8 +6,8 @@ WORKDIR /app
 # Copiar package.json y package-lock.json
 COPY package*.json ./
 
-# Instalar solo dependencias de producción (los tipos ahora están en dependencies)
-RUN npm ci --omit=dev
+# Instalar todas las dependencias (necesarias para compilar TypeScript)
+RUN npm ci
 
 # Copiar código fuente
 COPY . .
@@ -25,4 +25,4 @@ EXPOSE 5000
 ENV NODE_ENV=production
 
 # Comando para ejecutar la aplicación
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]

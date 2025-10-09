@@ -110,7 +110,7 @@ const initializeApp = async () => {
 // Configurar rutas y middleware que requieren BD
 const setupRoutes = () => {
   // Cargar documentación OpenAPI desde archivo YAML
-  const swaggerDocument = YAML.load(path.join(__dirname, 'docs/oas3.yaml'));
+  const swaggerDocument = YAML.load(path.join(process.cwd(), 'dist/docs/oas3.yaml'));
 
   // Health check - debe ir ANTES de las rutas de young
   app.get('/api/health', (_req, res) => {

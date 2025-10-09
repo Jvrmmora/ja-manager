@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import QRCode from 'qrcode';
 import QRCodeModel from '../models/QRCode';
 import AttendanceModel from '../models/Attendance';
@@ -68,7 +68,7 @@ export const generateDailyQR = async (req: Request, res: Response): Promise<void
     );
 
     // Crear nuevo QR
-    const code = uuidv4();
+    const code = crypto.randomUUID();
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 2); // Expira en 2 horas
 
