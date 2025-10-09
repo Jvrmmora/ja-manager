@@ -6,17 +6,14 @@ WORKDIR /app
 # Copiar package.json y package-lock.json
 COPY package*.json ./
 
-# Instalar todas las dependencias (necesarias para build)
-RUN npm ci
+# Instalar solo dependencias de producción (los tipos ahora están en dependencies)
+RUN npm ci --omit=dev
 
 # Copiar código fuente
 COPY . .
 
 # Compilar TypeScript
 RUN npm run build
-
-# Limpiar devDependencies después del build
-RUN npm ci --only=production && npm cache clean --force
 
 # Crear directorio uploads
 RUN mkdir -p uploads
