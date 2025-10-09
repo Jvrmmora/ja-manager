@@ -60,7 +60,7 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
 
   useEffect(() => {
     // Actualizar estadísticas cada 10 segundos si hay un QR activo
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (qrData) {
       interval = setInterval(() => {
         loadStats();
