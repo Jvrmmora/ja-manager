@@ -189,7 +189,7 @@ CLOUDINARY_CLOUD_NAME=tu_cloud_name
 CLOUDINARY_API_KEY=tu_api_key
 CLOUDINARY_API_SECRET=tu_api_secret
 JWT_SECRET=un_secreto_muy_seguro_y_largo
-CORS_ORIGINS=https://tu-dominio.com
+CORS_ORIGIN=https://tu-dominio.com
 ```
 
 ## 🤝 Contribución

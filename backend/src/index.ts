@@ -33,8 +33,8 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
 // Configurar CORS con variables de entorno
-const corsOrigins = process.env.CORS_ORIGINS 
-  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+const corsOrigins = process.env.CORS_ORIGIN 
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
   : [
       'http://localhost:3000',
       'http://localhost:5173',
