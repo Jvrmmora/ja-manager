@@ -24,7 +24,7 @@ interface YoungFormProps {
   onShowError?: (message: string) => void;
 }
 
-const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShowSuccess, onShowError }) => {
+const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShowSuccess: _onShowSuccess, onShowError }) => {
   const [formData, setFormData] = useState<YoungFormData>({
     fullName: '',
     ageRange: '',

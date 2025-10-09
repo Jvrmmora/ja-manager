@@ -20,7 +20,7 @@ interface ImportResult {
   warnings: string[];
 }
 
-const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess, onShowSuccess, onShowError }) => {
+const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess, onShowSuccess: _onShowSuccess, onShowError }) => {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
