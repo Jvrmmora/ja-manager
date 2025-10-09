@@ -34,6 +34,10 @@ tags:
     description: Operaciones CRUD para gestión de jóvenes
   - name: Import/Export
     description: Operaciones para importar y exportar datos desde Excel
+  - name: QR
+    description: Operaciones para gestión de códigos QR de asistencia
+  - name: Attendance
+    description: Operaciones para registro y gestión de asistencias
 
 paths:
   /health:
@@ -799,6 +803,343 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  # ===== QR Routes =====
+  /qr/generate:
+    post:
+      summary: Generar QR del día
+      description: Genera un nuevo código QR para el registro de asistencia del día actual. Solo administradores pueden generar códigos QR.
+      tags: [QR]
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: QR generado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "QR generado exitosamente"
+                  data:
+                    $ref: '#/components/schemas/QRCode'
+        '200':
+          description: QR activo encontrado (ya existe uno para hoy)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "QR activo encontrado"
+                  data:
+                    $ref: '#/components/schemas/QRCode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Solo administradores pueden generar QR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Solo administradores pueden generar códigos QR"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /qr/current:
+    get:
+      summary: Obtener QR activo del día
+      description: Retorna el código QR activo para el registro de asistencia del día actual
+      tags: [QR]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: QR activo encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/QRCode'
+        '404':
+          description: No hay QR activo para hoy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "No hay QR activo para hoy"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /qr/stats:
+    get:
+      summary: Obtener estadísticas del QR actual
+      description: Retorna estadísticas del código QR activo, incluyendo número de escaneos y participantes únicos
+      tags: [QR]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Estadísticas obtenidas exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/QRStats'
+        '404':
+          description: No hay QR activo para mostrar estadísticas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "No hay QR activo"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ===== Attendance Routes =====
+  /attendance/scan:
+    post:
+      summary: Escanear QR y registrar asistencia
+      description: Permite a un joven escanear el código QR del día para registrar su asistencia
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  format: uuid
+                  description: Código UUID del QR escaneado
+                  example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+      responses:
+        '201':
+          description: Asistencia registrada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Asistencia registrada exitosamente"
+                  data:
+                    $ref: '#/components/schemas/Attendance'
+        '400':
+          description: QR expirado o datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                qrExpired:
+                  summary: QR expirado
+                  value:
+                    error: "El código QR ha expirado"
+                invalidCode:
+                  summary: Código inválido
+                  value:
+                    error: "Código QR inválido"
+        '404':
+          description: QR no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Código QR no encontrado"
+        '409':
+          description: Ya se registró asistencia hoy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Ya tienes asistencia registrada para hoy"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /attendance/my-history:
+    get:
+      summary: Obtener mi historial de asistencias
+      description: Retorna el historial personal de asistencias del usuario autenticado
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Número de página
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Elementos por página
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Historial obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Attendance'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 10
+                      total:
+                        type: integer
+                        example: 25
+                      pages:
+                        type: integer
+                        example: 3
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /attendance/today:
+    get:
+      summary: Obtener lista de asistencias del día
+      description: Retorna la lista completa de asistencias registradas en el día actual. Solo para administradores.
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AttendanceWithUser'
+                  total:
+                    type: integer
+                    description: Total de asistencias del día
+                    example: 45
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Solo administradores pueden ver todas las asistencias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Solo administradores pueden acceder a esta información"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /attendance/stats:
+    get:
+      summary: Obtener estadísticas de asistencia
+      description: Retorna estadísticas agregadas de asistencia en un rango de fechas. Solo para administradores.
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          description: Fecha de inicio (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+          example: "2023-12-01"
+        - name: endDate
+          in: query
+          description: Fecha de fin (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+          example: "2023-12-31"
+      responses:
+        '200':
+          description: Estadísticas obtenidas exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/AttendanceStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Solo administradores pueden ver estadísticas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Solo administradores pueden acceder a esta información"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 components:
   schemas:
     Young:
@@ -1039,6 +1380,196 @@ components:
             "":
               type: number
               example: 5
+
+    # ===== QR Schemas =====
+    QRCode:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID único del código QR
+          example: "507f1f77bcf86cd799439011"
+        code:
+          type: string
+          format: uuid
+          description: Código UUID único para el QR
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        qrImage:
+          type: string
+          format: uri
+          description: URL de la imagen del código QR generada
+          example: "https://res.cloudinary.com/demo/image/upload/qr_codes/qr_20231201.png"
+        date:
+          type: string
+          format: date
+          description: Fecha para la cual es válido el QR
+          example: "2023-12-01"
+        expiresAt:
+          type: string
+          format: date-time
+          description: Fecha y hora de expiración del QR
+          example: "2023-12-01T23:59:59.000Z"
+        isActive:
+          type: boolean
+          description: Indica si el QR está activo
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del QR
+          example: "2023-12-01T08:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de última actualización
+          example: "2023-12-01T08:00:00.000Z"
+
+    QRStats:
+      type: object
+      properties:
+        qrCode:
+          $ref: '#/components/schemas/QRCode'
+        totalScans:
+          type: number
+          description: Total de escaneos del QR
+          example: 45
+        uniqueParticipants:
+          type: number
+          description: Número de participantes únicos que escanearon
+          example: 42
+        lastScanAt:
+          type: string
+          format: date-time
+          description: Fecha y hora del último escaneo
+          example: "2023-12-01T15:30:00.000Z"
+
+    # ===== Attendance Schemas =====
+    Attendance:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID único del registro de asistencia
+          example: "507f1f77bcf86cd799439011"
+        young_id:
+          type: string
+          description: ID del joven que registró asistencia
+          example: "507f1f77bcf86cd799439012"
+        qr_id:
+          type: string
+          description: ID del código QR escaneado
+          example: "507f1f77bcf86cd799439013"
+        scannedAt:
+          type: string
+          format: date-time
+          description: Fecha y hora del escaneo
+          example: "2023-12-01T14:30:00.000Z"
+        date:
+          type: string
+          format: date
+          description: Fecha de la asistencia
+          example: "2023-12-01"
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del registro
+          example: "2023-12-01T14:30:00.000Z"
+
+    AttendanceWithUser:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Attendance'
+        - type: object
+          properties:
+            young:
+              type: object
+              properties:
+                id:
+                  type: string
+                  example: "507f1f77bcf86cd799439012"
+                fullName:
+                  type: string
+                  example: "Juan Pérez García"
+                ageRange:
+                  type: string
+                  example: "19-21"
+                role:
+                  type: string
+                  example: "joven adventista"
+                profileImage:
+                  type: string
+                  format: uri
+                  example: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+
+    AttendanceStats:
+      type: object
+      properties:
+        dateRange:
+          type: object
+          properties:
+            startDate:
+              type: string
+              format: date
+              example: "2023-12-01"
+            endDate:
+              type: string
+              format: date
+              example: "2023-12-31"
+        totalAttendances:
+          type: number
+          description: Total de registros de asistencia en el período
+          example: 450
+        uniqueParticipants:
+          type: number
+          description: Número de participantes únicos
+          example: 75
+        averageDaily:
+          type: number
+          format: float
+          description: Promedio diario de asistencias
+          example: 15.5
+        byDate:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                example: "2023-12-01"
+              count:
+                type: number
+                example: 42
+        byAgeRange:
+          type: object
+          properties:
+            "13-15":
+              type: number
+              example: 25
+            "16-18":
+              type: number
+              example: 40
+            "19-21":
+              type: number
+              example: 35
+            "22-25":
+              type: number
+              example: 30
+            "26-30":
+              type: number
+              example: 15
+            "30+":
+              type: number
+              example: 5
+        byRole:
+          type: object
+          additionalProperties:
+            type: number
+          example:
+            joven adventista: 150
+            lider juvenil: 80
+            colaborador: 120
+            simpatizante: 100
 
     HealthCheck:
       type: object

@@ -3,12 +3,13 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
 import youngRoutes from './routes/youngRoutes';
 import importRoutes from './routes/importRoutes';
 import authRoutes from './routes/authRoutes';
 import qrRoutes from './routes/qrRoutes';
 import attendanceRoutes from './routes/attendanceRoutes';
-import { specs } from './config/swagger';
 import { DatabaseSeeder } from './seeders/DatabaseSeeder';
 import { authenticateToken } from './middleware/auth';
 import { ensureDatabaseConnection } from './middleware/databaseCheck';
@@ -108,6 +109,9 @@ const initializeApp = async () => {
 
 // Configurar rutas y middleware que requieren BD
 const setupRoutes = () => {
+  // Cargar documentación OpenAPI desde archivo YAML
+  const swaggerDocument = YAML.load(path.join(__dirname, 'docs/oas3.yaml'));
+
   // Health check - debe ir ANTES de las rutas de young
   app.get('/api/health', (_req, res) => {
     res.json({ 
@@ -118,8 +122,8 @@ const setupRoutes = () => {
     });
   });
 
-  // Documentación Swagger
-  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs, {
+  // Documentación OpenAPI (antes era Swagger)
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
     customCss: '.swagger-ui .topbar { display: none }',
     customSiteTitle: 'Youth Management API Documentation',
     explorer: true
