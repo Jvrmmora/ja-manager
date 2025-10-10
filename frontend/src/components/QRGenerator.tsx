@@ -325,7 +325,7 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
                     animate={{ scale: 1 }}
                     className="text-lg text-green-400 font-semibold"
                   >
-                    ✅ {stats.attendanceCount} personas registradas
+                    {stats.attendanceCount} personas registradas
                   </motion.p>
                 )}
                 <p className="text-lg">
