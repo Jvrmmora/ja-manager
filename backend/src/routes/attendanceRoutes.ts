@@ -4,6 +4,7 @@ import {
   scanQRAndRegisterAttendance,
   getMyAttendanceHistory,
   getTodayAttendances,
+  getAttendancesByDate,
   getAttendanceStats,
 } from '../controllers/attendanceController';
 
@@ -17,6 +18,9 @@ router.get('/my-history', authenticateToken, getMyAttendanceHistory);
 
 // Obtener lista de asistencias del día (solo administradores)
 router.get('/today', authenticateToken, getTodayAttendances);
+
+// Obtener lista de asistencias por fecha específica (solo administradores)
+router.get('/date/:date', authenticateToken, getAttendancesByDate);
 
 // Obtener estadísticas de asistencia (solo administradores)
 router.get('/stats', authenticateToken, getAttendanceStats);

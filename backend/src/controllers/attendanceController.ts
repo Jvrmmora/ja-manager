@@ -179,6 +179,73 @@ export const getMyAttendanceHistory = async (req: Request, res: Response): Promi
   }
 };
 
+// Obtener lista de asistencias por fecha específica (solo administradores)
+export const getAttendancesByDate = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const adminId = req.user?.userId;
+
+    if (!adminId) {
+      res.status(401).json({
+        success: false,
+        message: 'Usuario no autenticado',
+      });
+      return;
+    }
+
+    // Verificar que el usuario es administrador (admin o Super Admin)
+    const isAdmin = req.user?.role_name === 'Super Admin';
+    if (!isAdmin) {
+      res.status(403).json({
+        success: false,
+        message: 'Solo los administradores pueden ver esta información',
+      });
+      return;
+    }
+
+    const { date } = req.params;
+
+    // Validar formato de fecha
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      res.status(400).json({
+        success: false,
+        message: 'Formato de fecha inválido. Use YYYY-MM-DD',
+      });
+      return;
+    }
+
+    // Obtener asistencias de la fecha específica
+    const attendances = await AttendanceModel.find({
+      attendanceDate: date,
+    })
+      .populate('youngId', 'fullName placa group email profileImage')
+      .populate('qrCodeId', 'generatedAt')
+      .sort({ scannedAt: 1 })
+      .lean();
+
+    // Obtener total de jóvenes para estadísticas
+    const totalYoung = await Young.countDocuments({
+      role_name: { $nin: ['admin', 'Super Admin'] }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Lista de asistencias obtenida exitosamente',
+      data: {
+        attendances,
+        date,
+        stats: {
+          totalPresent: attendances.length,
+          totalYoung,
+          attendancePercentage: totalYoung > 0 ? Math.round((attendances.length / totalYoung) * 100) : 0,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error obteniendo asistencias por fecha:', error);
+    ErrorHandler.handleError(error, req, res);
+  }
+};
+
 // Obtener lista de asistencias del día (solo administradores)
 export const getTodayAttendances = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -208,7 +275,7 @@ export const getTodayAttendances = async (req: Request, res: Response): Promise<
     const attendances = await AttendanceModel.find({
       attendanceDate: today,
     })
-      .populate('youngId', 'fullName placa group email')
+      .populate('youngId', 'fullName placa group email profileImage')
       .populate('qrCodeId', 'generatedAt')
       .sort({ scannedAt: 1 })
       .lean();
@@ -216,7 +283,9 @@ export const getTodayAttendances = async (req: Request, res: Response): Promise<
     // Obtener total de jóvenes para estadísticas
     const totalYoung = await Young.countDocuments({
       role_name: { $nin: ['admin', 'Super Admin'] }
-    });    res.status(200).json({
+    });
+
+    res.status(200).json({
       success: true,
       message: 'Lista de asistencias obtenida exitosamente',
       data: {

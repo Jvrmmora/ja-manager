@@ -1053,16 +1053,26 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /attendance/today:
+  /attendance/date/{date}:
     get:
-      summary: Obtener lista de asistencias del día
-      description: Retorna la lista completa de asistencias registradas en el día actual. Solo para administradores.
+      summary: Obtener lista de asistencias por fecha específica
+      description: Retorna la lista completa de asistencias registradas en una fecha específica con estadísticas. Solo para administradores.
       tags: [Attendance]
       security:
         - bearerAuth: []
+      parameters:
+        - name: date
+          in: path
+          required: true
+          description: Fecha específica en formato YYYY-MM-DD
+          schema:
+            type: string
+            format: date
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: "2023-12-15"
       responses:
         '200':
-          description: Lista obtenida exitosamente
+          description: Lista de asistencias obtenida exitosamente
           content:
             application/json:
               schema:
@@ -1071,14 +1081,107 @@ paths:
                   success:
                     type: boolean
                     example: true
+                  message:
+                    type: string
+                    example: "Lista de asistencias obtenida exitosamente"
                   data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/AttendanceWithUser'
-                  total:
-                    type: integer
-                    description: Total de asistencias del día
-                    example: 45
+                    type: object
+                    properties:
+                      attendances:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AttendanceWithUser'
+                      date:
+                        type: string
+                        format: date
+                        description: Fecha de las asistencias
+                        example: "2023-12-15"
+                      stats:
+                        type: object
+                        properties:
+                          totalPresent:
+                            type: integer
+                            description: Total de jóvenes presentes en la fecha
+                            example: 42
+                          totalYoung:
+                            type: integer
+                            description: Total de jóvenes registrados en el sistema
+                            example: 65
+                          attendancePercentage:
+                            type: integer
+                            description: Porcentaje de asistencia del día
+                            example: 65
+        '400':
+          description: Formato de fecha inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Formato de fecha inválido. Use YYYY-MM-DD"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Solo administradores pueden ver las asistencias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Solo los administradores pueden ver esta información"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /attendance/today:
+    get:
+      summary: Obtener lista de asistencias del día
+      description: Retorna la lista completa de asistencias registradas en el día actual con estadísticas. Solo para administradores.
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de asistencias obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Lista de asistencias obtenida exitosamente"
+                  data:
+                    type: object
+                    properties:
+                      attendances:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AttendanceWithUser'
+                      date:
+                        type: string
+                        format: date
+                        description: Fecha actual
+                        example: "2023-12-15"
+                      stats:
+                        type: object
+                        properties:
+                          totalPresent:
+                            type: integer
+                            description: Total de jóvenes presentes hoy
+                            example: 42
+                          totalYoung:
+                            type: integer
+                            description: Total de jóvenes registrados en el sistema
+                            example: 65
+                          attendancePercentage:
+                            type: integer
+                            description: Porcentaje de asistencia del día
+                            example: 65
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1088,7 +1191,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                error: "Solo administradores pueden acceder a esta información"
+                success: false
+                message: "Solo los administradores pueden ver esta información"
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -1481,25 +1585,44 @@ components:
         - $ref: '#/components/schemas/Attendance'
         - type: object
           properties:
-            young:
+            youngId:
               type: object
+              description: Información del joven que registró la asistencia
               properties:
-                id:
+                _id:
                   type: string
                   example: "507f1f77bcf86cd799439012"
                 fullName:
                   type: string
                   example: "Juan Pérez García"
-                ageRange:
+                placa:
                   type: string
-                  example: "19-21"
-                role:
+                  example: "JP2023"
+                  description: Identificador único del joven
+                group:
                   type: string
-                  example: "joven adventista"
+                  example: "1"
+                  description: Grupo al que pertenece el joven
+                email:
+                  type: string
+                  format: email
+                  example: "juan.perez@example.com"
                 profileImage:
                   type: string
                   format: uri
-                  example: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+                  description: URL de la imagen de perfil en Cloudinary
+                  example: "https://res.cloudinary.com/demo/image/upload/v1234567890/profiles/sample.jpg"
+            qrCodeId:
+              type: object
+              description: Información del código QR utilizado
+              properties:
+                _id:
+                  type: string
+                  example: "507f1f77bcf86cd799439013"
+                generatedAt:
+                  type: string
+                  format: date-time
+                  example: "2023-12-01T14:00:00.000Z"
 
     AttendanceStats:
       type: object

@@ -280,6 +280,21 @@ export const getTodayAttendances = async (): Promise<any> => {
   return result.data;
 };
 
+// Obtener asistencias por fecha específica (solo administradores)
+export const getAttendancesByDate = async (date: string): Promise<any> => {
+  const response = await apiRequest(`attendance/date/${date}`, {
+    method: 'GET'
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Error al obtener asistencias de la fecha especificada');
+  }
+
+  const result = await response.json();
+  return result.data;
+};
+
 // Obtener estadísticas de asistencia
 export const getAttendanceStats = async (startDate?: string, endDate?: string): Promise<any> => {
   let url = 'attendance/stats';
