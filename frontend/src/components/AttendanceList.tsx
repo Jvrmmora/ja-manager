@@ -352,16 +352,6 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
                       <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {attendance.youngId.fullName}
                       </p>
-                      {attendance.youngId.placa && (
-                        <span className={`px-2 py-1 text-xs rounded-full ${isDark ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
-                          @{attendance.youngId.placa}
-                        </span>
-                      )}
-                      {attendance.youngId.group && (
-                        <span className={`px-2 py-1 text-xs rounded-full ${isDark ? 'bg-purple-900/50 text-purple-300' : 'bg-purple-100 text-purple-700'}`}>
-                          Grupo {attendance.youngId.group}
-                        </span>
-                      )}
                     </div>
                     {attendance.youngId.email && (
                       <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
