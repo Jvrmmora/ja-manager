@@ -33,4 +33,4 @@ services:
     plan: free
     envVars:
       - key: VITE_API_URL
-        value: https://ja-manager-backend.onrender.com
+        value: https://ja-manager-backend.onrender.com/api

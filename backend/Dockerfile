@@ -15,9 +15,6 @@ COPY . .
 # Compilar TypeScript
 RUN npm run build
 
-# Crear directorio uploads
-RUN mkdir -p uploads
-
 # Exponer puerto (Render usa PORT del environment)
 EXPOSE 5000
 
