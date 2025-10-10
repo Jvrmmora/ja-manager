@@ -4,7 +4,7 @@ import { authService } from '../services/auth';
 import ThemeToggle from './ThemeToggle';
 
 // Importar la imagen
-import logo from '../assets/logos/logo.png';
+import logo from '../assets/logos/logo_2.png';
 
 interface LoginProps {
   onLoginSuccess?: () => void;
@@ -65,51 +65,123 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       </div>
       
       {/* Panel izquierdo - Imagen/Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/90 via-blue-700/90 to-blue-800/90"></div>
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 relative overflow-hidden">
+        {/* Fondo con gradiente moderno */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/95 via-blue-600/95 to-indigo-700/95"></div>
         
-        {/* Formas decorativas */}
-        <div className="absolute top-0 left-0 w-full h-full">
+        {/* Animación de partículas flotantes */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Partículas con animación CSS */}
+          <div className="absolute w-2 h-2 bg-white/20 rounded-full animate-float-slow" style={{top: '20%', left: '10%', animationDelay: '0s'}}></div>
+          <div className="absolute w-1 h-1 bg-white/30 rounded-full animate-float-medium" style={{top: '40%', left: '80%', animationDelay: '2s'}}></div>
+          <div className="absolute w-3 h-3 bg-white/15 rounded-full animate-float-slow" style={{top: '60%', left: '15%', animationDelay: '4s'}}></div>
+          <div className="absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-float-fast" style={{top: '80%', left: '70%', animationDelay: '1s'}}></div>
+          <div className="absolute w-2 h-2 bg-white/20 rounded-full animate-float-medium" style={{top: '30%', left: '60%', animationDelay: '3s'}}></div>
+          <div className="absolute w-1 h-1 bg-white/35 rounded-full animate-float-slow" style={{top: '70%', left: '30%', animationDelay: '5s'}}></div>
+          <div className="absolute w-2.5 h-2.5 bg-white/15 rounded-full animate-float-fast" style={{top: '15%', left: '85%', animationDelay: '1.5s'}}></div>
+          <div className="absolute w-1 h-1 bg-white/40 rounded-full animate-float-medium" style={{top: '85%', left: '20%', animationDelay: '2.5s'}}></div>
+        </div>
+
+        {/* Formas geométricas modernas */}
+        <div className="absolute inset-0">
           <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 400 600" fill="none">
-            <path d="M0 0C0 0 50 50 100 30C150 10 200 80 250 60C300 40 350 20 400 40V600H0V0Z" fill="rgba(255,255,255,0.1)"/>
-            <path d="M0 100C0 100 60 160 120 140C180 120 240 190 300 170C360 150 400 130 400 150V600H0V100Z" fill="rgba(255,255,255,0.05)"/>
+            {/* Círculos decorativos */}
+            <circle cx="50" cy="100" r="80" fill="rgba(255,255,255,0.05)" className="animate-pulse-slow"/>
+            <circle cx="350" cy="200" r="60" fill="rgba(255,255,255,0.08)" className="animate-pulse-slower"/>
+            <circle cx="100" cy="500" r="40" fill="rgba(255,255,255,0.06)" className="animate-pulse-slow"/>
+            
+            {/* Líneas curvas suaves */}
+            <path d="M0 300C100 250 200 350 300 300C350 280 380 260 400 280V600H0V300Z" fill="rgba(255,255,255,0.03)"/>
+            <path d="M0 200C80 180 160 220 240 200C320 180 360 160 400 180V600H0V200Z" fill="rgba(255,255,255,0.02)"/>
           </svg>
         </div>
 
         <div className="relative z-10 flex flex-col justify-center items-center w-full p-12 text-center">
-          {/* Logo */}
-          <div className="mb-8">
-            <img src={logo} alt="JA Manager Logo" className="w-32 h-32 mx-auto" />
+          {/* Logo con efecto brillante */}
+          <div className="mb-8 relative">
+            <div className="absolute inset-0 bg-white/10 rounded-full blur-xl animate-pulse-slow"></div>
+            <img src={logo} alt="JA Manager Logo" className="w-32 h-32 mx-auto relative z-10 drop-shadow-lg" />
           </div>
 
           {/* Título y descripción */}
-          <h1 className="text-white text-4xl font-bold mb-4">
+          <h1 className="text-white text-4xl font-bold mb-4 drop-shadow-sm">
             Bienvenido a
           </h1>
-          <h2 className="text-white text-3xl font-semibold mb-6">
+          <h2 className="text-white text-3xl font-semibold mb-6 drop-shadow-sm">
             JA Manager
           </h2>
-          <p className="text-white/80 text-lg max-w-md leading-relaxed">
-            Plataforma de administración para jóvenes de la iglesia. 
-            Conecta, organiza y administra de manera eficiente.
+          <p className="text-white/90 text-lg max-w-md leading-relaxed mb-8 drop-shadow-sm">
+            Bienvenido a la plataforma que une a los jóvenes adventistas. Fortalece tu identidad, participa y comparte con tu familia juvenil.
           </p>
 
-          {/* Imagen */}
-          <div className="mt-8">
-            <div className="w-64 h-48 bg-white/10 rounded-lg overflow-hidden backdrop-blur-sm">
-              {/* Placeholder temporal - quitar cuando tengas la imagen */}
-              <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-white/30">
-                <div className="text-center text-white/60">
-                  <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-sm">Agregar imagen aquí</p>
-                  <p className="text-xs mt-1">mario.png</p>
-                </div>
-              </div>
+          {/* Cita bíblica */}
+          <div className="mt-8 max-w-lg">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 shadow-xl">
+              <svg className="w-8 h-8 text-white/60 mb-4 mx-auto" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/>
+              </svg>
+              <p className="text-white/95 text-base leading-relaxed italic mb-3">
+                "Esfuérzate y sé valiente. No temas ni desmayes, porque el Señor tu Dios estará contigo dondequiera que vayas."
+              </p>
+              <p className="text-white/70 text-sm font-medium">
+                — Josué 1:9
+              </p>
             </div>
           </div>
         </div>
+
+        {/* Agregar estilos CSS personalizados en el head */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            @keyframes float-slow {
+              0%, 100% { transform: translateY(0px) translateX(0px); }
+              25% { transform: translateY(-20px) translateX(10px); }
+              50% { transform: translateY(-10px) translateX(-5px); }
+              75% { transform: translateY(-15px) translateX(5px); }
+            }
+            
+            @keyframes float-medium {
+              0%, 100% { transform: translateY(0px) translateX(0px); }
+              33% { transform: translateY(-15px) translateX(-8px); }
+              66% { transform: translateY(-8px) translateX(12px); }
+            }
+            
+            @keyframes float-fast {
+              0%, 100% { transform: translateY(0px) translateX(0px); }
+              50% { transform: translateY(-25px) translateX(-10px); }
+            }
+            
+            @keyframes pulse-slow {
+              0%, 100% { opacity: 0.3; }
+              50% { opacity: 0.6; }
+            }
+            
+            @keyframes pulse-slower {
+              0%, 100% { opacity: 0.2; }
+              50% { opacity: 0.5; }
+            }
+            
+            .animate-float-slow {
+              animation: float-slow 8s ease-in-out infinite;
+            }
+            
+            .animate-float-medium {
+              animation: float-medium 6s ease-in-out infinite;
+            }
+            
+            .animate-float-fast {
+              animation: float-fast 4s ease-in-out infinite;
+            }
+            
+            .animate-pulse-slow {
+              animation: pulse-slow 4s ease-in-out infinite;
+            }
+            
+            .animate-pulse-slower {
+              animation: pulse-slower 6s ease-in-out infinite;
+            }
+          `
+        }} />
       </div>
 
       {/* Panel derecho - Formulario */}
@@ -226,7 +298,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
           {/* Footer */}
           <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-            <p>Sistema de Gestión de Jóvenes © 2024</p>
+            <p>Sistema de Gestión de Jóvenes © 2025 by Jamomodev</p>
           </div>
         </div>
       </div>
