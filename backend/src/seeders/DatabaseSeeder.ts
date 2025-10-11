@@ -211,7 +211,7 @@ export class DatabaseSeeder {
       await this.createYoungRole();
       
       // Crear usuario Super Admin
-      await this.createSuperAdminUser();
+      // await this.createSuperAdminUser();
       
       logger.info('🎉 Proceso de seeding completado exitosamente', {
         context: 'DatabaseSeeder',
