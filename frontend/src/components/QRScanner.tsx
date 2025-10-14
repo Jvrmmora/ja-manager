@@ -5,6 +5,7 @@ import { XMarkIcon, ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/re
 import { scanQRAndRegisterAttendance } from '../services/api';
 import AttendanceModal from './AttendanceModal';
 import { useTheme } from '../context/ThemeContext';
+import { formatDisplayDate } from '../utils/dateUtils';
 
 interface QRScannerProps {
   isOpen: boolean;
@@ -294,12 +295,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
         success: true,
         message: '¡Has registrado tu asistencia hoy satisfactoriamente!',
         subtitle: 'Gracias por asistir a nuestro culto joven',
-        date: new Date().toLocaleDateString('es-ES', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
+        date: formatDisplayDate(new Date())
       });
       setShowModal(true);
 

@@ -42,6 +42,7 @@ const qrCodeSchema = new Schema<IQRCode>(
       type: String,
       required: [true, 'La fecha diaria es obligatoria'],
       index: true,
+      // Formato YYYY-MM-DD en zona horaria de Colombia
     },
     usageCount: {
       type: Number,

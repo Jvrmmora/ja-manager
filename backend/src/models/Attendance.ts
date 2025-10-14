@@ -26,6 +26,7 @@ const attendanceSchema = new Schema<IAttendance>(
     attendanceDate: {
       type: String,
       required: [true, 'La fecha de asistencia es obligatoria'],
+      // Formato YYYY-MM-DD en zona horaria de Colombia
     },
     scannedAt: {
       type: Date,

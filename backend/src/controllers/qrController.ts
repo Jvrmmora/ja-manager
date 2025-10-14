@@ -5,6 +5,12 @@ import QRCodeModel from '../models/QRCode';
 import AttendanceModel from '../models/Attendance';
 import { ApiResponse } from '../types';
 import { ErrorHandler } from '../utils/errorHandler';
+import { 
+  getCurrentDateColombia, 
+  getCurrentDateTimeColombia, 
+  createExpirationDate, 
+  isExpired 
+} from '../utils/dateUtils';
 
 // Generar QR del día (solo administradores)
 export const generateDailyQR = async (req: Request, res: Response): Promise<void> => {
@@ -28,7 +34,7 @@ export const generateDailyQR = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const today = getCurrentDateColombia(); // Fecha actual en Colombia (YYYY-MM-DD)
 
     // Verificar si ya existe un QR activo para hoy
     const existingQR = await QRCodeModel.findOne({
@@ -36,7 +42,7 @@ export const generateDailyQR = async (req: Request, res: Response): Promise<void
       isActive: true,
     });
 
-    if (existingQR && existingQR.expiresAt > new Date()) {
+    if (existingQR && !isExpired(existingQR.expiresAt)) {
       // Generar el QR visual del código existente
       const qrUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/attendance/scan?code=${existingQR.code}`;
       const qrImage = await QRCode.toDataURL(qrUrl, {
@@ -69,13 +75,12 @@ export const generateDailyQR = async (req: Request, res: Response): Promise<void
 
     // Crear nuevo QR
     const code = crypto.randomUUID();
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 2); // Expira en 2 horas
+    const expiresAt = createExpirationDate(2); // Expira en 2 horas en tiempo de Colombia
 
     const newQR = new QRCodeModel({
       code,
       generatedBy: adminId,
-      generatedAt: new Date(),
+      generatedAt: getCurrentDateTimeColombia(),
       expiresAt,
       isActive: true,
       dailyDate: today,
@@ -114,14 +119,14 @@ export const generateDailyQR = async (req: Request, res: Response): Promise<void
 // Obtener QR activo del día
 export const getCurrentQR = async (req: Request, res: Response): Promise<void> => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentDateColombia();
 
     const currentQR = await QRCodeModel.findOne({
       dailyDate: today,
       isActive: true,
     }).populate('generatedBy', 'fullName placa');
 
-    if (!currentQR || currentQR.expiresAt <= new Date()) {
+    if (!currentQR || isExpired(currentQR.expiresAt)) {
       res.status(404).json({
         success: false,
         message: 'No hay QR activo para el día de hoy',
@@ -159,7 +164,7 @@ export const getCurrentQR = async (req: Request, res: Response): Promise<void> =
 // Obtener estadísticas del QR actual
 export const getQRStats = async (req: Request, res: Response): Promise<void> => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentDateColombia();
 
     const currentQR = await QRCodeModel.findOne({
       dailyDate: today,
@@ -185,7 +190,7 @@ export const getQRStats = async (req: Request, res: Response): Promise<void> => 
       data: {
         qrCode: currentQR,
         attendanceCount,
-        isExpired: currentQR.expiresAt <= new Date(),
+        isExpired: isExpired(currentQR.expiresAt),
       },
     });
   } catch (error) {

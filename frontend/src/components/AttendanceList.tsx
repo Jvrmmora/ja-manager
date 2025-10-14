@@ -4,6 +4,7 @@ import { UsersIcon, ClockIcon, CheckCircleIcon, DocumentArrowDownIcon, CalendarD
 import { getTodayAttendances, getAttendancesByDate } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import LoadingSpinner from './LoadingSpinner';
+import { getCurrentDateColombia, formatDisplayDate, formatDisplayTime } from '../utils/dateUtils';
 
 interface AttendanceListProps {
   className?: string;
@@ -32,7 +33,7 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
 
   useEffect(() => {
     // Auto-refresh cada 30 segundos solo si es la fecha actual o está vacía Y no está en pantalla completa
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentDateColombia();
     if ((!selectedDate || selectedDate === today) && !isFullscreen) {
       const interval = setInterval(() => {
         loadAttendances();
@@ -103,21 +104,11 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
   };
 
   const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('es-ES', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatDisplayTime(dateString);
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return formatDisplayDate(dateString);
   };
 
   const exportToCSV = () => {
@@ -302,7 +293,7 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
             <div className={`flex items-center gap-2 mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               <ClockIcon className="w-4 h-4" />
               <span className="text-sm">
-                {(!selectedDate || selectedDate === new Date().toISOString().split('T')[0]) 
+                {(!selectedDate || selectedDate === getCurrentDateColombia()) 
                   ? 'Actualizado automáticamente cada 30 segundos'
                   : `Mostrando asistencias del ${formatDate(selectedDate)}`
                 }

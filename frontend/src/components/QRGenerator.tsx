@@ -4,6 +4,13 @@ import { QrCodeIcon, XMarkIcon, ArrowsPointingOutIcon, UsersIcon, ClockIcon, Che
 import { generateDailyQR, getCurrentQR, getQRStats, getTodayAttendances } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import LoadingSpinner from './LoadingSpinner';
+import { 
+  formatDisplayDate, 
+  formatDisplayTime, 
+  formatCountdown, 
+  isExpired,
+  getCurrentDateColombia
+} from '../utils/dateUtils';
 
 interface QRGeneratorProps {
   onSuccess?: (data: any) => void;
@@ -30,20 +37,8 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
     if (!qrData?.qrCode?.expiresAt) return;
 
     const updateCountdown = () => {
-      const now = new Date().getTime();
-      const expireTime = new Date(qrData.qrCode.expiresAt).getTime();
-      const timeLeft = expireTime - now;
-
-      if (timeLeft <= 0) {
-        setCountdown('Expirado');
-        return;
-      }
-
-      const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-      setCountdown(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      const countdownText = formatCountdown(qrData.qrCode.expiresAt);
+      setCountdown(countdownText);
     };
 
     // Actualizar inmediatamente
@@ -188,24 +183,16 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
   };
 
     const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return formatDisplayDate(dateString);
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('es-ES', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatDisplayTime(dateString);
   };
 
-  const isExpired = () => {
+  const isExpiredQR = () => {
     if (!qrData?.qrCode?.expiresAt) return false;
-    return new Date(qrData.qrCode.expiresAt) <= new Date();
+    return isExpired(qrData.qrCode.expiresAt);
   };
 
   if (isLoading) {
@@ -233,11 +220,11 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
             </div>
           )}
 
-          {!qrData || isExpired() ? (
+          {!qrData || isExpiredQR() ? (
             <div className="py-8">
               <QrCodeIcon className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
               <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                {isExpired() ? 'El código QR ha expirado' : 'No hay código QR activo para el día de hoy'}
+                {isExpiredQR() ? 'El código QR ha expirado' : 'No hay código QR activo para el día de hoy'}
               </p>
               <motion.button
                 onClick={handleGenerateQR}
@@ -254,7 +241,7 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
                 ) : (
                   <>
                     <QrCodeIcon className="w-5 h-5" />
-                    Generar QR del {formatDate(new Date().toISOString())}
+                    Generar QR del {formatDate(getCurrentDateColombia())}
                   </>
                 )}
               </motion.button>

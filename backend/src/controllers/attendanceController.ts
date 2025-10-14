@@ -4,6 +4,11 @@ import AttendanceModel from '../models/Attendance';
 import Young from '../models/Young';
 import { ApiResponse } from '../types';
 import { ErrorHandler } from '../utils/errorHandler';
+import { 
+  getCurrentDateColombia, 
+  getCurrentDateTimeColombia, 
+  isExpired 
+} from '../utils/dateUtils';
 
 // Escanear QR y registrar asistencia (solo jóvenes)
 export const scanQRAndRegisterAttendance = async (req: Request, res: Response): Promise<void> => {
@@ -52,7 +57,7 @@ export const scanQRAndRegisterAttendance = async (req: Request, res: Response): 
     }
 
     // Verificar si el QR ha expirado
-    if (qrCode.expiresAt <= new Date()) {
+    if (isExpired(qrCode.expiresAt)) {
       res.status(400).json({
         success: false,
         message: 'El código QR ha expirado',
@@ -60,7 +65,7 @@ export const scanQRAndRegisterAttendance = async (req: Request, res: Response): 
       return;
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentDateColombia();
 
     // Verificar si el joven ya registró asistencia hoy
     const existingAttendance = await AttendanceModel.findOne({
@@ -81,7 +86,7 @@ export const scanQRAndRegisterAttendance = async (req: Request, res: Response): 
       youngId,
       qrCodeId: qrCode._id,
       attendanceDate: today,
-      scannedAt: new Date(),
+      scannedAt: getCurrentDateTimeColombia(),
       ipAddress: req.ip || req.connection.remoteAddress,
       userAgent: req.get('User-Agent'),
     });
@@ -147,7 +152,7 @@ export const getMyAttendanceHistory = async (req: Request, res: Response): Promi
     });
 
     // Verificar si tiene asistencia hoy
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentDateColombia();
     const todayAttendance = await AttendanceModel.findOne({
       youngId,
       attendanceDate: today,
@@ -269,7 +274,7 @@ export const getTodayAttendances = async (req: Request, res: Response): Promise<
       return;
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentDateColombia();
 
     // Obtener asistencias del día
     const attendances = await AttendanceModel.find({
