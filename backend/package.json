@@ -1,6 +1,6 @@
 {
   "name": "ja-manager-backend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Backend API para gestión de jóvenes",
   "main": "dist/index.js",
   "scripts": {
