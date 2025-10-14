@@ -13,12 +13,45 @@
     "start": "cd backend && npm start",
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down"
+    "docker:down": "docker-compose down",
+    "validate": ".husky/validate-build.sh",
+    "validate:quick": ".husky/validate-quick.sh",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:fix": "npm run lint:fix:backend && npm run lint:fix:frontend",
+    "lint:fix:backend": "cd backend && npm run lint:fix",
+    "lint:fix:frontend": "cd frontend && npm run lint -- --fix",
+    "prepare": "husky"
   },
-  "keywords": ["iglesia", "jóvenes", "gestión", "react", "node", "mongodb"],
+  "keywords": [
+    "iglesia",
+    "jóvenes",
+    "gestión",
+    "react",
+    "node",
+    "mongodb"
+  ],
   "author": "Tu Iglesia",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.4",
+    "prettier": "^3.6.2"
+  },
+  "lint-staged": {
+    "backend/**/*.{ts,js}": [
+      "cd backend && npm run lint:fix",
+      "git add"
+    ],
+    "frontend/**/*.{ts,tsx,js,jsx}": [
+      "cd frontend && npm run lint -- --fix",
+      "git add"
+    ],
+    "**/*.{json,md,yml,yaml}": [
+      "prettier --write",
+      "git add"
+    ]
   }
 }

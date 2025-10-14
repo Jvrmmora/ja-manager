@@ -1,0 +1,11 @@
+#!/bin/sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🚀 Ejecutando validaciones pre-push..."
+echo ""
+
+# Ejecutar validación completa antes del push
+.husky/validate-build.sh
+
+echo ""
+echo "✅ ¡Validaciones pre-push completadas! El push puede proceder."
