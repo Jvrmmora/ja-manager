@@ -42,16 +42,13 @@
   },
   "lint-staged": {
     "backend/**/*.{ts,js}": [
-      "cd backend && npm run lint:fix",
-      "git add"
+      "cd backend && npm run lint:fix"
     ],
     "frontend/**/*.{ts,tsx,js,jsx}": [
-      "cd frontend && npm run lint -- --fix",
-      "git add"
+      "cd frontend && npm run lint -- --fix"
     ],
     "**/*.{json,md,yml,yaml}": [
-      "prettier --write",
-      "git add"
+      "prettier --write"
     ]
   }
 }
