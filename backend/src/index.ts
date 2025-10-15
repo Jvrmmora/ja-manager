@@ -15,17 +15,17 @@ import { authenticateToken } from './middleware/auth';
 import { ensureDatabaseConnection } from './middleware/databaseCheck';
 import { connectDatabase } from './config/database';
 import logger from './utils/logger';
-import { 
-  httpLoggingMiddleware, 
-  requestLoggingMiddleware, 
-  errorLoggingMiddleware 
+import {
+  httpLoggingMiddleware,
+  requestLoggingMiddleware,
+  errorLoggingMiddleware,
 } from './middleware/logging';
-import { 
-  globalErrorHandler, 
-  notFoundHandler, 
+import {
+  globalErrorHandler,
+  notFoundHandler,
   jsonErrorHandler,
   contentTypeValidator,
-  timeoutHandler
+  timeoutHandler,
 } from './middleware/errorMiddleware';
 
 dotenv.config();
@@ -34,21 +34,19 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
 // Configurar CORS con variables de entorno
-const corsOrigins = process.env.CORS_ORIGIN 
+const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-  : [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'http://localhost:4173'
-    ];
+  : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4173'];
 
 // Middleware
-app.use(cors({
-  origin: corsOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 
 // Middleware de timeout global
 app.use(timeoutHandler(30000)); // 30 segundos
@@ -76,25 +74,25 @@ const initializeApp = async () => {
   try {
     // Conectar a la base de datos ANTES de iniciar el servidor
     await connectDatabase();
-    
+
     // Verificar que la conexión esté activa
     if (mongoose.connection.readyState !== 1) {
       throw new Error('La conexión a MongoDB no está activa');
     }
-    
+
     // Ejecutar seeders
     await DatabaseSeeder.runAllSeeders();
-    
+
     // Configurar rutas después de que la BD esté lista
     setupRoutes();
-    
+
     // Iniciar servidor solo después de que la BD esté lista
     app.listen(PORT, '0.0.0.0', () => {
       logger.info(`🚀 Servidor corriendo en puerto ${PORT}`, {
         port: PORT,
         env: process.env.NODE_ENV || 'development',
         nodeVersion: process.version,
-        mongoState: mongoose.connection.readyState
+        mongoState: mongoose.connection.readyState,
       });
       logger.info(`📱 API disponible en: http://localhost:${PORT}`);
       logger.info(`🌐 API disponible en red: http://192.168.1.9:${PORT}`);
@@ -110,37 +108,80 @@ const initializeApp = async () => {
 // Configurar rutas y middleware que requieren BD
 const setupRoutes = () => {
   // Cargar documentación OpenAPI desde archivo YAML
-  const swaggerDocument = YAML.load(path.join(process.cwd(), 'dist/docs/oas3.yaml'));
+  // Detectar automáticamente si estamos en desarrollo o producción
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  const yamlPath = isDevelopment
+    ? path.join(process.cwd(), 'src/docs/oas3.yaml') // Desarrollo: usar archivo fuente
+    : path.join(process.cwd(), 'dist/docs/oas3.yaml'); // Producción: usar archivo compilado
+
+  let swaggerDocument;
+  try {
+    swaggerDocument = YAML.load(yamlPath);
+  } catch (error) {
+    logger.warn(
+      `No se pudo cargar la documentación OpenAPI desde ${yamlPath}:`,
+      error
+    );
+    // Crear documentación básica como fallback
+    swaggerDocument = {
+      openapi: '3.0.0',
+      info: {
+        title: 'Youth Management API',
+        version: '1.0.0',
+        description: 'API para gestión de jóvenes de la iglesia',
+      },
+      paths: {},
+    };
+  }
 
   // Health check - debe ir ANTES de las rutas de young
   app.get('/api/health', (_req, res) => {
-    res.json({ 
-      status: 'OK', 
+    res.json({
+      status: 'OK',
       message: 'Youth Management API funcionando correctamente',
       timestamp: new Date().toISOString(),
-      dbState: mongoose.connection.readyState
+      dbState: mongoose.connection.readyState,
     });
   });
 
   // Documentación OpenAPI (antes era Swagger)
-  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
-    customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'Youth Management API Documentation',
-    explorer: true
-  }));
+  app.use(
+    '/api/docs',
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerDocument, {
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: 'Youth Management API Documentation',
+      explorer: true,
+    })
+  );
 
   // Rutas de autenticación (algunas requieren BD pero no autenticación previa)
   app.use('/api/auth', ensureDatabaseConnection, authRoutes);
 
   // Rutas protegidas que requieren autenticación y conexión a BD
-  app.use('/api/young', ensureDatabaseConnection, authenticateToken, youngRoutes);
-  app.use('/api/import', ensureDatabaseConnection, authenticateToken, importRoutes);
+  app.use(
+    '/api/young',
+    ensureDatabaseConnection,
+    authenticateToken,
+    youngRoutes
+  );
+  app.use(
+    '/api/import',
+    ensureDatabaseConnection,
+    authenticateToken,
+    importRoutes
+  );
   app.use('/api/qr', ensureDatabaseConnection, authenticateToken, qrRoutes);
-  app.use('/api/attendance', ensureDatabaseConnection, authenticateToken, attendanceRoutes);
+  app.use(
+    '/api/attendance',
+    ensureDatabaseConnection,
+    authenticateToken,
+    attendanceRoutes
+  );
 
   // Ruta por defecto
   app.get('/', (_req, res) => {
-    res.json({ 
+    res.json({
       message: 'Youth Management Platform API',
       version: '1.0.0',
       documentation: '/api/docs',
@@ -166,8 +207,8 @@ const setupRoutes = () => {
         'POST /api/attendance/scan - Escanear QR y registrar (joven)',
         'GET /api/attendance/my-history - Mi historial (joven)',
         'GET /api/attendance/today - Lista del día (admin)',
-        'GET /api/attendance/stats - Estadísticas asistencia (admin)'
-      ]
+        'GET /api/attendance/stats - Estadísticas asistencia (admin)',
+      ],
     });
   });
 
