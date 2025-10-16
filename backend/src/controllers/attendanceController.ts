@@ -4,14 +4,17 @@ import AttendanceModel from '../models/Attendance';
 import Young from '../models/Young';
 import { ApiResponse } from '../types';
 import { ErrorHandler } from '../utils/errorHandler';
-import { 
-  getCurrentDateColombia, 
-  getCurrentDateTimeColombia, 
-  isExpired 
+import {
+  getCurrentDateColombia,
+  getCurrentDateTimeColombia,
+  isExpired,
 } from '../utils/dateUtils';
 
 // Escanear QR y registrar asistencia (solo jóvenes)
-export const scanQRAndRegisterAttendance = async (req: Request, res: Response): Promise<void> => {
+export const scanQRAndRegisterAttendance = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { code } = req.body;
     const youngId = req.user?.userId;
@@ -32,7 +35,7 @@ export const scanQRAndRegisterAttendance = async (req: Request, res: Response): 
       return;
     }
 
-        // Verificar que el usuario es un joven (no admin)
+    // Verificar que el usuario es un joven (no admin)
     const isAdmin = req.user?.role_name === 'Super Admin';
     if (isAdmin) {
       res.status(403).json({
@@ -118,7 +121,10 @@ export const scanQRAndRegisterAttendance = async (req: Request, res: Response): 
 };
 
 // Obtener historial de asistencias del joven autenticado
-export const getMyAttendanceHistory = async (req: Request, res: Response): Promise<void> => {
+export const getMyAttendanceHistory = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const youngId = req.user?.userId;
 
@@ -144,15 +150,15 @@ export const getMyAttendanceHistory = async (req: Request, res: Response): Promi
     // Contar total de asistencias
     const totalAttendances = await AttendanceModel.countDocuments({ youngId });
 
-    // Calcular estadísticas básicas
-    const thisMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
+    // Calcular estadísticas básicas usando zona horaria de Colombia
+    const today = getCurrentDateColombia();
+    const thisMonth = today.substring(0, 7); // YYYY-MM desde fecha de Colombia
     const thisMonthAttendances = await AttendanceModel.countDocuments({
       youngId,
       attendanceDate: { $regex: `^${thisMonth}` },
     });
 
     // Verificar si tiene asistencia hoy
-    const today = getCurrentDateColombia();
     const todayAttendance = await AttendanceModel.findOne({
       youngId,
       attendanceDate: today,
@@ -185,7 +191,10 @@ export const getMyAttendanceHistory = async (req: Request, res: Response): Promi
 };
 
 // Obtener lista de asistencias por fecha específica (solo administradores)
-export const getAttendancesByDate = async (req: Request, res: Response): Promise<void> => {
+export const getAttendancesByDate = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const adminId = req.user?.userId;
 
@@ -229,7 +238,7 @@ export const getAttendancesByDate = async (req: Request, res: Response): Promise
 
     // Obtener total de jóvenes para estadísticas
     const totalYoung = await Young.countDocuments({
-      role_name: { $nin: ['admin', 'Super Admin'] }
+      role_name: { $nin: ['admin', 'Super Admin'] },
     });
 
     res.status(200).json({
@@ -241,7 +250,10 @@ export const getAttendancesByDate = async (req: Request, res: Response): Promise
         stats: {
           totalPresent: attendances.length,
           totalYoung,
-          attendancePercentage: totalYoung > 0 ? Math.round((attendances.length / totalYoung) * 100) : 0,
+          attendancePercentage:
+            totalYoung > 0
+              ? Math.round((attendances.length / totalYoung) * 100)
+              : 0,
         },
       },
     });
@@ -252,7 +264,10 @@ export const getAttendancesByDate = async (req: Request, res: Response): Promise
 };
 
 // Obtener lista de asistencias del día (solo administradores)
-export const getTodayAttendances = async (req: Request, res: Response): Promise<void> => {
+export const getTodayAttendances = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const adminId = req.user?.userId;
 
@@ -287,7 +302,7 @@ export const getTodayAttendances = async (req: Request, res: Response): Promise<
 
     // Obtener total de jóvenes para estadísticas
     const totalYoung = await Young.countDocuments({
-      role_name: { $nin: ['admin', 'Super Admin'] }
+      role_name: { $nin: ['admin', 'Super Admin'] },
     });
 
     res.status(200).json({
@@ -299,7 +314,10 @@ export const getTodayAttendances = async (req: Request, res: Response): Promise<
         stats: {
           totalPresent: attendances.length,
           totalYoung,
-          attendancePercentage: totalYoung > 0 ? Math.round((attendances.length / totalYoung) * 100) : 0,
+          attendancePercentage:
+            totalYoung > 0
+              ? Math.round((attendances.length / totalYoung) * 100)
+              : 0,
         },
       },
     });
@@ -310,7 +328,10 @@ export const getTodayAttendances = async (req: Request, res: Response): Promise<
 };
 
 // Obtener estadísticas de asistencia por rango de fechas (solo administradores)
-export const getAttendanceStats = async (req: Request, res: Response): Promise<void> => {
+export const getAttendanceStats = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const isAdmin = req.user?.role_name === 'Super Admin';
     if (!isAdmin) {
@@ -322,10 +343,13 @@ export const getAttendanceStats = async (req: Request, res: Response): Promise<v
     }
 
     const { startDate, endDate } = req.query;
-    
-    // Si no se proporcionan fechas, usar el mes actual
-    const start = startDate ? new String(startDate) : new Date().toISOString().substring(0, 7) + '-01';
-    const end = endDate ? new String(endDate) : new Date().toISOString().split('T')[0];
+
+    // Si no se proporcionan fechas, usar el mes actual en zona horaria de Colombia
+    const todayColombia = getCurrentDateColombia();
+    const start = startDate
+      ? new String(startDate)
+      : todayColombia.substring(0, 7) + '-01';
+    const end = endDate ? new String(endDate) : todayColombia;
 
     // Obtener asistencias en el rango de fechas
     const attendances = await AttendanceModel.find({
@@ -338,14 +362,17 @@ export const getAttendanceStats = async (req: Request, res: Response): Promise<v
       .lean();
 
     // Agrupar por fecha
-    const attendancesByDate = attendances.reduce((acc: any, attendance: any) => {
-      const date = attendance.attendanceDate;
-      if (!acc[date]) {
-        acc[date] = [];
-      }
-      acc[date].push(attendance);
-      return acc;
-    }, {});
+    const attendancesByDate = attendances.reduce(
+      (acc: any, attendance: any) => {
+        const date = attendance.attendanceDate;
+        if (!acc[date]) {
+          acc[date] = [];
+        }
+        acc[date].push(attendance);
+        return acc;
+      },
+      {}
+    );
 
     res.status(200).json({
       success: true,

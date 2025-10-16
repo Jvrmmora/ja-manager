@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PhoneInput from './PhoneInput';
 import GroupSelect from './GroupSelect';
 import type { IYoung } from '../types';
+import { formatDateColombia } from '../utils/dateUtils';
 
 interface YoungFormData {
   fullName: string;
@@ -9,7 +10,17 @@ interface YoungFormData {
   phone: string;
   birthday: string;
   gender: 'masculino' | 'femenino' | '';
-  role: 'lider juvenil' | 'colaborador' | 'director' | 'subdirector' | 'club guias' | 'club conquistadores' | 'club aventureros' | 'escuela sabatica' | 'joven adventista' | 'simpatizante';
+  role:
+    | 'lider juvenil'
+    | 'colaborador'
+    | 'director'
+    | 'subdirector'
+    | 'club guias'
+    | 'club conquistadores'
+    | 'club aventureros'
+    | 'escuela sabatica'
+    | 'joven adventista'
+    | 'simpatizante';
   email: string;
   skills: string[];
   profileImage?: File;
@@ -25,7 +36,14 @@ interface EditYoungFormProps {
   onShowError?: (message: string) => void;
 }
 
-const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit, young, onShowSuccess: _onShowSuccess, onShowError }) => {
+const EditYoungForm: React.FC<EditYoungFormProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  young,
+  onShowSuccess: _onShowSuccess,
+  onShowError,
+}) => {
   const [formData, setFormData] = useState<YoungFormData>({
     fullName: '',
     ageRange: '',
@@ -35,7 +53,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
     role: 'colaborador',
     email: '',
     skills: [],
-  group: undefined,
+    group: undefined,
   });
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -46,16 +64,16 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
   // Cargar datos del joven al abrir el formulario
   useEffect(() => {
     if (isOpen && young) {
-      // Formatear la fecha evitando problemas de zona horaria
+      // Formatear la fecha en zona horaria de Colombia evitando problemas de timezone
       let formattedBirthday: string;
       const birthdayStr = young.birthday.toString();
       if (birthdayStr.includes('T')) {
         formattedBirthday = birthdayStr.split('T')[0];
       } else {
         const birthdayDate = new Date(young.birthday);
-        formattedBirthday = birthdayDate.toISOString().split('T')[0];
+        formattedBirthday = formatDateColombia(birthdayDate);
       }
-      
+
       setFormData({
         fullName: young.fullName,
         ageRange: young.ageRange,
@@ -63,11 +81,11 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
         birthday: formattedBirthday,
         gender: young.gender,
         role: young.role,
-  email: young.email,
-  group: young.group,
+        email: young.email,
+        group: young.group,
         skills: young.skills || [],
       });
-      
+
       setImagePreview(young.profileImage || null);
       setSkillInput('');
       setEmailError(''); // Limpiar error de email al abrir
@@ -75,9 +93,11 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
     }
   }, [isOpen, young]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    
+
     // Limpiar errores cuando se modifican los campos
     if (name === 'email') {
       setEmailError('');
@@ -85,10 +105,10 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
     if (name === 'phone') {
       setPhoneError('');
     }
-    
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -97,13 +117,13 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
       setEmailError('El email es requerido');
       return false;
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setEmailError('Formato de email inválido');
       return false;
     }
-    
+
     setEmailError('');
     return true;
   };
@@ -113,12 +133,12 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
     if (file) {
       setFormData(prev => ({
         ...prev,
-        profileImage: file
+        profileImage: file,
       }));
 
       // Crear preview
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = e => {
         setImagePreview(e.target?.result as string);
       };
       reader.readAsDataURL(file);
@@ -129,7 +149,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
     if (skillInput.trim() && !formData.skills.includes(skillInput.trim())) {
       setFormData(prev => ({
         ...prev,
-        skills: [...prev.skills, skillInput.trim()]
+        skills: [...prev.skills, skillInput.trim()],
       }));
       setSkillInput('');
     }
@@ -138,7 +158,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
   const removeSkill = (skillToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      skills: prev.skills.filter(skill => skill !== skillToRemove)
+      skills: prev.skills.filter(skill => skill !== skillToRemove),
     }));
   };
 
@@ -151,7 +171,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validaciones básicas
     if (!formData.fullName.trim()) {
       onShowError?.('El nombre completo es obligatorio');
@@ -166,7 +186,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
     try {
       setLoading(true);
       await onSubmit(young.id!, formData);
-      
+
       // Resetear formulario
       setFormData({
         fullName: '',
@@ -185,18 +205,25 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
       onClose();
     } catch (error) {
       console.error('Error:', error);
-      
+
       // Verificar si es un error de duplicados con información específica
-      const errorMessage = error instanceof Error ? error.message : 'Error al actualizar el joven';
-      
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error al actualizar el joven';
+
       // Detectar si es error de email duplicado
-      if (errorMessage.includes('email ya está registrado por') || errorMessage.includes('email ya está registrado')) {
+      if (
+        errorMessage.includes('email ya está registrado por') ||
+        errorMessage.includes('email ya está registrado')
+      ) {
         setEmailError(errorMessage);
-      } 
-      // Detectar si es error de teléfono duplicado  
-      else if (errorMessage.includes('teléfono ya está registrado por') || errorMessage.includes('teléfono ya está registrado')) {
+      }
+      // Detectar si es error de teléfono duplicado
+      else if (
+        errorMessage.includes('teléfono ya está registrado por') ||
+        errorMessage.includes('teléfono ya está registrado')
+      ) {
         setPhoneError(errorMessage);
-      } 
+      }
       // Otros errores
       else {
         onShowError?.(errorMessage);
@@ -212,13 +239,25 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-white">Editar Joven</h3>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
+            Editar Joven
+          </h3>
           <button
             onClick={onClose}
             className="text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-100 transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -232,14 +271,24 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden">
                 {imagePreview ? (
-                  <img 
-                    src={imagePreview} 
-                    alt="Preview" 
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <svg
+                    className="w-8 h-8 text-gray-400 dark:text-gray-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                   </svg>
                 )}
               </div>
@@ -254,9 +303,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
 
           {/* Nombre completo */}
           <div>
-            <label className="form-label">
-              Nombre Completo *
-            </label>
+            <label className="form-label">Nombre Completo *</label>
             <input
               type="text"
               name="fullName"
@@ -270,9 +317,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
 
           {/* Rango de edad */}
           <div>
-            <label className="form-label">
-              Rango de Edad *
-            </label>
+            <label className="form-label">Rango de Edad *</label>
             <select
               name="ageRange"
               value={formData.ageRange}
@@ -292,12 +337,10 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
 
           {/* Teléfono */}
           <div>
-            <label className="form-label">
-              Teléfono (opcional)
-            </label>
+            <label className="form-label">Teléfono (opcional)</label>
             <PhoneInput
               value={formData.phone}
-              onChange={(value) => {
+              onChange={value => {
                 setFormData({ ...formData, phone: value });
                 setPhoneError(''); // Limpiar error cuando se cambia el valor
               }}
@@ -308,9 +351,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
 
           {/* Fecha de nacimiento */}
           <div>
-            <label className="form-label">
-              Fecha de Nacimiento *
-            </label>
+            <label className="form-label">Fecha de Nacimiento *</label>
             <input
               type="date"
               name="birthday"
@@ -323,9 +364,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
 
           {/* Email */}
           <div>
-            <label className="form-label">
-              Email *
-            </label>
+            <label className="form-label">Email *</label>
             <input
               type="email"
               name="email"
@@ -345,9 +384,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
 
           {/* Género */}
           <div>
-            <label className="form-label">
-              Género (opcional)
-            </label>
+            <label className="form-label">Género (opcional)</label>
             <div className="flex gap-4">
               <label className="flex items-center text-gray-700 dark:text-gray-300">
                 <input
@@ -387,9 +424,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
 
           {/* Rol */}
           <div>
-            <label className="form-label">
-              Rol en la Iglesia *
-            </label>
+            <label className="form-label">Rol en la Iglesia *</label>
             <select
               name="role"
               value={formData.role}
@@ -416,22 +451,22 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
             <div className="relative">
               <GroupSelect
                 value={formData.group}
-                onChange={(v?: number) => setFormData(prev => ({ ...prev, group: v }))}
+                onChange={(v?: number) =>
+                  setFormData(prev => ({ ...prev, group: v }))
+                }
               />
             </div>
           </div>
 
           {/* Habilidades */}
           <div>
-            <label className="form-label">
-              Habilidades y Talentos
-            </label>
+            <label className="form-label">Habilidades y Talentos</label>
             <div className="space-y-2">
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={skillInput}
-                  onChange={(e) => setSkillInput(e.target.value)}
+                  onChange={e => setSkillInput(e.target.value)}
                   onKeyPress={handleSkillKeyPress}
                   className="form-input flex-1"
                   placeholder="Ej: Música, Liderazgo, Enseñanza..."
@@ -444,7 +479,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({ isOpen, onClose, onSubmit
                   Agregar
                 </button>
               </div>
-              
+
               {/* Tags de habilidades */}
               {formData.skills.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">

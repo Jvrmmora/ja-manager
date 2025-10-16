@@ -13,9 +13,9 @@ export const getCurrentDateColombia = (): string => {
     timeZone: COLOMBIA_TIMEZONE,
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
   });
-  
+
   return formatter.format(now); // Retorna YYYY-MM-DD
 };
 
@@ -24,7 +24,7 @@ export const getCurrentDateColombia = (): string => {
  */
 export const getCurrentDateTimeColombia = (): Date => {
   const now = new Date();
-  
+
   // Obtener la fecha completa en zona horaria de Colombia
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: COLOMBIA_TIMEZONE,
@@ -34,17 +34,22 @@ export const getCurrentDateTimeColombia = (): Date => {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false
+    hour12: false,
   });
-  
+
   const parts = formatter.formatToParts(now);
   const year = parseInt(parts.find(part => part.type === 'year')?.value || '0');
-  const month = parseInt(parts.find(part => part.type === 'month')?.value || '0') - 1; // JS months are 0-indexed
+  const month =
+    parseInt(parts.find(part => part.type === 'month')?.value || '0') - 1; // JS months are 0-indexed
   const day = parseInt(parts.find(part => part.type === 'day')?.value || '0');
   const hour = parseInt(parts.find(part => part.type === 'hour')?.value || '0');
-  const minute = parseInt(parts.find(part => part.type === 'minute')?.value || '0');
-  const second = parseInt(parts.find(part => part.type === 'second')?.value || '0');
-  
+  const minute = parseInt(
+    parts.find(part => part.type === 'minute')?.value || '0'
+  );
+  const second = parseInt(
+    parts.find(part => part.type === 'second')?.value || '0'
+  );
+
   return new Date(year, month, day, hour, minute, second);
 };
 
@@ -53,14 +58,14 @@ export const getCurrentDateTimeColombia = (): Date => {
  */
 export const formatDateColombia = (date: Date | string): string => {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: COLOMBIA_TIMEZONE,
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
   });
-  
+
   return formatter.format(dateObj);
 };
 
@@ -69,7 +74,7 @@ export const formatDateColombia = (date: Date | string): string => {
  */
 export const formatDateTimeColombia = (date: Date | string): string => {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+
   const formatter = new Intl.DateTimeFormat('es-CO', {
     timeZone: COLOMBIA_TIMEZONE,
     year: 'numeric',
@@ -78,9 +83,9 @@ export const formatDateTimeColombia = (date: Date | string): string => {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false
+    hour12: false,
   });
-  
+
   return formatter.format(dateObj);
 };
 
@@ -88,24 +93,29 @@ export const formatDateTimeColombia = (date: Date | string): string => {
  * Obtiene el inicio del día en Colombia (00:00:00)
  */
 export const getStartOfDayColombia = (date?: Date | string): Date => {
-  const targetDate = date ? (typeof date === 'string' ? new Date(date) : date) : new Date();
-  
+  const targetDate = date
+    ? typeof date === 'string'
+      ? new Date(date)
+      : date
+    : new Date();
+
   // Obtener la fecha en Colombia
   const dateStr = formatDateColombia(targetDate);
-  
+
   // Crear nueva fecha con zona horaria de Colombia
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: COLOMBIA_TIMEZONE,
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
   });
-  
+
   const parts = formatter.formatToParts(targetDate);
   const year = parseInt(parts.find(part => part.type === 'year')?.value || '0');
-  const month = parseInt(parts.find(part => part.type === 'month')?.value || '0') - 1;
+  const month =
+    parseInt(parts.find(part => part.type === 'month')?.value || '0') - 1;
   const day = parseInt(parts.find(part => part.type === 'day')?.value || '0');
-  
+
   return new Date(year, month, day, 0, 0, 0, 0);
 };
 
@@ -113,20 +123,25 @@ export const getStartOfDayColombia = (date?: Date | string): Date => {
  * Obtiene el final del día en Colombia (23:59:59.999)
  */
 export const getEndOfDayColombia = (date?: Date | string): Date => {
-  const targetDate = date ? (typeof date === 'string' ? new Date(date) : date) : new Date();
-  
+  const targetDate = date
+    ? typeof date === 'string'
+      ? new Date(date)
+      : date
+    : new Date();
+
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: COLOMBIA_TIMEZONE,
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
   });
-  
+
   const parts = formatter.formatToParts(targetDate);
   const year = parseInt(parts.find(part => part.type === 'year')?.value || '0');
-  const month = parseInt(parts.find(part => part.type === 'month')?.value || '0') - 1;
+  const month =
+    parseInt(parts.find(part => part.type === 'month')?.value || '0') - 1;
   const day = parseInt(parts.find(part => part.type === 'day')?.value || '0');
-  
+
   return new Date(year, month, day, 23, 59, 59, 999);
 };
 
@@ -153,7 +168,10 @@ export const createExpirationDate = (hoursToAdd: number): Date => {
  * Verifica si una fecha ha expirado comparando con la hora actual de Colombia
  */
 export const isExpired = (expirationDate: Date | string): boolean => {
-  const expDate = typeof expirationDate === 'string' ? new Date(expirationDate) : expirationDate;
+  const expDate =
+    typeof expirationDate === 'string'
+      ? new Date(expirationDate)
+      : expirationDate;
   const now = getCurrentDateTimeColombia();
   return expDate <= now;
 };
@@ -163,13 +181,13 @@ export const isExpired = (expirationDate: Date | string): boolean => {
  */
 export const formatDisplayDate = (date: Date | string): string => {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+
   return new Intl.DateTimeFormat('es-CO', {
     timeZone: COLOMBIA_TIMEZONE,
     weekday: 'long',
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   }).format(dateObj);
 };
 
@@ -178,11 +196,39 @@ export const formatDisplayDate = (date: Date | string): string => {
  */
 export const formatDisplayTime = (date: Date | string): string => {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+
   return new Intl.DateTimeFormat('es-CO', {
     timeZone: COLOMBIA_TIMEZONE,
     hour: '2-digit',
     minute: '2-digit',
-    hour12: true
+    hour12: true,
   }).format(dateObj);
+};
+
+/**
+ * Obtiene el mes actual en Colombia (1-12, para MongoDB $month)
+ * Nota: MongoDB usa 1-12, mientras que JavaScript Date usa 0-11
+ */
+export const getCurrentMonthColombia = (): number => {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: COLOMBIA_TIMEZONE,
+    month: '2-digit',
+  });
+
+  const monthStr = formatter.format(now);
+  return parseInt(monthStr); // 1-12 para MongoDB
+};
+
+/**
+ * Obtiene el año actual en Colombia
+ */
+export const getCurrentYearColombia = (): number => {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: COLOMBIA_TIMEZONE,
+    year: 'numeric',
+  });
+
+  return parseInt(formatter.format(now));
 };

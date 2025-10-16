@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { IYoung } from '../types';
+import { getCurrentDateTimeColombia } from '../utils/dateUtils';
 
 interface IYoungDocument extends Omit<IYoung, 'id' | '_id'>, Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -54,12 +55,9 @@ const youngSchema = new Schema<IYoungDocument>(
     },
     phone: {
       type: String,
-      required:false,
+      required: false,
       trim: true,
-      match: [
-        /^[\+]?[\d\s\-\(\)]{8,15}$/,
-        'Formato de teléfono no válido',
-      ],
+      match: [/^[\+]?[\d\s\-\(\)]{8,15}$/, 'Formato de teléfono no válido'],
     },
     birthday: {
       type: Date,
@@ -91,31 +89,31 @@ const youngSchema = new Schema<IYoungDocument>(
         values: [
           'lider juvenil',
           'simpatizante',
-          'colaborador', 
+          'colaborador',
           'joven adventista',
           'director',
           'subdirector',
           'club guias',
           'club conquistadores',
           'club aventureros',
-          'escuela sabatica'
+          'escuela sabatica',
         ],
         message: 'Rol no válido',
       },
     },
-   email: {
-    type: String,
-    required: false,
-    trim: true,
-    lowercase: true,
-    default: null,
-    unique: true,
-    sparse: true, // Permite múltiples valores null pero emails únicos
-    match: [
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-      'Por favor ingrese un email válido'
-    ]
-  },
+    email: {
+      type: String,
+      required: false,
+      trim: true,
+      lowercase: true,
+      default: null,
+      unique: true,
+      sparse: true, // Permite múltiples valores null pero emails únicos
+      match: [
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        'Por favor ingrese un email válido',
+      ],
+    },
     skills: {
       type: [String],
       default: [],
@@ -146,19 +144,19 @@ const youngSchema = new Schema<IYoungDocument>(
 );
 
 // Middleware para encriptar la contraseña antes de guardar
-youngSchema.pre('save', async function(next) {
+youngSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  
+
   if (this.password) {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
   }
-  
+
   next();
 });
 
 // Middleware para generar placa automáticamente si no existe
-youngSchema.pre('save', async function(next) {
+youngSchema.pre('save', async function (next) {
   if (!this.placa && this.role_name === 'Super Admin') {
     this.placa = this.generatePlaca();
   }
@@ -174,23 +172,25 @@ youngSchema.index({ role_id: 1 });
 // Nota: placa y email ya tienen índices automáticos por unique: true
 
 // Método para comparar contraseñas
-youngSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+youngSchema.methods.comparePassword = async function (
+  candidatePassword: string
+): Promise<boolean> {
   if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 
 // Método para generar placa única
-youngSchema.methods.generatePlaca = function(): string {
+youngSchema.methods.generatePlaca = function (): string {
   const nameWords = this.fullName.trim().split(' ');
   const firstName = nameWords[0];
   let initials = '';
-  
+
   // Tomar un máximo de 4 letras del primer nombre
   if (firstName.length >= 4) {
     initials = firstName.substring(0, 4).toUpperCase();
   } else if (firstName.length >= 2) {
     initials = firstName.toUpperCase();
-    
+
     // Si tenemos segundo nombre y no llegamos a 4 letras, completar con el segundo
     if (nameWords.length > 1 && initials.length < 4) {
       const secondName = nameWords[1];
@@ -201,30 +201,33 @@ youngSchema.methods.generatePlaca = function(): string {
     // Nombre muy corto, usar mínimo 2 caracteres
     initials = firstName.toUpperCase().padEnd(2, 'X');
   }
-  
+
   // Por ahora usar 001, luego implementaremos el consecutivo
   const consecutive = '001';
-  
+
   return `@MOD${initials}${consecutive}`;
 };
 
-// Método para obtener la edad actual
-youngSchema.methods.getCurrentAge = function(): number {
-  const today = new Date();
+// Método para obtener la edad actual usando zona horaria de Colombia
+youngSchema.methods.getCurrentAge = function (): number {
+  const today = getCurrentDateTimeColombia();
   const birthDate = new Date(this.birthday);
   let age = today.getFullYear() - birthDate.getFullYear();
   const monthDiff = today.getMonth() - birthDate.getMonth();
-  
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
     age--;
   }
-  
+
   return age;
 };
 
-// Método para verificar si es cumpleaños hoy
-youngSchema.methods.isBirthdayToday = function(): boolean {
-  const today = new Date();
+// Método para verificar si es cumpleaños hoy usando zona horaria de Colombia
+youngSchema.methods.isBirthdayToday = function (): boolean {
+  const today = getCurrentDateTimeColombia();
   const birthDate = new Date(this.birthday);
   return (
     today.getMonth() === birthDate.getMonth() &&

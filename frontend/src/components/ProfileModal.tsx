@@ -3,6 +3,7 @@ import type { IYoung } from '../types';
 import { apiUpload } from '../services/api';
 import { authService } from '../services/auth';
 import PhoneInput from './PhoneInput';
+import { formatDateColombia, formatLocaleDateString } from '../utils/dateUtils';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -23,15 +24,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   isOpen,
   onClose,
   young,
-  onProfileUpdated
+  onProfileUpdated,
 }) => {
   const [formData, setFormData] = useState<ProfileFormData>({
     fullName: '',
     phone: '',
     birthday: '',
-    email: ''
+    email: '',
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -45,15 +46,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     if (young) {
       let birthdayValue = '';
       if (young.birthday) {
-        const date = typeof young.birthday === 'string' ? new Date(young.birthday) : young.birthday;
-        birthdayValue = date.toISOString().split('T')[0];
+        const date =
+          typeof young.birthday === 'string'
+            ? new Date(young.birthday)
+            : young.birthday;
+        birthdayValue = formatDateColombia(date);
       }
-      
+
       setFormData({
         fullName: young.fullName || '',
         phone: young.phone || '',
         birthday: birthdayValue,
-        email: young.email || ''
+        email: young.email || '',
       });
       setPreviewUrl(young.profileImage || null);
       setError(null);
@@ -64,23 +68,23 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         phone: young.phone,
         birthday: birthdayValue,
         email: young.email,
-        profileImage: young.profileImage
+        profileImage: young.profileImage,
       });
     }
   }, [young]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     // Limpiar errores cuando se modifican los campos
     if (name === 'email') {
       setEmailError('');
     }
     setError(null);
-    
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -89,7 +93,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     setError(null);
     setFormData(prev => ({
       ...prev,
-      phone
+      phone,
     }));
   };
 
@@ -98,7 +102,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     if (file) {
       setSelectedFile(file);
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = e => {
         setPreviewUrl(e.target?.result as string);
       };
       reader.readAsDataURL(file);
@@ -119,13 +123,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       formDataToSend.append('phone', formData.phone);
       formDataToSend.append('birthday', formData.birthday);
       formDataToSend.append('email', formData.email);
-      
+
       if (selectedFile) {
         formDataToSend.append('profileImage', selectedFile);
       }
 
       const response = await apiUpload(`/young/${young.id}`, formDataToSend, {
-        method: 'PUT'
+        method: 'PUT',
       });
 
       if (response.ok) {
@@ -133,7 +137,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         if (result.success) {
           // Actualizar localStorage con la información actualizada
           authService.updateUserInfo(result.data);
-          
+
           onProfileUpdated(result.data);
           onClose(); // Cerrar inmediatamente
         } else {
@@ -147,52 +151,67 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           hasErrorObject: !!errorData.error,
           hasDetails: !!errorData.error?.details,
           field: errorData.error?.details?.field,
-          existingOwner: errorData.error?.details?.existingOwner
+          existingOwner: errorData.error?.details?.existingOwner,
         });
-        
+
         // Manejo específico para errores de duplicación con información detallada
-        if (response.status === 409 && errorData.error?.details?.field === 'email') {
+        if (
+          response.status === 409 &&
+          errorData.error?.details?.field === 'email'
+        ) {
           const existingOwner = errorData.error?.details?.existingOwner;
-          const message = existingOwner 
+          const message = existingOwner
             ? `Este email ya está registrado por ${existingOwner}. Por favor, usa un email diferente.`
             : 'Este email ya está registrado por otro usuario. Por favor, usa un email diferente.';
           throw new Error(message);
         }
-        if (response.status === 409 && errorData.error?.details?.field === 'phone') {
+        if (
+          response.status === 409 &&
+          errorData.error?.details?.field === 'phone'
+        ) {
           const existingOwner = errorData.error?.details?.existingOwner;
-          const message = existingOwner 
+          const message = existingOwner
             ? `Este teléfono ya está registrado por ${existingOwner}. Por favor, usa un teléfono diferente.`
             : 'Este teléfono ya está registrado por otro usuario. Por favor, usa un teléfono diferente.';
           throw new Error(message);
         }
-        if (response.status === 409 && errorData.error?.details?.field === 'placa') {
+        if (
+          response.status === 409 &&
+          errorData.error?.details?.field === 'placa'
+        ) {
           const existingOwner = errorData.error?.details?.existingOwner;
-          const message = existingOwner 
+          const message = existingOwner
             ? `Esta placa ya está registrada por ${existingOwner}.`
             : 'Esta placa ya está registrada por otro usuario.';
           throw new Error(message);
         }
-        
+
         // Para otros errores, intentar extraer el mensaje del backend
         const backendMessage = errorData.error?.message || errorData.message;
         throw new Error(backendMessage || 'Error al actualizar el perfil');
       }
     } catch (err: any) {
       console.error('Error al actualizar perfil:', err);
-      
+
       // Verificar si es un error de duplicados con información específica
       const errorMessage = err.message || 'Error al actualizar el perfil';
-      
+
       // Detectar si es error de email duplicado
-      if (errorMessage.includes('email ya está registrado por') || errorMessage.includes('email ya está registrado')) {
+      if (
+        errorMessage.includes('email ya está registrado por') ||
+        errorMessage.includes('email ya está registrado')
+      ) {
         setEmailError(errorMessage);
         setError(null); // No mostrar error general si es específico
-      } 
-      // Detectar si es error de teléfono duplicado  
-      else if (errorMessage.includes('teléfono ya está registrado por') || errorMessage.includes('teléfono ya está registrado')) {
+      }
+      // Detectar si es error de teléfono duplicado
+      else if (
+        errorMessage.includes('teléfono ya está registrado por') ||
+        errorMessage.includes('teléfono ya está registrado')
+      ) {
         setPhoneError(errorMessage);
         setError(null); // No mostrar error general si es específico
-      } 
+      }
       // Otros errores
       else {
         setError(errorMessage);
@@ -217,13 +236,25 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Mi Perfil</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Mi Perfil
+            </h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -247,19 +278,38 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   />
                 ) : (
                   <div className="w-24 h-24 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border-2 border-gray-200 dark:border-gray-600">
-                    <svg className="w-10 h-10 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <svg
+                      className="w-10 h-10 text-blue-500 dark:text-blue-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
                     </svg>
                   </div>
                 )}
               </div>
-              
+
               {/* Botón Choose File */}
               <div className="flex justify-center">
                 <label className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer transition-colors">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    />
                   </svg>
                   Choose File
                   <input
@@ -270,7 +320,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   />
                 </label>
               </div>
-              
+
               {/* Información sobre el archivo */}
               <div className="text-center">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -336,8 +386,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 value={formData.email}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  emailError 
-                    ? 'border-red-500 dark:border-red-400' 
+                  emailError
+                    ? 'border-red-500 dark:border-red-400'
                     : 'border-gray-300 dark:border-gray-600'
                 }`}
               />
@@ -351,24 +401,38 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
           {/* Info Readonly */}
           <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Información del Sistema</h3>
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Información del Sistema
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-500 dark:text-gray-400">Placa:</span>
-                <span className="ml-2 font-mono text-blue-600 dark:text-blue-400">{young.placa || 'No asignada'}</span>
+                <span className="ml-2 font-mono text-blue-600 dark:text-blue-400">
+                  {young.placa || 'No asignada'}
+                </span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-gray-400">Rol:</span>
-                <span className="ml-2 text-gray-700 dark:text-gray-300">{young.role_name || young.role}</span>
-              </div>
-              <div>
-                <span className="text-gray-500 dark:text-gray-400">Rango de Edad:</span>
-                <span className="ml-2 text-gray-700 dark:text-gray-300">{young.ageRange}</span>
-              </div>
-              <div>
-                <span className="text-gray-500 dark:text-gray-400">Miembro desde:</span>
                 <span className="ml-2 text-gray-700 dark:text-gray-300">
-                  {young.createdAt ? new Date(young.createdAt).toLocaleDateString() : 'No disponible'}
+                  {young.role_name || young.role}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">
+                  Rango de Edad:
+                </span>
+                <span className="ml-2 text-gray-700 dark:text-gray-300">
+                  {young.ageRange}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">
+                  Miembro desde:
+                </span>
+                <span className="ml-2 text-gray-700 dark:text-gray-300">
+                  {young.createdAt
+                    ? formatLocaleDateString(young.createdAt)
+                    : 'No disponible'}
                 </span>
               </div>
             </div>
@@ -383,7 +447,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
           {success && (
             <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <p className="text-sm text-green-600 dark:text-green-400">{success}</p>
+              <p className="text-sm text-green-600 dark:text-green-400">
+                {success}
+              </p>
             </div>
           )}
 

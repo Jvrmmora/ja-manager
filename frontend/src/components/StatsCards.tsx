@@ -1,25 +1,32 @@
 import React from 'react';
 import type { IYoung } from '../types';
+import {
+  getCurrentMonthColombia,
+  getCurrentYearColombia,
+} from '../utils/dateUtils';
 
 interface StatsCardsProps {
   youngList: IYoung[];
   onBirthdayClick?: () => void;
 }
 
-const StatsCards: React.FC<StatsCardsProps> = ({ youngList, onBirthdayClick }) => {
+const StatsCards: React.FC<StatsCardsProps> = ({
+  youngList,
+  onBirthdayClick,
+}) => {
   // Calcular estadísticas
   const totalYoung = youngList.length;
-  
+
   // Calcular activos (por ahora todos los jóvenes son activos)
   const activeYoung = totalYoung;
 
-  // Calcular cumpleaños de este mes
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  
+  // Calcular cumpleaños de este mes usando zona horaria de Colombia
+  const currentMonth = getCurrentMonthColombia();
+  const currentYear = getCurrentYearColombia();
+
   const birthdaysThisMonth = youngList.filter(young => {
     if (!young.birthday) return false;
-    
+
     const birthday = new Date(young.birthday);
     return birthday.getMonth() === currentMonth;
   }).length;
@@ -27,10 +34,12 @@ const StatsCards: React.FC<StatsCardsProps> = ({ youngList, onBirthdayClick }) =
   // Calcular nuevos de este mes
   const newThisMonth = youngList.filter(young => {
     if (!young.createdAt) return false;
-    
+
     const createdAt = new Date(young.createdAt);
-    return createdAt.getMonth() === currentMonth && 
-           createdAt.getFullYear() === currentYear;
+    return (
+      createdAt.getMonth() === currentMonth &&
+      createdAt.getFullYear() === currentYear
+    );
   }).length;
 
   const stats = [
@@ -39,21 +48,21 @@ const StatsCards: React.FC<StatsCardsProps> = ({ youngList, onBirthdayClick }) =
       value: totalYoung,
       color: 'blue',
       bgColor: 'bg-white dark:bg-gray-800',
-      textColor: 'text-blue-600 dark:text-blue-400'
+      textColor: 'text-blue-600 dark:text-blue-400',
     },
     {
       title: 'Activos',
       value: activeYoung,
       color: 'green',
       bgColor: 'bg-white dark:bg-gray-800',
-      textColor: 'text-green-600 dark:text-green-400'
+      textColor: 'text-green-600 dark:text-green-400',
     },
     {
       title: 'Nuevos Este Mes',
       value: newThisMonth,
       color: 'purple',
       bgColor: 'bg-white dark:bg-gray-800',
-      textColor: 'text-purple-600 dark:text-purple-400'
+      textColor: 'text-purple-600 dark:text-purple-400',
     },
     {
       title: 'Cumpleaños Este Mes: Septiembre',
@@ -62,8 +71,8 @@ const StatsCards: React.FC<StatsCardsProps> = ({ youngList, onBirthdayClick }) =
       bgColor: 'bg-orange-500',
       textColor: 'text-white',
       icon: '🎂',
-      subtitle: 'Haz clic para ver detalles'
-    }
+      subtitle: 'Haz clic para ver detalles',
+    },
   ];
 
   return (
@@ -72,16 +81,22 @@ const StatsCards: React.FC<StatsCardsProps> = ({ youngList, onBirthdayClick }) =
         <div
           key={index}
           className={`${stat.bgColor} rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700 ${
-            stat.color === 'orange' ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
+            stat.color === 'orange'
+              ? 'cursor-pointer hover:shadow-md transition-shadow'
+              : ''
           }`}
           onClick={stat.color === 'orange' ? onBirthdayClick : undefined}
         >
           {/* Título y valor */}
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className={`text-sm font-medium ${
-                stat.color === 'orange' ? 'text-white' : 'text-gray-600 dark:text-gray-400'
-              }`}>
+              <p
+                className={`text-sm font-medium ${
+                  stat.color === 'orange'
+                    ? 'text-white'
+                    : 'text-gray-600 dark:text-gray-400'
+                }`}
+              >
                 {stat.title}
               </p>
               <div className="flex items-center mt-2">
@@ -93,9 +108,7 @@ const StatsCards: React.FC<StatsCardsProps> = ({ youngList, onBirthdayClick }) =
                 </p>
               </div>
               {stat.subtitle && (
-                <p className="text-xs text-white/80 mt-2">
-                  {stat.subtitle}
-                </p>
+                <p className="text-xs text-white/80 mt-2">{stat.subtitle}</p>
               )}
             </div>
           </div>
