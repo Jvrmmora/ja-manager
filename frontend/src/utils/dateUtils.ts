@@ -91,15 +91,18 @@ export const formatDateTimeColombia = (date: Date | string): string => {
 };
 
 /**
- * Verifica si una fecha ha expirado comparando con la hora actual de Colombia
+ * Verifica si una fecha ha expirado comparando con la hora actual
+ * IMPORTANTE: Compara timestamps UTC directamente para evitar problemas de timezone
  */
 export const isExpired = (expirationDate: Date | string): boolean => {
   const expDate =
     typeof expirationDate === 'string'
       ? new Date(expirationDate)
       : expirationDate;
-  const now = getCurrentDateTimeColombia();
-  return expDate <= now;
+  const now = new Date(); // UTC actual
+
+  // Comparar timestamps directamente (ambos en milisegundos UTC)
+  return expDate.getTime() <= now.getTime();
 };
 
 /**

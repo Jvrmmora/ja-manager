@@ -61,8 +61,10 @@ qrCodeSchema.index({ dailyDate: 1, isActive: 1 });
 qrCodeSchema.index({ code: 1, isActive: 1 });
 
 // Virtual para verificar si está expirado
+// Compara timestamps UTC directamente
 qrCodeSchema.virtual('isExpired').get(function () {
-  return this.expiresAt < new Date();
+  const now = new Date();
+  return this.expiresAt.getTime() <= now.getTime();
 });
 
 // Método para verificar si el QR es válido

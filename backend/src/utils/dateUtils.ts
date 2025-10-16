@@ -155,25 +155,28 @@ export const isToday = (date: Date | string): boolean => {
 };
 
 /**
- * Crea una fecha de expiración añadiendo horas a la fecha actual de Colombia
+ * Crea una fecha de expiración añadiendo horas a la fecha actual
+ * Retorna un Date UTC que puede ser comparado directamente
  */
 export const createExpirationDate = (hoursToAdd: number): Date => {
-  const now = getCurrentDateTimeColombia();
-  const expiration = new Date(now);
-  expiration.setHours(expiration.getHours() + hoursToAdd);
+  const now = new Date(); // UTC actual
+  const expiration = new Date(now.getTime() + hoursToAdd * 60 * 60 * 1000);
   return expiration;
 };
 
 /**
- * Verifica si una fecha ha expirado comparando con la hora actual de Colombia
+ * Verifica si una fecha ha expirado comparando con la hora actual
+ * IMPORTANTE: Compara timestamps UTC directamente para evitar problemas de timezone
  */
 export const isExpired = (expirationDate: Date | string): boolean => {
   const expDate =
     typeof expirationDate === 'string'
       ? new Date(expirationDate)
       : expirationDate;
-  const now = getCurrentDateTimeColombia();
-  return expDate <= now;
+  const now = new Date(); // UTC actual
+
+  // Comparar timestamps directamente (ambos en milisegundos UTC)
+  return expDate.getTime() <= now.getTime();
 };
 
 /**
