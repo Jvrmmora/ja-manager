@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { pointsService } from '../services/pointsService';
 import { seasonService } from '../services/seasonService';
 import type { ILeaderboardEntry, ISeason } from '../types';
 import StreakBadge from './StreakBadge';
 import { authService } from '../services/auth';
+import { getInitials, getColorFromName } from '../utils/nameUtils';
+import { hasDeepChanged } from '../hooks/useDeepCompareEffect';
 
 const LeaderboardSection: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<ILeaderboardEntry[]>([]);
@@ -12,21 +15,34 @@ const LeaderboardSection: React.FC = () => {
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rankChanges, setRankChanges] = useState<
+    Map<string, { old: number; new: number }>
+  >(new Map());
 
   const currentUser = authService.getUserInfo();
   const currentUserId = currentUser?.id;
+  const isAdmin = currentUser?.role_name === 'Super Admin';
+  const isYoung = currentUser?.role_name === 'joven adventista';
 
   useEffect(() => {
     loadSeasons();
   }, []);
 
   useEffect(() => {
-    // Cargar leaderboard cuando:
-    // 1. Se haya seleccionado una temporada, o
-    // 2. Haya terminado de cargar las temporadas (aunque no haya ninguna activa)
     if (selectedSeason !== '' || seasons.length >= 0) {
       loadLeaderboard();
     }
+  }, [selectedSeason, selectedGroup, seasons.length]);
+
+  // Polling cada 15 segundos
+  useEffect(() => {
+    if (!selectedSeason && seasons.length === 0) return;
+
+    const interval = setInterval(() => {
+      loadLeaderboard(false);
+    }, 15000);
+
+    return () => clearInterval(interval);
   }, [selectedSeason, selectedGroup, seasons.length]);
 
   const loadSeasons = async () => {
@@ -34,7 +50,6 @@ const LeaderboardSection: React.FC = () => {
       const seasonsData = await seasonService.getAll();
       setSeasons(seasonsData);
 
-      // Seleccionar la temporada activa por defecto
       const activeSeason = seasonsData.find(s => s.isActive);
       if (activeSeason && activeSeason.id) {
         setSelectedSeason(activeSeason.id);
@@ -44,9 +59,9 @@ const LeaderboardSection: React.FC = () => {
     }
   };
 
-  const loadLeaderboard = async () => {
+  const loadLeaderboard = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       setError(null);
 
       const options: any = {};
@@ -54,12 +69,38 @@ const LeaderboardSection: React.FC = () => {
       if (selectedGroup) options.group = selectedGroup;
 
       const data = await pointsService.getLeaderboard(options);
-      setLeaderboard(data);
+
+      // Detectar cambios de posición
+      if (hasDeepChanged(leaderboard, data) && leaderboard.length > 0) {
+        const changes = new Map<string, { old: number; new: number }>();
+
+        data.forEach((newEntry: ILeaderboardEntry) => {
+          const oldEntry = leaderboard.find(
+            e => e.youngId === newEntry.youngId
+          );
+          if (oldEntry && oldEntry.currentRank !== newEntry.currentRank) {
+            changes.set(newEntry.youngId, {
+              old: oldEntry.currentRank,
+              new: newEntry.currentRank,
+            });
+          }
+        });
+
+        if (changes.size > 0) {
+          setRankChanges(changes);
+          setTimeout(() => setRankChanges(new Map()), 3000);
+        }
+      }
+
+      // Solo actualizar si hay cambios
+      if (hasDeepChanged(leaderboard, data)) {
+        setLeaderboard(data);
+      }
     } catch (err: any) {
       console.error('Error loading leaderboard:', err);
       setError(err.message || 'Error al cargar el ranking');
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -70,41 +111,70 @@ const LeaderboardSection: React.FC = () => {
     entry => entry.youngId === currentUserId
   );
 
+  // Componente para el indicador de cambio de posición
+  const RankChangeIndicator: React.FC<{ youngId: string }> = ({ youngId }) => {
+    const change = rankChanges.get(youngId);
+    if (!change) return null;
+
+    const isUp = change.new < change.old;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -20, scale: 0.5 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.5 }}
+        transition={{ type: 'spring', stiffness: 300 }}
+        className="absolute -top-8 left-1/2 transform -translate-x-1/2 z-10"
+      >
+        <div
+          className={`px-3 py-1 rounded-full text-white font-bold text-xs flex items-center gap-1 shadow-lg ${
+            isUp ? 'bg-green-500' : 'bg-red-500'
+          }`}
+        >
+          <span className="material-symbols-rounded text-sm">
+            {isUp ? 'trending_up' : 'trending_down'}
+          </span>
+          {isUp ? '¡Subió!' : 'Bajó'}
+        </div>
+      </motion.div>
+    );
+  };
+
   return (
     <div className="space-y-6">
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-3 justify-end">
-        {/* Selector de temporada */}
-        {seasons.length > 0 && (
+      {/* Filtros - Solo para admin */}
+      {isAdmin && (
+        <div className="flex flex-wrap gap-3 justify-end">
+          {seasons.length > 0 && (
+            <select
+              value={selectedSeason}
+              onChange={e => setSelectedSeason(e.target.value)}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {seasons.map(season => (
+                <option key={season.id} value={season.id}>
+                  {season.name} {season.isActive && '(Activa)'}
+                </option>
+              ))}
+            </select>
+          )}
+
           <select
-            value={selectedSeason}
-            onChange={e => setSelectedSeason(e.target.value)}
+            value={selectedGroup || ''}
+            onChange={e =>
+              setSelectedGroup(e.target.value ? parseInt(e.target.value) : null)
+            }
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            {seasons.map(season => (
-              <option key={season.id} value={season.id}>
-                {season.name} {season.isActive && '(Activa)'}
-              </option>
-            ))}
+            <option value="">Todos los grupos</option>
+            <option value="1">Grupo 1</option>
+            <option value="2">Grupo 2</option>
+            <option value="3">Grupo 3</option>
+            <option value="4">Grupo 4</option>
+            <option value="5">Grupo 5</option>
           </select>
-        )}
-
-        {/* Selector de grupo */}
-        <select
-          value={selectedGroup || ''}
-          onChange={e =>
-            setSelectedGroup(e.target.value ? parseInt(e.target.value) : null)
-          }
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="">Todos los grupos</option>
-          <option value="1">Grupo 1</option>
-          <option value="2">Grupo 2</option>
-          <option value="3">Grupo 3</option>
-          <option value="4">Grupo 4</option>
-          <option value="5">Grupo 5</option>
-        </select>
-      </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -125,163 +195,250 @@ const LeaderboardSection: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* Podio Top 3 */}
+          {/* Podio Top 3 con animaciones */}
           {getTop3().length > 0 && (
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-8 shadow-lg">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 text-center">
-                Top 3 de la Temporada
-              </h3>
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-lg overflow-hidden">
+              <div className="text-center mb-6 sm:mb-8">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="material-symbols-rounded text-yellow-500 text-2xl sm:text-3xl lg:text-4xl">
+                    emoji_events
+                  </span>
+                  <h3 className="text-xl sm:text-2xl lg:text-3xl font-black bg-gradient-to-r from-yellow-600 via-yellow-500 to-amber-500 dark:from-yellow-400 dark:via-yellow-300 dark:to-amber-300 bg-clip-text text-transparent">
+                    Top 3
+                  </h3>
+                  <span className="material-symbols-rounded text-yellow-500 text-2xl sm:text-3xl lg:text-4xl">
+                    emoji_events
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 dark:text-gray-400 font-medium">
+                  Líderes de la Temporada
+                </p>
+              </div>
 
-              <div className="flex justify-center items-end gap-4 sm:gap-8">
-                {/* 2do lugar */}
-                {getTop3()[1] && (
-                  <div className="flex flex-col items-center">
-                    <div className="relative mb-3">
-                      <div className="w-20 h-20 sm:w-24 sm:h-24">
-                        {getTop3()[1].profileImage ? (
-                          <img
-                            src={getTop3()[1].profileImage}
-                            alt={getTop3()[1].youngName}
-                            className="w-full h-full rounded-full object-cover border-4 border-gray-400 shadow-lg"
-                          />
-                        ) : (
-                          <div className="w-full h-full rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center text-white text-2xl font-bold border-4 border-gray-400 shadow-lg">
-                            {getTop3()[1].youngName.charAt(0).toUpperCase()}
+              <div className="flex justify-center items-end gap-2 sm:gap-4 lg:gap-8 px-1 sm:px-2 relative">
+                <AnimatePresence mode="popLayout">
+                  {/* 2do lugar */}
+                  {getTop3()[1] && (
+                    <motion.div
+                      key={`rank-2-${getTop3()[1].youngId}`}
+                      layout
+                      initial={{ opacity: 0, scale: 0.5, y: 100 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.5, y: -100 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 200,
+                        damping: 20,
+                        layout: { duration: 0.6 },
+                      }}
+                      className="flex flex-col items-center relative"
+                    >
+                      <RankChangeIndicator youngId={getTop3()[1].youngId} />
+                      <div className="relative mb-2 sm:mb-3">
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24">
+                          {getTop3()[1].profileImage ? (
+                            <img
+                              src={getTop3()[1].profileImage}
+                              alt={getTop3()[1].youngName}
+                              className="w-full h-full rounded-full object-cover border-2 sm:border-4 border-gray-400 shadow-lg"
+                            />
+                          ) : (
+                            <div
+                              className={`w-full h-full rounded-full bg-gradient-to-br ${getColorFromName(getTop3()[1].youngName, 2)} flex items-center justify-center text-white text-base sm:text-2xl font-bold border-2 sm:border-4 border-gray-400 shadow-lg`}
+                            >
+                              {getInitials(getTop3()[1].youngName)}
+                            </div>
+                          )}
+                          <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-white dark:bg-gray-800 rounded-full p-0.5 sm:p-1 shadow-lg">
+                            <span className="material-symbols-rounded text-xl sm:text-2xl lg:text-3xl text-gray-400">
+                              workspace_premium
+                            </span>
                           </div>
-                        )}
-                        <div className="absolute -top-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-1 shadow-lg">
-                          <span className="material-symbols-rounded text-3xl text-gray-400">
-                            workspace_premium
-                          </span>
                         </div>
                       </div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-md w-32 sm:w-40 text-center">
-                      <div className="text-2xl font-bold text-gray-400 mb-1">
-                        #2
-                      </div>
-                      <div className="font-semibold text-gray-900 dark:text-white text-sm mb-1 truncate">
-                        {getTop3()[1].youngName}
-                      </div>
-                      <div className="text-lg font-bold text-gray-700 dark:text-gray-300">
-                        {getTop3()[1].totalPoints} pts
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 1er lugar */}
-                {getTop3()[0] && (
-                  <div className="flex flex-col items-center -mt-8">
-                    <div className="relative mb-3">
-                      <div className="w-24 h-24 sm:w-32 sm:h-32">
-                        {getTop3()[0].profileImage ? (
-                          <img
-                            src={getTop3()[0].profileImage}
-                            alt={getTop3()[0].youngName}
-                            className="w-full h-full rounded-full object-cover border-4 border-yellow-400 shadow-2xl"
-                          />
-                        ) : (
-                          <div className="w-full h-full rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 flex items-center justify-center text-white text-3xl font-bold border-4 border-yellow-400 shadow-2xl">
-                            {getTop3()[0].youngName.charAt(0).toUpperCase()}
+                      <div className="bg-white dark:bg-gray-700 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 shadow-md min-w-[6rem] max-w-[10rem] sm:min-w-[8rem] sm:max-w-[12rem] text-center">
+                        <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-400 mb-0.5 sm:mb-1">
+                          #2
+                        </div>
+                        <div className="font-semibold text-gray-900 dark:text-white text-xs sm:text-sm mb-0.5 sm:mb-1 break-words px-0.5 sm:px-1">
+                          {getTop3()[1].youngName}
+                        </div>
+                        {!isYoung && getTop3()[1].group && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                            Grupo {getTop3()[1].group}
                           </div>
                         )}
-                        <div className="absolute -top-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-1 shadow-lg">
-                          <span className="material-symbols-rounded text-4xl text-yellow-500">
-                            workspace_premium
-                          </span>
+                        <div className="text-sm sm:text-base lg:text-lg font-bold text-gray-700 dark:text-gray-300">
+                          {getTop3()[1].totalPoints} pts
                         </div>
                       </div>
-                    </div>
-                    <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white rounded-xl p-5 shadow-xl w-36 sm:w-48 text-center">
-                      <div className="text-3xl font-bold mb-1">#1</div>
-                      <div className="font-bold text-sm sm:text-base mb-2 truncate">
-                        {getTop3()[0].youngName}
-                      </div>
-                      <div className="text-2xl font-bold">
-                        {getTop3()[0].totalPoints} pts
-                      </div>
-                    </div>
-                  </div>
-                )}
+                    </motion.div>
+                  )}
 
-                {/* 3er lugar */}
-                {getTop3()[2] && (
-                  <div className="flex flex-col items-center">
-                    <div className="relative mb-3">
-                      <div className="w-20 h-20 sm:w-24 sm:h-24">
-                        {getTop3()[2].profileImage ? (
-                          <img
-                            src={getTop3()[2].profileImage}
-                            alt={getTop3()[2].youngName}
-                            className="w-full h-full rounded-full object-cover border-4 border-orange-600 shadow-lg"
-                          />
-                        ) : (
-                          <div className="w-full h-full rounded-full bg-gradient-to-br from-orange-400 to-orange-700 flex items-center justify-center text-white text-2xl font-bold border-4 border-orange-600 shadow-lg">
-                            {getTop3()[2].youngName.charAt(0).toUpperCase()}
+                  {/* 1er lugar */}
+                  {getTop3()[0] && (
+                    <motion.div
+                      key={`rank-1-${getTop3()[0].youngId}`}
+                      layout
+                      initial={{ opacity: 0, scale: 0.5, y: 100 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.5, y: -100 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 200,
+                        damping: 20,
+                        layout: { duration: 0.6 },
+                      }}
+                      className="flex flex-col items-center -mt-6 sm:-mt-8 relative"
+                    >
+                      <RankChangeIndicator youngId={getTop3()[0].youngId} />
+                      <div className="relative mb-2 sm:mb-3">
+                        <div className="w-16 h-16 sm:w-24 sm:h-24 lg:w-32 lg:h-32">
+                          {getTop3()[0].profileImage ? (
+                            <img
+                              src={getTop3()[0].profileImage}
+                              alt={getTop3()[0].youngName}
+                              className="w-full h-full rounded-full object-cover border-2 sm:border-4 border-yellow-400 shadow-2xl"
+                            />
+                          ) : (
+                            <div
+                              className={`w-full h-full rounded-full bg-gradient-to-br ${getColorFromName(getTop3()[0].youngName, 1)} flex items-center justify-center text-white text-xl sm:text-3xl font-bold border-2 sm:border-4 border-yellow-400 shadow-2xl`}
+                            >
+                              {getInitials(getTop3()[0].youngName)}
+                            </div>
+                          )}
+                          <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-white dark:bg-gray-800 rounded-full p-0.5 sm:p-1 shadow-lg">
+                            <span className="material-symbols-rounded text-2xl sm:text-3xl lg:text-4xl text-yellow-500">
+                              workspace_premium
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-5 shadow-xl min-w-[7rem] max-w-[11rem] sm:min-w-[9rem] sm:max-w-[14rem] text-center">
+                        <div className="text-2xl sm:text-3xl font-bold mb-0.5 sm:mb-1">
+                          #1
+                        </div>
+                        <div className="font-bold text-xs sm:text-sm lg:text-base mb-1 sm:mb-2 break-words px-0.5 sm:px-1">
+                          {getTop3()[0].youngName}
+                        </div>
+                        {!isYoung && getTop3()[0].group && (
+                          <div className="text-xs text-yellow-100 mb-1">
+                            Grupo {getTop3()[0].group}
                           </div>
                         )}
-                        <div className="absolute -top-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-1 shadow-lg">
-                          <span className="material-symbols-rounded text-3xl text-orange-600">
-                            workspace_premium
-                          </span>
+                        <div className="text-lg sm:text-xl lg:text-2xl font-bold">
+                          {getTop3()[0].totalPoints} pts
                         </div>
                       </div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-md w-32 sm:w-40 text-center">
-                      <div className="text-2xl font-bold text-orange-600 mb-1">
-                        #3
+                    </motion.div>
+                  )}
+
+                  {/* 3er lugar */}
+                  {getTop3()[2] && (
+                    <motion.div
+                      key={`rank-3-${getTop3()[2].youngId}`}
+                      layout
+                      initial={{ opacity: 0, scale: 0.5, y: 100 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.5, y: -100 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 200,
+                        damping: 20,
+                        layout: { duration: 0.6 },
+                      }}
+                      className="flex flex-col items-center relative"
+                    >
+                      <RankChangeIndicator youngId={getTop3()[2].youngId} />
+                      <div className="relative mb-2 sm:mb-3">
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24">
+                          {getTop3()[2].profileImage ? (
+                            <img
+                              src={getTop3()[2].profileImage}
+                              alt={getTop3()[2].youngName}
+                              className="w-full h-full rounded-full object-cover border-2 sm:border-4 border-orange-600 shadow-lg"
+                            />
+                          ) : (
+                            <div
+                              className={`w-full h-full rounded-full bg-gradient-to-br ${getColorFromName(getTop3()[2].youngName, 3)} flex items-center justify-center text-white text-base sm:text-2xl font-bold border-2 sm:border-4 border-orange-600 shadow-lg`}
+                            >
+                              {getInitials(getTop3()[2].youngName)}
+                            </div>
+                          )}
+                          <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-white dark:bg-gray-800 rounded-full p-0.5 sm:p-1 shadow-lg">
+                            <span className="material-symbols-rounded text-xl sm:text-2xl lg:text-3xl text-orange-600">
+                              workspace_premium
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="font-semibold text-gray-900 dark:text-white text-sm mb-1 truncate">
-                        {getTop3()[2].youngName}
+                      <div className="bg-white dark:bg-gray-700 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 shadow-md min-w-[6rem] max-w-[10rem] sm:min-w-[8rem] sm:max-w-[12rem] text-center">
+                        <div className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600 mb-0.5 sm:mb-1">
+                          #3
+                        </div>
+                        <div className="font-semibold text-gray-900 dark:text-white text-xs sm:text-sm mb-0.5 sm:mb-1 break-words px-0.5 sm:px-1">
+                          {getTop3()[2].youngName}
+                        </div>
+                        {!isYoung && getTop3()[2].group && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                            Grupo {getTop3()[2].group}
+                          </div>
+                        )}
+                        <div className="text-sm sm:text-base lg:text-lg font-bold text-gray-700 dark:text-gray-300">
+                          {getTop3()[2].totalPoints} pts
+                        </div>
                       </div>
-                      <div className="text-lg font-bold text-gray-700 dark:text-gray-300">
-                        {getTop3()[2].totalPoints} pts
-                      </div>
-                    </div>
-                  </div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           )}
 
           {/* Mi posición (si no está en top 3) */}
           {currentUserEntry && currentUserEntry.currentRank > 3 && (
-            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">
+            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-lg p-3 sm:p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 min-w-0">
+                  <div className="text-xl sm:text-2xl font-bold text-amber-700 dark:text-amber-400 shrink-0">
                     #{currentUserEntry.currentRank}
                   </div>
                   {currentUserEntry.profileImage ? (
                     <img
                       src={currentUserEntry.profileImage}
                       alt={currentUserEntry.youngName}
-                      className="w-12 h-12 rounded-full object-cover"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shrink-0"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-lg font-bold">
-                      {currentUserEntry.youngName.charAt(0).toUpperCase()}
+                    <div
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br ${getColorFromName(currentUserEntry.youngName, currentUserEntry.currentRank)} flex items-center justify-center text-white text-base sm:text-lg font-bold shrink-0`}
+                    >
+                      {getInitials(currentUserEntry.youngName)}
                     </div>
                   )}
-                  <div>
-                    <div className="font-bold text-gray-900 dark:text-white">
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm sm:text-base text-gray-900 dark:text-white">
                       Tu Posición
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                       {currentUserEntry.youngName}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  {currentUserEntry.streak && currentUserEntry.streak > 0 && (
-                    <StreakBadge
-                      streak={currentUserEntry.streak}
-                      isActive={true}
-                    />
-                  )}
+                <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 shrink-0">
+                  {/* Racha solo para admin */}
+                  {isAdmin &&
+                    currentUserEntry.streak &&
+                    currentUserEntry.streak > 0 && (
+                      <div className="hidden sm:block">
+                        <StreakBadge
+                          streak={currentUserEntry.streak}
+                          isActive={true}
+                        />
+                      </div>
+                    )}
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">
+                    <div className="text-lg sm:text-xl lg:text-2xl font-bold text-amber-700 dark:text-amber-400">
                       {currentUserEntry.totalPoints}
                     </div>
                     <div className="text-xs text-gray-600 dark:text-gray-400">
@@ -293,23 +450,34 @@ const LeaderboardSection: React.FC = () => {
             </div>
           )}
 
-          {/* Tabla del resto */}
-          {getRest().length > 0 && (
+          {/* Tabla completa - Solo para admin (a partir del 4to lugar) */}
+          {isAdmin && getRest().length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <span className="material-symbols-rounded text-blue-500">
+                    leaderboard
+                  </span>
+                  Ranking Completo
+                </h3>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                        Posición
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                        Pos
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                         Joven
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                        Grupo
+                      </th>
+                      <th className="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                         Racha
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                         Puntos
                       </th>
                     </tr>
@@ -323,26 +491,28 @@ const LeaderboardSection: React.FC = () => {
                           ${entry.youngId === currentUserId ? 'bg-amber-50 dark:bg-amber-900/20' : ''}
                         `}
                       >
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="text-lg font-bold text-gray-900 dark:text-white">
+                        <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap">
+                          <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                             #{entry.currentRank}
                           </div>
                         </td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-3">
+                        <td className="px-2 sm:px-4 py-3 sm:py-4">
+                          <div className="flex items-center gap-2 sm:gap-3">
                             {entry.profileImage ? (
                               <img
                                 src={entry.profileImage}
                                 alt={entry.youngName}
-                                className="w-10 h-10 rounded-full object-cover"
+                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                               />
                             ) : (
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold">
-                                {entry.youngName.charAt(0).toUpperCase()}
+                              <div
+                                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br ${getColorFromName(entry.youngName, entry.currentRank)} flex items-center justify-center text-white text-xs sm:text-sm font-bold`}
+                              >
+                                {getInitials(entry.youngName)}
                               </div>
                             )}
-                            <div>
-                              <div className="font-semibold text-gray-900 dark:text-white">
+                            <div className="min-w-0">
+                              <div className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
                                 {entry.youngName}
                               </div>
                               {entry.group && (
@@ -353,7 +523,7 @@ const LeaderboardSection: React.FC = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-center">
+                        <td className="hidden sm:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center">
                           {entry.streak && entry.streak > 0 ? (
                             <StreakBadge
                               streak={entry.streak}
@@ -366,9 +536,9 @@ const LeaderboardSection: React.FC = () => {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-4 text-right">
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-white font-bold">
-                            <span className="material-symbols-rounded text-sm">
+                        <td className="px-2 sm:px-4 py-3 sm:py-4 text-right">
+                          <div className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-white font-bold text-xs sm:text-sm">
+                            <span className="material-symbols-rounded text-xs sm:text-sm">
                               star
                             </span>
                             <span>{entry.totalPoints}</span>
@@ -378,6 +548,79 @@ const LeaderboardSection: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* Lista simple del resto - Solo para Young */}
+          {isYoung && getRest().length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+              <div className="p-4 sm:p-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <span className="material-symbols-rounded text-blue-500">
+                    format_list_numbered
+                  </span>
+                  Otros Participantes
+                </h3>
+                <div className="space-y-2">
+                  {getRest().map(entry => (
+                    <motion.div
+                      key={entry.youngId}
+                      layout
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                        entry.youngId === currentUserId
+                          ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700'
+                          : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {/* Posición */}
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                          #{entry.currentRank}
+                        </div>
+
+                        {/* Avatar y nombre */}
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                          {entry.profileImage ? (
+                            <img
+                              src={entry.profileImage}
+                              alt={entry.youngName}
+                              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
+                            />
+                          ) : (
+                            <div
+                              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br ${getColorFromName(entry.youngName, entry.currentRank)} flex items-center justify-center text-white text-sm font-bold flex-shrink-0`}
+                            >
+                              {getInitials(entry.youngName)}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                              {entry.youngName}
+                            </div>
+                            {entry.youngId === currentUserId && (
+                              <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                Tu posición
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Puntos */}
+                      <div className="flex-shrink-0 ml-3">
+                        <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-white font-bold text-sm">
+                          <span className="material-symbols-rounded text-sm">
+                            star
+                          </span>
+                          <span>{entry.totalPoints}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

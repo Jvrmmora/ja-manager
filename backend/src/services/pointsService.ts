@@ -62,6 +62,7 @@ class PointsService {
   async assignAttendancePoints(
     youngId: string,
     eventId: string,
+    customPoints?: number, // Puntos personalizados (para eventos especiales)
     seasonId?: string
   ) {
     // Obtener temporada activa o usar la especificada
@@ -84,14 +85,23 @@ class PointsService {
       throw new Error('Ya se asignaron puntos por esta asistencia.');
     }
 
+    // Usar puntos personalizados si se proporcionan, sino usar los de la temporada
+    const pointsToAssign = customPoints ?? season.settings.attendancePoints;
+
+    // Descripción más específica si son puntos personalizados
+    let description = 'Asistencia registrada';
+    if (customPoints && customPoints > season.settings.attendancePoints) {
+      description = `Asistencia a evento especial (${customPoints} pts)`;
+    }
+
     // Crear transacción de puntos por asistencia
     return this.createTransaction({
       youngId,
       seasonId: (season._id as mongoose.Types.ObjectId).toString(),
-      points: season.settings.attendancePoints,
+      points: pointsToAssign,
       type: 'ATTENDANCE',
       eventId,
-      description: `Asistencia registrada`,
+      description,
     });
   }
 
@@ -368,15 +378,21 @@ class PointsService {
       });
     }
 
-    // Ordenar por puntos totales y añadir ranking
+    // Primero agregar el ranking basado solo en puntos
     aggregation.push(
-      { $sort: { totalPoints: -1 } },
       {
         $setWindowFields: {
           sortBy: { totalPoints: -1 },
           output: {
-            rank: { $rank: {} },
+            rank: { $denseRank: {} },
           },
+        },
+      },
+      // Luego ordenar por ranking y nombre para mantener consistencia
+      {
+        $sort: {
+          rank: 1, // Por ranking ascendente
+          'young.fullName': 1, // Desempate alfabético
         },
       }
     );

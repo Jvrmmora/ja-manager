@@ -8,6 +8,7 @@ export interface IQRCode extends Document {
   isActive: boolean;
   dailyDate: string; // "2024-10-05" para control diario
   usageCount: number;
+  points: number; // Puntos que otorga este QR (configurable por admin)
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -47,6 +48,12 @@ const qrCodeSchema = new Schema<IQRCode>(
     usageCount: {
       type: Number,
       default: 0,
+    },
+    points: {
+      type: Number,
+      default: 10,
+      min: [10, 'Los puntos deben ser al menos 10'],
+      max: [100, 'Los puntos no pueden exceder 100'],
     },
   },
   {

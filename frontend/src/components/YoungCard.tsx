@@ -9,6 +9,7 @@ import PointsBreakdownModal from './PointsBreakdownModal';
 import AssignPointsModal from './AssignPointsModal';
 import { generatePlaca } from '../services/api';
 import { authService } from '../services/auth';
+import { formatBirthdayWithYear, formatDateTime } from '../utils/dateUtils';
 
 // Mapeo de colores por grupo
 const getGroupColor = (group?: number | null): string => {
@@ -144,24 +145,6 @@ const YoungCard: React.FC<YoungCardProps> = ({
         onShowError('Error al copiar placa al portapapeles');
       }
     }
-  };
-
-  const formatDate = (date: Date | string) => {
-    // Si viene como string, parsearlo correctamente evitando problemas de zona horaria
-    let d: Date;
-    if (typeof date === 'string') {
-      // Para fechas en formato YYYY-MM-DD, agregar la hora local para evitar problemas de zona horaria
-      const dateParts = date.split('T')[0]; // Tomar solo la parte de fecha
-      d = new Date(dateParts + 'T12:00:00'); // Agregar mediodía para evitar cambios de zona horaria
-    } else {
-      d = new Date(date);
-    }
-
-    return d.toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
   };
 
   const capitalizeRole = (role: string) => {
@@ -389,7 +372,7 @@ const YoungCard: React.FC<YoungCardProps> = ({
               />
             </svg>
             <span className="text-gray-800 dark:text-gray-200">
-              {formatDate(young.birthday)}
+              {formatBirthdayWithYear(young.birthday)}
             </span>
           </div>
         </div>
@@ -540,7 +523,7 @@ const YoungCard: React.FC<YoungCardProps> = ({
         {/* Fecha de registro */}
         <div className="pt-2">
           <span className="text-xs text-gray-400 dark:text-gray-500">
-            Registrado el {formatDate(young.createdAt || new Date())}
+            Registrado el {formatDateTime(young.createdAt || new Date())}
           </span>
         </div>
       </div>

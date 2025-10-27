@@ -1,5 +1,6 @@
 // Configuración de la API - Usando import.meta.env para Vite
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4500/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:4500/api';
 
 // Debug: Verificar qué URL está usando
 console.log('🔧 API_BASE_URL:', API_BASE_URL);
@@ -31,18 +32,18 @@ export const buildApiUrl = (endpoint: string): string => {
 
 // Función helper para hacer fetch con la URL base configurada
 export const apiRequest = async (
-  endpoint: string, 
+  endpoint: string,
   options: RequestInit = {}
 ): Promise<Response> => {
   const url = buildApiUrl(endpoint);
   const token = getAuthToken();
-  
+
   console.log(`📡 API Request to: ${url}`);
   console.log(`🔑 Token presente:`, token ? 'SÍ' : 'NO');
-  
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers as Record<string, string>,
+    ...(options.headers as Record<string, string>),
   };
 
   // Agregar token de autorización si existe
@@ -52,7 +53,7 @@ export const apiRequest = async (
   } else {
     console.warn(`⚠️ No hay token disponible para la petición a ${endpoint}`);
   }
-  
+
   return fetch(url, {
     headers,
     ...options,
@@ -67,12 +68,12 @@ export const apiUpload = async (
 ): Promise<Response> => {
   const url = buildApiUrl(endpoint);
   const token = getAuthToken();
-  
+
   console.log(`📡 API Upload to: ${url}`);
   console.log(`🔑 Token presente:`, token ? 'SÍ' : 'NO');
-  
+
   const headers: Record<string, string> = {
-    ...options.headers as Record<string, string>,
+    ...(options.headers as Record<string, string>),
   };
 
   // Agregar token de autorización si existe
@@ -82,7 +83,7 @@ export const apiUpload = async (
   } else {
     console.warn(`⚠️ No hay token disponible para el upload a ${endpoint}`);
   }
-  
+
   return fetch(url, {
     method: 'POST',
     headers,
@@ -98,7 +99,7 @@ export const debugAuthState = (): void => {
   const token = getAuthToken();
   const userRole = localStorage.getItem('userRole');
   const userInfo = localStorage.getItem('userInfo');
-  
+
   console.log('🔍 Estado de autenticación:');
   console.log('- Token presente:', token ? 'SÍ' : 'NO');
   if (token) {
@@ -111,7 +112,7 @@ export const debugAuthState = (): void => {
 // Función específica para generar placa
 export const generatePlaca = async (youngId: string): Promise<any> => {
   const response = await apiRequest(`young/${youngId}/generate-placa`, {
-    method: 'PUT'
+    method: 'PUT',
   });
 
   if (!response.ok) {
@@ -123,13 +124,17 @@ export const generatePlaca = async (youngId: string): Promise<any> => {
 };
 
 // Función para cambiar contraseña
-export const changePassword = async (youngId: string, currentPassword: string, newPassword: string): Promise<any> => {
+export const changePassword = async (
+  youngId: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<any> => {
   const response = await apiRequest(`young/${youngId}/reset-password`, {
     method: 'PUT',
     body: JSON.stringify({
       current_password: currentPassword,
-      new_password: newPassword
-    })
+      new_password: newPassword,
+    }),
   });
 
   if (!response.ok) {
@@ -141,12 +146,15 @@ export const changePassword = async (youngId: string, currentPassword: string, n
 };
 
 // Función para generar nueva contraseña (solo admins)
-export const generateNewPassword = async (youngId: string, newPassword: string): Promise<any> => {
+export const generateNewPassword = async (
+  youngId: string,
+  newPassword: string
+): Promise<any> => {
   const response = await apiRequest(`young/${youngId}/reset-password`, {
     method: 'PUT',
     body: JSON.stringify({
-      new_password: newPassword
-    })
+      new_password: newPassword,
+    }),
   });
 
   if (!response.ok) {
@@ -160,12 +168,14 @@ export const generateNewPassword = async (youngId: string, newPassword: string):
 // Función para obtener el perfil del usuario logueado
 export const getCurrentUserProfile = async (): Promise<any> => {
   const response = await apiRequest(`auth/profile`, {
-    method: 'GET'
+    method: 'GET',
   });
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Error al obtener el perfil del usuario');
+    throw new Error(
+      errorData.message || 'Error al obtener el perfil del usuario'
+    );
   }
 
   const result = await response.json();
@@ -175,9 +185,17 @@ export const getCurrentUserProfile = async (): Promise<any> => {
 // ========== FUNCIONES QR Y ASISTENCIAS ==========
 
 // Generar QR del día (solo administradores)
-export const generateDailyQR = async (): Promise<any> => {
+export const generateDailyQR = async (
+  force?: boolean,
+  points?: number
+): Promise<any> => {
+  const body: any = {};
+  if (force) body.force = true;
+  if (points !== undefined) body.points = points;
+
   const response = await apiRequest('qr/generate', {
-    method: 'POST'
+    method: 'POST',
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -192,7 +210,7 @@ export const generateDailyQR = async (): Promise<any> => {
 // Obtener QR activo del día
 export const getCurrentQR = async (): Promise<any> => {
   const response = await apiRequest('qr/current', {
-    method: 'GET'
+    method: 'GET',
   });
 
   if (!response.ok) {
@@ -207,7 +225,7 @@ export const getCurrentQR = async (): Promise<any> => {
 // Obtener estadísticas del QR actual
 export const getQRStats = async (): Promise<any> => {
   const response = await apiRequest('qr/stats', {
-    method: 'GET'
+    method: 'GET',
   });
 
   if (!response.ok) {
@@ -220,19 +238,24 @@ export const getQRStats = async (): Promise<any> => {
 };
 
 // Escanear QR y registrar asistencia
-export const scanQRAndRegisterAttendance = async (code: string): Promise<any> => {
-  console.log('🚀 [API] Iniciando scanQRAndRegisterAttendance con código:', code);
-  
+export const scanQRAndRegisterAttendance = async (
+  code: string
+): Promise<any> => {
+  console.log(
+    '🚀 [API] Iniciando scanQRAndRegisterAttendance con código:',
+    code
+  );
+
   try {
     const response = await apiRequest('attendance/scan', {
       method: 'POST',
-      body: JSON.stringify({ code })
+      body: JSON.stringify({ code }),
     });
 
     console.log('📡 [API] Respuesta recibida:', {
       ok: response.ok,
       status: response.status,
-      statusText: response.statusText
+      statusText: response.statusText,
     });
 
     if (!response.ok) {
@@ -251,14 +274,22 @@ export const scanQRAndRegisterAttendance = async (code: string): Promise<any> =>
 };
 
 // Obtener mi historial de asistencias
-export const getMyAttendanceHistory = async (page: number = 1, limit: number = 10): Promise<any> => {
-  const response = await apiRequest(`attendance/my-history?page=${page}&limit=${limit}`, {
-    method: 'GET'
-  });
+export const getMyAttendanceHistory = async (
+  page: number = 1,
+  limit: number = 10
+): Promise<any> => {
+  const response = await apiRequest(
+    `attendance/my-history?page=${page}&limit=${limit}`,
+    {
+      method: 'GET',
+    }
+  );
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Error al obtener historial de asistencias');
+    throw new Error(
+      errorData.message || 'Error al obtener historial de asistencias'
+    );
   }
 
   const result = await response.json();
@@ -268,12 +299,14 @@ export const getMyAttendanceHistory = async (page: number = 1, limit: number = 1
 // Obtener asistencias del día (solo administradores)
 export const getTodayAttendances = async (): Promise<any> => {
   const response = await apiRequest('attendance/today', {
-    method: 'GET'
+    method: 'GET',
   });
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Error al obtener asistencias del día');
+    throw new Error(
+      errorData.message || 'Error al obtener asistencias del día'
+    );
   }
 
   const result = await response.json();
@@ -283,12 +316,15 @@ export const getTodayAttendances = async (): Promise<any> => {
 // Obtener asistencias por fecha específica (solo administradores)
 export const getAttendancesByDate = async (date: string): Promise<any> => {
   const response = await apiRequest(`attendance/date/${date}`, {
-    method: 'GET'
+    method: 'GET',
   });
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Error al obtener asistencias de la fecha especificada');
+    throw new Error(
+      errorData.message ||
+        'Error al obtener asistencias de la fecha especificada'
+    );
   }
 
   const result = await response.json();
@@ -296,24 +332,29 @@ export const getAttendancesByDate = async (date: string): Promise<any> => {
 };
 
 // Obtener estadísticas de asistencia
-export const getAttendanceStats = async (startDate?: string, endDate?: string): Promise<any> => {
+export const getAttendanceStats = async (
+  startDate?: string,
+  endDate?: string
+): Promise<any> => {
   let url = 'attendance/stats';
   const params = new URLSearchParams();
-  
+
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
-  
+
   if (params.toString()) {
     url += `?${params.toString()}`;
   }
 
   const response = await apiRequest(url, {
-    method: 'GET'
+    method: 'GET',
   });
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Error al obtener estadísticas de asistencia');
+    throw new Error(
+      errorData.message || 'Error al obtener estadísticas de asistencia'
+    );
   }
 
   const result = await response.json();

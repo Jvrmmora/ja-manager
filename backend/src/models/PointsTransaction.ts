@@ -89,9 +89,7 @@ const pointsTransactionSchema = new Schema<
     activityCategoryId: {
       type: Schema.Types.ObjectId,
       ref: 'ActivityCategory',
-      required: function (this: IPointsTransactionDocument) {
-        return this.type === 'ACTIVITY';
-      },
+      required: false, // Cambiado a opcional - se puede agregar en el futuro
     },
     description: {
       type: String,

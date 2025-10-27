@@ -268,3 +268,70 @@ export const parseYYYYMMDD = (dateString: string): Date => {
   const [year, month, day] = dateString.split('-').map(Number);
   return new Date(year, month - 1, day, 12, 0, 0); // Mediodía para evitar problemas de timezone
 };
+
+/**
+ * Formatea un cumpleaños (solo día y mes) sin problemas de timezone
+ * Ejemplo: "19 de junio"
+ * IMPORTANTE: Trata la fecha como local, no UTC
+ */
+export const formatBirthday = (date: Date | string): string => {
+  let dateObj: Date;
+
+  if (typeof date === 'string') {
+    // Si es un string en formato YYYY-MM-DD, parsearlo como fecha local
+    if (/^\d{4}-\d{2}-\d{2}/.test(date)) {
+      const [year, month, day] = date.split('T')[0].split('-').map(Number);
+      dateObj = new Date(year, month - 1, day, 12, 0, 0);
+    } else {
+      dateObj = new Date(date);
+    }
+  } else {
+    dateObj = date;
+  }
+
+  return new Intl.DateTimeFormat('es-CO', {
+    day: 'numeric',
+    month: 'long',
+  }).format(dateObj);
+};
+
+/**
+ * Formatea una fecha completa con año (YYYY-MM-DD -> "20 de junio de 1993")
+ * Sin problemas de timezone
+ */
+export const formatBirthdayWithYear = (date: Date | string): string => {
+  let dateObj: Date;
+
+  if (typeof date === 'string') {
+    // Si es un string en formato YYYY-MM-DD, parsearlo como fecha local
+    if (/^\d{4}-\d{2}-\d{2}/.test(date)) {
+      const [year, month, day] = date.split('T')[0].split('-').map(Number);
+      dateObj = new Date(year, month - 1, day, 12, 0, 0);
+    } else {
+      dateObj = new Date(date);
+    }
+  } else {
+    dateObj = date;
+  }
+
+  return new Intl.DateTimeFormat('es-CO', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(dateObj);
+};
+
+/**
+ * Formatea una fecha/hora completa en zona horaria de Colombia
+ * Para mostrar fechas de registro, actualizaciones, etc.
+ */
+export const formatDateTime = (date: Date | string): string => {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+
+  return new Intl.DateTimeFormat('es-CO', {
+    timeZone: COLOMBIA_TIMEZONE,
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(dateObj);
+};

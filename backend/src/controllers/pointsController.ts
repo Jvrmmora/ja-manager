@@ -11,17 +11,17 @@ export const assignPoints = async (
   next: NextFunction
 ) => {
   try {
-    const { youngId, activityCategoryId, description, points, seasonId } =
+    const { youngId, type, description, points, seasonId, activityCategoryId } =
       req.body;
 
     // @ts-ignore - El usuario autenticado está en req.user
     const assignedBy = req.user?.userId;
 
-    if (!youngId || !activityCategoryId || !description || !points) {
+    // Validar campos básicos requeridos
+    if (!youngId || !description || !points || !type) {
       return res.status(400).json({
         success: false,
-        message:
-          'Faltan campos requeridos: youngId, activityCategoryId, description, points',
+        message: 'Faltan campos requeridos: youngId, type, description, points',
       });
     }
 
@@ -32,19 +32,36 @@ export const assignPoints = async (
       });
     }
 
-    const transaction = await pointsService.assignActivityPoints(
+    // Validar tipo de transacción
+    const validTypes = [
+      'ACTIVITY',
+      'ATTENDANCE',
+      'REFERRER_BONUS',
+      'REFERRED_BONUS',
+      'BONUS',
+    ];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: `Tipo de transacción no válido. Debe ser uno de: ${validTypes.join(', ')}`,
+      });
+    }
+
+    // Crear la transacción usando el servicio genérico
+    const transaction = await pointsService.createTransaction({
       youngId,
-      activityCategoryId,
+      seasonId,
+      points,
+      type,
+      activityCategoryId, // Opcional
       description,
       assignedBy,
-      points,
-      seasonId
-    );
+    });
 
     res.status(201).json({
       success: true,
       message: 'Puntos asignados exitosamente',
-      data: transaction,
+      transaction, // Cambiado de data a transaction para consistencia
     });
   } catch (error) {
     next(error);

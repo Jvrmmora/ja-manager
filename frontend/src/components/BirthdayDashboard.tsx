@@ -4,6 +4,8 @@ import MultiGroupSelect from './MultiGroupSelect';
 import {
   getCurrentMonthColombia,
   getCurrentYearColombia,
+  parseYYYYMMDD,
+  formatBirthday,
 } from '../utils/dateUtils';
 
 interface BirthdayDashboardProps {
@@ -54,7 +56,14 @@ const BirthdayDashboard: React.FC<BirthdayDashboardProps> = ({
         try {
           // Filtro por mes de cumpleaños
           if (!young.birthday) return false;
-          const birthday = new Date(young.birthday);
+
+          // Parsear fecha correctamente sin problemas de timezone
+          const birthday =
+            typeof young.birthday === 'string' &&
+            /^\d{4}-\d{2}-\d{2}/.test(young.birthday)
+              ? parseYYYYMMDD(young.birthday.split('T')[0])
+              : new Date(young.birthday);
+
           const monthMatch = birthday.getMonth() === selectedMonth;
 
           // Filtro por grupo (si hay grupos seleccionados)
@@ -74,8 +83,16 @@ const BirthdayDashboard: React.FC<BirthdayDashboardProps> = ({
 
       // Ordenar por día de cumpleaños
       filtered.sort((a, b) => {
-        const dayA = new Date(a.birthday).getDate();
-        const dayB = new Date(b.birthday).getDate();
+        const dayA =
+          typeof a.birthday === 'string' &&
+          /^\d{4}-\d{2}-\d{2}/.test(a.birthday)
+            ? parseYYYYMMDD(a.birthday.split('T')[0]).getDate()
+            : new Date(a.birthday).getDate();
+        const dayB =
+          typeof b.birthday === 'string' &&
+          /^\d{4}-\d{2}-\d{2}/.test(b.birthday)
+            ? parseYYYYMMDD(b.birthday.split('T')[0]).getDate()
+            : new Date(b.birthday).getDate();
         return dayA - dayB;
       });
 
@@ -83,31 +100,12 @@ const BirthdayDashboard: React.FC<BirthdayDashboardProps> = ({
     }
   }, [isOpen, selectedMonth, selectedGroups, youngList]);
 
-  const formatBirthday = (date: Date | string) => {
-    // Si viene como string, parsearlo correctamente evitando problemas de zona horaria
-    let d: Date;
-    if (typeof date === 'string') {
-      const dateParts = date.split('T')[0]; // Tomar solo la parte de fecha
-      d = new Date(dateParts + 'T12:00:00'); // Agregar mediodía para evitar cambios de zona horaria
-    } else {
-      d = new Date(date);
-    }
-
-    return d.toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'long',
-    });
-  };
-
   const calculateAge = (birthday: Date | string) => {
-    // Si viene como string, parsearlo correctamente evitando problemas de zona horaria
-    let birth: Date;
-    if (typeof birthday === 'string') {
-      const dateParts = birthday.split('T')[0]; // Tomar solo la parte de fecha
-      birth = new Date(dateParts + 'T12:00:00'); // Agregar mediodía para evitar cambios de zona horaria
-    } else {
-      birth = new Date(birthday);
-    }
+    // Parsear fecha correctamente sin problemas de timezone
+    const birth =
+      typeof birthday === 'string' && /^\d{4}-\d{2}-\d{2}/.test(birthday)
+        ? parseYYYYMMDD(birthday.split('T')[0])
+        : new Date(birthday);
 
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();

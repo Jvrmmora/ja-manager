@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { pointsService } from '../services/pointsService';
 import type { IPointsBreakdown } from '../types';
+import { hasDeepChanged } from '../hooks/useDeepCompareEffect';
 
 interface PointsStatsCardsProps {
   youngId: string;
@@ -19,25 +20,91 @@ const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Polling cada 15 segundos (solo actualiza si hay cambios)
   useEffect(() => {
     loadData();
+
+    // Configurar intervalo de 15 segundos
+    const interval = setInterval(() => {
+      loadData(false); // No mostrar loading en polling
+    }, 15000); // 15 segundos
+
+    return () => clearInterval(interval);
   }, [youngId]);
 
-  const loadData = async () => {
+  const loadData = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
+
       const [breakdownData, positionData] = await Promise.all([
         pointsService.getBreakdown(youngId),
         pointsService.getPosition(youngId).catch(() => null),
       ]);
 
-      setBreakdown(breakdownData);
-      setPosition(positionData);
+      // Solo actualizar si hay cambios reales (evita re-renders innecesarios)
+      if (hasDeepChanged(breakdown, breakdownData)) {
+        setBreakdown(breakdownData);
+      }
+
+      if (hasDeepChanged(position, positionData)) {
+        setPosition(positionData);
+      }
     } catch (error) {
       console.error('Error cargando estadísticas de puntos:', error);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
+  };
+
+  // Obtener estilos según posición en ranking
+  const getRankingStyles = (rank: number | undefined) => {
+    if (!rank) {
+      return {
+        gradient:
+          'from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700',
+        icon: 'military_tech',
+        badge: null,
+        animation: '',
+      };
+    }
+
+    if (rank === 1) {
+      return {
+        gradient:
+          'from-yellow-400 to-amber-500 dark:from-yellow-500 dark:to-amber-600',
+        icon: 'emoji_events',
+        badge: '¡Primer Lugar!',
+        animation: 'animate-shimmer-gold',
+      };
+    }
+
+    if (rank === 2) {
+      return {
+        gradient:
+          'from-gray-300 to-gray-500 dark:from-gray-400 dark:to-gray-600',
+        icon: 'workspace_premium',
+        badge: 'Segundo Lugar',
+        animation: 'animate-shimmer-silver',
+      };
+    }
+
+    if (rank === 3) {
+      return {
+        gradient:
+          'from-orange-400 to-orange-600 dark:from-orange-500 dark:to-orange-700',
+        icon: 'stars',
+        badge: 'Tercer Lugar',
+        animation: 'animate-shimmer-bronze',
+      };
+    }
+
+    return {
+      gradient:
+        'from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700',
+      icon: 'military_tech',
+      badge: null,
+      animation: '',
+    };
   };
 
   if (loading) {
@@ -117,8 +184,13 @@ const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          className="group relative bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden"
+          className={`group relative bg-gradient-to-br ${getRankingStyles(position?.rank).gradient} rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden ${getRankingStyles(position?.rank).animation}`}
         >
+          {/* Borde animado para top 3 */}
+          {position && position.rank <= 3 && (
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer-border"></div>
+          )}
+
           {/* Efecto de brillo sutil */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
@@ -126,7 +198,7 @@ const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
             {/* Header */}
             <div className="flex items-center gap-2 mb-4">
               <span className="material-symbols-rounded text-white text-2xl">
-                military_tech
+                {getRankingStyles(position?.rank).icon}
               </span>
               <h3 className="text-sm font-medium text-white/90 uppercase tracking-wide">
                 Tu Posición
@@ -154,21 +226,13 @@ const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
             )}
 
             {/* Badge si es top 3 */}
-            {position && position.rank <= 3 && (
+            {position && getRankingStyles(position.rank).badge && (
               <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
                 <span className="material-symbols-rounded text-white text-lg">
-                  {position.rank === 1
-                    ? 'emoji_events'
-                    : position.rank === 2
-                      ? 'workspace_premium'
-                      : 'stars'}
+                  {getRankingStyles(position.rank).icon}
                 </span>
                 <span className="text-xs font-semibold text-white">
-                  {position.rank === 1
-                    ? '¡Primer Lugar!'
-                    : position.rank === 2
-                      ? 'Segundo Lugar'
-                      : 'Tercer Lugar'}
+                  {getRankingStyles(position.rank).badge}
                 </span>
               </div>
             )}

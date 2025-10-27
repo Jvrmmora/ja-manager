@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PhoneInput from './PhoneInput';
 import GroupSelect from './GroupSelect';
 import type { IYoung } from '../types';
-import { formatDateColombia } from '../utils/dateUtils';
+import { formatDateColombia, parseYYYYMMDD } from '../utils/dateUtils';
 
 interface YoungFormData {
   fullName: string;
@@ -64,11 +64,15 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
   // Cargar datos del joven al abrir el formulario
   useEffect(() => {
     if (isOpen && young) {
-      // Formatear la fecha en zona horaria de Colombia evitando problemas de timezone
+      // Formatear la fecha correctamente evitando problemas de timezone
       let formattedBirthday: string;
       const birthdayStr = young.birthday.toString();
-      if (birthdayStr.includes('T')) {
-        formattedBirthday = birthdayStr.split('T')[0];
+
+      if (/^\d{4}-\d{2}-\d{2}/.test(birthdayStr)) {
+        // Si viene en formato YYYY-MM-DD o YYYY-MM-DDTHH:mm:ss
+        const datePart = birthdayStr.split('T')[0];
+        const parsedDate = parseYYYYMMDD(datePart);
+        formattedBirthday = formatDateColombia(parsedDate);
       } else {
         const birthdayDate = new Date(young.birthday);
         formattedBirthday = formatDateColombia(birthdayDate);

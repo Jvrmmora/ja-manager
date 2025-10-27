@@ -17,7 +17,7 @@ export const scanQRAndRegisterAttendance = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { code } = req.body;
+    const { code } = req.body; // Quitar points del request, ahora viene del QR
     const youngId = req.user?.userId;
 
     if (!youngId) {
@@ -106,9 +106,12 @@ export const scanQRAndRegisterAttendance = async (
     let pointsTransaction = null;
     let totalPoints = 0;
     try {
+      // Usar los puntos configurados en el QR
+      const attendancePoints = qrCode.points || 10; // Default 10 si no está configurado
       pointsTransaction = await pointsService.assignAttendancePoints(
         youngId,
-        (qrCode._id as any).toString()
+        (qrCode._id as any).toString(),
+        attendancePoints
       );
       totalPoints = await pointsService.getTotalPoints(youngId);
     } catch (error) {

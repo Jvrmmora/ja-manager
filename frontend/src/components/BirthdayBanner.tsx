@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { formatBirthday } from '../utils/dateUtils';
 
 interface BirthdayBannerProps {
   birthday?: Date | string | null;
@@ -85,15 +86,6 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
       shapes: ['circle', 'square'],
       disableForReducedMotion: true,
     });
-  };
-
-  const formatBirthday = (date: Date | string): string => {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    const options: Intl.DateTimeFormatOptions = {
-      day: 'numeric',
-      month: 'long',
-    };
-    return d.toLocaleDateString('es-ES', options);
   };
 
   // Si no hay fecha de cumpleaños

@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { QrCodeIcon, XMarkIcon, ArrowsPointingOutIcon, UsersIcon, ClockIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
-import { generateDailyQR, getCurrentQR, getQRStats, getTodayAttendances } from '../services/api';
+import {
+  QrCodeIcon,
+  XMarkIcon,
+  ArrowsPointingOutIcon,
+  UsersIcon,
+  ClockIcon,
+  CheckCircleIcon,
+} from '@heroicons/react/24/outline';
+import {
+  generateDailyQR,
+  getCurrentQR,
+  getQRStats,
+  getTodayAttendances,
+} from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import LoadingSpinner from './LoadingSpinner';
-import { 
-  formatDisplayDate, 
-  formatDisplayTime, 
-  formatCountdown, 
+import { POINTS_PRESETS } from '../constants/points';
+import {
+  formatDisplayDate,
+  formatDisplayTime,
+  formatCountdown,
   isExpired,
-  getCurrentDateColombia
+  getCurrentDateColombia,
 } from '../utils/dateUtils';
 
 interface QRGeneratorProps {
@@ -17,10 +30,7 @@ interface QRGeneratorProps {
   onError?: (error: string) => void;
 }
 
-const QRGenerator: React.FC<QRGeneratorProps> = ({
-  onSuccess,
-  onError
-}) => {
+const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
   const { isDark } = useTheme();
   const [qrData, setQrData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,6 +41,9 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
   const [countdown, setCountdown] = useState<string>('');
   const [liveAttendances, setLiveAttendances] = useState<any[]>([]);
   const [lastAttendanceCount, setLastAttendanceCount] = useState(0);
+  const [showConfigModal, setShowConfigModal] = useState(false); // Modal de configuración
+  const [selectedPoints, setSelectedPoints] = useState(10); // Puntos seleccionados
+  const [isRegenerate, setIsRegenerate] = useState(false); // Si es regeneración
 
   // Hook para el contador regresivo
   useEffect(() => {
@@ -105,12 +118,12 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
     try {
       const attendanceData = await getTodayAttendances();
       const newAttendances = attendanceData.attendances || [];
-      
+
       // Detectar nuevas asistencias
       if (newAttendances.length > lastAttendanceCount) {
         // Obtener solo las nuevas asistencias
         const newestAttendances = newAttendances.slice(lastAttendanceCount);
-        
+
         // Agregar nuevas asistencias una por una con delay
         newestAttendances.forEach((attendance: any, index: number) => {
           setTimeout(() => {
@@ -124,7 +137,7 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
             });
           }, index * 500); // 500ms entre cada nueva asistencia
         });
-        
+
         setLastAttendanceCount(newAttendances.length);
       } else if (liveAttendances.length === 0) {
         // Primera carga
@@ -163,10 +176,16 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
     try {
       setIsGenerating(true);
       setError(null);
-      
-      const data = await generateDailyQR();
+
+      // Pasar force=isRegenerate y selectedPoints
+      const data = await generateDailyQR(isRegenerate, selectedPoints);
       setQrData(data);
       await loadStats();
+
+      // Resetear modal
+      setShowConfigModal(false);
+      setIsRegenerate(false);
+      setSelectedPoints(10);
 
       if (onSuccess) {
         onSuccess(data);
@@ -182,7 +201,7 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
     }
   };
 
-    const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string) => {
     return formatDisplayDate(dateString);
   };
 
@@ -199,7 +218,9 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
     return (
       <div className="text-center py-8">
         <LoadingSpinner />
-        <p className={`mt-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+        <p
+          className={`mt-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
+        >
           Cargando información del QR...
         </p>
       </div>
@@ -208,9 +229,13 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
 
   return (
     <>
-      <div className={`rounded-lg p-6 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+      <div
+        className={`rounded-lg p-6 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}
+      >
         <div className="text-center">
-          <h2 className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <h2
+            className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}
+          >
             Código QR de Asistencia
           </h2>
 
@@ -222,12 +247,22 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
 
           {!qrData || isExpiredQR() ? (
             <div className="py-8">
-              <QrCodeIcon className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
-              <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                {isExpiredQR() ? 'El código QR ha expirado' : 'No hay código QR activo para el día de hoy'}
+              <QrCodeIcon
+                className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}
+              />
+              <p
+                className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
+              >
+                {isExpiredQR()
+                  ? 'El código QR ha expirado'
+                  : 'No hay código QR activo para el día de hoy'}
               </p>
               <motion.button
-                onClick={handleGenerateQR}
+                onClick={() => {
+                  setIsRegenerate(false);
+                  setSelectedPoints(10);
+                  setShowConfigModal(true);
+                }}
                 disabled={isGenerating}
                 className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 transition-colors font-semibold flex items-center gap-2 mx-auto"
                 whileHover={{ scale: 1.05 }}
@@ -249,16 +284,58 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
           ) : (
             <div>
               {/* Información del QR */}
-              <div className={`mb-4 p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              <div
+                className={`mb-4 p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}
+              >
+                <p
+                  className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}
+                >
                   <strong>Fecha:</strong> {formatDate(qrData.qrCode.dailyDate)}
                 </p>
-                <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                  <strong>Generado:</strong> {formatTime(qrData.qrCode.generatedAt)}
+                <p
+                  className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}
+                >
+                  <strong>Generado:</strong>{' '}
+                  {formatTime(qrData.qrCode.generatedAt)}
                 </p>
-                <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                  <strong>Expira:</strong> <span className={countdown === 'Expirado' ? 'text-red-500 font-semibold' : 'text-red-600 font-mono font-semibold'}>{countdown}</span>
+                <p
+                  className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}
+                >
+                  <strong>Expira:</strong>{' '}
+                  <span
+                    className={
+                      countdown === 'Expirado'
+                        ? 'text-red-500 font-semibold'
+                        : 'text-red-600 font-mono font-semibold'
+                    }
+                  >
+                    {countdown}
+                  </span>
                 </p>
+                <div
+                  className={`mt-2 pt-2 border-t ${isDark ? 'border-gray-600' : 'border-gray-300'}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-sm font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                    >
+                      Puntos por asistencia:
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-symbols-rounded text-amber-500 text-lg">
+                        bolt
+                      </span>
+                      <span className="text-xl font-bold text-blue-500">
+                        {qrData.qrCode.points || 10}
+                      </span>
+                      <span
+                        className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                      >
+                        pts
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* QR Code */}
@@ -272,14 +349,22 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
 
               {/* Estadísticas */}
               {stats && (
-                <div className={`mb-4 p-3 rounded-lg ${isDark ? 'bg-green-900/20' : 'bg-green-50'} border ${isDark ? 'border-green-800' : 'border-green-200'}`}>
+                <div
+                  className={`mb-4 p-3 rounded-lg ${isDark ? 'bg-green-900/20' : 'bg-green-50'} border ${isDark ? 'border-green-800' : 'border-green-200'}`}
+                >
                   <div className="flex items-center justify-center gap-2 mb-2">
-                    <UsersIcon className={`w-5 h-5 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
-                    <span className={`font-semibold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+                    <UsersIcon
+                      className={`w-5 h-5 ${isDark ? 'text-green-400' : 'text-green-600'}`}
+                    />
+                    <span
+                      className={`font-semibold ${isDark ? 'text-green-400' : 'text-green-600'}`}
+                    >
                       {stats.attendanceCount} asistencias registradas
                     </span>
                   </div>
-                  <p className={`text-xs ${isDark ? 'text-green-300' : 'text-green-700'}`}>
+                  <p
+                    className={`text-xs ${isDark ? 'text-green-300' : 'text-green-700'}`}
+                  >
                     Actualizado automáticamente cada 10 segundos
                   </p>
                 </div>
@@ -298,7 +383,11 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
                 </motion.button>
 
                 <motion.button
-                  onClick={handleGenerateQR}
+                  onClick={() => {
+                    setIsRegenerate(true);
+                    setSelectedPoints(qrData?.qrCode?.points || 10);
+                    setShowConfigModal(true);
+                  }}
                   disabled={isGenerating}
                   className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 transition-colors font-medium flex items-center gap-2"
                   whileHover={{ scale: 1.05 }}
@@ -376,7 +465,7 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
                   <p className="text-2xl font-medium">
                     {formatDate(qrData.qrCode.dailyDate)}
                   </p>
-                  
+
                   {stats && (
                     <motion.div
                       key={stats.attendanceCount}
@@ -390,9 +479,14 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
                       </span>
                     </motion.div>
                   )}
-                  
+
                   <p className="text-xl">
-                    Expira en: <span className={`font-mono font-bold text-2xl ${countdown === 'Expirado' ? 'text-red-400' : 'text-orange-400'}`}>{countdown}</span>
+                    Expira en:{' '}
+                    <span
+                      className={`font-mono font-bold text-2xl ${countdown === 'Expirado' ? 'text-red-400' : 'text-orange-400'}`}
+                    >
+                      {countdown}
+                    </span>
                   </p>
                 </motion.div>
               </div>
@@ -421,11 +515,11 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
                         initial={{ x: 300, opacity: 0, scale: 0.8 }}
                         animate={{ x: 0, opacity: 1, scale: 1 }}
                         exit={{ x: -300, opacity: 0, scale: 0.8 }}
-                        transition={{ 
-                          type: "spring", 
+                        transition={{
+                          type: 'spring',
                           stiffness: 200,
                           damping: 20,
-                          delay: index * 0.1 
+                          delay: index * 0.1,
                         }}
                         className="bg-gray-700 rounded-xl p-4 border border-gray-600 hover:border-green-400 transition-all duration-300"
                       >
@@ -446,13 +540,23 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-                                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                  <svg
+                                    className="w-8 h-8 text-white"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
                                   </svg>
                                 </div>
                               )}
                             </div>
-                            
+
                             {/* Badge de confirmación */}
                             <motion.div
                               initial={{ scale: 0 }}
@@ -463,7 +567,7 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
                               <CheckCircleIcon className="w-4 h-4 text-white" />
                             </motion.div>
                           </motion.div>
-                          
+
                           {/* Información del asistente */}
                           <div className="flex-1">
                             <motion.h3
@@ -474,7 +578,7 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
                             >
                               {attendance.youngId.fullName}
                             </motion.h3>
-                            
+
                             <motion.div
                               initial={{ y: 10, opacity: 0 }}
                               animate={{ y: 0, opacity: 1 }}
@@ -491,14 +595,14 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
                           {/* Animación de pulso para nuevos registros */}
                           {index < 3 && (
                             <motion.div
-                              animate={{ 
+                              animate={{
                                 scale: [1, 1.2, 1],
-                                opacity: [0.5, 1, 0.5]
+                                opacity: [0.5, 1, 0.5],
                               }}
-                              transition={{ 
+                              transition={{
                                 duration: 2,
                                 repeat: Infinity,
-                                ease: "easeInOut"
+                                ease: 'easeInOut',
                               }}
                               className="w-3 h-3 bg-green-400 rounded-full"
                             />
@@ -517,14 +621,195 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({
                         className="text-gray-400"
                       >
                         <UsersIcon className="w-16 h-16 mx-auto mb-4 text-gray-500" />
-                        <p className="text-lg">Esperando primeros registros...</p>
-                        <p className="text-sm mt-2">Los asistentes aparecerán aquí en tiempo real</p>
+                        <p className="text-lg">
+                          Esperando primeros registros...
+                        </p>
+                        <p className="text-sm mt-2">
+                          Los asistentes aparecerán aquí en tiempo real
+                        </p>
                       </motion.div>
                     </div>
                   )}
                 </div>
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de Configuración de Puntos */}
+      <AnimatePresence>
+        {showConfigModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-2xl w-full max-w-md`}
+            >
+              {/* Header */}
+              <div
+                className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-rounded text-blue-500 text-2xl">
+                      settings
+                    </span>
+                    <h3
+                      className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}
+                    >
+                      {isRegenerate ? 'Regenerar QR' : 'Generar QR'}
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setShowConfigModal(false)}
+                    className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-4">
+                <div>
+                  <label
+                    className={`block text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}
+                  >
+                    Puntos por asistencia
+                  </label>
+                  <p
+                    className={`text-xs mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                  >
+                    Selecciona cuántos puntos ganará cada joven al escanear este
+                    QR
+                  </p>
+
+                  {/* Grid de Pills */}
+                  <div className="grid grid-cols-5 gap-2">
+                    {POINTS_PRESETS.map(value => (
+                      <motion.button
+                        key={value}
+                        type="button"
+                        onClick={() => setSelectedPoints(value)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`
+                          px-3 py-2.5 rounded-lg font-semibold text-sm
+                          transition-all duration-200
+                          ${
+                            selectedPoints === value
+                              ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg ring-2 ring-blue-400'
+                              : isDark
+                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }
+                        `}
+                      >
+                        {value}
+                      </motion.button>
+                    ))}
+                  </div>
+
+                  {/* Recomendaciones */}
+                  <div
+                    className={`mt-4 p-3 rounded-lg ${isDark ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'} border`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="material-symbols-rounded text-blue-500 text-sm mt-0.5">
+                        info
+                      </span>
+                      <div
+                        className={`text-xs ${isDark ? 'text-blue-300' : 'text-blue-700'}`}
+                      >
+                        <p className="font-semibold mb-1">
+                          Valores recomendados:
+                        </p>
+                        <ul className="space-y-0.5">
+                          <li>
+                            • <strong>10 pts</strong>: Asistencia regular
+                          </li>
+                          <li>
+                            • <strong>20 pts</strong>: Evento especial
+                          </li>
+                          <li>
+                            • <strong>30 pts</strong>: Evento excepcional
+                            (campamento)
+                          </li>
+                          <li>
+                            • <strong>40-50 pts</strong>: Eventos
+                            extraordinarios
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {isRegenerate && (
+                    <div
+                      className={`mt-3 p-3 rounded-lg ${isDark ? 'bg-amber-900/20 border-amber-700/50' : 'bg-amber-50 border-amber-200'} border`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-rounded text-amber-500 text-sm mt-0.5">
+                          warning
+                        </span>
+                        <p
+                          className={`text-xs ${isDark ? 'text-amber-300' : 'text-amber-700'}`}
+                        >
+                          <strong>Atención:</strong> Esto desactivará el QR
+                          actual y generará uno nuevo con los puntos
+                          configurados.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div
+                className={`p-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} flex gap-3`}
+              >
+                <button
+                  onClick={() => setShowConfigModal(false)}
+                  disabled={isGenerating}
+                  className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                    isDark
+                      ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleGenerateQR}
+                  disabled={isGenerating}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isGenerating ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      <span>
+                        {isRegenerate ? 'Regenerando...' : 'Generando...'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <QrCodeIcon className="w-5 h-5" />
+                      <span>
+                        {isRegenerate ? 'Regenerar QR' : 'Generar QR'}
+                      </span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

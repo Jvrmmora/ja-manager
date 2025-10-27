@@ -47,7 +47,6 @@ const QRScanner: React.FC<QRScannerProps> = ({
   } | null>(null);
   const [showPointsAnimation, setShowPointsAnimation] = useState(false);
   const [pointsEarned, setPointsEarned] = useState(10); // Puntos por defecto
-  const [hideScannerModal, setHideScannerModal] = useState(false); // Nuevo: controla visibilidad del modal del scanner
 
   // Detectar si es dispositivo móvil
   const isMobile =
@@ -71,7 +70,6 @@ const QRScanner: React.FC<QRScannerProps> = ({
     }
     setIsScanning(false);
     setIsInitializing(false);
-    setHideScannerModal(false); // Resetear visibilidad del modal
   }, []);
 
   // Efecto principal
@@ -309,11 +307,8 @@ const QRScanner: React.FC<QRScannerProps> = ({
         throw new Error('No se pudo extraer el código del QR');
       }
 
-      // Registrar asistencia
+      // Registrar asistencia (los puntos vienen configurados en el QR)
       const result = await scanQRAndRegisterAttendance(code);
-
-      // OCULTAR el modal del scanner inmediatamente para mostrar solo el éxito
-      setHideScannerModal(true);
 
       // Mostrar éxito
       setModalData({
@@ -326,8 +321,8 @@ const QRScanner: React.FC<QRScannerProps> = ({
 
       // Mostrar animación de puntos después de 1 segundo
       setTimeout(() => {
-        // Obtener puntos del resultado si están disponibles
-        const points = result?.points || 10;
+        // Usar los puntos que vienen del resultado del backend
+        const points = result?.points?.earned || 10;
         setPointsEarned(points);
         setShowPointsAnimation(true);
       }, 1000);
@@ -376,7 +371,6 @@ const QRScanner: React.FC<QRScannerProps> = ({
     setShowModal(false);
     setModalData(null);
     setShowPointsAnimation(false);
-    setHideScannerModal(false);
     onClose();
   };
 
@@ -407,7 +401,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
   return (
     <>
       <AnimatePresence>
-        {!hideScannerModal && ( // Solo mostrar el modal del scanner si no está oculto
+        {isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
             <motion.div
@@ -421,11 +415,16 @@ const QRScanner: React.FC<QRScannerProps> = ({
             {/* Scanner Modal */}
             <motion.div
               initial={{ scale: 0.7, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+              animate={{
+                scale: 1,
+                opacity: showModal ? 0 : 1, // Ocultar cuando se muestra el modal de resultado
+              }}
               exit={{ scale: 0.7, opacity: 0 }}
               className={`relative w-full max-w-md mx-auto ${
                 isDark ? 'bg-gray-800' : 'bg-white'
-              } rounded-2xl overflow-hidden shadow-2xl`}
+              } rounded-2xl overflow-hidden shadow-2xl ${
+                showModal ? 'pointer-events-none' : '' // Deshabilitar interacción cuando se muestra el resultado
+              }`}
               style={{
                 touchAction: 'manipulation', // Prevenir zoom en móviles
                 WebkitUserSelect: 'none',

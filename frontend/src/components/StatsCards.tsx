@@ -3,6 +3,7 @@ import type { IYoung } from '../types';
 import {
   getCurrentMonthColombia,
   getCurrentYearColombia,
+  parseYYYYMMDD,
 } from '../utils/dateUtils';
 
 interface StatsCardsProps {
@@ -27,7 +28,13 @@ const StatsCards: React.FC<StatsCardsProps> = ({
   const birthdaysThisMonth = youngList.filter(young => {
     if (!young.birthday) return false;
 
-    const birthday = new Date(young.birthday);
+    // Parsear fecha correctamente sin problemas de timezone
+    const birthday =
+      typeof young.birthday === 'string' &&
+      /^\d{4}-\d{2}-\d{2}/.test(young.birthday)
+        ? parseYYYYMMDD(young.birthday.split('T')[0])
+        : new Date(young.birthday);
+
     return birthday.getMonth() === currentMonth;
   }).length;
 

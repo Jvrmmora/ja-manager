@@ -5,15 +5,18 @@ import QRCodeModel from '../models/QRCode';
 import AttendanceModel from '../models/Attendance';
 import { ApiResponse } from '../types';
 import { ErrorHandler } from '../utils/errorHandler';
-import { 
-  getCurrentDateColombia, 
-  getCurrentDateTimeColombia, 
-  createExpirationDate, 
-  isExpired 
+import {
+  getCurrentDateColombia,
+  getCurrentDateTimeColombia,
+  createExpirationDate,
+  isExpired,
 } from '../utils/dateUtils';
 
 // Generar QR del día (solo administradores)
-export const generateDailyQR = async (req: Request, res: Response): Promise<void> => {
+export const generateDailyQR = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const adminId = req.user?.userId;
     if (!adminId) {
@@ -34,6 +37,7 @@ export const generateDailyQR = async (req: Request, res: Response): Promise<void
       return;
     }
 
+    const { force = false, points = 10 } = req.body; // Aceptar force y points
     const today = getCurrentDateColombia(); // Fecha actual en Colombia (YYYY-MM-DD)
 
     // Verificar si ya existe un QR activo para hoy
@@ -42,7 +46,8 @@ export const generateDailyQR = async (req: Request, res: Response): Promise<void
       isActive: true,
     });
 
-    if (existingQR && !isExpired(existingQR.expiresAt)) {
+    // Si existe y NO se está forzando regeneración, retornar el existente
+    if (existingQR && !isExpired(existingQR.expiresAt) && !force) {
       // Generar el QR visual del código existente
       const qrUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/attendance/scan?code=${existingQR.code}`;
       const qrImage = await QRCode.toDataURL(qrUrl, {
@@ -68,12 +73,9 @@ export const generateDailyQR = async (req: Request, res: Response): Promise<void
     }
 
     // Desactivar QRs anteriores del día
-    await QRCodeModel.updateMany(
-      { dailyDate: today },
-      { isActive: false }
-    );
+    await QRCodeModel.updateMany({ dailyDate: today }, { isActive: false });
 
-    // Crear nuevo QR
+    // Crear nuevo QR con puntos configurables
     const code = crypto.randomUUID();
     const expiresAt = createExpirationDate(2); // Expira en 2 horas en tiempo de Colombia
 
@@ -85,6 +87,7 @@ export const generateDailyQR = async (req: Request, res: Response): Promise<void
       isActive: true,
       dailyDate: today,
       usageCount: 0,
+      points, // Puntos configurados por el admin
     });
 
     await newQR.save();
@@ -117,7 +120,10 @@ export const generateDailyQR = async (req: Request, res: Response): Promise<void
 };
 
 // Obtener QR activo del día
-export const getCurrentQR = async (req: Request, res: Response): Promise<void> => {
+export const getCurrentQR = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const today = getCurrentDateColombia();
 
@@ -162,7 +168,10 @@ export const getCurrentQR = async (req: Request, res: Response): Promise<void> =
 };
 
 // Obtener estadísticas del QR actual
-export const getQRStats = async (req: Request, res: Response): Promise<void> => {
+export const getQRStats = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const today = getCurrentDateColombia();
 

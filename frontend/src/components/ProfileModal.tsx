@@ -3,7 +3,11 @@ import type { IYoung } from '../types';
 import { apiUpload } from '../services/api';
 import { authService } from '../services/auth';
 import PhoneInput from './PhoneInput';
-import { formatDateColombia, formatLocaleDateString } from '../utils/dateUtils';
+import {
+  formatDateColombia,
+  formatLocaleDateString,
+  parseYYYYMMDD,
+} from '../utils/dateUtils';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -46,11 +50,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     if (young) {
       let birthdayValue = '';
       if (young.birthday) {
-        const date =
+        // Parsear correctamente la fecha sin problemas de timezone
+        const birthdayStr =
           typeof young.birthday === 'string'
-            ? new Date(young.birthday)
-            : young.birthday;
-        birthdayValue = formatDateColombia(date);
+            ? young.birthday
+            : young.birthday.toISOString();
+
+        // Si viene en formato ISO con fecha YYYY-MM-DD, extraer solo esa parte
+        if (/^\d{4}-\d{2}-\d{2}/.test(birthdayStr)) {
+          const datePart = birthdayStr.split('T')[0];
+          const parsedDate = parseYYYYMMDD(datePart);
+          birthdayValue = formatDateColombia(parsedDate);
+        } else {
+          birthdayValue = formatDateColombia(young.birthday);
+        }
       }
 
       setFormData({

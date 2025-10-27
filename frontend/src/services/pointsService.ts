@@ -72,7 +72,18 @@ export const pointsService = {
       method: 'POST',
       body: JSON.stringify(request),
     });
+
     const data = await response.json();
+
+    // Validar si la respuesta fue exitosa
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || data.error || 'Error al asignar puntos');
+    }
+
+    if (!data.transaction) {
+      throw new Error('No se recibió información de la transacción');
+    }
+
     return data.transaction;
   },
 
@@ -93,7 +104,16 @@ export const pointsService = {
     const response = await apiRequest(`${API_BASE}/leaderboard${queryString}`, {
       method: 'GET',
     });
+
     const data = await response.json();
+
+    // Validar si la respuesta fue exitosa
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data.message || data.error || 'Error al obtener el ranking'
+      );
+    }
+
     return data.ranking || [];
   },
 
