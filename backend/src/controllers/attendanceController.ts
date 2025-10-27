@@ -9,6 +9,7 @@ import {
   getCurrentDateTimeColombia,
   isExpired,
 } from '../utils/dateUtils';
+import { pointsService } from '../services/pointsService';
 
 // Escanear QR y registrar asistencia (solo jóvenes)
 export const scanQRAndRegisterAttendance = async (
@@ -101,6 +102,23 @@ export const scanQRAndRegisterAttendance = async (
       $inc: { usageCount: 1 },
     });
 
+    // ✨ NUEVO: Asignar puntos por asistencia
+    let pointsTransaction = null;
+    let totalPoints = 0;
+    try {
+      pointsTransaction = await pointsService.assignAttendancePoints(
+        youngId,
+        (qrCode._id as any).toString()
+      );
+      totalPoints = await pointsService.getTotalPoints(youngId);
+    } catch (error) {
+      // Si falla la asignación de puntos, solo logueamos pero no bloqueamos la asistencia
+      console.warn(
+        'No se pudieron asignar puntos (no hay temporada activa):',
+        error
+      );
+    }
+
     // Obtener información del joven para la respuesta
     const young = await Young.findById(youngId).select('fullName placa');
 
@@ -112,6 +130,14 @@ export const scanQRAndRegisterAttendance = async (
         young,
         attendanceDate: today,
         scannedAt: attendance.scannedAt,
+        // ✨ NUEVO: Incluir información de puntos en la respuesta
+        points: pointsTransaction
+          ? {
+              earned: pointsTransaction.points,
+              total: totalPoints,
+              description: pointsTransaction.description,
+            }
+          : null,
       },
     });
   } catch (error) {

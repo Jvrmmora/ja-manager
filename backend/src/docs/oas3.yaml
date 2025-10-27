@@ -4,17 +4,17 @@ info:
   version: 1.0.0
   description: |
     API REST para la gestión de jóvenes de iglesia. Permite crear, leer, actualizar y eliminar información de jóvenes, así como importar/exportar datos desde Excel.
-    
+
     ## Características principales:
     - CRUD completo para gestión de jóvenes
     - Subida de imágenes a Cloudinary
     - Importación/exportación desde Excel
     - Filtros y búsqueda avanzada
     - Estadísticas agregadas
-    
+
   contact:
     name: Javier Montaño
-    email: "jvrm.mora@gmail.com"
+    email: 'jvrm.mora@gmail.com'
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -38,6 +38,10 @@ tags:
     description: Operaciones para gestión de códigos QR de asistencia
   - name: Attendance
     description: Operaciones para registro y gestión de asistencias
+  - name: Seasons
+    description: Gestión de temporadas para el sistema de puntos y gamificación
+  - name: Points
+    description: Sistema de puntos, transacciones y gamificación
 
 paths:
   /health:
@@ -83,11 +87,11 @@ paths:
                 missingCredentials:
                   summary: Credenciales faltantes
                   value:
-                    error: "Email/placa y contraseña son requeridos"
+                    error: 'Email/placa y contraseña son requeridos'
                 invalidCredentials:
                   summary: Credenciales inválidas
                   value:
-                    error: "Credenciales inválidas"
+                    error: 'Credenciales inválidas'
         '404':
           description: Usuario no encontrado
           content:
@@ -95,7 +99,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                error: "Usuario no encontrado"
+                error: 'Usuario no encontrado'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -135,7 +139,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Logout exitoso"
+                    example: 'Logout exitoso'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -174,13 +178,13 @@ paths:
           description: Filtrar por rango de edad
           schema:
             type: string
-            enum: 
-              - "13-15"
-              - "16-18"
-              - "19-21"
-              - "22-25"
-              - "26-30"
-              - "30+"
+            enum:
+              - '13-15'
+              - '16-18'
+              - '19-21'
+              - '22-25'
+              - '26-30'
+              - '30+'
         - name: role
           in: query
           description: Filtrar por rol
@@ -191,7 +195,7 @@ paths:
           description: Filtrar por género
           schema:
             type: string
-            enum: 
+            enum:
               - masculino
               - femenino
         - name: group
@@ -255,35 +259,35 @@ paths:
                   example: Juan Pérez García
                 ageRange:
                   type: string
-                  enum: 
-                    - "13-15"
-                    - "16-18"
-                    - "19-21"
-                    - "22-25"
-                    - "26-30"
-                    - "30+"
+                  enum:
+                    - '13-15'
+                    - '16-18'
+                    - '19-21'
+                    - '22-25'
+                    - '26-30'
+                    - '30+'
                   description: Rango de edad
-                  example: "19-21"
+                  example: '19-21'
                 phone:
                   type: string
                   description: Número de teléfono
-                  example: "+1234567890"
+                  example: '+1234567890'
                 birthday:
                   type: string
                   format: date
                   description: Fecha de nacimiento
-                  example: "2000-05-15"
+                  example: '2000-05-15'
                 gender:
                   type: string
-                  enum: 
+                  enum:
                     - masculino
                     - femenino
-                    - ""
+                    - ''
                   description: Género
                   example: masculino
                 role:
                   type: string
-                  enum: 
+                  enum:
                     - lider juvenil
                     - simpatizante
                     - colaborador
@@ -400,35 +404,35 @@ paths:
                   example: Juan Pérez García
                 ageRange:
                   type: string
-                  enum: 
-                    - "13-15"
-                    - "16-18"
-                    - "19-21"
-                    - "22-25"
-                    - "26-30"
-                    - "30+"
+                  enum:
+                    - '13-15'
+                    - '16-18'
+                    - '19-21'
+                    - '22-25'
+                    - '26-30'
+                    - '30+'
                   description: Rango de edad
-                  example: "19-21"
+                  example: '19-21'
                 phone:
                   type: string
                   description: Número de teléfono
-                  example: "+1234567890"
+                  example: '+1234567890'
                 birthday:
                   type: string
                   format: date
                   description: Fecha de nacimiento
-                  example: "2000-05-15"
+                  example: '2000-05-15'
                 gender:
                   type: string
-                  enum: 
+                  enum:
                     - masculino
                     - femenino
-                    - ""
+                    - ''
                   description: Género
                   example: masculino
                 role:
                   type: string
-                  enum: 
+                  enum:
                     - lider juvenil
                     - simpatizante
                     - colaborador
@@ -542,19 +546,19 @@ paths:
                       id:
                         type: string
                         description: ID único del joven
-                        example: "507f1f77bcf86cd799439011"
+                        example: '507f1f77bcf86cd799439011'
                       fullName:
                         type: string
                         description: Nombre completo del joven
-                        example: "Javier Mora"
+                        example: 'Javier Mora'
                       placa:
                         type: string
                         description: Placa única generada
-                        example: "@MODJAVI001"
+                        example: '@MODJAVI001'
                       tempPassword:
                         type: string
                         description: Contraseña temporal generada
-                        example: "PassMODJAV"
+                        example: 'PassMODJAV'
         '400':
           $ref: '#/components/responses/ValidationError'
         '404':
@@ -601,12 +605,12 @@ paths:
               properties:
                 current_password:
                   type: string
-                  description: "Contraseña actual (OBLIGATORIA para Young role, IGNORADA para Super Admin)"
-                  example: "PassMODJAV"
+                  description: 'Contraseña actual (OBLIGATORIA para Young role, IGNORADA para Super Admin)'
+                  example: 'PassMODJAV'
                 new_password:
                   type: string
                   description: Nueva contraseña (8-50 caracteres, debe incluir mayúscula, minúscula y número)
-                  example: "MiNuevaPassword123"
+                  example: 'MiNuevaPassword123'
       responses:
         '200':
           description: Contraseña reseteada exitosamente
@@ -627,11 +631,11 @@ paths:
                       id:
                         type: string
                         description: ID único del joven
-                        example: "507f1f77bcf86cd799439011"
+                        example: '507f1f77bcf86cd799439011'
                       fullName:
                         type: string
                         description: Nombre completo del joven
-                        example: "Javier Mora"
+                        example: 'Javier Mora'
                       first_login:
                         type: boolean
                         description: Indica si es el primer login (siempre false después del reset)
@@ -648,7 +652,7 @@ paths:
                     example: false
                   message:
                     type: string
-                    example: "La nueva contraseña debe tener entre 8-50 caracteres, incluir al menos una mayúscula, una minúscula y un número"
+                    example: 'La nueva contraseña debe tener entre 8-50 caracteres, incluir al menos una mayúscula, una minúscula y un número'
         '403':
           description: Sin permisos para cambiar esta contraseña
           content:
@@ -661,7 +665,7 @@ paths:
                     example: false
                   message:
                     type: string
-                    example: "No tienes permisos para cambiar esta contraseña"
+                    example: 'No tienes permisos para cambiar esta contraseña'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -759,13 +763,13 @@ paths:
           description: Filtrar por rango de edad (opcional)
           schema:
             type: string
-            enum: 
-              - "13-15"
-              - "16-18"
-              - "19-21"
-              - "22-25"
-              - "26-30"
-              - "30+"
+            enum:
+              - '13-15'
+              - '16-18'
+              - '19-21'
+              - '22-25'
+              - '26-30'
+              - '30+'
         - name: role
           in: query
           description: Filtrar por rol (opcional)
@@ -776,7 +780,7 @@ paths:
           description: Filtrar por género (opcional)
           schema:
             type: string
-            enum: 
+            enum:
               - masculino
               - femenino
         - name: group
@@ -824,7 +828,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "QR generado exitosamente"
+                    example: 'QR generado exitosamente'
                   data:
                     $ref: '#/components/schemas/QRCode'
         '200':
@@ -839,7 +843,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "QR activo encontrado"
+                    example: 'QR activo encontrado'
                   data:
                     $ref: '#/components/schemas/QRCode'
         '401':
@@ -851,7 +855,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                error: "Solo administradores pueden generar códigos QR"
+                error: 'Solo administradores pueden generar códigos QR'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -882,7 +886,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                error: "No hay QR activo para hoy"
+                error: 'No hay QR activo para hoy'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -915,7 +919,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                error: "No hay QR activo"
+                error: 'No hay QR activo'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -942,7 +946,7 @@ paths:
                   type: string
                   format: uuid
                   description: Código UUID del QR escaneado
-                  example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                  example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
       responses:
         '201':
           description: Asistencia registrada exitosamente
@@ -956,7 +960,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "Asistencia registrada exitosamente"
+                    example: 'Asistencia registrada exitosamente'
                   data:
                     $ref: '#/components/schemas/Attendance'
         '400':
@@ -969,11 +973,11 @@ paths:
                 qrExpired:
                   summary: QR expirado
                   value:
-                    error: "El código QR ha expirado"
+                    error: 'El código QR ha expirado'
                 invalidCode:
                   summary: Código inválido
                   value:
-                    error: "Código QR inválido"
+                    error: 'Código QR inválido'
         '404':
           description: QR no encontrado
           content:
@@ -981,7 +985,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                error: "Código QR no encontrado"
+                error: 'Código QR no encontrado'
         '409':
           description: Ya se registró asistencia hoy
           content:
@@ -989,7 +993,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                error: "Ya tienes asistencia registrada para hoy"
+                error: 'Ya tienes asistencia registrada para hoy'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -1069,7 +1073,7 @@ paths:
             type: string
             format: date
             pattern: '^\d{4}-\d{2}-\d{2}$'
-          example: "2023-12-15"
+          example: '2023-12-15'
       responses:
         '200':
           description: Lista de asistencias obtenida exitosamente
@@ -1083,7 +1087,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "Lista de asistencias obtenida exitosamente"
+                    example: 'Lista de asistencias obtenida exitosamente'
                   data:
                     type: object
                     properties:
@@ -1095,7 +1099,7 @@ paths:
                         type: string
                         format: date
                         description: Fecha de las asistencias
-                        example: "2023-12-15"
+                        example: '2023-12-15'
                       stats:
                         type: object
                         properties:
@@ -1119,7 +1123,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
                 success: false
-                message: "Formato de fecha inválido. Use YYYY-MM-DD"
+                message: 'Formato de fecha inválido. Use YYYY-MM-DD'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1130,7 +1134,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
                 success: false
-                message: "Solo los administradores pueden ver esta información"
+                message: 'Solo los administradores pueden ver esta información'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -1154,7 +1158,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "Lista de asistencias obtenida exitosamente"
+                    example: 'Lista de asistencias obtenida exitosamente'
                   data:
                     type: object
                     properties:
@@ -1166,7 +1170,7 @@ paths:
                         type: string
                         format: date
                         description: Fecha actual
-                        example: "2023-12-15"
+                        example: '2023-12-15'
                       stats:
                         type: object
                         properties:
@@ -1192,7 +1196,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
                 success: false
-                message: "Solo los administradores pueden ver esta información"
+                message: 'Solo los administradores pueden ver esta información'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -1210,14 +1214,14 @@ paths:
           schema:
             type: string
             format: date
-          example: "2023-12-01"
+          example: '2023-12-01'
         - name: endDate
           in: query
           description: Fecha de fin (YYYY-MM-DD)
           schema:
             type: string
             format: date
-          example: "2023-12-31"
+          example: '2023-12-31'
       responses:
         '200':
           description: Estadísticas obtenidas exitosamente
@@ -1240,7 +1244,620 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                error: "Solo administradores pueden acceder a esta información"
+                error: 'Solo administradores pueden acceder a esta información'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ========================================
+  # TEMPORADAS (SEASONS) - Sistema de Puntos
+  # ========================================
+
+  /seasons:
+    get:
+      summary: Listar todas las temporadas
+      description: Obtiene la lista completa de temporadas (trimestres) para el sistema de puntos
+      tags: [Seasons]
+      responses:
+        '200':
+          description: Lista de temporadas obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 3
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Season'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      summary: Crear nueva temporada
+      description: Crea una nueva temporada/trimestre para el sistema de puntos (requiere autenticación)
+      tags: [Seasons]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonCreate'
+      responses:
+        '201':
+          description: Temporada creada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: 'Temporada creada exitosamente'
+                  data:
+                    $ref: '#/components/schemas/Season'
+        '400':
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /seasons/active:
+    get:
+      summary: Obtener temporada activa
+      description: Obtiene la temporada actualmente en curso
+      tags: [Seasons]
+      responses:
+        '200':
+          description: Temporada activa obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Season'
+        '404':
+          description: No hay temporada activa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: 'No hay temporada activa'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /seasons/{id}:
+    get:
+      summary: Obtener temporada por ID
+      description: Obtiene los detalles de una temporada específica
+      tags: [Seasons]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la temporada
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Temporada obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Season'
+        '404':
+          description: Temporada no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      summary: Actualizar temporada
+      description: Actualiza los datos de una temporada existente (requiere autenticación)
+      tags: [Seasons]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la temporada
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonUpdate'
+      responses:
+        '200':
+          description: Temporada actualizada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: 'Temporada actualizada exitosamente'
+                  data:
+                    $ref: '#/components/schemas/Season'
+        '400':
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Temporada no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      summary: Eliminar temporada
+      description: Elimina una temporada (no puede estar activa, requiere autenticación)
+      tags: [Seasons]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la temporada
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Temporada eliminada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: 'Temporada eliminada exitosamente'
+        '400':
+          description: No se puede eliminar temporada activa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: 'No se puede eliminar una temporada activa. Finalízala primero.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Temporada no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /seasons/{id}/activate:
+    post:
+      summary: Activar temporada
+      description: Activa una temporada y desactiva cualquier otra activa (requiere autenticación)
+      tags: [Seasons]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la temporada a activar
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Temporada activada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: 'Temporada activada exitosamente'
+                  data:
+                    $ref: '#/components/schemas/Season'
+        '400':
+          description: La temporada ya está activa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Temporada no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /seasons/{id}/complete:
+    post:
+      summary: Finalizar temporada
+      description: Marca una temporada como completada (requiere autenticación)
+      tags: [Seasons]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la temporada a finalizar
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Temporada finalizada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: 'Temporada finalizada exitosamente'
+                  data:
+                    $ref: '#/components/schemas/Season'
+        '400':
+          description: La temporada ya está finalizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Temporada no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ========================================
+  # PUNTOS (POINTS) - Sistema de Gamificación
+  # ========================================
+
+  /points/assign:
+    post:
+      summary: Asignar puntos manualmente
+      description: Asigna puntos a un joven por una actividad específica (requiere autenticación)
+      tags: [Points]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignPointsRequest'
+      responses:
+        '201':
+          description: Puntos asignados exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: 'Puntos asignados exitosamente'
+                  data:
+                    $ref: '#/components/schemas/PointsTransaction'
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /points/young/{youngId}/total:
+    get:
+      summary: Obtener puntos totales de un joven
+      description: Obtiene el total de puntos acumulados por un joven en la temporada actual o especificada
+      tags: [Points]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: youngId
+          in: path
+          required: true
+          description: ID del joven
+          schema:
+            type: string
+        - name: seasonId
+          in: query
+          required: false
+          description: ID de la temporada (opcional, por defecto usa la activa)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Puntos totales obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      youngId:
+                        type: string
+                        example: '507f1f77bcf86cd799439011'
+                      seasonId:
+                        type: string
+                        example: 'current'
+                      totalPoints:
+                        type: integer
+                        example: 250
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /points/young/{youngId}/breakdown:
+    get:
+      summary: Obtener desglose de puntos
+      description: Obtiene el desglose detallado de puntos por tipo (asistencia, actividades, referidos)
+      tags: [Points]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: youngId
+          in: path
+          required: true
+          description: ID del joven
+          schema:
+            type: string
+        - name: seasonId
+          in: query
+          required: false
+          description: ID de la temporada
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Desglose obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/PointsBreakdown'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /points/young/{youngId}/history:
+    get:
+      summary: Obtener historial de puntos
+      description: Obtiene el historial completo de transacciones de puntos de un joven
+      tags: [Points]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: youngId
+          in: path
+          required: true
+          description: ID del joven
+          schema:
+            type: string
+        - name: seasonId
+          in: query
+          required: false
+          description: ID de la temporada
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Límite de resultados
+          schema:
+            type: integer
+            default: 50
+        - name: skip
+          in: query
+          required: false
+          description: Número de resultados a saltar (paginación)
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Historial obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 15
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PointsTransaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /points/transactions:
+    get:
+      summary: Obtener todas las transacciones (admin)
+      description: Obtiene todas las transacciones de puntos del sistema
+      tags: [Points]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: seasonId
+          in: query
+          required: false
+          description: Filtrar por temporada
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: false
+          description: Filtrar por tipo de transacción
+          schema:
+            type: string
+            enum: [ATTENDANCE, ACTIVITY, REFERRAL_BONUS, REFERRAL_WELCOME]
+        - name: limit
+          in: query
+          required: false
+          description: Límite de resultados
+          schema:
+            type: integer
+            default: 100
+        - name: skip
+          in: query
+          required: false
+          description: Número de resultados a saltar
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Transacciones obtenidas exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 50
+                  total:
+                    type: integer
+                    example: 234
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PointsTransaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /points/transactions/{id}:
+    delete:
+      summary: Eliminar transacción
+      description: Elimina una transacción de puntos (solo para correcciones, requiere autenticación)
+      tags: [Points]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la transacción
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transacción eliminada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: 'Transacción eliminada exitosamente'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Transacción no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -1248,7 +1865,7 @@ components:
   schemas:
     Young:
       type: object
-      required: 
+      required:
         - fullName
         - ageRange
         - role
@@ -1261,7 +1878,7 @@ components:
           type: string
           description: Placa única del joven (formato @MODxx### a @MODxxxx###)
           pattern: '^@MOD[A-Z]{2,4}\d{3}$'
-          example: "@MODJAVI001"
+          example: '@MODJAVI001'
         role_id:
           type: string
           description: ID del rol asignado al joven
@@ -1269,7 +1886,7 @@ components:
         role_name:
           type: string
           description: Nombre del rol asignado
-          example: "Young role"
+          example: 'Young role'
         fullName:
           type: string
           description: Nombre completo del joven
@@ -1277,25 +1894,25 @@ components:
           example: Juan Pérez García
         ageRange:
           type: string
-          enum: 
-            - "13-15"
-            - "16-18"
-            - "19-21"
-            - "22-25"
-            - "26-30"
-            - "30+"
+          enum:
+            - '13-15'
+            - '16-18'
+            - '19-21'
+            - '22-25'
+            - '26-30'
+            - '30+'
           description: Rango de edad del joven
-          example: "19-21"
+          example: '19-21'
         phone:
           type: string
           description: Número de teléfono
           pattern: '^[\+]?[\d\s\-\(\)]{8,15}$'
-          example: "+1234567890"
+          example: '+1234567890'
         birthday:
           type: string
           format: date
           description: Fecha de nacimiento
-          example: "2000-05-15"
+          example: '2000-05-15'
         profileImage:
           type: string
           format: uri
@@ -1303,100 +1920,10 @@ components:
           example: https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg
         gender:
           type: string
-          enum: 
+          enum:
             - masculino
             - femenino
-            - ""
-          description: Género del joven
-          example: masculino
-        role:
-          type: string
-          enum: 
-            - lider juvenil
-            - simpatizante
-            - colaborador
-            - joven adventista
-            - director
-            - subdirector
-            - club guias
-            - club conquistadores
-            - club aventureros
-            - escuela sabatica
-          description: Rol del joven en la iglesia
-          example: joven adventista
-        email:
-          type: string
-          format: email
-          description: Correo electrónico
-          example: juan.perez@email.com
-        skills:
-          type: array
-          items:
-            type: string
-          description: Habilidades del joven
-          example: 
-            - música
-            - predicación
-            - liderazgo
-        group:
-          type: number
-          minimum: 1
-          maximum: 5
-          description: Grupo para clasificación interna (1-5)
-          example: 3
-        first_login:
-          type: boolean
-          description: Indica si es el primer login del usuario
-          example: false
-        createdAt:
-          type: string
-          format: date-time
-          description: Fecha de creación del registro
-          example: "2023-12-01T10:30:00.000Z"
-        updatedAt:
-          type: string
-          format: date-time
-          description: Fecha de última actualización
-          example: "2023-12-01T15:45:00.000Z"
-
-    YoungInput:
-      type: object
-      required: 
-        - fullName
-        - ageRange
-        - role
-      properties:
-        fullName:
-          type: string
-          description: Nombre completo del joven
-          maxLength: 100
-          example: Juan Pérez García
-        ageRange:
-          type: string
-          enum: 
-            - "13-15"
-            - "16-18"
-            - "19-21"
-            - "22-25"
-            - "26-30"
-            - "30+"
-          description: Rango de edad del joven
-          example: "19-21"
-        phone:
-          type: string
-          description: Número de teléfono
-          example: "+1234567890"
-        birthday:
-          type: string
-          format: date
-          description: Fecha de nacimiento
-          example: "2000-05-15"
-        gender:
-          type: string
-          enum: 
-            - masculino
-            - femenino
-            - ""
+            - ''
           description: Género del joven
           example: masculino
         role:
@@ -1424,7 +1951,97 @@ components:
           items:
             type: string
           description: Habilidades del joven
-          example: 
+          example:
+            - música
+            - predicación
+            - liderazgo
+        group:
+          type: number
+          minimum: 1
+          maximum: 5
+          description: Grupo para clasificación interna (1-5)
+          example: 3
+        first_login:
+          type: boolean
+          description: Indica si es el primer login del usuario
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del registro
+          example: '2023-12-01T10:30:00.000Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de última actualización
+          example: '2023-12-01T15:45:00.000Z'
+
+    YoungInput:
+      type: object
+      required:
+        - fullName
+        - ageRange
+        - role
+      properties:
+        fullName:
+          type: string
+          description: Nombre completo del joven
+          maxLength: 100
+          example: Juan Pérez García
+        ageRange:
+          type: string
+          enum:
+            - '13-15'
+            - '16-18'
+            - '19-21'
+            - '22-25'
+            - '26-30'
+            - '30+'
+          description: Rango de edad del joven
+          example: '19-21'
+        phone:
+          type: string
+          description: Número de teléfono
+          example: '+1234567890'
+        birthday:
+          type: string
+          format: date
+          description: Fecha de nacimiento
+          example: '2000-05-15'
+        gender:
+          type: string
+          enum:
+            - masculino
+            - femenino
+            - ''
+          description: Género del joven
+          example: masculino
+        role:
+          type: string
+          enum:
+            - lider juvenil
+            - simpatizante
+            - colaborador
+            - joven adventista
+            - director
+            - subdirector
+            - club guias
+            - club conquistadores
+            - club aventureros
+            - escuela sabatica
+          description: Rol del joven en la iglesia
+          example: joven adventista
+        email:
+          type: string
+          format: email
+          description: Correo electrónico
+          example: juan.perez@email.com
+        skills:
+          type: array
+          items:
+            type: string
+          description: Habilidades del joven
+          example:
             - música
             - predicación
             - liderazgo
@@ -1445,22 +2062,22 @@ components:
         byAgeRange:
           type: object
           properties:
-            "13-15":
+            '13-15':
               type: number
               example: 25
-            "16-18":
+            '16-18':
               type: number
               example: 40
-            "19-21":
+            '19-21':
               type: number
               example: 35
-            "22-25":
+            '22-25':
               type: number
               example: 30
-            "26-30":
+            '26-30':
               type: number
               example: 15
-            "30+":
+            '30+':
               type: number
               example: 5
         byRole:
@@ -1481,7 +2098,7 @@ components:
             femenino:
               type: number
               example: 70
-            "":
+            '':
               type: number
               example: 5
 
@@ -1492,27 +2109,27 @@ components:
         id:
           type: string
           description: ID único del código QR
-          example: "507f1f77bcf86cd799439011"
+          example: '507f1f77bcf86cd799439011'
         code:
           type: string
           format: uuid
           description: Código UUID único para el QR
-          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+          example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
         qrImage:
           type: string
           format: uri
           description: URL de la imagen del código QR generada
-          example: "https://res.cloudinary.com/demo/image/upload/qr_codes/qr_20231201.png"
+          example: 'https://res.cloudinary.com/demo/image/upload/qr_codes/qr_20231201.png'
         date:
           type: string
           format: date
           description: Fecha para la cual es válido el QR
-          example: "2023-12-01"
+          example: '2023-12-01'
         expiresAt:
           type: string
           format: date-time
           description: Fecha y hora de expiración del QR
-          example: "2023-12-01T23:59:59.000Z"
+          example: '2023-12-01T23:59:59.000Z'
         isActive:
           type: boolean
           description: Indica si el QR está activo
@@ -1521,12 +2138,12 @@ components:
           type: string
           format: date-time
           description: Fecha de creación del QR
-          example: "2023-12-01T08:00:00.000Z"
+          example: '2023-12-01T08:00:00.000Z'
         updatedAt:
           type: string
           format: date-time
           description: Fecha de última actualización
-          example: "2023-12-01T08:00:00.000Z"
+          example: '2023-12-01T08:00:00.000Z'
 
     QRStats:
       type: object
@@ -1545,7 +2162,7 @@ components:
           type: string
           format: date-time
           description: Fecha y hora del último escaneo
-          example: "2023-12-01T15:30:00.000Z"
+          example: '2023-12-01T15:30:00.000Z'
 
     # ===== Attendance Schemas =====
     Attendance:
@@ -1554,30 +2171,30 @@ components:
         id:
           type: string
           description: ID único del registro de asistencia
-          example: "507f1f77bcf86cd799439011"
+          example: '507f1f77bcf86cd799439011'
         young_id:
           type: string
           description: ID del joven que registró asistencia
-          example: "507f1f77bcf86cd799439012"
+          example: '507f1f77bcf86cd799439012'
         qr_id:
           type: string
           description: ID del código QR escaneado
-          example: "507f1f77bcf86cd799439013"
+          example: '507f1f77bcf86cd799439013'
         scannedAt:
           type: string
           format: date-time
           description: Fecha y hora del escaneo
-          example: "2023-12-01T14:30:00.000Z"
+          example: '2023-12-01T14:30:00.000Z'
         date:
           type: string
           format: date
           description: Fecha de la asistencia
-          example: "2023-12-01"
+          example: '2023-12-01'
         createdAt:
           type: string
           format: date-time
           description: Fecha de creación del registro
-          example: "2023-12-01T14:30:00.000Z"
+          example: '2023-12-01T14:30:00.000Z'
 
     AttendanceWithUser:
       type: object
@@ -1591,38 +2208,38 @@ components:
               properties:
                 _id:
                   type: string
-                  example: "507f1f77bcf86cd799439012"
+                  example: '507f1f77bcf86cd799439012'
                 fullName:
                   type: string
-                  example: "Juan Pérez García"
+                  example: 'Juan Pérez García'
                 placa:
                   type: string
-                  example: "JP2023"
+                  example: 'JP2023'
                   description: Identificador único del joven
                 group:
                   type: string
-                  example: "1"
+                  example: '1'
                   description: Grupo al que pertenece el joven
                 email:
                   type: string
                   format: email
-                  example: "juan.perez@example.com"
+                  example: 'juan.perez@example.com'
                 profileImage:
                   type: string
                   format: uri
                   description: URL de la imagen de perfil en Cloudinary
-                  example: "https://res.cloudinary.com/demo/image/upload/v1234567890/profiles/sample.jpg"
+                  example: 'https://res.cloudinary.com/demo/image/upload/v1234567890/profiles/sample.jpg'
             qrCodeId:
               type: object
               description: Información del código QR utilizado
               properties:
                 _id:
                   type: string
-                  example: "507f1f77bcf86cd799439013"
+                  example: '507f1f77bcf86cd799439013'
                 generatedAt:
                   type: string
                   format: date-time
-                  example: "2023-12-01T14:00:00.000Z"
+                  example: '2023-12-01T14:00:00.000Z'
 
     AttendanceStats:
       type: object
@@ -1633,11 +2250,11 @@ components:
             startDate:
               type: string
               format: date
-              example: "2023-12-01"
+              example: '2023-12-01'
             endDate:
               type: string
               format: date
-              example: "2023-12-31"
+              example: '2023-12-31'
         totalAttendances:
           type: number
           description: Total de registros de asistencia en el período
@@ -1659,29 +2276,29 @@ components:
               date:
                 type: string
                 format: date
-                example: "2023-12-01"
+                example: '2023-12-01'
               count:
                 type: number
                 example: 42
         byAgeRange:
           type: object
           properties:
-            "13-15":
+            '13-15':
               type: number
               example: 25
-            "16-18":
+            '16-18':
               type: number
               example: 40
-            "19-21":
+            '19-21':
               type: number
               example: 35
-            "22-25":
+            '22-25':
               type: number
               example: 30
-            "26-30":
+            '26-30':
               type: number
               example: 15
-            "30+":
+            '30+':
               type: number
               example: 5
         byRole:
@@ -1706,7 +2323,7 @@ components:
         timestamp:
           type: string
           format: date-time
-          example: "2023-12-01T10:30:00.000Z"
+          example: '2023-12-01T10:30:00.000Z'
 
     Error:
       type: object
@@ -1747,12 +2364,12 @@ components:
         username:
           type: string
           description: Puedes usar email o placa
-          example: "jvrm.mora@gmail.com"
+          example: 'jvrm.mora@gmail.com'
         password:
           type: string
           minLength: 8
           description: Contraseña del usuario
-          example: "Pinzon280615*"
+          example: 'Pinzon280615*'
       description: Credenciales de login. Se debe proporcionar email O placa junto con la contraseña
 
     LoginResponse:
@@ -1763,18 +2380,18 @@ components:
           example: true
         message:
           type: string
-          example: "Inicio de sesión exitoso"
+          example: 'Inicio de sesión exitoso'
         data:
           type: object
           properties:
             token:
               type: string
               description: Token JWT para autenticación
-              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
             expiresIn:
               type: string
               description: Tiempo de expiración del token
-              example: "10d"
+              example: '10d'
             first_login:
               type: boolean
               description: Indica si es el primer login del usuario
@@ -1784,49 +2401,49 @@ components:
       properties:
         id:
           type: string
-          example: "507f1f77bcf86cd799439011"
+          example: '507f1f77bcf86cd799439011'
         fullName:
           type: string
-          example: "Javier Montaño"
+          example: 'Javier Montaño'
         email:
           type: string
           format: email
-          example: "jvrm.mora@gmail.com"
+          example: 'jvrm.mora@gmail.com'
         placa:
           type: string
-          example: "@MODJAVI001"
+          example: '@MODJAVI001'
         role_name:
           type: string
-          example: "Super Admin"
+          example: 'Super Admin'
         role_id:
           type: string
-          example: "507f1f77bcf86cd799439012"
+          example: '507f1f77bcf86cd799439012'
         ageRange:
           type: string
-          example: "22-25"
+          example: '22-25'
         phone:
           type: string
-          example: "+57 300 123 4567"
+          example: '+57 300 123 4567'
         birthday:
           type: string
           format: date
-          example: "1998-06-28"
+          example: '1998-06-28'
         profileImage:
           type: string
           format: uri
-          example: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+          example: 'https://res.cloudinary.com/demo/image/upload/sample.jpg'
         gender:
           type: string
-          enum: [masculino, femenino, ""]
-          example: "masculino"
+          enum: [masculino, femenino, '']
+          example: 'masculino'
         role:
           type: string
-          example: "lider juvenil"
+          example: 'lider juvenil'
         skills:
           type: array
           items:
             type: string
-          example: ["Liderazgo", "Música", "Predicación"]
+          example: ['Liderazgo', 'Música', 'Predicación']
         group:
           type: number
           minimum: 1
@@ -1835,11 +2452,312 @@ components:
         createdAt:
           type: string
           format: date-time
-          example: "2023-12-01T10:30:00.000Z"
+          example: '2023-12-01T10:30:00.000Z'
         updatedAt:
           type: string
           format: date-time
-          example: "2023-12-01T10:30:00.000Z"
+          example: '2023-12-01T10:30:00.000Z'
+
+    # ===== Schemas de Sistema de Puntos y Temporadas =====
+    Season:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID único de la temporada
+          example: '507f1f77bcf86cd799439011'
+        name:
+          type: string
+          description: Nombre de la temporada
+          minLength: 3
+          maxLength: 100
+          example: 'Temporada Q1 2024'
+        description:
+          type: string
+          description: Descripción de la temporada
+          example: 'Primera temporada del año 2024 con enfoque en asistencia y colaboración'
+        startDate:
+          type: string
+          format: date
+          description: Fecha de inicio de la temporada
+          example: '2024-01-01'
+        endDate:
+          type: string
+          format: date
+          description: Fecha de finalización de la temporada
+          example: '2024-03-31'
+        status:
+          type: string
+          enum:
+            - UPCOMING
+            - ACTIVE
+            - COMPLETED
+          description: Estado actual de la temporada
+          example: 'ACTIVE'
+        pointsSettings:
+          type: object
+          description: Configuración de puntos para esta temporada
+          properties:
+            attendancePoints:
+              type: number
+              minimum: 0
+              description: Puntos por asistencia
+              example: 10
+            activityPoints:
+              type: number
+              minimum: 0
+              description: Puntos por actividad
+              example: 10
+            referrerPoints:
+              type: number
+              minimum: 0
+              description: Puntos para quien refiere
+              example: 30
+            referredPoints:
+              type: number
+              minimum: 0
+              description: Puntos para referido
+              example: 10
+        isActive:
+          type: boolean
+          description: Indica si la temporada está activa (solo una puede estar activa)
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del registro
+          example: '2023-12-01T10:30:00.000Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de última actualización
+          example: '2023-12-01T15:45:00.000Z'
+
+    SeasonCreate:
+      type: object
+      required:
+        - name
+        - startDate
+        - endDate
+      properties:
+        name:
+          type: string
+          description: Nombre de la temporada
+          minLength: 3
+          maxLength: 100
+          example: 'Temporada Q1 2024'
+        description:
+          type: string
+          description: Descripción de la temporada
+          example: 'Primera temporada del año 2024 con enfoque en asistencia y colaboración'
+        startDate:
+          type: string
+          format: date
+          description: Fecha de inicio de la temporada
+          example: '2024-01-01'
+        endDate:
+          type: string
+          format: date
+          description: Fecha de finalización de la temporada
+          example: '2024-03-31'
+        pointsSettings:
+          type: object
+          description: Configuración opcional de puntos para esta temporada
+          properties:
+            attendancePoints:
+              type: number
+              minimum: 0
+              description: Puntos por asistencia
+              example: 10
+            activityPoints:
+              type: number
+              minimum: 0
+              description: Puntos por actividad
+              example: 10
+            referrerPoints:
+              type: number
+              minimum: 0
+              description: Puntos para quien refiere
+              example: 30
+            referredPoints:
+              type: number
+              minimum: 0
+              description: Puntos para referido
+              example: 10
+
+    SeasonUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Nombre de la temporada
+          minLength: 3
+          maxLength: 100
+          example: 'Temporada Q1 2024 - Actualizada'
+        description:
+          type: string
+          description: Descripción de la temporada
+          example: 'Primera temporada actualizada del año 2024'
+        startDate:
+          type: string
+          format: date
+          description: Fecha de inicio de la temporada
+          example: '2024-01-01'
+        endDate:
+          type: string
+          format: date
+          description: Fecha de finalización de la temporada
+          example: '2024-03-31'
+        pointsSettings:
+          type: object
+          description: Configuración de puntos para esta temporada
+          properties:
+            attendancePoints:
+              type: number
+              minimum: 0
+              description: Puntos por asistencia
+              example: 15
+            activityPoints:
+              type: number
+              minimum: 0
+              description: Puntos por actividad
+              example: 15
+            referrerPoints:
+              type: number
+              minimum: 0
+              description: Puntos para quien refiere
+              example: 35
+            referredPoints:
+              type: number
+              minimum: 0
+              description: Puntos para referido
+              example: 15
+
+    PointsTransaction:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID único de la transacción
+          example: '507f1f77bcf86cd799439011'
+        youngId:
+          type: string
+          description: ID del joven que recibe los puntos
+          example: '507f1f77bcf86cd799439012'
+        seasonId:
+          type: string
+          description: ID de la temporada asociada
+          example: '507f1f77bcf86cd799439013'
+        type:
+          type: string
+          enum:
+            - ATTENDANCE
+            - ACTIVITY
+            - REFERRER_BONUS
+            - REFERRED_BONUS
+          description: Tipo de transacción de puntos
+          example: 'ATTENDANCE'
+        points:
+          type: number
+          description: Cantidad de puntos otorgados
+          example: 10
+        description:
+          type: string
+          description: Descripción de la transacción
+          example: 'Asistencia del 2024-01-06'
+        metadata:
+          type: object
+          description: Datos adicionales específicos del tipo de transacción
+          example:
+            attendanceDate: '2024-01-06'
+            qrCodeId: '507f1f77bcf86cd799439014'
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del registro
+          example: '2024-01-06T10:30:00.000Z'
+
+    AssignPointsRequest:
+      type: object
+      required:
+        - youngId
+        - points
+        - type
+      properties:
+        youngId:
+          type: string
+          description: ID del joven que recibirá los puntos
+          example: '507f1f77bcf86cd799439012'
+        points:
+          type: number
+          minimum: 1
+          description: Cantidad de puntos a otorgar
+          example: 10
+        type:
+          type: string
+          enum:
+            - ATTENDANCE
+            - ACTIVITY
+            - REFERRER_BONUS
+            - REFERRED_BONUS
+          description: Tipo de puntos a asignar
+          example: 'ACTIVITY'
+        description:
+          type: string
+          description: Descripción de por qué se otorgan los puntos
+          example: 'Participación en actividad de servicio comunitario'
+        metadata:
+          type: object
+          description: Información adicional opcional
+          example:
+            activityName: 'Servicio Comunitario'
+            date: '2024-01-06'
+
+    PointsBreakdown:
+      type: object
+      properties:
+        total:
+          type: number
+          description: Total de puntos acumulados
+          example: 150
+        byType:
+          type: object
+          description: Puntos desglosados por tipo
+          properties:
+            ATTENDANCE:
+              type: number
+              example: 80
+            ACTIVITY:
+              type: number
+              example: 50
+            REFERRER_BONUS:
+              type: number
+              example: 30
+            REFERRED_BONUS:
+              type: number
+              example: 10
+        transactionCount:
+          type: number
+          description: Cantidad total de transacciones
+          example: 15
+        season:
+          type: object
+          description: Información de la temporada actual
+          properties:
+            id:
+              type: string
+              example: '507f1f77bcf86cd799439013'
+            name:
+              type: string
+              example: 'Temporada Q1 2024'
+            startDate:
+              type: string
+              format: date
+              example: '2024-01-01'
+            endDate:
+              type: string
+              format: date
+              example: '2024-03-31'
 
     ErrorResponse:
       type: object
@@ -1847,11 +2765,11 @@ components:
         error:
           type: string
           description: Mensaje de error
-          example: "Credenciales inválidas"
+          example: 'Credenciales inválidas'
         details:
           type: string
           description: Detalles adicionales del error
-          example: "El email o contraseña proporcionados son incorrectos"
+          example: 'El email o contraseña proporcionados son incorrectos'
 
   responses:
     NotFound:
@@ -1885,18 +2803,18 @@ components:
             tokenMissing:
               summary: Token faltante
               value:
-                error: "Token de acceso requerido"
-                details: "Debe proporcionar un token JWT válido en el header Authorization"
+                error: 'Token de acceso requerido'
+                details: 'Debe proporcionar un token JWT válido en el header Authorization'
             tokenInvalid:
               summary: Token inválido
               value:
-                error: "Token inválido"
-                details: "El token JWT proporcionado no es válido"
+                error: 'Token inválido'
+                details: 'El token JWT proporcionado no es válido'
             tokenExpired:
               summary: Token expirado
               value:
-                error: "Token expirado"
-                details: "El token JWT ha expirado, por favor inicie sesión nuevamente"
+                error: 'Token expirado'
+                details: 'El token JWT ha expirado, por favor inicie sesión nuevamente'
 
   securitySchemes:
     bearerAuth:
@@ -1905,12 +2823,12 @@ components:
       bearerFormat: JWT
       description: |
         Token JWT para autenticación. Obtenga el token usando el endpoint POST /auth/login.
-        
+
         **Ejemplo de uso:**
         ```
         Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         ```
-        
+
         **Scopes disponibles:**
         - `young:read` - Leer información de jóvenes
         - `young:write` - Crear y actualizar jóvenes

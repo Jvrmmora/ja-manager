@@ -10,6 +10,8 @@ import importRoutes from './routes/importRoutes';
 import authRoutes from './routes/authRoutes';
 import qrRoutes from './routes/qrRoutes';
 import attendanceRoutes from './routes/attendanceRoutes';
+import seasonRoutes from './routes/seasonRoutes';
+import pointsRoutes from './routes/pointsRoutes';
 import { DatabaseSeeder } from './seeders/DatabaseSeeder';
 import { authenticateToken } from './middleware/auth';
 import { ensureDatabaseConnection } from './middleware/databaseCheck';
@@ -178,6 +180,10 @@ const setupRoutes = () => {
     authenticateToken,
     attendanceRoutes
   );
+
+  // Rutas de puntos y temporadas (sistema de gamificación)
+  app.use('/api/seasons', ensureDatabaseConnection, seasonRoutes);
+  app.use('/api/points', ensureDatabaseConnection, pointsRoutes);
 
   // Ruta por defecto
   app.get('/', (_req, res) => {

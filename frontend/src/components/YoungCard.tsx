@@ -4,18 +4,27 @@ import ImageModal from './ImageModal';
 import Tooltip from './Tooltip';
 import GeneratePasswordModal from './GeneratePasswordModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
+import PointsCard from './PointsCard';
+import PointsBreakdownModal from './PointsBreakdownModal';
+import AssignPointsModal from './AssignPointsModal';
 import { generatePlaca } from '../services/api';
 import { authService } from '../services/auth';
 
 // Mapeo de colores por grupo
 const getGroupColor = (group?: number | null): string => {
   switch (group) {
-    case 1: return '#34C759'; // green
-    case 2: return '#FF9500'; // orange
-    case 3: return '#FFCC00'; // yellow
-    case 4: return '#0EA5E9'; // blue-ish
-    case 5: return '#9CA3AF'; // gray
-    default: return '#7C3AED'; // violet for unspecified
+    case 1:
+      return '#34C759'; // green
+    case 2:
+      return '#FF9500'; // orange
+    case 3:
+      return '#FFCC00'; // yellow
+    case 4:
+      return '#0EA5E9'; // blue-ish
+    case 5:
+      return '#9CA3AF'; // gray
+    default:
+      return '#7C3AED'; // violet for unspecified
   }
 };
 
@@ -28,13 +37,23 @@ interface YoungCardProps {
   onShowError?: (message: string) => void; // Callback para mostrar toast de error
 }
 
-const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungUpdate, onShowSuccess, onShowError }) => {
+const YoungCard: React.FC<YoungCardProps> = ({
+  young,
+  onDelete,
+  onEdit,
+  onYoungUpdate,
+  onShowSuccess,
+  onShowError,
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGeneratingPlaca, setIsGeneratingPlaca] = useState(false);
-  const [showGeneratePasswordModal, setShowGeneratePasswordModal] = useState(false);
+  const [showGeneratePasswordModal, setShowGeneratePasswordModal] =
+    useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+  const [showPointsModal, setShowPointsModal] = useState(false);
+  const [showAssignPointsModal, setShowAssignPointsModal] = useState(false);
+
   // Obtener información del usuario actual
   const currentUser = authService.getUserInfo();
   const isAdmin = currentUser?.role_name === 'Super Admin';
@@ -79,7 +98,9 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
   // Función para manejar éxito de generación de contraseña
   const handlePasswordGenerated = (newPassword: string) => {
     setShowGeneratePasswordModal(false);
-    onShowSuccess?.(`Nueva contraseña generada para ${young.fullName}: ${newPassword}`);
+    onShowSuccess?.(
+      `Nueva contraseña generada para ${young.fullName}: ${newPassword}`
+    );
   };
 
   // Función para generar placa
@@ -89,7 +110,7 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
     setIsGeneratingPlaca(true);
     try {
       const response = await generatePlaca(young.id);
-      
+
       if (response.success && response.data) {
         // Actualizar el joven con la nueva placa
         const updatedYoung = { ...young, placa: response.data.placa };
@@ -135,18 +156,19 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
     } else {
       d = new Date(date);
     }
-    
+
     return d.toLocaleDateString('es-ES', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
   const capitalizeRole = (role: string) => {
-    return role.split(' ').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
+    return role
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
 
   return (
@@ -177,20 +199,46 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
                         stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
                       </svg>
                     </div>
                   </>
                 ) : (
-                  <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <svg
+                    className="w-6 h-6 sm:w-8 sm:h-8 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                   </svg>
                 )}
-
               </div>
 
-              <div style={{ position: 'absolute', bottom: -4, right: -4, zIndex: 30 }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: -4,
+                  right: -4,
+                  zIndex: 30,
+                }}
+              >
                 <span
                   title={young.group ? `Grupo ${young.group}` : 'Sin grupo'}
                   className={`inline-block w-3 h-3 rounded-full border-2 border-white`}
@@ -200,7 +248,7 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
             </div>
 
             <div className="flex-1 min-w-0 pr-3">
-              <h3 
+              <h3
                 className="text-lg sm:text-xl font-semibold text-white leading-tight break-words"
                 style={{
                   display: '-webkit-box',
@@ -208,7 +256,7 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
                   WebkitBoxOrient: 'vertical',
                   overflow: 'hidden',
                   wordBreak: 'break-word',
-                  hyphens: 'auto'
+                  hyphens: 'auto',
                 }}
                 title={young.fullName}
               >
@@ -219,7 +267,7 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
               </p>
             </div>
           </div>
-          
+
           {/* Botones de acción */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
@@ -227,8 +275,18 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
               className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors flex-shrink-0"
               title="Editar joven"
             >
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
               </svg>
             </button>
             <button
@@ -236,8 +294,18 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
               className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors flex-shrink-0"
               title="Eliminar joven"
             >
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
               </svg>
             </button>
           </div>
@@ -249,11 +317,17 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
         {/* Información básica */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4 text-sm">
           <div>
-            <span className="text-gray-500 dark:text-gray-400 font-medium">Edad:</span>
-            <span className="ml-2 text-gray-800 dark:text-gray-200">{young.ageRange} años</span>
+            <span className="text-gray-500 dark:text-gray-400 font-medium">
+              Edad:
+            </span>
+            <span className="ml-2 text-gray-800 dark:text-gray-200">
+              {young.ageRange} años
+            </span>
           </div>
           <div>
-            <span className="text-gray-500 dark:text-gray-400 font-medium">Género:</span>
+            <span className="text-gray-500 dark:text-gray-400 font-medium">
+              Género:
+            </span>
             <span className="ml-2 text-gray-800 dark:text-gray-200 capitalize">
               {young.gender || 'No especificado'}
             </span>
@@ -263,22 +337,56 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
         {/* Contacto */}
         <div className="space-y-2">
           <div className="flex items-center text-sm">
-            <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            <svg
+              className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+              />
             </svg>
-            <span className="text-gray-800 dark:text-gray-200 truncate">{young.phone}</span>
-          </div>
-          
-          <div className="flex items-center text-sm">
-            <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-            </svg>
-            <span className="text-gray-800 dark:text-gray-200 truncate">{young.email}</span>
+            <span className="text-gray-800 dark:text-gray-200 truncate">
+              {young.phone}
+            </span>
           </div>
 
           <div className="flex items-center text-sm">
-            <svg className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0h6m-6 0l1 12a2 2 0 002 2h2a2 2 0 002-2l1-12m-6 0H6a2 2 0 00-2 2v0a2 2 0 002 2h1" />
+            <svg
+              className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
+              />
+            </svg>
+            <span className="text-gray-800 dark:text-gray-200 truncate">
+              {young.email}
+            </span>
+          </div>
+
+          <div className="flex items-center text-sm">
+            <svg
+              className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0h6m-6 0l1 12a2 2 0 002 2h2a2 2 0 002-2l1-12m-6 0H6a2 2 0 00-2 2v0a2 2 0 002 2h1"
+              />
             </svg>
             <span className="text-gray-800">{formatDate(young.birthday)}</span>
           </div>
@@ -286,7 +394,9 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
 
         {/* Habilidades */}
         <div>
-          <span className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-2">Habilidades:</span>
+          <span className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-2">
+            Habilidades:
+          </span>
           <div className="flex flex-wrap gap-1 sm:gap-2">
             {young.skills && young.skills.length > 0 ? (
               young.skills.map((skill, index) => (
@@ -308,10 +418,43 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
         {/* Línea divisoria */}
         <div className="border-t border-gray-100 dark:border-gray-700"></div>
 
+        {/* Puntos del joven */}
+        {young.id && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Puntos:
+            </span>
+            <div className="flex items-center gap-2">
+              <PointsCard
+                youngId={young.id}
+                onClick={() => setShowPointsModal(true)}
+              />
+              {/* Botón para asignar puntos (solo admins) */}
+              {isAdmin && (
+                <Tooltip content="Asignar puntos" position="left">
+                  <button
+                    onClick={() => setShowAssignPointsModal(true)}
+                    className="p-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-300 rounded-lg transition-colors border border-amber-200 dark:border-amber-700"
+                  >
+                    <span className="material-symbols-rounded text-sm">
+                      add_circle
+                    </span>
+                  </button>
+                </Tooltip>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Línea divisoria */}
+        <div className="border-t border-gray-100 dark:border-gray-700"></div>
+
         {/* Placa */}
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Tu Placa:</span>
-          
+          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Tu Placa:
+          </span>
+
           <div className="flex items-center gap-2">
             {young.placa ? (
               <>
@@ -330,42 +473,77 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
                       onClick={handleOpenGeneratePassword}
                       className="bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 text-green-800 dark:text-green-300 px-2 py-1 rounded-lg text-sm font-medium transition-colors border border-green-200 dark:border-green-700"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
                       </svg>
                     </button>
                   </Tooltip>
                 )}
               </>
             ) : (
-            <Tooltip content="Generar placa" position="top">
-              <button
-                onClick={handleGeneratePlaca}
-                disabled={isGeneratingPlaca}
-                className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                  isGeneratingPlaca 
-                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
-                    : 'bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-900/50 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-700'
-                }`}
-              >
-                {isGeneratingPlaca ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Generando...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Sin placa
-                  </>
-                )}
-              </button>
-            </Tooltip>
+              <Tooltip content="Generar placa" position="top">
+                <button
+                  onClick={handleGeneratePlaca}
+                  disabled={isGeneratingPlaca}
+                  className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                    isGeneratingPlaca
+                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                      : 'bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-900/50 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-700'
+                  }`}
+                >
+                  {isGeneratingPlaca ? (
+                    <>
+                      <svg
+                        className="w-4 h-4 animate-spin"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Generando...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
+                      </svg>
+                      Sin placa
+                    </>
+                  )}
+                </button>
+              </Tooltip>
             )}
           </div>
         </div>
@@ -406,6 +584,24 @@ const YoungCard: React.FC<YoungCardProps> = ({ young, onDelete, onEdit, onYoungU
         youngName={young.fullName}
         loading={isDeleting}
       />
+
+      {/* Modal de desglose de puntos */}
+      <PointsBreakdownModal
+        young={young}
+        isOpen={showPointsModal}
+        onClose={() => setShowPointsModal(false)}
+      />
+
+      {/* Modal para asignar puntos (admin) */}
+      {onShowSuccess && onShowError && (
+        <AssignPointsModal
+          young={young}
+          isOpen={showAssignPointsModal}
+          onClose={() => setShowAssignPointsModal(false)}
+          onSuccess={onShowSuccess}
+          onError={onShowError}
+        />
+      )}
     </div>
   );
 };

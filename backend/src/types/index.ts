@@ -10,12 +10,23 @@ export interface IYoung {
   birthday: Date;
   profileImage?: string;
   gender: 'masculino' | 'femenino' | '';
-  role: 'lider juvenil' | 'colaborador' | 'director' | 'subdirector' | 'club guias' | 'club conquistadores' | 'club aventureros' | 'escuela sabatica' | 'joven adventista' | 'simpatizante';
+  role:
+    | 'lider juvenil'
+    | 'colaborador'
+    | 'director'
+    | 'subdirector'
+    | 'club guias'
+    | 'club conquistadores'
+    | 'club aventureros'
+    | 'escuela sabatica'
+    | 'joven adventista'
+    | 'simpatizante';
   // Grupo opcional (1..5)
   group?: number;
   email: string;
   skills: string[];
   first_login?: boolean;
+  referredBy?: string; // ID del joven que lo refirió
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -61,7 +72,8 @@ export interface ILoginResponse {
   error?: string;
 }
 
-export interface IYoungCreate extends Omit<IYoung, '_id' | 'createdAt' | 'updatedAt'> {}
+export interface IYoungCreate
+  extends Omit<IYoung, '_id' | 'createdAt' | 'updatedAt'> {}
 
 export interface IYoungUpdate extends Partial<IYoungCreate> {}
 
@@ -80,7 +92,14 @@ export interface PaginationQuery {
   gender?: string;
   role?: string;
   groups?: string[] | string;
-  sortBy?: 'fullName' | 'birthday' | 'email' | 'role' | 'gender' | 'createdAt' | 'updatedAt';
+  sortBy?:
+    | 'fullName'
+    | 'birthday'
+    | 'email'
+    | 'role'
+    | 'gender'
+    | 'createdAt'
+    | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
 }
 

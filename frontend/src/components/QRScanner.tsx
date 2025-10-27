@@ -1,9 +1,14 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QrScanner from 'qr-scanner';
-import { XMarkIcon, ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import {
+  XMarkIcon,
+  ExclamationTriangleIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline';
 import { scanQRAndRegisterAttendance } from '../services/api';
 import AttendanceModal from './AttendanceModal';
+import PointsAnimation from './PointsAnimation';
 import { useTheme } from '../context/ThemeContext';
 import { formatDisplayDate } from '../utils/dateUtils';
 
@@ -16,14 +21,16 @@ interface QRScannerProps {
 const QRScanner: React.FC<QRScannerProps> = ({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const scannerRef = useRef<QrScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cameraState, setCameraState] = useState<'prompt' | 'granted' | 'denied'>('prompt');
+  const [cameraState, setCameraState] = useState<
+    'prompt' | 'granted' | 'denied'
+  >('prompt');
   const { isDark } = useTheme();
 
   // Usar refs para estados críticos que no deben causar re-renders
@@ -38,18 +45,21 @@ const QRScanner: React.FC<QRScannerProps> = ({
     subtitle?: string;
     date?: string;
   } | null>(null);
+  const [showPointsAnimation, setShowPointsAnimation] = useState(false);
+  const [pointsEarned, setPointsEarned] = useState(10); // Puntos por defecto
 
   // Detectar si es dispositivo móvil
-  const isMobile = /Mobi|Android/i.test(navigator.userAgent) || 
-                   ('ontouchstart' in window) || 
-                   (navigator.maxTouchPoints > 0);
+  const isMobile =
+    /Mobi|Android/i.test(navigator.userAgent) ||
+    'ontouchstart' in window ||
+    navigator.maxTouchPoints > 0;
 
   // Limpiar recursos
   const cleanup = useCallback(() => {
     // Limpiar refs
     canScanRef.current = false;
     isProcessingRef.current = false;
-    
+
     if (scannerRef.current) {
       try {
         scannerRef.current.destroy();
@@ -94,7 +104,6 @@ const QRScanner: React.FC<QRScannerProps> = ({
 
       // Solicitar permisos primero
       await requestCameraPermission();
-
     } catch (error: any) {
       console.error('Error iniciando scanner:', error);
       setError(error.message || 'Error al inicializar el escáner');
@@ -111,24 +120,25 @@ const QRScanner: React.FC<QRScannerProps> = ({
           facingMode: { ideal: 'environment' }, // Preferir cámara trasera
           width: { ideal: isMobile ? 720 : 1280, min: 320 },
           height: { ideal: isMobile ? 720 : 720, min: 240 },
-          frameRate: { ideal: isMobile ? 25 : 30, max: 30 }
-        }
+          frameRate: { ideal: isMobile ? 25 : 30, max: 30 },
+        },
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      
+
       // Cerrar el stream inmediatamente - solo necesitamos los permisos
       stream.getTracks().forEach(track => track.stop());
-      
+
       setCameraState('granted');
     } catch (error: any) {
       setCameraState('denied');
-      
+
       let errorMessage = 'Error al acceder a la cámara';
-      
+
       switch (error.name) {
         case 'NotAllowedError':
-          errorMessage = 'Permisos de cámara denegados. Por favor, permite el acceso a la cámara.';
+          errorMessage =
+            'Permisos de cámara denegados. Por favor, permite el acceso a la cámara.';
           break;
         case 'NotFoundError':
           errorMessage = 'No se encontró ninguna cámara en el dispositivo';
@@ -142,19 +152,24 @@ const QRScanner: React.FC<QRScannerProps> = ({
         default:
           errorMessage = error.message || errorMessage;
       }
-      
+
       throw new Error(errorMessage);
     }
   };
 
   // Efecto para inicializar el scanner cuando el video esté disponible
   useEffect(() => {
-    if (cameraState === 'granted' && videoRef.current && !scannerRef.current && isOpen) {
+    if (
+      cameraState === 'granted' &&
+      videoRef.current &&
+      !scannerRef.current &&
+      isOpen
+    ) {
       // Pequeño delay para asegurar que el elemento video esté completamente renderizado
       const timer = setTimeout(() => {
         initializeQRScanner();
       }, 200);
-      
+
       return () => clearTimeout(timer);
     }
   }, [cameraState, isOpen]);
@@ -169,7 +184,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
 
     try {
       setIsInitializing(true);
-      
+
       const config = {
         onDecodeError: () => {
           // Ignorar errores de decodificación - son normales
@@ -182,7 +197,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
 
       scannerRef.current = new QrScanner(
         videoRef.current,
-        (result) => {
+        result => {
           const qrData = typeof result === 'string' ? result : result.data;
           handleScanResult(qrData);
         },
@@ -192,12 +207,10 @@ const QRScanner: React.FC<QRScannerProps> = ({
       await scannerRef.current.start();
       setIsScanning(true);
       setIsInitializing(false);
-      
+
       // Activar refs para permitir scanning
       canScanRef.current = true;
       isProcessingRef.current = false;
-      
-      
     } catch (error: any) {
       setError(error.message || 'Error al inicializar el escáner QR');
       setIsScanning(false);
@@ -239,16 +252,16 @@ const QRScanner: React.FC<QRScannerProps> = ({
 
       // Extraer código con múltiples estrategias
       let code: string;
-      
+
       try {
         // Estrategia 1: Si es una URL completa
         if (data.includes('http')) {
           const url = new URL(data);
-          
+
           // Buscar en query parameters
           if (url.searchParams.has('code')) {
             code = url.searchParams.get('code') || '';
-          } 
+          }
           // Buscar en path
           else if (data.includes('attendance/scan/')) {
             const match = data.match(/attendance\/scan\/([^/?#]+)/);
@@ -256,18 +269,24 @@ const QRScanner: React.FC<QRScannerProps> = ({
           }
           // Buscar cualquier UUID en la URL
           else {
-            const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+            const uuidRegex =
+              /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
             const match = data.match(uuidRegex);
             code = match ? match[0] : '';
           }
-        } 
+        }
         // Estrategia 2: Si parece un UUID directo
-        else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.trim())) {
+        else if (
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            data.trim()
+          )
+        ) {
           code = data.trim();
         }
         // Estrategia 3: Buscar UUID en cualquier parte del texto
         else {
-          const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+          const uuidRegex =
+            /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
           const match = data.match(uuidRegex);
           if (match) {
             code = match[0];
@@ -278,7 +297,8 @@ const QRScanner: React.FC<QRScannerProps> = ({
         }
       } catch (urlError) {
         // Buscar UUID en el texto
-        const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+        const uuidRegex =
+          /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
         const match = data.match(uuidRegex);
         code = match ? match[0] : data.trim();
       }
@@ -289,15 +309,23 @@ const QRScanner: React.FC<QRScannerProps> = ({
 
       // Registrar asistencia
       const result = await scanQRAndRegisterAttendance(code);
-      
+
       // Mostrar éxito
       setModalData({
         success: true,
         message: '¡Has registrado tu asistencia hoy satisfactoriamente!',
         subtitle: 'Gracias por asistir a nuestro culto joven',
-        date: formatDisplayDate(new Date())
+        date: formatDisplayDate(new Date()),
       });
       setShowModal(true);
+
+      // Mostrar animación de puntos después de 1 segundo
+      setTimeout(() => {
+        // Obtener puntos del resultado si están disponibles
+        const points = result?.points || 10;
+        setPointsEarned(points);
+        setShowPointsAnimation(true);
+      }, 1000);
 
       if (onSuccess) {
         onSuccess(result);
@@ -306,17 +334,16 @@ const QRScanner: React.FC<QRScannerProps> = ({
       // Cerrar scanner
       setTimeout(() => {
         onClose();
-      }, 3000);
-
+      }, 4000); // Aumentado para dar tiempo a la animación
     } catch (error: any) {
       // Limpiar refs en error
       isProcessingRef.current = false;
-      
+
       // Mostrar error
       setModalData({
         success: false,
         message: 'Error al Registrar',
-        subtitle: error.message || 'Ocurrió un error inesperado'
+        subtitle: error.message || 'Ocurrió un error inesperado',
       });
       setShowModal(true);
 
@@ -380,7 +407,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
             className="absolute inset-0 bg-black bg-opacity-75"
             onClick={handleClose}
           />
-          
+
           {/* Scanner Modal */}
           <motion.div
             initial={{ scale: 0.7, opacity: 0 }}
@@ -389,27 +416,31 @@ const QRScanner: React.FC<QRScannerProps> = ({
             className={`relative w-full max-w-md mx-auto ${
               isDark ? 'bg-gray-800' : 'bg-white'
             } rounded-2xl overflow-hidden shadow-2xl`}
-            style={{ 
+            style={{
               touchAction: 'manipulation', // Prevenir zoom en móviles
               WebkitUserSelect: 'none',
-              userSelect: 'none'
+              userSelect: 'none',
             }}
           >
             {/* Header */}
-            <div className={`p-4 border-b ${
-              isDark ? 'border-gray-700' : 'border-gray-200'
-            }`}>
+            <div
+              className={`p-4 border-b ${
+                isDark ? 'border-gray-700' : 'border-gray-200'
+              }`}
+            >
               <div className="flex items-center justify-between">
-                <h3 className={`text-lg font-semibold ${
-                  isDark ? 'text-white' : 'text-gray-900'
-                }`}>
+                <h3
+                  className={`text-lg font-semibold ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}
+                >
                   Escanear Código QR
                 </h3>
                 <button
                   onClick={handleClose}
                   className={`p-1 rounded-lg transition-colors ${
-                    isDark 
-                      ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                    isDark
+                      ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
                       : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -425,17 +456,27 @@ const QRScanner: React.FC<QRScannerProps> = ({
                 <div className="p-8 text-center">
                   <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: 'linear',
+                    }}
                     className="w-12 h-12 mx-auto mb-4"
                   >
-                    <ArrowPathIcon className={`w-full h-full ${
-                      isDark ? 'text-blue-400' : 'text-blue-500'
-                    }`} />
+                    <ArrowPathIcon
+                      className={`w-full h-full ${
+                        isDark ? 'text-blue-400' : 'text-blue-500'
+                      }`}
+                    />
                   </motion.div>
-                  <p className={`text-sm ${
-                    isDark ? 'text-gray-300' : 'text-gray-600'
-                  }`}>
-                    {isMobile ? 'Preparando cámara móvil...' : 'Inicializando cámara...'}
+                  <p
+                    className={`text-sm ${
+                      isDark ? 'text-gray-300' : 'text-gray-600'
+                    }`}
+                  >
+                    {isMobile
+                      ? 'Preparando cámara móvil...'
+                      : 'Inicializando cámara...'}
                   </p>
                 </div>
               )}
@@ -443,17 +484,25 @@ const QRScanner: React.FC<QRScannerProps> = ({
               {/* Error */}
               {error && !isInitializing && (
                 <div className="p-8 text-center">
-                  <ExclamationTriangleIcon className={`w-16 h-16 mx-auto mb-4 ${
-                    isDark ? 'text-red-400' : 'text-red-500'
-                  }`} />
-                  <h4 className={`font-semibold mb-2 ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}>
-                    {cameraState === 'denied' ? 'Permisos Requeridos' : 'Error de Cámara'}
+                  <ExclamationTriangleIcon
+                    className={`w-16 h-16 mx-auto mb-4 ${
+                      isDark ? 'text-red-400' : 'text-red-500'
+                    }`}
+                  />
+                  <h4
+                    className={`font-semibold mb-2 ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}
+                  >
+                    {cameraState === 'denied'
+                      ? 'Permisos Requeridos'
+                      : 'Error de Cámara'}
                   </h4>
-                  <p className={`text-sm mb-6 ${
-                    isDark ? 'text-gray-300' : 'text-gray-600'
-                  }`}>
+                  <p
+                    className={`text-sm mb-6 ${
+                      isDark ? 'text-gray-300' : 'text-gray-600'
+                    }`}
+                  >
                     {error}
                   </p>
                   <div className="space-y-3">
@@ -461,14 +510,23 @@ const QRScanner: React.FC<QRScannerProps> = ({
                       onClick={handleRetry}
                       className="w-full px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
                     >
-                      {cameraState === 'denied' ? 'Solicitar Permisos' : 'Reintentar'}
+                      {cameraState === 'denied'
+                        ? 'Solicitar Permisos'
+                        : 'Reintentar'}
                     </button>
                     {isMobile && (
-                      <div className={`text-xs ${
-                        isDark ? 'text-gray-400' : 'text-gray-500'
-                      }`}>
-                        <p>💡 En móviles: Permite el acceso cuando tu navegador lo solicite</p>
-                        <p>⚙️ Si no funciona, revisa la configuración de permisos</p>
+                      <div
+                        className={`text-xs ${
+                          isDark ? 'text-gray-400' : 'text-gray-500'
+                        }`}
+                      >
+                        <p>
+                          💡 En móviles: Permite el acceso cuando tu navegador
+                          lo solicite
+                        </p>
+                        <p>
+                          ⚙️ Si no funciona, revisa la configuración de permisos
+                        </p>
                       </div>
                     )}
                   </div>
@@ -481,15 +539,15 @@ const QRScanner: React.FC<QRScannerProps> = ({
                   <video
                     ref={videoRef}
                     className="w-full h-full object-cover"
-                    style={{ 
+                    style={{
                       transform: 'scaleX(-1)', // Efecto espejo
-                      WebkitTransform: 'scaleX(-1)'
+                      WebkitTransform: 'scaleX(-1)',
                     }}
                     autoPlay
                     playsInline // Crucial para iOS
                     muted // Necesario para autoplay
                   />
-                  
+
                   {/* Overlay de escaneo */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="relative">
@@ -499,7 +557,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
                           { top: 0, left: 0, rotate: 0 },
                           { top: 0, right: 0, rotate: 90 },
                           { bottom: 0, left: 0, rotate: -90 },
-                          { bottom: 0, right: 0, rotate: 180 }
+                          { bottom: 0, right: 0, rotate: 180 },
                         ].map((corner, i) => (
                           <motion.div
                             key={i}
@@ -507,19 +565,19 @@ const QRScanner: React.FC<QRScannerProps> = ({
                             style={corner}
                             animate={{
                               opacity: [0.7, 1, 0.7],
-                              scale: [1, 1.1, 1]
+                              scale: [1, 1.1, 1],
                             }}
                             transition={{
                               duration: 2,
                               repeat: Infinity,
-                              delay: i * 0.2
+                              delay: i * 0.2,
                             }}
                           >
                             <div className="w-full h-1 bg-blue-400 rounded"></div>
                             <div className="w-1 h-full bg-blue-400 rounded"></div>
                           </motion.div>
                         ))}
-                        
+
                         {/* Línea de escaneo */}
                         <motion.div
                           className="absolute left-4 right-4 h-0.5 bg-blue-400 shadow-lg"
@@ -527,7 +585,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
                           transition={{
                             duration: 2.5,
                             repeat: Infinity,
-                            ease: "easeInOut"
+                            ease: 'easeInOut',
                           }}
                         />
                       </div>
@@ -539,12 +597,16 @@ const QRScanner: React.FC<QRScannerProps> = ({
                     <motion.div
                       className="bg-black/70 rounded-full px-6 py-3 mx-4"
                       style={{ backdropFilter: 'blur(8px)' }}
-                      animate={isScanning ? {
-                        scale: [1, 1.02, 1]
-                      } : {}}
+                      animate={
+                        isScanning
+                          ? {
+                              scale: [1, 1.02, 1],
+                            }
+                          : {}
+                      }
                       transition={{
                         duration: 1.5,
-                        repeat: isScanning ? Infinity : 0
+                        repeat: isScanning ? Infinity : 0,
                       }}
                     >
                       <p className="text-white text-sm font-medium flex items-center justify-center gap-2">
@@ -591,6 +653,15 @@ const QRScanner: React.FC<QRScannerProps> = ({
           message={modalData.message}
           subtitle={modalData.subtitle}
           date={modalData.date}
+        />
+      )}
+
+      {/* Animación de puntos */}
+      {showPointsAnimation && (
+        <PointsAnimation
+          points={pointsEarned}
+          type="attendance"
+          onComplete={() => setShowPointsAnimation(false)}
         />
       )}
     </>

@@ -136,6 +136,13 @@ const youngSchema = new Schema<IYoungDocument>(
       type: Boolean,
       default: false,
     },
+    // Nuevo campo: ID del joven que lo refirió (sistema de referidos)
+    referredBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'Young',
+      required: false,
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -6,7 +6,17 @@ export interface IYoung {
   birthday: Date | string;
   profileImage?: string;
   gender: 'masculino' | 'femenino' | '';
-  role: 'lider juvenil' | 'colaborador' | 'director' | 'subdirector' | 'club guias' | 'club conquistadores' | 'club aventureros' | 'escuela sabatica' | 'joven adventista' | 'simpatizante';
+  role:
+    | 'lider juvenil'
+    | 'colaborador'
+    | 'director'
+    | 'subdirector'
+    | 'club guias'
+    | 'club conquistadores'
+    | 'club aventureros'
+    | 'escuela sabatica'
+    | 'joven adventista'
+    | 'simpatizante';
   role_name?: string; // Nombre del rol del sistema
   role_id?: string; // ID del rol
   // Grupo opcional 1..5
@@ -18,7 +28,8 @@ export interface IYoung {
   updatedAt?: Date | string;
 }
 
-export interface IYoungCreate extends Omit<IYoung, 'id' | 'createdAt' | 'updatedAt'> {}
+export interface IYoungCreate
+  extends Omit<IYoung, 'id' | 'createdAt' | 'updatedAt'> {}
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -46,7 +57,14 @@ export interface PaginationQuery {
   gender?: string;
   role?: string;
   groups?: string[] | undefined; // Array de grupos para filtrar (1-5)
-  sortBy?: 'fullName' | 'birthday' | 'email' | 'role' | 'gender' | 'createdAt' | 'updatedAt';
+  sortBy?:
+    | 'fullName'
+    | 'birthday'
+    | 'email'
+    | 'role'
+    | 'gender'
+    | 'createdAt'
+    | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
 }
 
@@ -100,13 +118,119 @@ export interface AttendanceHistoryResponse {
 }
 
 export interface TodayAttendancesResponse {
-  attendances: Array<IAttendance & {
-    youngId: IYoung;
-  }>;
+  attendances: Array<
+    IAttendance & {
+      youngId: IYoung;
+    }
+  >;
   date: string;
   stats: {
     totalPresent: number;
     totalYoung: number;
     attendancePercentage: number;
   };
+}
+
+// ===== Sistema de Puntos y Temporadas =====
+export type SeasonStatus = 'UPCOMING' | 'ACTIVE' | 'COMPLETED';
+
+export interface ISeason {
+  id: string;
+  name: string;
+  description?: string;
+  startDate: string | Date;
+  endDate: string | Date;
+  status: SeasonStatus;
+  pointsSettings: {
+    attendancePoints: number;
+    activityPoints: number;
+    referrerPoints: number;
+    referredPoints: number;
+  };
+  isActive: boolean;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+
+export interface ISeasonCreate {
+  name: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  pointsSettings?: {
+    attendancePoints?: number;
+    activityPoints?: number;
+    referrerPoints?: number;
+    referredPoints?: number;
+  };
+}
+
+export interface ISeasonUpdate {
+  name?: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  pointsSettings?: {
+    attendancePoints?: number;
+    activityPoints?: number;
+    referrerPoints?: number;
+    referredPoints?: number;
+  };
+}
+
+export type TransactionType =
+  | 'ATTENDANCE'
+  | 'ACTIVITY'
+  | 'REFERRER_BONUS'
+  | 'REFERRED_BONUS';
+
+export interface IPointsTransaction {
+  id: string;
+  youngId: string;
+  seasonId: string;
+  type: TransactionType;
+  points: number;
+  description: string;
+  metadata?: Record<string, any>;
+  createdAt: string | Date;
+}
+
+export interface IPointsBreakdown {
+  total: number;
+  byType: {
+    ATTENDANCE: number;
+    ACTIVITY: number;
+    REFERRER_BONUS: number;
+    REFERRED_BONUS: number;
+  };
+  transactionCount: number;
+  season?: {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+  };
+}
+
+export interface IAssignPointsRequest {
+  youngId: string;
+  points: number;
+  type: TransactionType;
+  description: string;
+  metadata?: Record<string, any>;
+}
+
+export interface ILeaderboardEntry {
+  rank: number;
+  youngId: string;
+  young: IYoung;
+  totalPoints: number;
+  breakdown: {
+    ATTENDANCE: number;
+    ACTIVITY: number;
+    REFERRER_BONUS: number;
+    REFERRED_BONUS: number;
+  };
+  transactionCount: number;
+  streak?: number;
 }
