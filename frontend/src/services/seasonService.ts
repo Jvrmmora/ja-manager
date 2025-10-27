@@ -13,7 +13,7 @@ export const seasonService = {
   async getAll(): Promise<ISeason[]> {
     const response = await apiRequest(API_BASE, { method: 'GET' });
     const data = await response.json();
-    return data.seasons || [];
+    return data.data || [];
   },
 
   /**
@@ -22,7 +22,7 @@ export const seasonService = {
   async getActive(): Promise<ISeason | null> {
     const response = await apiRequest(`${API_BASE}/active`, { method: 'GET' });
     const data = await response.json();
-    return data.season || null;
+    return data.data || null;
   },
 
   /**
@@ -31,7 +31,7 @@ export const seasonService = {
   async getById(id: string): Promise<ISeason> {
     const response = await apiRequest(`${API_BASE}/${id}`, { method: 'GET' });
     const data = await response.json();
-    return data.season;
+    return data.data;
   },
 
   /**
@@ -43,7 +43,7 @@ export const seasonService = {
       body: JSON.stringify(seasonData),
     });
     const data = await response.json();
-    return data.season;
+    return data.data;
   },
 
   /**
@@ -55,7 +55,7 @@ export const seasonService = {
       body: JSON.stringify(seasonData),
     });
     const data = await response.json();
-    return data.season;
+    return data.data;
   },
 
   /**
@@ -73,7 +73,7 @@ export const seasonService = {
       method: 'POST',
     });
     const data = await response.json();
-    return data.season;
+    return data.data;
   },
 
   /**

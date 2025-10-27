@@ -388,7 +388,9 @@ const YoungCard: React.FC<YoungCardProps> = ({
                 d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0h6m-6 0l1 12a2 2 0 002 2h2a2 2 0 002-2l1-12m-6 0H6a2 2 0 00-2 2v0a2 2 0 002 2h1"
               />
             </svg>
-            <span className="text-gray-800">{formatDate(young.birthday)}</span>
+            <span className="text-gray-800 dark:text-gray-200">
+              {formatDate(young.birthday)}
+            </span>
           </div>
         </div>
 
@@ -427,6 +429,7 @@ const YoungCard: React.FC<YoungCardProps> = ({
             <div className="flex items-center gap-2">
               <PointsCard
                 youngId={young.id}
+                totalPoints={young.totalPoints ?? 0}
                 onClick={() => setShowPointsModal(true)}
               />
               {/* Botón para asignar puntos (solo admins) */}

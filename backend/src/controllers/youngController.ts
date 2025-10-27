@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Young from '../models/Young';
 import Role from '../models/Role';
+import Season from '../models/Season';
+import PointsTransaction from '../models/PointsTransaction';
 import {
   uploadToCloudinary,
   deleteFromCloudinary,
@@ -129,16 +131,41 @@ export class YoungController {
       const skip = ((page || 1) - 1) * (limit || 10);
 
       // Ejecutar consultas en paralelo
-      const [youngDocuments, totalItems] = await Promise.all([
+      const [youngDocuments, totalItems, activeSeason] = await Promise.all([
         Young.find(filters)
           .sort(sort)
           .skip(skip)
           .limit(limit || 10)
           .lean(),
         Young.countDocuments(filters),
+        Season.findOne({ status: 'ACTIVE' }).lean(),
       ]);
 
-      // Transform Mongoose documents to IYoung type
+      // Obtener IDs de los jóvenes
+      const youngIds = youngDocuments.map(doc => doc._id);
+
+      // Obtener puntos totales de todos los jóvenes en una sola consulta
+      const pointsAggregation = await PointsTransaction.aggregate([
+        {
+          $match: {
+            youngId: { $in: youngIds },
+            ...(activeSeason ? { seasonId: activeSeason._id } : {}),
+          },
+        },
+        {
+          $group: {
+            _id: '$youngId',
+            totalPoints: { $sum: '$points' },
+          },
+        },
+      ]);
+
+      // Crear un mapa de youngId -> totalPoints
+      const pointsMap = new Map(
+        pointsAggregation.map(item => [item._id.toString(), item.totalPoints])
+      );
+
+      // Transform Mongoose documents to IYoung type con puntos incluidos
       const young: IYoung[] = youngDocuments.map(doc => ({
         id: doc._id.toString(),
         fullName: doc.fullName,
@@ -150,7 +177,8 @@ export class YoungController {
         group: doc.group,
         email: doc.email,
         skills: doc.skills || [],
-        placa: doc.placa, // ✅ Agregar campo placa
+        placa: doc.placa,
+        totalPoints: pointsMap.get(doc._id.toString()) || 0, // ✅ Agregar puntos totales
         ...(doc.profileImage && { profileImage: doc.profileImage }),
         createdAt: doc.createdAt || new Date(),
         updatedAt: doc.updatedAt || new Date(),

@@ -242,4 +242,16 @@ youngSchema.methods.isBirthdayToday = function (): boolean {
   );
 };
 
+// Transform para mapear _id a id en las respuestas JSON
+youngSchema.set('toJSON', {
+  virtuals: true,
+  transform: function (_doc: any, ret: any) {
+    ret.id = ret._id?.toString();
+    delete ret._id;
+    delete ret.__v;
+    delete ret.password; // No exponer la contraseña en respuestas JSON
+    return ret;
+  },
+});
+
 export default mongoose.model<IYoungDocument>('Young', youngSchema);

@@ -6,6 +6,8 @@ import {
   getYoungHistory,
   getAllTransactions,
   deleteTransaction,
+  getLeaderboard,
+  getYoungPosition,
 } from '../controllers/pointsController';
 import { authenticateToken } from '../middleware/auth';
 
@@ -24,6 +26,12 @@ router.get(
   getYoungPointsBreakdown
 );
 router.get('/young/:youngId/history', authenticateToken, getYoungHistory);
+
+// Obtener ranking/leaderboard
+router.get('/leaderboard', authenticateToken, getLeaderboard);
+
+// Obtener posición de un joven en el ranking
+router.get('/position/:youngId', authenticateToken, getYoungPosition);
 
 // Obtener todas las transacciones (admin)
 router.get('/transactions', authenticateToken, getAllTransactions);

@@ -27,6 +27,7 @@ export interface IYoung {
   skills: string[];
   first_login?: boolean;
   referredBy?: string; // ID del joven que lo refirió
+  totalPoints?: number; // ✅ Puntos totales (calculado, no persistido)
   createdAt?: Date;
   updatedAt?: Date;
 }

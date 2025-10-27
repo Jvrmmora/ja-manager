@@ -201,3 +201,55 @@ export const deleteTransaction = async (
     next(error);
   }
 };
+
+/**
+ * Obtener el ranking/leaderboard de puntos
+ */
+export const getLeaderboard = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { seasonId, group, limit } = req.query;
+
+    const ranking = await pointsService.getLeaderboard({
+      seasonId: seasonId as string,
+      group: group ? parseInt(group as string) : undefined,
+      limit: limit ? parseInt(limit as string) : undefined,
+    });
+
+    res.status(200).json({
+      success: true,
+      ranking,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Obtener la posición de un joven en el ranking
+ */
+export const getYoungPosition = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { youngId } = req.params;
+    const { seasonId } = req.query;
+
+    const position = await pointsService.getYoungPosition(
+      youngId,
+      seasonId as string
+    );
+
+    res.status(200).json({
+      success: true,
+      position,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

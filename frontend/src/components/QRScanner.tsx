@@ -47,6 +47,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
   } | null>(null);
   const [showPointsAnimation, setShowPointsAnimation] = useState(false);
   const [pointsEarned, setPointsEarned] = useState(10); // Puntos por defecto
+  const [hideScannerModal, setHideScannerModal] = useState(false); // Nuevo: controla visibilidad del modal del scanner
 
   // Detectar si es dispositivo móvil
   const isMobile =
@@ -70,6 +71,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
     }
     setIsScanning(false);
     setIsInitializing(false);
+    setHideScannerModal(false); // Resetear visibilidad del modal
   }, []);
 
   // Efecto principal
@@ -310,6 +312,9 @@ const QRScanner: React.FC<QRScannerProps> = ({
       // Registrar asistencia
       const result = await scanQRAndRegisterAttendance(code);
 
+      // OCULTAR el modal del scanner inmediatamente para mostrar solo el éxito
+      setHideScannerModal(true);
+
       // Mostrar éxito
       setModalData({
         success: true,
@@ -331,9 +336,9 @@ const QRScanner: React.FC<QRScannerProps> = ({
         onSuccess(result);
       }
 
-      // Cerrar scanner
+      // Cerrar scanner completamente después de las animaciones
       setTimeout(() => {
-        onClose();
+        handleClose(); // Usar handleClose en lugar de onClose para limpieza completa
       }, 4000); // Aumentado para dar tiempo a la animación
     } catch (error: any) {
       // Limpiar refs en error
@@ -368,6 +373,10 @@ const QRScanner: React.FC<QRScannerProps> = ({
     cleanup();
     setError(null);
     setCameraState('prompt');
+    setShowModal(false);
+    setModalData(null);
+    setShowPointsAnimation(false);
+    setHideScannerModal(false);
     onClose();
   };
 
@@ -398,250 +407,253 @@ const QRScanner: React.FC<QRScannerProps> = ({
   return (
     <>
       <AnimatePresence>
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black bg-opacity-75"
-            onClick={handleClose}
-          />
+        {!hideScannerModal && ( // Solo mostrar el modal del scanner si no está oculto
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black bg-opacity-75"
+              onClick={handleClose}
+            />
 
-          {/* Scanner Modal */}
-          <motion.div
-            initial={{ scale: 0.7, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.7, opacity: 0 }}
-            className={`relative w-full max-w-md mx-auto ${
-              isDark ? 'bg-gray-800' : 'bg-white'
-            } rounded-2xl overflow-hidden shadow-2xl`}
-            style={{
-              touchAction: 'manipulation', // Prevenir zoom en móviles
-              WebkitUserSelect: 'none',
-              userSelect: 'none',
-            }}
-          >
-            {/* Header */}
-            <div
-              className={`p-4 border-b ${
-                isDark ? 'border-gray-700' : 'border-gray-200'
-              }`}
+            {/* Scanner Modal */}
+            <motion.div
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.7, opacity: 0 }}
+              className={`relative w-full max-w-md mx-auto ${
+                isDark ? 'bg-gray-800' : 'bg-white'
+              } rounded-2xl overflow-hidden shadow-2xl`}
+              style={{
+                touchAction: 'manipulation', // Prevenir zoom en móviles
+                WebkitUserSelect: 'none',
+                userSelect: 'none',
+              }}
             >
-              <div className="flex items-center justify-between">
-                <h3
-                  className={`text-lg font-semibold ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}
-                >
-                  Escanear Código QR
-                </h3>
-                <button
-                  onClick={handleClose}
-                  className={`p-1 rounded-lg transition-colors ${
-                    isDark
-                      ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
-                      : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <XMarkIcon className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="relative">
-              {/* Inicializando */}
-              {isInitializing && (
-                <div className="p-8 text-center">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      duration: 1,
-                      repeat: Infinity,
-                      ease: 'linear',
-                    }}
-                    className="w-12 h-12 mx-auto mb-4"
-                  >
-                    <ArrowPathIcon
-                      className={`w-full h-full ${
-                        isDark ? 'text-blue-400' : 'text-blue-500'
-                      }`}
-                    />
-                  </motion.div>
-                  <p
-                    className={`text-sm ${
-                      isDark ? 'text-gray-300' : 'text-gray-600'
-                    }`}
-                  >
-                    {isMobile
-                      ? 'Preparando cámara móvil...'
-                      : 'Inicializando cámara...'}
-                  </p>
-                </div>
-              )}
-
-              {/* Error */}
-              {error && !isInitializing && (
-                <div className="p-8 text-center">
-                  <ExclamationTriangleIcon
-                    className={`w-16 h-16 mx-auto mb-4 ${
-                      isDark ? 'text-red-400' : 'text-red-500'
-                    }`}
-                  />
-                  <h4
-                    className={`font-semibold mb-2 ${
+              {/* Header */}
+              <div
+                className={`p-4 border-b ${
+                  isDark ? 'border-gray-700' : 'border-gray-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <h3
+                    className={`text-lg font-semibold ${
                       isDark ? 'text-white' : 'text-gray-900'
                     }`}
                   >
-                    {cameraState === 'denied'
-                      ? 'Permisos Requeridos'
-                      : 'Error de Cámara'}
-                  </h4>
-                  <p
-                    className={`text-sm mb-6 ${
-                      isDark ? 'text-gray-300' : 'text-gray-600'
+                    Escanear Código QR
+                  </h3>
+                  <button
+                    onClick={handleClose}
+                    className={`p-1 rounded-lg transition-colors ${
+                      isDark
+                        ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
+                        : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    {error}
-                  </p>
-                  <div className="space-y-3">
-                    <button
-                      onClick={handleRetry}
-                      className="w-full px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="relative">
+                {/* Inicializando */}
+                {isInitializing && (
+                  <div className="p-8 text-center">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: 'linear',
+                      }}
+                      className="w-12 h-12 mx-auto mb-4"
+                    >
+                      <ArrowPathIcon
+                        className={`w-full h-full ${
+                          isDark ? 'text-blue-400' : 'text-blue-500'
+                        }`}
+                      />
+                    </motion.div>
+                    <p
+                      className={`text-sm ${
+                        isDark ? 'text-gray-300' : 'text-gray-600'
+                      }`}
+                    >
+                      {isMobile
+                        ? 'Preparando cámara móvil...'
+                        : 'Inicializando cámara...'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Error */}
+                {error && !isInitializing && (
+                  <div className="p-8 text-center">
+                    <ExclamationTriangleIcon
+                      className={`w-16 h-16 mx-auto mb-4 ${
+                        isDark ? 'text-red-400' : 'text-red-500'
+                      }`}
+                    />
+                    <h4
+                      className={`font-semibold mb-2 ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}
                     >
                       {cameraState === 'denied'
-                        ? 'Solicitar Permisos'
-                        : 'Reintentar'}
-                    </button>
-                    {isMobile && (
-                      <div
-                        className={`text-xs ${
-                          isDark ? 'text-gray-400' : 'text-gray-500'
-                        }`}
+                        ? 'Permisos Requeridos'
+                        : 'Error de Cámara'}
+                    </h4>
+                    <p
+                      className={`text-sm mb-6 ${
+                        isDark ? 'text-gray-300' : 'text-gray-600'
+                      }`}
+                    >
+                      {error}
+                    </p>
+                    <div className="space-y-3">
+                      <button
+                        onClick={handleRetry}
+                        className="w-full px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
                       >
-                        <p>
-                          💡 En móviles: Permite el acceso cuando tu navegador
-                          lo solicite
-                        </p>
-                        <p>
-                          ⚙️ Si no funciona, revisa la configuración de permisos
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Scanner activo */}
-              {cameraState === 'granted' && !error && (
-                <div className="relative aspect-square bg-black">
-                  <video
-                    ref={videoRef}
-                    className="w-full h-full object-cover"
-                    style={{
-                      transform: 'scaleX(-1)', // Efecto espejo
-                      WebkitTransform: 'scaleX(-1)',
-                    }}
-                    autoPlay
-                    playsInline // Crucial para iOS
-                    muted // Necesario para autoplay
-                  />
-
-                  {/* Overlay de escaneo */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="relative">
-                      <div className="w-56 h-56 relative">
-                        {/* Esquinas del marco */}
-                        {[
-                          { top: 0, left: 0, rotate: 0 },
-                          { top: 0, right: 0, rotate: 90 },
-                          { bottom: 0, left: 0, rotate: -90 },
-                          { bottom: 0, right: 0, rotate: 180 },
-                        ].map((corner, i) => (
-                          <motion.div
-                            key={i}
-                            className="absolute w-8 h-8"
-                            style={corner}
-                            animate={{
-                              opacity: [0.7, 1, 0.7],
-                              scale: [1, 1.1, 1],
-                            }}
-                            transition={{
-                              duration: 2,
-                              repeat: Infinity,
-                              delay: i * 0.2,
-                            }}
-                          >
-                            <div className="w-full h-1 bg-blue-400 rounded"></div>
-                            <div className="w-1 h-full bg-blue-400 rounded"></div>
-                          </motion.div>
-                        ))}
-
-                        {/* Línea de escaneo */}
-                        <motion.div
-                          className="absolute left-4 right-4 h-0.5 bg-blue-400 shadow-lg"
-                          animate={{ y: [16, 208, 16] }}
-                          transition={{
-                            duration: 2.5,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                          }}
-                        />
-                      </div>
+                        {cameraState === 'denied'
+                          ? 'Solicitar Permisos'
+                          : 'Reintentar'}
+                      </button>
+                      {isMobile && (
+                        <div
+                          className={`text-xs ${
+                            isDark ? 'text-gray-400' : 'text-gray-500'
+                          }`}
+                        >
+                          <p>
+                            💡 En móviles: Permite el acceso cuando tu navegador
+                            lo solicite
+                          </p>
+                          <p>
+                            ⚙️ Si no funciona, revisa la configuración de
+                            permisos
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
+                )}
 
-                  {/* Estado */}
-                  <div className="absolute bottom-4 left-0 right-0 text-center">
-                    <motion.div
-                      className="bg-black/70 rounded-full px-6 py-3 mx-4"
-                      style={{ backdropFilter: 'blur(8px)' }}
-                      animate={
-                        isScanning
-                          ? {
-                              scale: [1, 1.02, 1],
-                            }
-                          : {}
-                      }
-                      transition={{
-                        duration: 1.5,
-                        repeat: isScanning ? Infinity : 0,
+                {/* Scanner activo */}
+                {cameraState === 'granted' && !error && (
+                  <div className="relative aspect-square bg-black">
+                    <video
+                      ref={videoRef}
+                      className="w-full h-full object-cover"
+                      style={{
+                        transform: 'scaleX(-1)', // Efecto espejo
+                        WebkitTransform: 'scaleX(-1)',
                       }}
-                    >
-                      <p className="text-white text-sm font-medium flex items-center justify-center gap-2">
-                        {isScanning ? (
-                          <>
+                      autoPlay
+                      playsInline // Crucial para iOS
+                      muted // Necesario para autoplay
+                    />
+
+                    {/* Overlay de escaneo */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="relative">
+                        <div className="w-56 h-56 relative">
+                          {/* Esquinas del marco */}
+                          {[
+                            { top: 0, left: 0, rotate: 0 },
+                            { top: 0, right: 0, rotate: 90 },
+                            { bottom: 0, left: 0, rotate: -90 },
+                            { bottom: 0, right: 0, rotate: 180 },
+                          ].map((corner, i) => (
                             <motion.div
-                              className="w-2 h-2 bg-green-400 rounded-full"
-                              animate={{ scale: [1, 1.5, 1] }}
-                              transition={{ duration: 1, repeat: Infinity }}
-                            />
-                            Apunta el QR al centro
-                          </>
-                        ) : isInitializing ? (
-                          <>
-                            <motion.div
-                              className="w-2 h-2 bg-blue-400 rounded-full"
-                              animate={{ scale: [1, 1.5, 1] }}
-                              transition={{ duration: 1, repeat: Infinity }}
-                            />
-                            Preparando escáner...
-                          </>
-                        ) : (
-                          <>
-                            <div className="w-2 h-2 bg-yellow-400 rounded-full" />
-                            Procesando...
-                          </>
-                        )}
-                      </p>
-                    </motion.div>
+                              key={i}
+                              className="absolute w-8 h-8"
+                              style={corner}
+                              animate={{
+                                opacity: [0.7, 1, 0.7],
+                                scale: [1, 1.1, 1],
+                              }}
+                              transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                delay: i * 0.2,
+                              }}
+                            >
+                              <div className="w-full h-1 bg-blue-400 rounded"></div>
+                              <div className="w-1 h-full bg-blue-400 rounded"></div>
+                            </motion.div>
+                          ))}
+
+                          {/* Línea de escaneo */}
+                          <motion.div
+                            className="absolute left-4 right-4 h-0.5 bg-blue-400 shadow-lg"
+                            animate={{ y: [16, 208, 16] }}
+                            transition={{
+                              duration: 2.5,
+                              repeat: Infinity,
+                              ease: 'easeInOut',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Estado */}
+                    <div className="absolute bottom-4 left-0 right-0 text-center">
+                      <motion.div
+                        className="bg-black/70 rounded-full px-6 py-3 mx-4"
+                        style={{ backdropFilter: 'blur(8px)' }}
+                        animate={
+                          isScanning
+                            ? {
+                                scale: [1, 1.02, 1],
+                              }
+                            : {}
+                        }
+                        transition={{
+                          duration: 1.5,
+                          repeat: isScanning ? Infinity : 0,
+                        }}
+                      >
+                        <p className="text-white text-sm font-medium flex items-center justify-center gap-2">
+                          {isScanning ? (
+                            <>
+                              <motion.div
+                                className="w-2 h-2 bg-green-400 rounded-full"
+                                animate={{ scale: [1, 1.5, 1] }}
+                                transition={{ duration: 1, repeat: Infinity }}
+                              />
+                              Apunta el QR al centro
+                            </>
+                          ) : isInitializing ? (
+                            <>
+                              <motion.div
+                                className="w-2 h-2 bg-blue-400 rounded-full"
+                                animate={{ scale: [1, 1.5, 1] }}
+                                transition={{ duration: 1, repeat: Infinity }}
+                              />
+                              Preparando escáner...
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-2 h-2 bg-yellow-400 rounded-full" />
+                              Procesando...
+                            </>
+                          )}
+                        </p>
+                      </motion.div>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
 
       {/* Modal de resultado */}

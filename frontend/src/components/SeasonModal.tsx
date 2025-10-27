@@ -23,9 +23,10 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
     startDate: '',
     endDate: '',
     attendancePoints: 10,
-    activityPoints: 10,
-    referrerPoints: 30,
-    referredPoints: 10,
+    referralBonusPoints: 30,
+    referralWelcomePoints: 10,
+    streakMinDays: 3,
+    streakLostAfterDays: 2,
   });
   const [loading, setLoading] = useState(false);
 
@@ -39,10 +40,11 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
         description: season.description || '',
         startDate: formatDateForInput(season.startDate),
         endDate: formatDateForInput(season.endDate),
-        attendancePoints: season.pointsSettings.attendancePoints,
-        activityPoints: season.pointsSettings.activityPoints,
-        referrerPoints: season.pointsSettings.referrerPoints,
-        referredPoints: season.pointsSettings.referredPoints,
+        attendancePoints: season.settings?.attendancePoints || 10,
+        referralBonusPoints: season.settings?.referralBonusPoints || 30,
+        referralWelcomePoints: season.settings?.referralWelcomePoints || 10,
+        streakMinDays: season.settings?.streakMinDays || 3,
+        streakLostAfterDays: season.settings?.streakLostAfterDays || 2,
       });
     } else if (isOpen && !season) {
       // Reset para nueva temporada
@@ -52,9 +54,10 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
         startDate: '',
         endDate: '',
         attendancePoints: 10,
-        activityPoints: 10,
-        referrerPoints: 30,
-        referredPoints: 10,
+        referralBonusPoints: 30,
+        referralWelcomePoints: 10,
+        streakMinDays: 3,
+        streakLostAfterDays: 2,
       });
     }
   }, [isOpen, season]);
@@ -93,11 +96,12 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
           description: formData.description.trim(),
           startDate: formData.startDate,
           endDate: formData.endDate,
-          pointsSettings: {
+          settings: {
             attendancePoints: formData.attendancePoints,
-            activityPoints: formData.activityPoints,
-            referrerPoints: formData.referrerPoints,
-            referredPoints: formData.referredPoints,
+            referralBonusPoints: formData.referralBonusPoints,
+            referralWelcomePoints: formData.referralWelcomePoints,
+            streakMinDays: formData.streakMinDays,
+            streakLostAfterDays: formData.streakLostAfterDays,
           },
         };
 
@@ -110,11 +114,12 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
           description: formData.description.trim(),
           startDate: formData.startDate,
           endDate: formData.endDate,
-          pointsSettings: {
+          settings: {
             attendancePoints: formData.attendancePoints,
-            activityPoints: formData.activityPoints,
-            referrerPoints: formData.referrerPoints,
-            referredPoints: formData.referredPoints,
+            referralBonusPoints: formData.referralBonusPoints,
+            referralWelcomePoints: formData.referralWelcomePoints,
+            streakMinDays: formData.streakMinDays,
+            streakLostAfterDays: formData.streakLostAfterDays,
           },
         };
 
@@ -138,9 +143,10 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
       startDate: '',
       endDate: '',
       attendancePoints: 10,
-      activityPoints: 10,
-      referrerPoints: 30,
-      referredPoints: 10,
+      referralBonusPoints: 30,
+      referralWelcomePoints: 10,
+      streakMinDays: 3,
+      streakLostAfterDays: 2,
     });
     onClose();
   };
@@ -287,46 +293,22 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
                 />
               </div>
 
-              {/* Puntos por actividad */}
-              <div>
-                <label className="form-label flex items-center gap-2">
-                  <span className="material-symbols-rounded text-sm text-gray-500">
-                    sports_score
-                  </span>
-                  Puntos por Actividad
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.activityPoints}
-                  onChange={e =>
-                    setFormData({
-                      ...formData,
-                      activityPoints: parseInt(e.target.value) || 0,
-                    })
-                  }
-                  className="form-input"
-                  disabled={loading}
-                  required
-                />
-              </div>
-
               {/* Puntos para referidor */}
               <div>
                 <label className="form-label flex items-center gap-2">
                   <span className="material-symbols-rounded text-sm text-gray-500">
                     person_add
                   </span>
-                  Puntos Referidor
+                  Puntos Referidor (Bonus)
                 </label>
                 <input
                   type="number"
                   min="0"
-                  value={formData.referrerPoints}
+                  value={formData.referralBonusPoints}
                   onChange={e =>
                     setFormData({
                       ...formData,
-                      referrerPoints: parseInt(e.target.value) || 0,
+                      referralBonusPoints: parseInt(e.target.value) || 0,
                     })
                   }
                   className="form-input"
@@ -344,16 +326,16 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
                   <span className="material-symbols-rounded text-sm text-gray-500">
                     how_to_reg
                   </span>
-                  Puntos Referido
+                  Puntos Referido (Bienvenida)
                 </label>
                 <input
                   type="number"
                   min="0"
-                  value={formData.referredPoints}
+                  value={formData.referralWelcomePoints}
                   onChange={e =>
                     setFormData({
                       ...formData,
-                      referredPoints: parseInt(e.target.value) || 0,
+                      referralWelcomePoints: parseInt(e.target.value) || 0,
                     })
                   }
                   className="form-input"
@@ -362,6 +344,60 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Bono de bienvenida para el referido
+                </p>
+              </div>
+
+              {/* Días mínimos para racha */}
+              <div>
+                <label className="form-label flex items-center gap-2">
+                  <span className="material-symbols-rounded text-sm text-gray-500">
+                    local_fire_department
+                  </span>
+                  Días Mínimos para Racha
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.streakMinDays}
+                  onChange={e =>
+                    setFormData({
+                      ...formData,
+                      streakMinDays: parseInt(e.target.value) || 3,
+                    })
+                  }
+                  className="form-input"
+                  disabled={loading}
+                  required
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Asistencias consecutivas necesarias
+                </p>
+              </div>
+
+              {/* Días para perder racha */}
+              <div>
+                <label className="form-label flex items-center gap-2">
+                  <span className="material-symbols-rounded text-sm text-gray-500">
+                    highlight_off
+                  </span>
+                  Días para Perder Racha
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.streakLostAfterDays}
+                  onChange={e =>
+                    setFormData({
+                      ...formData,
+                      streakLostAfterDays: parseInt(e.target.value) || 2,
+                    })
+                  }
+                  className="form-input"
+                  disabled={loading}
+                  required
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Ausencias consecutivas que rompen la racha
                 </p>
               </div>
             </div>

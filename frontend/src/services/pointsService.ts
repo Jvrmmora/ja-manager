@@ -21,7 +21,7 @@ export const pointsService = {
   ): Promise<IPointsBreakdown> {
     const params = seasonId ? `?seasonId=${seasonId}` : '';
     const response = await apiRequest(
-      `${API_BASE}/breakdown/${youngId}${params}`,
+      `${API_BASE}/young/${youngId}/breakdown${params}`,
       {
         method: 'GET',
       }
@@ -44,7 +44,7 @@ export const pointsService = {
 
     const queryString = params.toString() ? `?${params.toString()}` : '';
     const response = await apiRequest(
-      `${API_BASE}/history/${youngId}${queryString}`,
+      `${API_BASE}/young/${youngId}/history${queryString}`,
       {
         method: 'GET',
       }

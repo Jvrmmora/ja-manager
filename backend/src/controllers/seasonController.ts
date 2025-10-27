@@ -47,10 +47,13 @@ export const createSeason = async (
       },
     });
 
+    // Convertir a JSON para aplicar el transform _id -> id
+    const seasonJSON = season.toJSON();
+
     res.status(201).json({
       success: true,
       message: 'Temporada creada exitosamente',
-      data: season,
+      data: seasonJSON,
     });
   } catch (error) {
     next(error);
@@ -68,10 +71,13 @@ export const getSeasons = async (
   try {
     const seasons = await Season.find().sort({ startDate: -1 }).select('-__v');
 
+    // Aplicar toJSON transform para convertir _id a id
+    const seasonsJSON = seasons.map(season => season.toJSON());
+
     res.status(200).json({
       success: true,
-      count: seasons.length,
-      data: seasons,
+      count: seasonsJSON.length,
+      data: seasonsJSON,
     });
   } catch (error) {
     next(error);
@@ -96,9 +102,12 @@ export const getActiveSeason = async (
       });
     }
 
+    // Aplicar toJSON transform para convertir _id a id
+    const seasonJSON = season.toJSON();
+
     res.status(200).json({
       success: true,
-      data: season,
+      data: seasonJSON,
     });
   } catch (error) {
     next(error);
@@ -125,9 +134,12 @@ export const getSeasonById = async (
       });
     }
 
+    // Aplicar toJSON transform para convertir _id a id
+    const seasonJSON = season.toJSON();
+
     res.status(200).json({
       success: true,
-      data: season,
+      data: seasonJSON,
     });
   } catch (error) {
     next(error);
@@ -179,10 +191,13 @@ export const updateSeason = async (
     Object.assign(season, updates);
     await season.save();
 
+    // Aplicar toJSON transform para convertir _id a id
+    const seasonJSON = season.toJSON();
+
     res.status(200).json({
       success: true,
       message: 'Temporada actualizada exitosamente',
-      data: season,
+      data: seasonJSON,
     });
   } catch (error) {
     next(error);

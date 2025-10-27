@@ -1,6 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircleIcon, XCircleIcon, DevicePhoneMobileIcon } from '@heroicons/react/24/solid';
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  DevicePhoneMobileIcon,
+} from '@heroicons/react/24/solid';
 
 interface AttendanceModalProps {
   isOpen: boolean;
@@ -17,7 +21,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   success,
   message,
   subtitle,
-  date
+  date,
 }) => {
   React.useEffect(() => {
     if (isOpen) {
@@ -34,32 +38,30 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        {/* Backdrop */}
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        {/* Backdrop mejorado - más oscuro y con blur para mejor foco */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black bg-opacity-50"
+          className="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm"
           onClick={onClose}
         />
-        
+
         {/* Modal */}
         <motion.div
           initial={{ scale: 0.7, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.7, opacity: 0, y: 20 }}
           className={`relative w-full max-w-sm mx-auto ${
-            success 
-              ? 'bg-emerald-500' 
-              : 'bg-red-500'
+            success ? 'bg-emerald-500' : 'bg-red-500'
           } rounded-2xl p-8 text-white text-center shadow-2xl`}
         >
           {/* Icono */}
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
             className="flex justify-center mb-6"
           >
             <div className="relative">
@@ -111,9 +113,9 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
           {/* Barra de progreso para auto-close */}
           <motion.div
             className="absolute bottom-0 left-0 h-1 bg-white/30 rounded-b-2xl"
-            initial={{ width: "100%" }}
-            animate={{ width: "0%" }}
-            transition={{ duration: 3, ease: "linear" }}
+            initial={{ width: '100%' }}
+            animate={{ width: '0%' }}
+            transition={{ duration: 3, ease: 'linear' }}
           />
 
           {/* Botón de cerrar */}
@@ -137,29 +139,25 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                 <motion.div
                   key={i}
                   className="absolute w-2 h-2 bg-white/50 rounded-full"
-                  initial={{ 
-                    x: "50%", 
-                    y: "50%", 
-                    scale: 0 
+                  initial={{
+                    x: '50%',
+                    y: '50%',
+                    scale: 0,
                   }}
                   animate={{
                     x: [
-                      "50%",
+                      '50%',
                       `${50 + (Math.random() - 0.5) * 200}%`,
-                      `${50 + (Math.random() - 0.5) * 300}%`
+                      `${50 + (Math.random() - 0.5) * 300}%`,
                     ],
-                    y: [
-                      "50%",
-                      `${50 + (Math.random() - 0.5) * 200}%`,
-                      "150%"
-                    ],
+                    y: ['50%', `${50 + (Math.random() - 0.5) * 200}%`, '150%'],
                     scale: [0, 1, 0],
-                    rotate: [0, 360, 720]
+                    rotate: [0, 360, 720],
                   }}
                   transition={{
                     duration: 2,
                     delay: 0.6 + i * 0.1,
-                    ease: "easeOut"
+                    ease: 'easeOut',
                   }}
                 />
               ))}

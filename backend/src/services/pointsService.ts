@@ -250,6 +250,181 @@ class PointsService {
     await transaction.deleteOne();
     return transaction;
   }
+
+  /**
+   * Obtener el ranking/leaderboard de puntos
+   */
+  async getLeaderboard(options?: {
+    seasonId?: string;
+    group?: number;
+    limit?: number;
+  }) {
+    // Obtener temporada activa o usar la especificada
+    const season = options?.seasonId
+      ? await Season.findById(options.seasonId)
+      : await Season.findOne({ status: 'ACTIVE' });
+
+    if (!season) {
+      return [];
+    }
+
+    const seasonId = season._id;
+
+    // Construir match stage para aggregation
+    const matchStage: any = {
+      seasonId: new mongoose.Types.ObjectId(seasonId as any),
+    };
+
+    // Agregar transacciones por joven
+    const aggregation: any[] = [
+      { $match: matchStage },
+      {
+        $group: {
+          _id: '$youngId',
+          totalPoints: { $sum: '$points' },
+          attendancePoints: {
+            $sum: {
+              $cond: [{ $eq: ['$type', 'ATTENDANCE'] }, '$points', 0],
+            },
+          },
+          activityPoints: {
+            $sum: {
+              $cond: [{ $eq: ['$type', 'ACTIVITY'] }, '$points', 0],
+            },
+          },
+          referrerPoints: {
+            $sum: {
+              $cond: [{ $eq: ['$type', 'REFERRER_BONUS'] }, '$points', 0],
+            },
+          },
+          referredPoints: {
+            $sum: {
+              $cond: [{ $eq: ['$type', 'REFERRED_BONUS'] }, '$points', 0],
+            },
+          },
+          bonusPoints: {
+            $sum: {
+              $cond: [{ $eq: ['$type', 'BONUS'] }, '$points', 0],
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'youngs',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'young',
+        },
+      },
+      { $unwind: '$young' },
+    ];
+
+    // Filtro por grupo si se especifica
+    if (options?.group) {
+      aggregation.push({
+        $match: { 'young.group': options.group },
+      });
+    }
+
+    // Ordenar por puntos totales y añadir ranking
+    aggregation.push(
+      { $sort: { totalPoints: -1 } },
+      {
+        $setWindowFields: {
+          sortBy: { totalPoints: -1 },
+          output: {
+            rank: { $rank: {} },
+          },
+        },
+      }
+    );
+
+    // Limitar resultados si se especifica
+    if (options?.limit) {
+      aggregation.push({ $limit: options.limit });
+    }
+
+    // Proyectar campos finales
+    aggregation.push({
+      $project: {
+        youngId: '$_id',
+        youngName: '$young.fullName',
+        profileImage: '$young.profileImage',
+        group: '$young.group',
+        totalPoints: 1,
+        currentRank: '$rank',
+        pointsByType: {
+          attendance: '$attendancePoints',
+          activity: '$activityPoints',
+          referrer: '$referrerPoints',
+          referred: '$referredPoints',
+          bonus: '$bonusPoints',
+        },
+        _id: 0,
+      },
+    });
+
+    const ranking = await PointsTransaction.aggregate(aggregation);
+
+    return ranking;
+  }
+
+  /**
+   * Obtener la posición de un joven específico en el ranking
+   */
+  async getYoungPosition(youngId: string, seasonId?: string) {
+    // Obtener temporada activa o usar la especificada
+    const season = seasonId
+      ? await Season.findById(seasonId)
+      : await Season.findOne({ status: 'ACTIVE' });
+
+    if (!season) {
+      return {
+        rank: 0,
+        totalParticipants: 0,
+        percentile: 0,
+      };
+    }
+
+    const sid = season._id;
+
+    // Obtener todos los puntos totales ordenados
+    const allTotals = await PointsTransaction.aggregate([
+      { $match: { seasonId: new mongoose.Types.ObjectId(sid as any) } },
+      {
+        $group: {
+          _id: '$youngId',
+          totalPoints: { $sum: '$points' },
+        },
+      },
+      { $sort: { totalPoints: -1 } },
+    ]);
+
+    const totalParticipants = allTotals.length;
+
+    // Encontrar la posición del joven específico
+    const youngIndex = allTotals.findIndex(
+      (entry: any) => entry._id.toString() === youngId
+    );
+
+    if (youngIndex === -1) {
+      return {
+        rank: totalParticipants + 1,
+        totalParticipants,
+        percentile: 0,
+      };
+    }
+
+    const rank = youngIndex + 1;
+    const percentile = ((totalParticipants - rank) / totalParticipants) * 100;
+
+    return {
+      rank,
+      totalParticipants,
+      percentile: Math.round(percentile),
+    };
+  }
 }
 
 export const pointsService = new PointsService();

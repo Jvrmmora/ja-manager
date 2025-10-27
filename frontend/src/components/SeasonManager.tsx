@@ -214,17 +214,8 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
                             event_available
                           </span>
                           <span>
-                            Asistencia: {season.pointsSettings.attendancePoints}{' '}
-                            pts
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-rounded text-xs">
-                            sports_score
-                          </span>
-                          <span>
-                            Actividad: {season.pointsSettings.activityPoints}{' '}
-                            pts
+                            Asistencia:{' '}
+                            {season.settings?.attendancePoints || 10} pts
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -232,8 +223,17 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
                             person_add
                           </span>
                           <span>
-                            Referido: {season.pointsSettings.referrerPoints}/
-                            {season.pointsSettings.referredPoints} pts
+                            Referido:{' '}
+                            {season.settings?.referralBonusPoints || 30}/
+                            {season.settings?.referralWelcomePoints || 10} pts
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="material-symbols-rounded text-xs">
+                            local_fire_department
+                          </span>
+                          <span>
+                            Racha: {season.settings?.streakMinDays || 3} días
                           </span>
                         </div>
                       </div>

@@ -24,6 +24,7 @@ export interface IYoung {
   email: string;
   skills: string[];
   placa?: string; // Placa generada del joven
+  totalPoints?: number; // ✅ Puntos totales de la temporada activa
   createdAt?: Date | string;
   updatedAt?: Date | string;
 }
@@ -141,13 +142,19 @@ export interface ISeason {
   startDate: string | Date;
   endDate: string | Date;
   status: SeasonStatus;
-  pointsSettings: {
+  settings?: {
     attendancePoints: number;
-    activityPoints: number;
-    referrerPoints: number;
-    referredPoints: number;
+    referralBonusPoints: number;
+    referralWelcomePoints: number;
+    streakMinDays: number;
+    streakLostAfterDays: number;
   };
-  isActive: boolean;
+  prizes?: {
+    first?: string;
+    second?: string;
+    third?: string;
+  };
+  isActive?: boolean;
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }
@@ -157,11 +164,17 @@ export interface ISeasonCreate {
   description?: string;
   startDate: string;
   endDate: string;
-  pointsSettings?: {
+  settings?: {
     attendancePoints?: number;
-    activityPoints?: number;
-    referrerPoints?: number;
-    referredPoints?: number;
+    referralBonusPoints?: number;
+    referralWelcomePoints?: number;
+    streakMinDays?: number;
+    streakLostAfterDays?: number;
+  };
+  prizes?: {
+    first?: string;
+    second?: string;
+    third?: string;
   };
 }
 
@@ -170,11 +183,17 @@ export interface ISeasonUpdate {
   description?: string;
   startDate?: string;
   endDate?: string;
-  pointsSettings?: {
+  settings?: {
     attendancePoints?: number;
-    activityPoints?: number;
-    referrerPoints?: number;
-    referredPoints?: number;
+    referralBonusPoints?: number;
+    referralWelcomePoints?: number;
+    streakMinDays?: number;
+    streakLostAfterDays?: number;
+  };
+  prizes?: {
+    first?: string;
+    second?: string;
+    third?: string;
   };
 }
 
@@ -221,16 +240,19 @@ export interface IAssignPointsRequest {
 }
 
 export interface ILeaderboardEntry {
-  rank: number;
   youngId: string;
-  young: IYoung;
+  youngName: string;
+  profileImage?: string;
+  group?: number;
   totalPoints: number;
-  breakdown: {
-    ATTENDANCE: number;
-    ACTIVITY: number;
-    REFERRER_BONUS: number;
-    REFERRED_BONUS: number;
+  currentRank: number;
+  previousRank?: number;
+  pointsByType: {
+    attendance: number;
+    activity: number;
+    referrer: number;
+    referred: number;
+    bonus: number;
   };
-  transactionCount: number;
   streak?: number;
 }

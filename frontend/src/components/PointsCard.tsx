@@ -4,20 +4,30 @@ import type { IPointsBreakdown } from '../types';
 
 interface PointsCardProps {
   youngId: string;
+  totalPoints?: number; // ✅ Puntos totales pre-cargados (opcional)
   onClick?: () => void;
 }
 
-const PointsCard: React.FC<PointsCardProps> = ({ youngId, onClick }) => {
+const PointsCard: React.FC<PointsCardProps> = ({
+  youngId,
+  totalPoints,
+  onClick,
+}) => {
   const [breakdown, setBreakdown] = useState<IPointsBreakdown | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(totalPoints === undefined); // Solo cargar si no hay totalPoints
   const [error, setError] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
-    loadPoints();
-  }, [youngId]);
+    // Solo cargar breakdown si no tenemos totalPoints
+    if (youngId && totalPoints === undefined) {
+      loadPoints();
+    }
+  }, [youngId, totalPoints]);
 
   const loadPoints = async () => {
+    if (!youngId) return;
+
     try {
       setLoading(true);
       setError(null);
@@ -31,6 +41,10 @@ const PointsCard: React.FC<PointsCardProps> = ({ youngId, onClick }) => {
     }
   };
 
+  if (!youngId) {
+    return null;
+  }
+
   if (loading) {
     return (
       <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-700 animate-pulse">
@@ -42,9 +56,15 @@ const PointsCard: React.FC<PointsCardProps> = ({ youngId, onClick }) => {
     );
   }
 
-  if (error || !breakdown) {
-    return null; // No mostrar nada si hay error
+  // Si hay error en la carga pero tenemos totalPoints, mostrar solo totalPoints sin tooltip
+  if (error && totalPoints === undefined) {
+    return null;
   }
+
+  // Usar totalPoints si está disponible, sino usar breakdown
+  const displayPoints =
+    totalPoints !== undefined ? totalPoints : breakdown?.total || 0;
+  const hasBreakdown = breakdown !== null;
 
   return (
     <div className="relative inline-block">
@@ -68,11 +88,11 @@ const PointsCard: React.FC<PointsCardProps> = ({ youngId, onClick }) => {
         <span className="material-symbols-rounded text-lg">star</span>
 
         {/* Puntos totales */}
-        <span className="text-sm">{breakdown.total} pts</span>
+        <span className="text-sm">{displayPoints} pts</span>
       </button>
 
-      {/* Tooltip personalizado */}
-      {showTooltip && (
+      {/* Tooltip personalizado - Solo mostrar si tenemos breakdown */}
+      {showTooltip && hasBreakdown && breakdown && (
         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50 pointer-events-none">
           <div className="bg-gray-800 dark:bg-gray-900 text-white px-3 py-2 rounded-lg shadow-xl text-xs whitespace-nowrap">
             <div className="space-y-1">
