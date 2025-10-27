@@ -758,11 +758,8 @@ export class YoungController {
       // Generar la placa
       const newPlaca = `@MOD${initials}${consecutiveFormatted}`;
 
-      // Generar contraseña por defecto basada en la placa
-      // Tomar los primeros 6 caracteres después del @ (MOD + iniciales)
-      const placaWithoutAt = newPlaca.substring(1); // Remover el @
-      const placaPrefix = placaWithoutAt.substring(0, 6); // Tomar los primeros 6 caracteres
-      const defaultPassword = `Pass${placaPrefix}`;
+      // Generar contraseña por defecto simple y fácil de recordar
+      const defaultPassword = `Password${consecutiveFormatted}`;
       const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
       // Buscar el rol "Young role"
@@ -797,7 +794,7 @@ export class YoungController {
         placa: newPlaca,
         consecutive: nextConsecutive,
         passwordGenerated: true,
-        defaultPasswordPattern: `Pass${placaPrefix}`,
+        defaultPasswordPattern: `Password${consecutiveFormatted}`,
       });
 
       res.json({
@@ -858,10 +855,10 @@ export class YoungController {
 
       // Validar formato de la nueva contraseña
       const passwordRegex =
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,50}$/;
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&._\-+=]{8,50}$/;
       if (!passwordRegex.test(new_password)) {
         throw new ValidationError(
-          'La nueva contraseña debe tener entre 8-50 caracteres, incluir al menos una mayúscula, una minúscula y un número'
+          'La nueva contraseña debe tener entre 8-50 caracteres, incluir al menos una mayúscula, una minúscula y un número. Caracteres especiales permitidos: @$!%*?&._-+='
         );
       }
 

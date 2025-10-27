@@ -8,6 +8,9 @@ import AnimatedScanButton from '../components/AnimatedScanButton';
 import QRScanner from '../components/QRScanner';
 import AttendanceHistory from '../components/AttendanceHistory';
 import ImageModal from '../components/ImageModal';
+import PointsStatsCards from '../components/PointsStatsCards';
+import PointsBreakdownModal from '../components/PointsBreakdownModal';
+import BirthdayBanner from '../components/BirthdayBanner';
 import { authService } from '../services/auth';
 import { getCurrentUserProfile, getMyAttendanceHistory } from '../services/api';
 import type { IYoung } from '../types';
@@ -23,13 +26,15 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
   const [currentUser, setCurrentUser] = useState<IYoung | null>(null);
-  
+
   // Nuevos estados para QR y asistencias
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [attendanceRefresh, setAttendanceRefresh] = useState(0);
   const [isScanning, setIsScanning] = useState(false);
   const [hasAttendanceToday, setHasAttendanceToday] = useState(false);
+  const [isLoadingAttendance, setIsLoadingAttendance] = useState(true); // Estado de carga
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
 
   useEffect(() => {
     // Obtener información del usuario
@@ -58,11 +63,14 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   // Función para cargar el estado de asistencia del día
   const loadAttendanceStatus = async () => {
     try {
+      setIsLoadingAttendance(true);
       const historyData = await getMyAttendanceHistory(1, 1); // Solo necesitamos verificar si hay asistencia hoy
       setHasAttendanceToday(historyData.stats.hasAttendanceToday || false);
     } catch (error) {
       console.error('Error al cargar estado de asistencia:', error);
       setHasAttendanceToday(false);
+    } finally {
+      setIsLoadingAttendance(false);
     }
   };
 
@@ -132,7 +140,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
     if (hasAttendanceToday) {
       return;
     }
-    
+
     setIsScanning(true);
     setShowQRScanner(true);
   };
@@ -141,7 +149,6 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
     setShowQRScanner(false);
     setIsScanning(false);
   };
-
 
   // QRScanner maneja todo internamente
   const handleQRScanSuccess = (data: any) => {
@@ -158,7 +165,11 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
             {/* Logo y título */}
             <div className="flex items-center space-x-4">
               <div className="w-8 h-8">
-                <img src={logo} alt="JA Manager Logo" className="w-full h-full object-contain" />
+                <img
+                  src={logo}
+                  alt="JA Manager Logo"
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -173,7 +184,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
             {/* Theme Toggle y Profile Dropdown */}
             <div className="flex items-center space-x-4">
               <ThemeToggle />
-              <ProfileDropdown 
+              <ProfileDropdown
                 onChangePassword={handleOpenChangePassword}
                 onOpenProfile={handleOpenProfile}
                 onViewProfileImage={handleOpenImageModal}
@@ -190,7 +201,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
           <div className="text-center py-12">
             {/* Foto de perfil con botón de editar */}
             <div className="relative inline-block mb-6">
-              <div 
+              <div
                 className={`relative w-24 h-24 rounded-full overflow-hidden mx-auto bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center ${
                   userInfo?.profileImage ? 'cursor-pointer group' : ''
                 }`}
@@ -210,8 +221,18 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
                     </div>
                   </>
                 ) : (
-                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <svg
+                    className="w-12 h-12 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                   </svg>
                 )}
               </div>
@@ -221,29 +242,51 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
                 className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-lg"
                 title="Editar perfil"
               >
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                <svg
+                  className="w-4 h-4 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
                 </svg>
               </button>
             </div>
-            
+
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
               ¡Hola, {getFirstName()}! 👋
             </h2>
-            
+
             <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-              Bienvenido a tu panel personal de JA Manager. 
-              Aquí podrás ver tu información, participar en actividades y mantenerte conectado con la comunidad.
+              Bienvenido a tu panel personal de JA Manager. Aquí podrás ver tu
+              información, participar en actividades y mantenerte conectado con
+              la comunidad.
             </p>
 
             {/* Información de la placa si la tiene */}
             {userInfo?.placa && (
               <div className="inline-flex items-center px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-lg mb-6">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+                  />
                 </svg>
-                <span className="font-semibold">Tu Placa: {userInfo.placa}</span>
+                <span className="font-semibold">
+                  Tu Placa: {userInfo.placa}
+                </span>
               </div>
             )}
 
@@ -251,15 +294,26 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
             {authService.isFirstLogin() && (
               <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-6 mb-8">
                 <div className="flex items-start">
-                  <svg className="w-6 h-6 text-orange-600 dark:text-orange-400 mr-3 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  <svg
+                    className="w-6 h-6 text-orange-600 dark:text-orange-400 mr-3 mt-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
                   </svg>
                   <div className="flex-1 text-left">
                     <h3 className="text-lg font-semibold text-orange-800 dark:text-orange-300 mb-2">
                       ¡Bienvenido por primera vez!
                     </h3>
                     <p className="text-orange-700 dark:text-orange-300 mb-4">
-                      Te recomendamos cambiar tu contraseña temporal por una personalizada para mayor seguridad.
+                      Te recomendamos cambiar tu contraseña temporal por una
+                      personalizada para mayor seguridad.
                     </p>
                     <button
                       onClick={handleOpenChangePassword}
@@ -283,13 +337,39 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
 
             {/* Botón de registrar asistencia debajo de la placa */}
             <div className="mb-8">
-              <AnimatedScanButton
-                onClick={handleOpenQRScanner}
-                isScanning={isScanning}
-                isCompleted={hasAttendanceToday}
-                className="max-w-md mx-auto"
-              />
+              {isLoadingAttendance ? (
+                // Skeleton loader mientras se verifica la asistencia
+                <div className="max-w-md mx-auto">
+                  <div className="relative w-full py-4 px-6 rounded-xl bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-700 dark:to-gray-600 animate-pulse">
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="w-6 h-6 bg-gray-400 dark:bg-gray-500 rounded"></div>
+                      <div className="h-4 w-48 bg-gray-400 dark:bg-gray-500 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <AnimatedScanButton
+                  onClick={handleOpenQRScanner}
+                  isScanning={isScanning}
+                  isCompleted={hasAttendanceToday}
+                  className="max-w-md mx-auto"
+                />
+              )}
             </div>
+
+            {/* Cards de Puntos y Ranking - PROPUESTA 1 */}
+            {userInfo?.id && (
+              <PointsStatsCards
+                youngId={userInfo.id}
+                onViewDetails={() => setShowPointsBreakdown(true)}
+              />
+            )}
+
+            {/* Banner de Cumpleaños */}
+            <BirthdayBanner
+              birthday={userInfo?.birthday}
+              onEditProfile={handleOpenProfile}
+            />
 
             {/* Historial de asistencias */}
             <div className="mt-8">
@@ -307,8 +387,18 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
       {passwordChangeSuccess && (
         <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
           <div className="flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             ¡Contraseña cambiada exitosamente!
           </div>
@@ -345,6 +435,15 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
           onClose={() => setShowImageModal(false)}
           imageUrl={userInfo.profileImage}
           altText={`Foto de perfil de ${userInfo.fullName || 'Usuario'}`}
+        />
+      )}
+
+      {/* Modal de desglose de puntos */}
+      {userInfo && (
+        <PointsBreakdownModal
+          isOpen={showPointsBreakdown}
+          onClose={() => setShowPointsBreakdown(false)}
+          young={userInfo as IYoung}
         />
       )}
     </div>
