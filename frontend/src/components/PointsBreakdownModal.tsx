@@ -6,12 +6,16 @@ interface PointsBreakdownModalProps {
   young: IYoung;
   isOpen: boolean;
   onClose: () => void;
+  isAdmin?: boolean;
+  onAssignPoints?: () => void;
 }
 
 const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
   young,
   isOpen,
   onClose,
+  isAdmin = false,
+  onAssignPoints,
 }) => {
   const [breakdown, setBreakdown] = useState<IPointsBreakdown | null>(null);
   const [transactions, setTransactions] = useState<IPointsTransaction[]>([]);
@@ -20,9 +24,15 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
     totalParticipants: number;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && young.id) {
+      // Resetear estados cuando se abre el modal
+      setError(null);
+      setBreakdown(null);
+      setTransactions([]);
+      setPosition(null);
       loadData();
     }
   }, [isOpen, young.id]);
@@ -32,17 +42,30 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
 
     try {
       setLoading(true);
+      setError(null);
+      console.log('🔍 PointsBreakdownModal - Cargando datos para:', young.id);
+
       const [breakdownData, historyData, positionData] = await Promise.all([
         pointsService.getBreakdown(young.id),
         pointsService.getHistory(young.id, { limit: 10 }),
         pointsService.getPosition(young.id).catch(() => null),
       ]);
 
+      console.log('✅ PointsBreakdownModal - Datos cargados:', {
+        breakdown: breakdownData,
+        transactions: historyData.transactions.length,
+        position: positionData,
+      });
+
       setBreakdown(breakdownData);
       setTransactions(historyData.transactions);
       setPosition(positionData);
-    } catch (error) {
-      console.error('Error loading points data:', error);
+    } catch (err: any) {
+      console.error(
+        '❌ PointsBreakdownModal - Error loading points data:',
+        err
+      );
+      setError(err.message || 'Error al cargar los datos de puntos');
     } finally {
       setLoading(false);
     }
@@ -88,8 +111,16 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
 
   if (!isOpen) return null;
 
+  console.log('🎨 PointsBreakdownModal - Renderizando:', {
+    isOpen,
+    loading,
+    hasBreakdown: !!breakdown,
+    hasError: !!error,
+    youngId: young.id,
+  });
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
@@ -117,15 +148,34 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
             </div>
           </div>
 
-          {/* Botón cerrar */}
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-          >
-            <span className="material-symbols-rounded text-gray-500 dark:text-gray-400">
-              close
-            </span>
-          </button>
+          {/* Botones de acción */}
+          <div className="flex items-center gap-2">
+            {/* Botón para asignar puntos (solo admins) */}
+            {isAdmin && onAssignPoints && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onAssignPoints();
+                }}
+                className="p-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-300 rounded-lg transition-colors border border-amber-200 dark:border-amber-700"
+                title="Asignar puntos"
+              >
+                <span className="material-symbols-rounded text-xl">
+                  add_circle
+                </span>
+              </button>
+            )}
+
+            {/* Botón cerrar */}
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            >
+              <span className="material-symbols-rounded text-gray-500 dark:text-gray-400">
+                close
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -299,9 +349,30 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
                 </div>
               )}
             </>
+          ) : error ? (
+            <div className="text-center py-12">
+              <span className="material-symbols-rounded text-5xl text-red-500 dark:text-red-400 mb-4">
+                error
+              </span>
+              <p className="text-red-600 dark:text-red-400 font-medium mb-2">
+                Error al cargar los datos
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                {error}
+              </p>
+              <button
+                onClick={loadData}
+                className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+              >
+                Reintentar
+              </button>
+            </div>
           ) : (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              No hay datos de puntos disponibles
+              <span className="material-symbols-rounded text-5xl mb-4 opacity-50">
+                info
+              </span>
+              <p>No hay datos de puntos disponibles</p>
             </div>
           )}
         </div>

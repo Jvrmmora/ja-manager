@@ -63,7 +63,9 @@ const MultiGroupSelect: React.FC<Props> = ({ value, onChange, className }) => {
     if (value.length === 0 || value.length === GROUP_OPTIONS.length) {
       return GROUP_OPTIONS.map(g => g.color);
     }
-    return value.map(v => GROUP_OPTIONS.find(g => g.value === v)?.color || '#7C3AED');
+    return value.map(
+      v => GROUP_OPTIONS.find(g => g.value === v)?.color || '#7C3AED'
+    );
   };
 
   return (
@@ -78,26 +80,37 @@ const MultiGroupSelect: React.FC<Props> = ({ value, onChange, className }) => {
             <div className="flex items-center gap-2">
               {/* Indicadores de color */}
               <div className="flex gap-1">
-                {getSelectedColors().slice(0, 3).map((color, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-block w-3 h-3 rounded-full border border-white dark:border-gray-300"
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
+                {getSelectedColors()
+                  .slice(0, 3)
+                  .map((color, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-block w-3 h-3 rounded-full border border-white dark:border-gray-300"
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
                 {getSelectedColors().length > 3 && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">+{getSelectedColors().length - 3}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                    +{getSelectedColors().length - 3}
+                  </span>
                 )}
               </div>
-              <span className="text-gray-800 dark:text-gray-200 truncate">{getDisplayText()}</span>
+              <span className="text-gray-800 dark:text-gray-200 truncate">
+                {getDisplayText()}
+              </span>
             </div>
-            <svg 
-              className={`w-4 h-4 text-gray-500 dark:text-gray-400 transform transition-transform ${open ? 'rotate-180' : ''}`} 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className={`w-4 h-4 text-gray-500 dark:text-gray-400 transform transition-transform ${open ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </div>
         </button>
@@ -105,8 +118,11 @@ const MultiGroupSelect: React.FC<Props> = ({ value, onChange, className }) => {
         {open && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
             {/* Opción Seleccionar todo */}
-            <div className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 border-b border-gray-100 dark:border-gray-600 cursor-pointer">
-              <div className="flex items-center gap-3" onClick={(e) => handleSelectAll(e)}>
+            <div className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 border-b border-gray-200 dark:border-gray-600 cursor-pointer">
+              <div
+                className="flex items-center gap-3"
+                onClick={e => handleSelectAll(e)}
+              >
                 <div className="flex items-center">
                   <input
                     type="checkbox"
@@ -116,7 +132,9 @@ const MultiGroupSelect: React.FC<Props> = ({ value, onChange, className }) => {
                   />
                 </div>
                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {value.length === GROUP_OPTIONS.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                  {value.length === GROUP_OPTIONS.length
+                    ? 'Deseleccionar todos'
+                    : 'Seleccionar todos'}
                 </span>
               </div>
             </div>
@@ -127,7 +145,10 @@ const MultiGroupSelect: React.FC<Props> = ({ value, onChange, className }) => {
                 key={option.value}
                 className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
               >
-                <div className="flex items-center gap-3" onClick={(e) => handleToggle(option.value, e)}>
+                <div
+                  className="flex items-center gap-3"
+                  onClick={e => handleToggle(option.value, e)}
+                >
                   <div className="flex items-center">
                     <input
                       type="checkbox"
@@ -140,7 +161,9 @@ const MultiGroupSelect: React.FC<Props> = ({ value, onChange, className }) => {
                     className="inline-block w-3 h-3 rounded-full border border-white dark:border-gray-300"
                     style={{ backgroundColor: option.color }}
                   />
-                  <span className="text-sm text-gray-800 dark:text-gray-200">{option.label}</span>
+                  <span className="text-sm text-gray-800 dark:text-gray-200">
+                    {option.label}
+                  </span>
                 </div>
               </div>
             ))}

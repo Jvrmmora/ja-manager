@@ -210,30 +210,71 @@ class PointsService {
     if (!season) {
       return {
         total: 0,
-        attendance: 0,
-        activities: 0,
-        referrals: 0,
+        byType: {
+          ATTENDANCE: 0,
+          ACTIVITY: 0,
+          REFERRER_BONUS: 0,
+          REFERRED_BONUS: 0,
+        },
+        transactionCount: 0,
+        season: null,
       };
     }
 
     const sid = (season._id as mongoose.Types.ObjectId).toString();
 
-    const [attendanceCount, activitiesCount, referralsCount, totalPoints] =
-      await Promise.all([
-        PointsTransaction.countByType(youngId, sid, 'ATTENDANCE'),
-        PointsTransaction.countByType(youngId, sid, 'ACTIVITY'),
-        PointsTransaction.countByType(youngId, sid, 'REFERRAL_BONUS'),
-        this.getTotalPoints(youngId, sid),
-      ]);
+    // Usar aggregation para obtener la suma de puntos por tipo
+    const pointsByType = await PointsTransaction.aggregate([
+      {
+        $match: {
+          youngId: new mongoose.Types.ObjectId(youngId),
+          seasonId: new mongoose.Types.ObjectId(sid),
+        },
+      },
+      {
+        $group: {
+          _id: '$type',
+          totalPoints: { $sum: '$points' },
+        },
+      },
+    ]);
+
+    // Convertir el resultado del aggregate a un objeto
+    const breakdown = {
+      ATTENDANCE: 0,
+      ACTIVITY: 0,
+      REFERRER_BONUS: 0,
+      REFERRED_BONUS: 0,
+    };
+
+    pointsByType.forEach((item: any) => {
+      if (item._id in breakdown) {
+        breakdown[item._id as keyof typeof breakdown] = item.totalPoints;
+      }
+    });
+
+    // Obtener total de transacciones
+    const totalTransactions = await PointsTransaction.countDocuments({
+      youngId: new mongoose.Types.ObjectId(youngId),
+      seasonId: new mongoose.Types.ObjectId(sid),
+    });
+
+    const total =
+      breakdown.ATTENDANCE +
+      breakdown.ACTIVITY +
+      breakdown.REFERRER_BONUS +
+      breakdown.REFERRED_BONUS;
 
     return {
-      total: totalPoints,
-      attendance: attendanceCount * season.settings.attendancePoints,
-      activities: activitiesCount * 10, // Asumiendo 10 pts por actividad
-      referrals: referralsCount * season.settings.referralBonusPoints,
-      attendanceCount,
-      activitiesCount,
-      referralsCount,
+      total,
+      byType: breakdown,
+      transactionCount: totalTransactions,
+      season: {
+        id: sid,
+        name: season.name,
+        startDate: season.startDate,
+        endDate: season.endDate,
+      },
     };
   }
 

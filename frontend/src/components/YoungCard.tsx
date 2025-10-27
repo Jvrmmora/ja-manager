@@ -418,7 +418,7 @@ const YoungCard: React.FC<YoungCardProps> = ({
         </div>
 
         {/* Línea divisoria */}
-        <div className="border-t border-gray-100 dark:border-gray-700"></div>
+        <div className="border-t border-gray-200 dark:border-gray-700"></div>
 
         {/* Puntos del joven */}
         {young.id && (
@@ -426,31 +426,16 @@ const YoungCard: React.FC<YoungCardProps> = ({
             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
               Puntos:
             </span>
-            <div className="flex items-center gap-2">
-              <PointsCard
-                youngId={young.id}
-                totalPoints={young.totalPoints ?? 0}
-                onClick={() => setShowPointsModal(true)}
-              />
-              {/* Botón para asignar puntos (solo admins) */}
-              {isAdmin && (
-                <Tooltip content="Asignar puntos" position="left">
-                  <button
-                    onClick={() => setShowAssignPointsModal(true)}
-                    className="p-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-300 rounded-lg transition-colors border border-amber-200 dark:border-amber-700"
-                  >
-                    <span className="material-symbols-rounded text-sm">
-                      add_circle
-                    </span>
-                  </button>
-                </Tooltip>
-              )}
-            </div>
+            <PointsCard
+              youngId={young.id}
+              totalPoints={young.totalPoints ?? 0}
+              onClick={() => setShowPointsModal(true)}
+            />
           </div>
         )}
 
         {/* Línea divisoria */}
-        <div className="border-t border-gray-100 dark:border-gray-700"></div>
+        <div className="border-t border-gray-200 dark:border-gray-700"></div>
 
         {/* Placa */}
         <div className="flex items-center justify-between">
@@ -593,6 +578,8 @@ const YoungCard: React.FC<YoungCardProps> = ({
         young={young}
         isOpen={showPointsModal}
         onClose={() => setShowPointsModal(false)}
+        isAdmin={isAdmin}
+        onAssignPoints={() => setShowAssignPointsModal(true)}
       />
 
       {/* Modal para asignar puntos (admin) */}

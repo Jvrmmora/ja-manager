@@ -12,7 +12,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
     onFiltersChange({
       ...filters,
       [key]: value || undefined,
-      page: 1 // Reset to first page when filtering
+      page: 1, // Reset to first page when filtering
     });
   };
 
@@ -20,7 +20,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
     onFiltersChange({
       ...filters,
       groups: groups.length > 0 ? groups : undefined,
-      page: 1 // Reset to first page when filtering
+      page: 1, // Reset to first page when filtering
     });
   };
 
@@ -28,17 +28,23 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
     const clearedFilters: PaginationQuery = {
       page: 1,
       sortBy: 'fullName',
-      sortOrder: 'asc'
+      sortOrder: 'asc',
     };
-    
+
     if (filters.limit !== undefined) {
       clearedFilters.limit = filters.limit;
     }
-    
+
     onFiltersChange(clearedFilters);
   };
 
-  const hasActiveFilters = !!(filters.search || filters.ageRange || filters.gender || filters.role || (filters.groups && filters.groups.length > 0));
+  const hasActiveFilters = !!(
+    filters.search ||
+    filters.ageRange ||
+    filters.gender ||
+    filters.role ||
+    (filters.groups && filters.groups.length > 0)
+  );
 
   return (
     <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-4 sm:mb-6">
@@ -51,7 +57,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
           <input
             type="text"
             value={filters.search || ''}
-            onChange={(e) => handleInputChange('search', e.target.value)}
+            onChange={e => handleInputChange('search', e.target.value)}
             placeholder="Buscar por nombre, teléfono o email..."
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -64,7 +70,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
           </label>
           <select
             value={filters.ageRange || ''}
-            onChange={(e) => handleInputChange('ageRange', e.target.value)}
+            onChange={e => handleInputChange('ageRange', e.target.value)}
             className="w-full sm:w-auto px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Todos</option>
@@ -84,7 +90,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
           </label>
           <select
             value={filters.gender || ''}
-            onChange={(e) => handleInputChange('gender', e.target.value)}
+            onChange={e => handleInputChange('gender', e.target.value)}
             className="w-full sm:w-auto px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Todos</option>
@@ -100,7 +106,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
           </label>
           <select
             value={filters.role || ''}
-            onChange={(e) => handleInputChange('role', e.target.value)}
+            onChange={e => handleInputChange('role', e.target.value)}
             className="w-full sm:w-auto px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Todos</option>
@@ -136,7 +142,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
           </label>
           <select
             value={filters.sortBy || 'fullName'}
-            onChange={(e) => handleInputChange('sortBy', e.target.value)}
+            onChange={e => handleInputChange('sortBy', e.target.value)}
             className="w-full sm:w-auto px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="fullName">Nombre</option>
@@ -156,7 +162,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
           </label>
           <select
             value={filters.sortOrder || 'asc'}
-            onChange={(e) => handleInputChange('sortOrder', e.target.value)}
+            onChange={e => handleInputChange('sortOrder', e.target.value)}
             className="w-full sm:w-auto px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="asc">Ascendente</option>
@@ -171,8 +177,18 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
               onClick={clearFilters}
               className="w-full sm:w-auto px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
               Limpiar
             </button>
@@ -182,27 +198,29 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
 
       {/* Indicadores de filtros activos */}
       {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-          <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Filtros activos:</span>
-          
+        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+          <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+            Filtros activos:
+          </span>
+
           {filters.search && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
               Búsqueda: "{filters.search}"
             </span>
           )}
-          
+
           {filters.ageRange && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
               Edad: {filters.ageRange} años
             </span>
           )}
-          
+
           {filters.gender && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
               Género: {filters.gender}
             </span>
           )}
-          
+
           {filters.role && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300">
               Rol: {filters.role}
@@ -211,7 +229,10 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
 
           {filters.groups && filters.groups.length > 0 && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300">
-              Grupos: {filters.groups.length === 1 ? `Nivel ${filters.groups[0]}` : `${filters.groups.length} grupos`}
+              Grupos:{' '}
+              {filters.groups.length === 1
+                ? `Nivel ${filters.groups[0]}`
+                : `${filters.groups.length} grupos`}
             </span>
           )}
         </div>

@@ -26,8 +26,15 @@ export const pointsService = {
         method: 'GET',
       }
     );
-    const data = await response.json();
-    return data.breakdown;
+    const result = await response.json();
+    console.log('📊 pointsService.getBreakdown - Response:', result);
+
+    // El backend devuelve { success: true, data: breakdown }
+    if (!result.data) {
+      throw new Error('No se recibieron datos de puntos del servidor');
+    }
+
+    return result.data;
   },
 
   /**
@@ -49,10 +56,11 @@ export const pointsService = {
         method: 'GET',
       }
     );
-    const data = await response.json();
+    const result = await response.json();
+    // El backend devuelve { success: true, count: X, data: [...transactions] }
     return {
-      transactions: data.transactions || [],
-      total: data.total || 0,
+      transactions: result.data || [],
+      total: result.count || 0,
     };
   },
 

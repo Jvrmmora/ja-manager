@@ -9,7 +9,12 @@ interface ProfileDropdownProps {
   onViewProfileImage?: () => void;
 }
 
-const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onChangePassword, onOpenProfile, onViewProfileImage }) => {
+const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
+  className = '',
+  onChangePassword,
+  onOpenProfile,
+  onViewProfileImage,
+}) => {
   // const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -39,7 +44,10 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onCha
   useEffect(() => {
     // Cerrar dropdown cuando se hace click fuera
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -128,7 +136,12 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onCha
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </button>
 
@@ -136,9 +149,9 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onCha
       {isOpen && (
         <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-2 z-50">
           {/* Header del dropdown */}
-          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
-              <div 
+              <div
                 className={`relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center ${
                   getProfileImage() ? 'cursor-pointer group' : ''
                 }`}
@@ -191,8 +204,18 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onCha
               }}
               className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
               <span>Mi Perfil</span>
             </button>
@@ -206,8 +229,18 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onCha
                   }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
                   </svg>
                   <span>Cambiar Contraseña</span>
                   {authService.isFirstLogin() && (
@@ -224,14 +257,24 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ className = '', onCha
               </div>
             )}
 
-            <div className="border-t border-gray-100 dark:border-gray-700 my-2"></div>
+            <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
 
             <button
               onClick={handleLogout}
               className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
               </svg>
               <span>Cerrar Sesión</span>
             </button>
