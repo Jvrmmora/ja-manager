@@ -124,7 +124,7 @@ const BirthdayDashboard: React.FC<BirthdayDashboardProps> = ({
   // Función para formatear el número de teléfono para WhatsApp
   const formatPhoneForWhatsApp = (phone: string) => {
     // Remover espacios, guiones y otros caracteres especiales
-    let cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+    let cleanPhone = phone.replace(/[\s-()]/g, '');
 
     // Si no empieza con +, agregar +57 (Colombia por defecto)
     if (!cleanPhone.startsWith('+')) {
@@ -169,7 +169,7 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-6 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 dark:from-violet-600 dark:to-fuchsia-600 text-white p-6 relative overflow-hidden">
           <div className="flex justify-between items-center relative z-10">
             <div>
               <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -253,13 +253,13 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
           </div>
 
           {/* Estadísticas del mes */}
-          <div className="bg-gradient-to-r from-purple-50 to-indigo-100 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg p-4 mb-6">
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-100 dark:from-violet-900/40 dark:to-fuchsia-900/30 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-indigo-800 dark:text-indigo-300">
+                <h3 className="text-lg font-semibold text-indigo-800 dark:text-white">
                   {months[selectedMonth]} {getCurrentYearColombia()}
                 </h3>
-                <p className="text-indigo-700 dark:text-indigo-300">
+                <p className="text-indigo-700 dark:text-white/80">
                   {filteredYoung.length} cumpleaños este mes
                   {selectedGroups.length > 0 && (
                     <span className="text-indigo-600 dark:text-indigo-300 text-sm ml-2">
@@ -324,30 +324,30 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
                       <h4 className="font-semibold text-gray-900 dark:text-white">
                         {young.fullName}
                       </h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+                      <p className="text-sm text-gray-500 dark:text-white capitalize">
                         {young.role}
                       </p>
                     </div>
-                    <span className="material-symbols-rounded text-xl text-indigo-500">
+                    <span className="material-symbols-rounded text-xl text-indigo-500 dark:text-white">
                       cake
                     </span>
                   </div>
 
                   {/* Información de cumpleaños */}
-                  <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 mb-3">
+                  <div className="bg-indigo-50 dark:bg-violet-900/30 rounded-lg p-3 mb-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-indigo-800 dark:text-indigo-300 flex items-center gap-1">
+                        <p className="text-sm font-medium text-indigo-800 dark:text-white flex items-center gap-1">
                           <span className="material-symbols-rounded text-base">
                             event
                           </span>
                           {formatBirthday(young.birthday)}
                         </p>
-                        <p className="text-xs text-indigo-700 dark:text-indigo-400">
+                        <p className="text-xs text-indigo-700 dark:text-indigo-200">
                           Cumple {calculateAge(young.birthday)} años
                         </p>
                       </div>
-                      <div className="text-lg font-bold text-indigo-700 dark:text-indigo-300">
+                      <div className="text-lg font-bold text-indigo-700 dark:text-white">
                         {(() => {
                           // Parsear la fecha evitando problemas de zona horaria
                           const birthdayStr = young.birthday.toString();
@@ -365,7 +365,7 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
                   </div>
 
                   {/* Información adicional */}
-                  <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="space-y-2 text-sm text-gray-600 dark:text-white">
                     <div className="flex items-center">
                       <span className="material-symbols-rounded text-base mr-2">
                         person
@@ -418,7 +418,7 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
                         {young.skills.slice(0, 3).map((skill, index) => (
                           <span
                             key={index}
-                            className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-full text-xs"
+                            className="bg-indigo-100 dark:bg-violet-900/40 text-indigo-700 dark:text-white px-2 py-1 rounded-full text-xs"
                           >
                             {skill}
                           </span>

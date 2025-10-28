@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { IYoung } from '../types';
+import { pointsService } from '../services/pointsService';
 import {
   getCurrentMonthColombia,
   getCurrentYearColombia,
@@ -18,8 +19,25 @@ const StatsCards: React.FC<StatsCardsProps> = ({
   // Calcular estadísticas
   const totalYoung = youngList.length;
 
-  // Calcular activos (por ahora todos los jóvenes son activos)
-  const activeYoung = totalYoung;
+  // Activos: participantes en el ranking de la temporada actual
+  const [activeYoung, setActiveYoung] = useState<number>(totalYoung);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const ranking = await pointsService.getLeaderboard({});
+        if (mounted && Array.isArray(ranking)) {
+          setActiveYoung(ranking.length);
+        }
+      } catch {
+        // fallback silencioso
+        if (mounted) setActiveYoung(totalYoung);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [totalYoung]);
 
   // Calcular cumpleaños de este mes usando zona horaria de Colombia
   const currentMonth = getCurrentMonthColombia();

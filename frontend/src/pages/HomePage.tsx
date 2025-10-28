@@ -813,7 +813,7 @@ function HomePage() {
                   setShowQRSection(true);
                   setShowQRMenu(false);
                 }}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-l-xl text-white shadow-lg bg-gradient-to-r from-purple-500 to-fuchsia-600 hover:from-purple-600 hover:to-fuchsia-700 transition-all"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-l-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow"
               >
                 <span className="material-symbols-rounded text-base">
                   qr_code_2
@@ -823,7 +823,7 @@ function HomePage() {
               <button
                 type="button"
                 onClick={() => setShowQRMenu(prev => !prev)}
-                className="px-3 py-3 rounded-r-xl text-white shadow-lg bg-gradient-to-r from-purple-500 to-fuchsia-600 hover:from-purple-600 hover:to-fuchsia-700 transition-all border-l border-white/20"
+                className="px-3 py-3 rounded-r-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow border-l border-blue-500/40"
                 aria-haspopup="menu"
                 aria-expanded={showQRMenu}
                 title="Más acciones"
@@ -870,7 +870,7 @@ function HomePage() {
                   setShowLeaderboardSection(true);
                   setShowRankingMenu(false);
                 }}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-l-xl text-white shadow-lg bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 transition-all"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-l-xl bg-yellow-600 text-white hover:bg-yellow-700 transition-all shadow"
               >
                 <span className="material-symbols-rounded text-base">
                   leaderboard
@@ -880,7 +880,7 @@ function HomePage() {
               <button
                 type="button"
                 onClick={() => setShowRankingMenu(prev => !prev)}
-                className="px-3 py-3 rounded-r-xl text-white shadow-lg bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 transition-all border-l border-white/20"
+                className="px-3 py-3 rounded-r-xl bg-yellow-600 text-white hover:bg-yellow-700 transition-all shadow border-l border-yellow-500/40"
                 aria-haspopup="menu"
                 aria-expanded={showRankingMenu}
                 title="Más acciones"
