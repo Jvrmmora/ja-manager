@@ -2,6 +2,9 @@ import PointsTransaction, {
   PointsTransactionType,
 } from '../models/PointsTransaction';
 import Season from '../models/Season';
+import Attendance from '../models/Attendance';
+import Streak from '../models/Streak';
+import { formatDateColombia, getStartOfWeekColombia } from '../utils/dateUtils';
 import mongoose from 'mongoose';
 import { updateStreakOnAttendance } from './streakService';
 
@@ -282,7 +285,9 @@ class PointsService {
       REFERRED_BONUS: 0,
     };
 
+    let totalSum = 0;
     pointsByType.forEach((item: any) => {
+      totalSum += item.totalPoints || 0;
       const key =
         item._id === 'REFERRAL_BONUS'
           ? 'REFERRER_BONUS'
@@ -300,11 +305,52 @@ class PointsService {
       seasonId: new mongoose.Types.ObjectId(sid),
     });
 
-    const total =
-      breakdown.ATTENDANCE +
-      breakdown.ACTIVITY +
-      breakdown.REFERRER_BONUS +
-      breakdown.REFERRED_BONUS;
+    // Total real (incluye BONUS y cualquier otro tipo futuro)
+    const total = totalSum;
+
+    // --- Streak metadata + últimas 6 semanas (para timeline) ---
+    const streakDoc = await Streak.findOne({
+      youngId: new mongoose.Types.ObjectId(youngId),
+      seasonId: new mongoose.Types.ObjectId(sid),
+    });
+
+    // Calcular sábados de las últimas 6 semanas en TZ Colombia
+    const startOfThisWeek = getStartOfWeekColombia(new Date()); // domingo
+    const saturdayDates: { date: Date; str: string }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const weekStart = new Date(startOfThisWeek);
+      weekStart.setDate(weekStart.getDate() - i * 7);
+      const saturday = new Date(weekStart);
+      saturday.setDate(weekStart.getDate() + 6);
+      saturday.setHours(0, 0, 0, 0);
+      saturdayDates.push({ date: saturday, str: formatDateColombia(saturday) });
+    }
+
+    const saturdayStrs = saturdayDates.map(s => s.str);
+    const saturdayAttendances = await Attendance.find({
+      youngId: new mongoose.Types.ObjectId(youngId),
+      attendanceDate: { $in: saturdayStrs },
+    }).select('attendanceDate');
+    const attendedSet = new Set(saturdayAttendances.map(a => a.attendanceDate));
+
+    const weeks = saturdayDates.map(s => ({
+      weekStart: new Date(s.date.getTime() - 6 * 24 * 60 * 60 * 1000),
+      saturdayDate: s.date,
+      attended: attendedSet.has(s.str),
+    }));
+
+    // Ajuste sin cron: si pasaron 2 sábados completos sin asistir => racha 0
+    let currentWeeks = streakDoc?.currentStreakWeeks || 0;
+    if (streakDoc?.lastAttendanceSaturday) {
+      const currentSaturday = new Date(startOfThisWeek);
+      currentSaturday.setDate(startOfThisWeek.getDate() + 6);
+      currentSaturday.setHours(0, 0, 0, 0);
+      const last = new Date(streakDoc.lastAttendanceSaturday);
+      const weeksBetween = Math.round(
+        (currentSaturday.getTime() - last.getTime()) / (7 * 24 * 60 * 60 * 1000)
+      );
+      if (weeksBetween >= 3) currentWeeks = 0;
+    }
 
     return {
       total,
@@ -315,6 +361,13 @@ class PointsService {
         name: season.name,
         startDate: season.startDate,
         endDate: season.endDate,
+      },
+      streak: {
+        currentWeeks,
+        bestWeeks: streakDoc?.bestStreakWeeks || 0,
+        violetFlameAwarded: !!streakDoc?.violetFlameAwarded,
+        violetFlameAwardedAt: streakDoc?.violetFlameAwardedAt || null,
+        weeks,
       },
     };
   }

@@ -34,6 +34,15 @@ const LeaderboardSection: React.FC = () => {
     }
   }, [selectedSeason, selectedGroup, seasons.length]);
 
+  // Listen for global points updates to refresh immediately
+  useEffect(() => {
+    const onPointsUpdated = () => {
+      loadLeaderboard(false);
+    };
+    window.addEventListener('points:updated', onPointsUpdated);
+    return () => window.removeEventListener('points:updated', onPointsUpdated);
+  }, [selectedSeason, selectedGroup]);
+
   // Polling cada 15 segundos
   useEffect(() => {
     if (!selectedSeason && seasons.length === 0) return;
@@ -106,7 +115,7 @@ const LeaderboardSection: React.FC = () => {
 
   const getTop3 = () => leaderboard.slice(0, 3);
   const getRest = () => leaderboard.slice(3);
-  const StreakChip: React.FC<{ value?: number }> = ({ value }) => {
+  const StreakChip: React.FC<{ value?: number | undefined }> = ({ value }) => {
     if (!value || value <= 0) return null;
     const isViolet = value >= 4;
     const base = isViolet
@@ -114,7 +123,7 @@ const LeaderboardSection: React.FC = () => {
       : 'from-orange-400 to-amber-500';
     return (
       <div
-        className={`absolute -top-3 -right-3 rounded-full px-2 py-1 text-[10px] sm:text-xs font-bold text-white shadow bg-gradient-to-r ${base} flex items-center gap-1`}
+        className={`absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full px-2 py-1 text-[10px] sm:text-xs font-bold text-white shadow bg-gradient-to-r ${base} flex items-center gap-1`}
         title={`Racha: ${value} semana${value !== 1 ? 's' : ''}`}
       >
         <span className="material-symbols-rounded text-[12px] sm:text-sm">

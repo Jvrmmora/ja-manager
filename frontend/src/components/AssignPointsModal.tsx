@@ -199,14 +199,55 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
           onSuccess?.(
             `${points} pts a ${young.fullName} (bono) y a ${selectedYoung?.fullName || 'referido'} (bienvenida)`
           );
+          // Notificar actualización de puntos para ambos
+          window.dispatchEvent(
+            new CustomEvent('points:updated', {
+              detail: {
+                youngId: young.id,
+                delta: points,
+                type: 'REFERRAL_BONUS',
+                description: trimmedDescription,
+              },
+            })
+          );
+          window.dispatchEvent(
+            new CustomEvent('points:updated', {
+              detail: {
+                youngId: selectedId,
+                delta: points,
+                type: 'REFERRAL_WELCOME',
+                description: trimmedDescription,
+              },
+            })
+          );
         } else {
           await makeRequest(young.id!, 'REFERRAL_BONUS', selectedId);
           onSuccess?.(`${points} pts de bono asignados a ${young.fullName}`);
+          window.dispatchEvent(
+            new CustomEvent('points:updated', {
+              detail: {
+                youngId: young.id,
+                delta: points,
+                type: 'REFERRAL_BONUS',
+                description: trimmedDescription,
+              },
+            })
+          );
         }
       } else {
         await makeRequest(young.id!, type);
         onSuccess?.(
           `${points} puntos asignados exitosamente a ${young.fullName}`
+        );
+        window.dispatchEvent(
+          new CustomEvent('points:updated', {
+            detail: {
+              youngId: young.id,
+              delta: points,
+              type,
+              description: trimmedDescription,
+            },
+          })
         );
       }
       handleClose();

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import YoungForm from '../components/YoungForm';
 import EditYoungForm from '../components/EditYoungForm';
 import YoungCard from '../components/YoungCard';
@@ -235,125 +235,129 @@ function HomePage() {
   };
 
   // Función para obtener jóvenes del backend con paginación
-  const fetchYoung = async (
-    page = 1,
-    append = false,
-    customFilters?: PaginationQuery
-  ) => {
-    try {
-      // Prevenir llamadas duplicadas para la misma página en modo append
-      if (append && page <= currentPage) {
-        console.log(
-          '🚫 Evitando carga duplicada de página:',
-          page,
-          'currentPage:',
-          currentPage
-        );
-        return;
-      }
-
-      if (!append) {
-        setLoading(true);
-      } else {
-        setLoadingMore(true);
-      }
-
-      const activeFilters = customFilters || filters;
-
-      // Construir query parameters
-      const params = new URLSearchParams();
-      params.append('page', page.toString());
-      params.append('limit', '10');
-
-      // Solo agregar filtros si tienen valores válidos
-      if (activeFilters.search && activeFilters.search.trim()) {
-        params.append('search', activeFilters.search.trim());
-      }
-      if (activeFilters.ageRange && activeFilters.ageRange !== '') {
-        params.append('ageRange', activeFilters.ageRange);
-      }
-      if (activeFilters.gender && activeFilters.gender !== '') {
-        params.append('gender', activeFilters.gender);
-      }
-      if (activeFilters.role && activeFilters.role !== '') {
-        params.append('role', activeFilters.role);
-      }
-      if (activeFilters.groups && activeFilters.groups.length > 0) {
-        activeFilters.groups.forEach(group => {
-          params.append('groups', group);
-        });
-      }
-      if (activeFilters.sortBy) {
-        params.append('sortBy', activeFilters.sortBy);
-      }
-      if (activeFilters.sortOrder) {
-        params.append('sortOrder', activeFilters.sortOrder);
-      }
-
-      const url = `young?${params.toString()}`;
-      console.log('📡 Llamando API con URL:', url);
-
-      const response = await apiRequest(url);
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log('📊 Respuesta del servidor:', result);
-
-      const youngArray =
-        result.success && result.data && Array.isArray(result.data.data)
-          ? result.data.data
-          : [];
-
-      const pagination = result.data?.pagination;
-
-      console.log('📊 Datos recibidos:', {
-        youngArray: youngArray.length,
-        pagination,
-        append,
-      });
-
-      if (append) {
-        // Scroll infinito: agregar nuevos elementos
-        setYoungList(prevList => {
-          const newList = [...prevList, ...youngArray];
+  const fetchYoung = useCallback(
+    async (
+      page = 1,
+      append = false,
+      customFilters?: PaginationQuery,
+      silent = false
+    ) => {
+      try {
+        // Prevenir llamadas duplicadas para la misma página en modo append
+        if (append && page <= currentPage) {
           console.log(
-            '📝 Lista actualizada (append):',
-            newList.length,
-            'elementos'
+            '🚫 Evitando carga duplicada de página:',
+            page,
+            'currentPage:',
+            currentPage
           );
-          return newList;
+          return;
+        }
+
+        if (!append) {
+          if (!silent) setLoading(true);
+        } else {
+          setLoadingMore(true);
+        }
+
+        const activeFilters = customFilters || filters;
+
+        // Construir query parameters
+        const params = new URLSearchParams();
+        params.append('page', page.toString());
+        params.append('limit', '10');
+
+        // Solo agregar filtros si tienen valores válidos
+        if (activeFilters.search && activeFilters.search.trim()) {
+          params.append('search', activeFilters.search.trim());
+        }
+        if (activeFilters.ageRange && activeFilters.ageRange !== '') {
+          params.append('ageRange', activeFilters.ageRange);
+        }
+        if (activeFilters.gender && activeFilters.gender !== '') {
+          params.append('gender', activeFilters.gender);
+        }
+        if (activeFilters.role && activeFilters.role !== '') {
+          params.append('role', activeFilters.role);
+        }
+        if (activeFilters.groups && activeFilters.groups.length > 0) {
+          activeFilters.groups.forEach(group => {
+            params.append('groups', group);
+          });
+        }
+        if (activeFilters.sortBy) {
+          params.append('sortBy', activeFilters.sortBy);
+        }
+        if (activeFilters.sortOrder) {
+          params.append('sortOrder', activeFilters.sortOrder);
+        }
+
+        const url = `young?${params.toString()}`;
+        console.log('📡 Llamando API con URL:', url);
+
+        const response = await apiRequest(url);
+
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('📊 Respuesta del servidor:', result);
+
+        const youngArray =
+          result.success && result.data && Array.isArray(result.data.data)
+            ? result.data.data
+            : [];
+
+        const pagination = result.data?.pagination;
+
+        console.log('📊 Datos recibidos:', {
+          youngArray: youngArray.length,
+          pagination,
+          append,
         });
-        setCurrentPage(page);
-        setNextPageToLoad(page + 1);
-      } else {
-        // Nueva búsqueda: reemplazar lista
-        setYoungList(youngArray);
-        setCurrentPage(pagination?.currentPage || 1);
-        setNextPageToLoad((pagination?.currentPage || 1) + 1);
-        console.log('📝 Lista reemplazada:', youngArray.length, 'elementos');
+
+        if (append) {
+          // Scroll infinito: agregar nuevos elementos
+          setYoungList(prevList => {
+            const newList = [...prevList, ...youngArray];
+            console.log(
+              '📝 Lista actualizada (append):',
+              newList.length,
+              'elementos'
+            );
+            return newList;
+          });
+          setCurrentPage(page);
+          setNextPageToLoad(page + 1);
+        } else {
+          // Nueva búsqueda: reemplazar lista
+          setYoungList(youngArray);
+          setCurrentPage(pagination?.currentPage || 1);
+          setNextPageToLoad((pagination?.currentPage || 1) + 1);
+          console.log('📝 Lista reemplazada:', youngArray.length, 'elementos');
+        }
+
+        // Actualizar información de paginación
+        setHasMore(pagination ? pagination.hasNextPage : false);
+        setFilteredTotal(pagination?.totalItems || null);
+
+        console.log('📄 Estado de paginación:', {
+          currentPage: pagination?.currentPage || 1,
+          totalPages: pagination?.totalPages || 1,
+          hasNextPage: pagination?.hasNextPage || false,
+          totalItems: pagination?.totalItems || 0,
+        });
+      } catch (err) {
+        console.error('❌ Error al obtener jóvenes:', err);
+        setError(err instanceof Error ? err.message : 'Error desconocido');
+      } finally {
+        if (!silent) setLoading(false);
+        setLoadingMore(false);
       }
-
-      // Actualizar información de paginación
-      setHasMore(pagination ? pagination.hasNextPage : false);
-      setFilteredTotal(pagination?.totalItems || null);
-
-      console.log('📄 Estado de paginación:', {
-        currentPage: pagination?.currentPage || 1,
-        totalPages: pagination?.totalPages || 1,
-        hasNextPage: pagination?.hasNextPage || false,
-        totalItems: pagination?.totalItems || 0,
-      });
-    } catch (err) {
-      console.error('❌ Error al obtener jóvenes:', err);
-      setError(err instanceof Error ? err.message : 'Error desconocido');
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
+    },
+    [currentPage, filters]
+  );
 
   // Hook para cargar más contenido con scroll infinito
   const loadMore = () => {
@@ -376,7 +380,42 @@ function HomePage() {
   useEffect(() => {
     fetchYoung();
     fetchAllYoung();
-  }, []);
+  }, [fetchYoung]);
+
+  // Actualización reactiva del dashboard cuando se asignan puntos
+  useEffect(() => {
+    const onPointsUpdated = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ youngId?: string; delta?: number }>)
+        .detail;
+      if (detail?.youngId && typeof detail.delta === 'number') {
+        setYoungList(prev =>
+          prev.map(y =>
+            y.id === detail.youngId
+              ? {
+                  ...y,
+                  totalPoints: (y.totalPoints || 0) + (detail.delta || 0),
+                }
+              : y
+          )
+        );
+        setAllYoungList(prev =>
+          prev.map(y =>
+            y.id === detail.youngId
+              ? {
+                  ...y,
+                  totalPoints: (y.totalPoints || 0) + (detail.delta || 0),
+                }
+              : y
+          )
+        );
+      }
+      // Refrescar silenciosamente (sin spinner) y estadísticas
+      fetchYoung(1, false, filters, true);
+      fetchAllYoung();
+    };
+    window.addEventListener('points:updated', onPointsUpdated);
+    return () => window.removeEventListener('points:updated', onPointsUpdated);
+  }, [filters, fetchYoung]);
 
   // Función para aplicar filtros
   const handleFilterChange = (newFilters: PaginationQuery) => {

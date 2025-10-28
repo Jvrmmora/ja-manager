@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { pointsService } from '../services/pointsService';
 import type {
   IPointsBreakdown,
@@ -15,6 +15,20 @@ interface PointsBreakdownModalProps {
   onAssignPoints?: () => void;
 }
 
+type StreakWeek = {
+  weekStart?: string | Date;
+  saturdayDate?: string | Date;
+  attended?: boolean;
+};
+type StreakMeta = {
+  currentWeeks?: number;
+  bestWeeks?: number;
+  violetFlameAwarded?: boolean;
+  violetFlameAwardedAt?: string | Date | null;
+  weeks?: StreakWeek[];
+};
+type BreakdownWithStreak = IPointsBreakdown & { streak?: StreakMeta };
+
 const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
   young,
   isOpen,
@@ -22,28 +36,18 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
   isAdmin = false,
   onAssignPoints,
 }) => {
-  const [breakdown, setBreakdown] = useState<IPointsBreakdown | null>(null);
+  const [breakdown, setBreakdown] = useState<BreakdownWithStreak | null>(null);
   const [transactions, setTransactions] = useState<IPointsTransaction[]>([]);
   const [position, setPosition] = useState<{
     rank: number;
     totalParticipants: number;
   } | null>(null);
   const [streakWeeks, setStreakWeeks] = useState<number | null>(null);
+  const [showStreakModal, setShowStreakModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isOpen && young.id) {
-      // Resetear estados cuando se abre el modal
-      setError(null);
-      setBreakdown(null);
-      setTransactions([]);
-      setPosition(null);
-      loadData();
-    }
-  }, [isOpen, young.id]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!young.id) return;
 
     try {
@@ -67,23 +71,42 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
         position: positionData,
       });
 
-      setBreakdown(breakdownData);
+      setBreakdown(breakdownData as BreakdownWithStreak);
       setTransactions(historyData.transactions);
       setPosition(positionData);
       const me = Array.isArray(leaderboard)
         ? leaderboard.find(entry => entry.youngId === young.id)
         : undefined;
-      setStreakWeeks(me?.streak ?? null);
-    } catch (err: any) {
+      setStreakWeeks(
+        (breakdownData as BreakdownWithStreak)?.streak?.currentWeeks ??
+          me?.streak ??
+          null
+      );
+    } catch (err: unknown) {
       console.error(
         '❌ PointsBreakdownModal - Error loading points data:',
         err
       );
-      setError(err.message || 'Error al cargar los datos de puntos');
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Error al cargar los datos de puntos';
+      setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [young.id]);
+
+  useEffect(() => {
+    if (isOpen && young.id) {
+      // Resetear estados cuando se abre el modal
+      setError(null);
+      setBreakdown(null);
+      setTransactions([]);
+      setPosition(null);
+      loadData();
+    }
+  }, [isOpen, young.id, loadData]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -128,6 +151,29 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
       month: 'short',
       day: 'numeric',
     });
+  };
+  const formatDateLong = (date?: string | Date | null) => {
+    if (!date) return null;
+    try {
+      return new Date(date).toLocaleDateString('es-CO', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch {
+      return null;
+    }
+  };
+  const formatShort = (date?: string | Date | null) => {
+    if (!date) return '';
+    try {
+      return new Date(date).toLocaleDateString('es-CO', {
+        day: '2-digit',
+        month: '2-digit',
+      });
+    } catch {
+      return '';
+    }
   };
 
   if (!isOpen) return null;
@@ -243,13 +289,14 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
                   </div>
                 )}
 
-                {/* Racha actual */}
+                {/* Racha actual (clickable) */}
                 <div
                   className={`rounded-xl p-6 text-white shadow-lg ${
                     (streakWeeks ?? 0) >= 4
                       ? 'bg-gradient-to-br from-violet-500 to-fuchsia-600'
                       : 'bg-gradient-to-br from-orange-400 to-amber-500'
-                  }`}
+                  } cursor-pointer hover:opacity-95 transition-opacity`}
+                  onClick={() => setShowStreakModal(true)}
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <span className="material-symbols-rounded text-3xl">
@@ -298,26 +345,42 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Bono Referido total */}
+                  {/* Bonos unificados: Referidos + Racha (BONUS) */}
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 col-span-2">
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 mb-1">
                       <span className="material-symbols-rounded text-sm">
-                        person_add
+                        stars
                       </span>
-                      <span className="text-sm">Bono Referido</span>
+                      <span className="text-sm">Bonos (referidos y racha)</span>
                     </div>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
                       {(() => {
-                        const bonus =
-                          (breakdown.byType as any).REFERRER_BONUS ?? 0;
-                        const welcome =
-                          (breakdown.byType as any).REFERRED_BONUS ?? 0;
-                        const old1 =
-                          (breakdown.byType as any).REFERRAL_BONUS ?? 0;
-                        const old2 =
-                          (breakdown.byType as any).REFERRAL_WELCOME ?? 0;
-                        const combined = (breakdown.byType as any).REFERRAL;
-                        return combined ?? bonus + welcome + old1 + old2;
+                        const byType = (breakdown.byType ??
+                          {}) as unknown as Record<string, number>;
+                        const referrer = byType.REFERRER_BONUS ?? 0;
+                        const referred = byType.REFERRED_BONUS ?? 0;
+                        const legacy1 = byType.REFERRAL_BONUS ?? 0;
+                        const legacy2 = byType.REFERRAL_WELCOME ?? 0;
+                        const attendance = byType.ATTENDANCE ?? 0;
+                        const activity = byType.ACTIVITY ?? 0;
+                        const known =
+                          referrer +
+                          referred +
+                          legacy1 +
+                          legacy2 +
+                          attendance +
+                          activity;
+                        const inferredBonus = Math.max(
+                          0,
+                          breakdown.total - known
+                        );
+                        return (
+                          referrer +
+                          referred +
+                          legacy1 +
+                          legacy2 +
+                          inferredBonus
+                        );
                       })()}
                     </div>
                   </div>
@@ -340,6 +403,9 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">
                             Tipo
                           </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">
+                            Descripción
+                          </th>
                           <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">
                             Puntos
                           </th>
@@ -359,22 +425,19 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
                                 <span className="text-sm text-gray-700 dark:text-gray-300">
                                   {getTypeName(transaction.type)}
                                   {(() => {
-                                    const ref = (transaction as any)
-                                      .referredYoungId as
-                                      | undefined
-                                      | string
-                                      | { id?: string; fullName?: string };
+                                    const ref = transaction.referredYoungId;
                                     const refName =
                                       ref && typeof ref === 'object'
                                         ? ref.fullName
                                         : undefined;
                                     if (!refName) return null;
-                                    const isBonus =
+                                    const isReferral =
                                       transaction.type === 'REFERRAL_BONUS' ||
-                                      transaction.type === 'BONUS';
+                                      transaction.type === 'REFERRAL_WELCOME' ||
+                                      transaction.type === 'REFERRAL';
                                     return (
                                       <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">
-                                        {isBonus
+                                        {isReferral
                                           ? `a ${refName}`
                                           : `de ${refName}`}
                                       </span>
@@ -382,6 +445,10 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
                                   })()}
                                 </span>
                               </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                              {transaction.description?.trim() ||
+                                'No especificado'}
                             </td>
                             <td className="px-4 py-3 text-right">
                               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
@@ -454,6 +521,143 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
           </button>
         </div>
       </div>
+      {/* Modal Historial de Racha */}
+      {showStreakModal && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <span className="material-symbols-rounded text-amber-500">
+                  local_fire_department
+                </span>
+                Historial de Racha
+              </h3>
+              <button
+                onClick={() => setShowStreakModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              >
+                <span className="material-symbols-rounded text-gray-500">
+                  close
+                </span>
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="bg-gradient-to-br from-orange-400 to-amber-500 rounded-lg p-4 text-white">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="material-symbols-rounded">
+                    local_fire_department
+                  </span>
+                  <span className="text-sm">Racha actual</span>
+                </div>
+                <div className="text-3xl font-bold">{streakWeeks ?? 0}</div>
+                <div className="text-xs opacity-90">
+                  Semanas consecutivas (solo sábados)
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 mb-1">
+                  <span className="material-symbols-rounded text-sm">
+                    workspace_premium
+                  </span>
+                  <span className="text-sm">Mejor racha de la temporada</span>
+                </div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {breakdown?.streak?.bestWeeks ?? '0'}
+                </div>
+              </div>
+              {(breakdown?.streak?.violetFlameAwarded ?? false) && (
+                <div className="bg-gradient-to-br from-violet-500 to-fuchsia-600 rounded-lg p-4 text-white">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="material-symbols-rounded">
+                      auto_awesome
+                    </span>
+                    <span className="text-sm">Llama Violeta</span>
+                  </div>
+                  <div className="text-sm opacity-90">
+                    Obtenida el{' '}
+                    {formatDateLong(breakdown?.streak?.violetFlameAwardedAt) ||
+                      '—'}
+                  </div>
+                </div>
+              )}
+              {/* Mini timeline últimas 6 semanas */}
+              {Array.isArray(breakdown?.streak?.weeks) && (
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                      <span className="material-symbols-rounded text-sm">
+                        timeline
+                      </span>
+                      <span className="text-sm">Últimas 6 semanas</span>
+                    </div>
+                    {(breakdown?.streak?.currentWeeks ?? 0) >= 4 && (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200">
+                        <span className="material-symbols-rounded text-sm">
+                          auto_awesome
+                        </span>
+                        Llama Violeta activa
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-6 gap-2">
+                    {(() => {
+                      const weeks =
+                        (breakdown?.streak?.weeks as StreakWeek[]) || [];
+                      const violetActive =
+                        (breakdown?.streak?.currentWeeks ?? 0) >= 4;
+                      const violetIdxs = new Set<number>();
+                      if (violetActive) {
+                        let count = 0;
+                        for (
+                          let i = weeks.length - 1;
+                          i >= 0 && count < 4;
+                          i--
+                        ) {
+                          if (weeks[i]?.attended) {
+                            violetIdxs.add(i);
+                            count++;
+                          } else {
+                            break;
+                          }
+                        }
+                      }
+                      return weeks.map((w: StreakWeek, idx: number) => (
+                        <div key={idx} className="flex flex-col items-center">
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow ${
+                              w.attended
+                                ? 'bg-green-500'
+                                : 'bg-gray-400 dark:bg-gray-600'
+                            } ${violetIdxs.has(idx) ? 'ring-2 ring-violet-400' : ''}`}
+                            title={`Sábado ${formatDateLong(w.saturdayDate)} — ${w.attended ? 'Asistió' : 'No asistió'}`}
+                          >
+                            {w.attended ? '✓' : '–'}
+                          </div>
+                          <div className="text-[10px] mt-1 text-gray-600 dark:text-gray-300">
+                            {formatShort(w.saturdayDate)}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              )}
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                La racha solo cuenta por asistencias de sábado. Se pierde tras 2
+                sábados consecutivos sin asistir.
+              </p>
+            </div>
+            <div className="p-5 border-t border-gray-200 dark:border-gray-700 text-right">
+              <button
+                onClick={() => setShowStreakModal(false)}
+                className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
