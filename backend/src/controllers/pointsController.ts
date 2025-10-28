@@ -36,9 +36,8 @@ export const assignPoints = async (
     const validTypes = [
       'ACTIVITY',
       'ATTENDANCE',
-      'REFERRER_BONUS',
-      'REFERRED_BONUS',
-      'BONUS',
+      'REFERRAL_BONUS',
+      'REFERRAL_WELCOME',
     ];
     if (!validTypes.includes(type)) {
       return res.status(400).json({

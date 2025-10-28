@@ -200,8 +200,8 @@ export interface ISeasonUpdate {
 export type TransactionType =
   | 'ATTENDANCE'
   | 'ACTIVITY'
-  | 'REFERRER_BONUS'
-  | 'REFERRED_BONUS';
+  | 'REFERRAL_BONUS'
+  | 'REFERRAL_WELCOME';
 
 export interface IPointsTransaction {
   id: string;
@@ -236,6 +236,7 @@ export interface IAssignPointsRequest {
   points: number;
   type: TransactionType;
   description: string;
+  referredYoungId?: string;
   metadata?: Record<string, any>;
 }
 

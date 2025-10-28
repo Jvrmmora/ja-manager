@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { pointsService } from '../services/pointsService';
 import type { IYoung, TransactionType } from '../types';
 import { POINTS_PRESETS } from '../constants/points';
+import { apiRequest } from '../services/api';
 
 interface AssignPointsModalProps {
   young: IYoung;
@@ -24,6 +25,100 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [referredYoungId, setReferredYoungId] = useState<string>('');
+  const [youngsList, setYoungsList] = useState<IYoung[]>([]);
+  const [loadingYoungs, setLoadingYoungs] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
+
+  // Cerrar dropdown cuando se hace click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.young-selector')) {
+        setShowDropdown(false);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () =>
+        document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showDropdown]);
+
+  // Buscar jóvenes cuando el usuario escribe (debounce)
+  useEffect(() => {
+    // Limpiar timeout anterior
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // Si hay búsqueda, esperar 300ms antes de buscar
+    if (searchQuery.trim().length >= 2) {
+      const timeout = setTimeout(() => {
+        searchYoungs(searchQuery);
+      }, 300);
+      setSearchTimeout(timeout);
+    } else {
+      // Limpiar resultados si la búsqueda es muy corta
+      setYoungsList([]);
+    }
+
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchQuery]);
+
+  const searchYoungs = async (query: string) => {
+    try {
+      setLoadingYoungs(true);
+      const response = await apiRequest(
+        `young?page=1&limit=50&search=${encodeURIComponent(query)}`
+      );
+      const data = await response.json();
+
+      console.log('🔍 Search response:', data); // Debug
+
+      if (data.success && data.data) {
+        // El backend devuelve data.data directamente como array
+        const results = Array.isArray(data.data) ? data.data : [];
+        console.log('✅ Results found:', results.length); // Debug
+        setYoungsList(results);
+        setShowDropdown(true); // Asegurar que el dropdown se muestre
+      } else {
+        console.log('❌ No data in response'); // Debug
+        setYoungsList([]);
+        setShowDropdown(true); // Mostrar dropdown incluso sin resultados
+      }
+    } catch (error) {
+      console.error('Error loading youngs:', error);
+      setYoungsList([]);
+      setShowDropdown(true);
+    } finally {
+      setLoadingYoungs(false);
+    }
+  }; // Filtrar solo para no mostrar al mismo joven
+  const filteredYoungs = Array.isArray(youngsList)
+    ? youngsList.filter(y => y.id !== young.id)
+    : [];
+
+  // Obtener el joven seleccionado (puede estar en la lista actual o necesitamos buscarlo)
+  const selectedYoung = Array.isArray(youngsList)
+    ? youngsList.find(y => y.id === referredYoungId)
+    : undefined;
+
+  // Seleccionar un joven
+  const handleSelectYoung = (youngId: string) => {
+    setReferredYoungId(youngId);
+    setShowDropdown(false);
+    setSearchQuery('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,14 +145,43 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
       return;
     }
 
+    // Validación especial para ATTENDANCE
+    if (type === 'ATTENDANCE') {
+      const errorMsg =
+        'Los puntos por asistencia se asignan automáticamente al escanear el QR. Use otro tipo de puntos para asignación manual.';
+      setError(errorMsg);
+      onError?.(errorMsg);
+      return;
+    }
+
+    // Validación para tipos que requieren joven referido
+    if (
+      (type === 'REFERRAL_BONUS' || type === 'REFERRAL_WELCOME') &&
+      !referredYoungId
+    ) {
+      const errorMsg = 'Debe seleccionar el joven referido';
+      setError(errorMsg);
+      onError?.(errorMsg);
+      return;
+    }
+
     try {
       setLoading(true);
-      await pointsService.assign({
+
+      // Preparar datos según el tipo
+      const requestData: any = {
         youngId: young.id,
         points,
         type,
         description: description.trim(),
-      });
+      };
+
+      // Agregar referredYoungId si es necesario
+      if (type === 'REFERRAL_BONUS' || type === 'REFERRAL_WELCOME') {
+        requestData.referredYoungId = referredYoungId;
+      }
+
+      await pointsService.assign(requestData);
 
       onSuccess?.(
         `${points} puntos asignados exitosamente a ${young.fullName}`
@@ -74,9 +198,19 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
   };
 
   const handleClose = () => {
+    // Limpiar timeout de búsqueda
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+      setSearchTimeout(null);
+    }
+
     setType('ACTIVITY');
     setPoints(10);
     setDescription('');
+    setReferredYoungId('');
+    setSearchQuery('');
+    setShowDropdown(false);
+    setYoungsList([]);
     setError(null);
     onClose();
   };
@@ -170,11 +304,10 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
               disabled={loading}
             >
               <option value="ACTIVITY">Actividad</option>
-              <option value="ATTENDANCE">Asistencia</option>
-              <option value="REFERRER_BONUS">
+              <option value="REFERRAL_BONUS">
                 Bono Referido (quien refiere)
               </option>
-              <option value="REFERRED_BONUS">Bono Referido (referido)</option>
+              <option value="REFERRAL_WELCOME">Bono Referido (referido)</option>
             </select>
             <div className="mt-1 flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
               <span className="material-symbols-rounded text-sm">
@@ -182,7 +315,7 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                   ? 'sports_score'
                   : type === 'ATTENDANCE'
                     ? 'event_available'
-                    : type === 'REFERRER_BONUS'
+                    : type === 'REFERRAL_BONUS'
                       ? 'person_add'
                       : 'how_to_reg'}
               </span>
@@ -190,14 +323,173 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                 {type === 'ACTIVITY' &&
                   'Puntos por participar en actividades especiales'}
                 {type === 'ATTENDANCE' &&
-                  'Puntos por asistencia (normalmente asignados automáticamente)'}
-                {type === 'REFERRER_BONUS' &&
+                  'Puntos por asistencia (asignados automáticamente vía QR)'}
+                {type === 'REFERRAL_BONUS' &&
                   'Puntos para quien invita a un nuevo joven'}
-                {type === 'REFERRED_BONUS' &&
+                {type === 'REFERRAL_WELCOME' &&
                   'Puntos de bienvenida para el joven referido'}
               </span>
             </div>
           </div>
+
+          {/* Selector de Joven Referido - Solo para bonos de referidos */}
+          {(type === 'REFERRAL_BONUS' || type === 'REFERRAL_WELCOME') && (
+            <div className="relative young-selector">
+              <label className="form-label">
+                Joven Referido <span className="text-red-500">*</span>
+              </label>
+
+              {/* Input de búsqueda / Joven seleccionado */}
+              <div className="relative">
+                {selectedYoung ? (
+                  /* Mostrar joven seleccionado */
+                  <div className="form-input flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {selectedYoung.profileImage ? (
+                        <img
+                          src={selectedYoung.profileImage}
+                          alt={selectedYoung.fullName}
+                          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                          {selectedYoung.fullName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {selectedYoung.fullName}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReferredYoungId('');
+                        setSearchQuery('');
+                      }}
+                      className="flex-shrink-0 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors"
+                      disabled={loading}
+                    >
+                      <span className="material-symbols-rounded text-gray-500 dark:text-gray-400 text-lg">
+                        close
+                      </span>
+                    </button>
+                  </div>
+                ) : (
+                  /* Input de búsqueda */
+                  <div>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => {
+                        setSearchQuery(e.target.value);
+                        setShowDropdown(true);
+                      }}
+                      onFocus={() => setShowDropdown(true)}
+                      placeholder={
+                        loadingYoungs
+                          ? 'Buscando...'
+                          : 'Escribe para buscar joven (mín. 2 caracteres)...'
+                      }
+                      className="form-input pr-10"
+                      disabled={loading || loadingYoungs}
+                    />
+                    {loadingYoungs ? (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                      </div>
+                    ) : (
+                      <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                        search
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Dropdown de resultados */}
+                {showDropdown && !selectedYoung && (
+                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {loadingYoungs ? (
+                      <div className="px-3 py-8 text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Buscando...
+                        </p>
+                      </div>
+                    ) : filteredYoungs.length > 0 ? (
+                      <div className="py-1">
+                        {filteredYoungs.slice(0, 50).map(youngItem => (
+                          <button
+                            key={youngItem.id}
+                            type="button"
+                            onClick={() =>
+                              youngItem.id && handleSelectYoung(youngItem.id)
+                            }
+                            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                          >
+                            {youngItem.profileImage ? (
+                              <img
+                                src={youngItem.profileImage}
+                                alt={youngItem.fullName}
+                                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                {youngItem.fullName.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {youngItem.fullName}
+                              </div>
+                              {youngItem.role && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  {youngItem.role}
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                        {filteredYoungs.length > 50 && (
+                          <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 text-center border-t border-gray-200 dark:border-gray-700">
+                            Mostrando primeros 50 resultados. Refina tu
+                            búsqueda.
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="px-3 py-8 text-center text-gray-500 dark:text-gray-400">
+                        {searchQuery.trim().length < 2 ? (
+                          <>
+                            <span className="material-symbols-rounded text-4xl mb-2 block">
+                              search
+                            </span>
+                            <p className="text-sm">
+                              Escribe al menos 2 caracteres para buscar
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <span className="material-symbols-rounded text-4xl mb-2 block">
+                              search_off
+                            </span>
+                            <p className="text-sm">
+                              No se encontraron jóvenes con "{searchQuery}"
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {type === 'REFERRAL_BONUS'
+                  ? 'Selecciona a quién refirió este joven'
+                  : 'Selecciona quién fue el referidor'}
+              </p>
+            </div>
+          )}
 
           {/* Cantidad de puntos */}
           <div>
@@ -277,7 +569,8 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                       </li>
                     </ul>
                   )}
-                  {(type === 'REFERRER_BONUS' || type === 'REFERRED_BONUS') && (
+                  {(type === 'REFERRAL_BONUS' ||
+                    type === 'REFERRAL_WELCOME') && (
                     <ul className="space-y-0.5">
                       <li>
                         • <strong>70 pts</strong>: Invitar a un amigo (mayor
