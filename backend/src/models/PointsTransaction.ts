@@ -4,7 +4,8 @@ export type PointsTransactionType =
   | 'ATTENDANCE'
   | 'ACTIVITY'
   | 'REFERRAL_BONUS'
-  | 'REFERRAL_WELCOME';
+  | 'REFERRAL_WELCOME'
+  | 'BONUS';
 
 export interface IPointsTransaction {
   id?: string;
@@ -22,7 +23,7 @@ export interface IPointsTransaction {
 
 export interface IPointsTransactionDocument
   extends Omit<IPointsTransaction, 'id'>,
-    Document {}
+  Document { }
 
 interface IPointsTransactionModel
   extends mongoose.Model<IPointsTransactionDocument> {
@@ -81,6 +82,7 @@ const pointsTransactionSchema = new Schema<
           'ACTIVITY',
           'REFERRAL_BONUS',
           'REFERRAL_WELCOME',
+          'BONUS',
         ],
         message: 'Tipo de transacción no válido',
       },

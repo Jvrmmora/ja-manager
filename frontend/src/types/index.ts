@@ -202,7 +202,8 @@ export type TransactionType =
   | 'ACTIVITY'
   | 'REFERRAL'
   | 'REFERRAL_BONUS'
-  | 'REFERRAL_WELCOME';
+  | 'REFERRAL_WELCOME'
+  | 'BONUS';
 
 export interface IPointsTransaction {
   id: string;

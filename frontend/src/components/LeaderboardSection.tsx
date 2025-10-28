@@ -106,6 +106,24 @@ const LeaderboardSection: React.FC = () => {
 
   const getTop3 = () => leaderboard.slice(0, 3);
   const getRest = () => leaderboard.slice(3);
+  const StreakChip: React.FC<{ value?: number }> = ({ value }) => {
+    if (!value || value <= 0) return null;
+    const isViolet = value >= 4;
+    const base = isViolet
+      ? 'from-violet-500 to-fuchsia-600'
+      : 'from-orange-400 to-amber-500';
+    return (
+      <div
+        className={`absolute -top-3 -right-3 rounded-full px-2 py-1 text-[10px] sm:text-xs font-bold text-white shadow bg-gradient-to-r ${base} flex items-center gap-1`}
+        title={`Racha: ${value} semana${value !== 1 ? 's' : ''}`}
+      >
+        <span className="material-symbols-rounded text-[12px] sm:text-sm">
+          local_fire_department
+        </span>
+        {value}
+      </div>
+    );
+  };
 
   // Componente para el indicador de cambio de posición
   const RankChangeIndicator: React.FC<{ youngId: string }> = ({ youngId }) => {
@@ -251,6 +269,7 @@ const LeaderboardSection: React.FC = () => {
                             </span>
                           </div>
                         </div>
+                        <StreakChip value={getTop3()[1].streak} />
                       </div>
                       <div className="bg-white dark:bg-gray-700 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 shadow-md min-w-[6rem] max-w-[10rem] sm:min-w-[8rem] sm:max-w-[12rem] text-center">
                         <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-400 mb-0.5 sm:mb-1">
@@ -309,6 +328,7 @@ const LeaderboardSection: React.FC = () => {
                             </span>
                           </div>
                         </div>
+                        <StreakChip value={getTop3()[0].streak} />
                       </div>
                       <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-5 shadow-xl min-w-[7rem] max-w-[11rem] sm:min-w-[9rem] sm:max-w-[14rem] text-center">
                         <div className="text-2xl sm:text-3xl font-bold mb-0.5 sm:mb-1">
@@ -367,6 +387,7 @@ const LeaderboardSection: React.FC = () => {
                             </span>
                           </div>
                         </div>
+                        <StreakChip value={getTop3()[2].streak} />
                       </div>
                       <div className="bg-white dark:bg-gray-700 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 shadow-md min-w-[6rem] max-w-[10rem] sm:min-w-[8rem] sm:max-w-[12rem] text-center">
                         <div className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600 mb-0.5 sm:mb-1">

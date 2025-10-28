@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { pointsService } from '../services/pointsService';
-import type { IPointsBreakdown, IPointsTransaction, IYoung } from '../types';
+import type {
+  IPointsBreakdown,
+  IPointsTransaction,
+  IYoung,
+  ILeaderboardEntry,
+} from '../types';
 
 interface PointsBreakdownModalProps {
   young: IYoung;
@@ -23,6 +28,7 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
     rank: number;
     totalParticipants: number;
   } | null>(null);
+  const [streakWeeks, setStreakWeeks] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,11 +51,15 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
       setError(null);
       console.log('🔍 PointsBreakdownModal - Cargando datos para:', young.id);
 
-      const [breakdownData, historyData, positionData] = await Promise.all([
-        pointsService.getBreakdown(young.id),
-        pointsService.getHistory(young.id, { limit: 10 }),
-        pointsService.getPosition(young.id).catch(() => null),
-      ]);
+      const [breakdownData, historyData, positionData, leaderboard] =
+        await Promise.all([
+          pointsService.getBreakdown(young.id),
+          pointsService.getHistory(young.id, { limit: 10 }),
+          pointsService.getPosition(young.id).catch(() => null),
+          pointsService
+            .getLeaderboard({})
+            .catch(() => [] as ILeaderboardEntry[]),
+        ]);
 
       console.log('✅ PointsBreakdownModal - Datos cargados:', {
         breakdown: breakdownData,
@@ -60,6 +70,10 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
       setBreakdown(breakdownData);
       setTransactions(historyData.transactions);
       setPosition(positionData);
+      const me = Array.isArray(leaderboard)
+        ? leaderboard.find(entry => entry.youngId === young.id)
+        : undefined;
+      setStreakWeeks(me?.streak ?? null);
     } catch (err: any) {
       console.error(
         '❌ PointsBreakdownModal - Error loading points data:',
@@ -194,7 +208,7 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
           ) : breakdown ? (
             <>
               {/* Puntos totales y ranking */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Total de puntos */}
                 <div className="bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl p-6 text-white shadow-lg">
                   <div className="flex items-center gap-3 mb-2">
@@ -228,6 +242,30 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
                     </div>
                   </div>
                 )}
+
+                {/* Racha actual */}
+                <div
+                  className={`rounded-xl p-6 text-white shadow-lg ${
+                    (streakWeeks ?? 0) >= 4
+                      ? 'bg-gradient-to-br from-violet-500 to-fuchsia-600'
+                      : 'bg-gradient-to-br from-orange-400 to-amber-500'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="material-symbols-rounded text-3xl">
+                      local_fire_department
+                    </span>
+                    <span className="text-sm font-medium opacity-90">
+                      Racha actual
+                    </span>
+                  </div>
+                  <div className="text-4xl font-bold">{streakWeeks ?? 0}</div>
+                  <div className="text-sm opacity-90 mt-1">
+                    {streakWeeks && streakWeeks >= 4
+                      ? 'Llama Violeta activa'
+                      : 'Semanas consecutivas (solo sábados)'}
+                  </div>
+                </div>
               </div>
 
               {/* Desglose por tipo */}
@@ -333,7 +371,7 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
                                     if (!refName) return null;
                                     const isBonus =
                                       transaction.type === 'REFERRAL_BONUS' ||
-                                      transaction.type === 'REFERRER_BONUS';
+                                      transaction.type === 'BONUS';
                                     return (
                                       <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">
                                         {isBonus

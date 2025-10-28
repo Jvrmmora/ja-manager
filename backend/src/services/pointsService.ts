@@ -3,6 +3,7 @@ import PointsTransaction, {
 } from '../models/PointsTransaction';
 import Season from '../models/Season';
 import mongoose from 'mongoose';
+import { updateStreakOnAttendance } from './streakService';
 
 export interface CreatePointsTransactionDTO {
   youngId: string;
@@ -95,7 +96,7 @@ class PointsService {
     }
 
     // Crear transacción de puntos por asistencia
-    return this.createTransaction({
+    const attendanceTx = await this.createTransaction({
       youngId,
       seasonId: (season._id as mongoose.Types.ObjectId).toString(),
       points: pointsToAssign,
@@ -103,6 +104,30 @@ class PointsService {
       eventId,
       description,
     });
+
+    // Actualizar racha (solo sábados) y, si corresponde, otorgar BONUS de Llama Violeta (100 pts, 1x/temporada)
+    try {
+      const streakResult = await updateStreakOnAttendance(
+        youngId,
+        (season._id as mongoose.Types.ObjectId).toString(),
+        new Date()
+      );
+
+      if (streakResult?.awardVioletFlame) {
+        await this.createTransaction({
+          youngId,
+          seasonId: (season._id as mongoose.Types.ObjectId).toString(),
+          points: 100,
+          type: 'BONUS',
+          description: 'Llama Violeta - 4 sábados consecutivos',
+        });
+      }
+    } catch (err) {
+      // No bloquear la asistencia por errores de racha/bonus; se registra en logs en entorno real
+      console.error('Error actualizando racha/asignando bonus:', err);
+    }
+
+    return attendanceTx;
   }
 
   /**
@@ -383,6 +408,19 @@ class PointsService {
         },
       },
       { $unwind: '$young' },
+      // Traer racha vigente
+      {
+        $lookup: {
+          from: 'streaks',
+          let: { youngId: '$_id' },
+          pipeline: [
+            { $match: { $expr: { $and: [{ $eq: ['$youngId', '$$youngId'] }, { $eq: ['$seasonId', new mongoose.Types.ObjectId(seasonId as any)] }] } } },
+            { $project: { currentStreakWeeks: 1, bestStreakWeeks: 1, violetFlameAwarded: 1, lastAttendanceSaturday: 1 } },
+          ],
+          as: 'streak',
+        },
+      },
+      { $unwind: { path: '$streak', preserveNullAndEmptyArrays: true } },
     ];
 
     // Filtro por grupo si se especifica
@@ -405,8 +443,9 @@ class PointsService {
       // Luego ordenar por ranking y nombre para mantener consistencia
       {
         $sort: {
-          rank: 1, // Por ranking ascendente
-          'young.fullName': 1, // Desempate alfabético
+          totalPoints: -1, // puntos
+          'streak.currentStreakWeeks': -1, // racha (desempate secundario)
+          'young.fullName': 1, // desempate final
         },
       }
     );
@@ -425,6 +464,8 @@ class PointsService {
         group: '$young.group',
         totalPoints: 1,
         currentRank: '$rank',
+        streak: '$streak.currentStreakWeeks',
+        streakLastAttendanceSaturday: '$streak.lastAttendanceSaturday',
         pointsByType: {
           attendance: '$attendancePoints',
           activity: '$activityPoints',
@@ -438,7 +479,36 @@ class PointsService {
 
     const ranking = await PointsTransaction.aggregate(aggregation);
 
-    return ranking;
+    // Ajuste en lectura: si ya pasaron 2 sábados desde la última asistencia, considerar racha 0
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // domingo
+    const currentSaturday = new Date(weekStart);
+    currentSaturday.setDate(weekStart.getDate() + 6);
+    currentSaturday.setHours(0, 0, 0, 0);
+
+    const adjusted = ranking.map((r: any) => {
+      let effectiveStreak = r.streak || 0;
+      if (r.streakLastAttendanceSaturday) {
+        const last = new Date(r.streakLastAttendanceSaturday);
+        const weeksBetween = Math.round(
+          (currentSaturday.getTime() - last.getTime()) / (7 * 24 * 60 * 60 * 1000)
+        );
+        if (weeksBetween >= 3) {
+          effectiveStreak = 0;
+        }
+      }
+      return { ...r, streak: effectiveStreak };
+    });
+
+    adjusted.sort((a: any, b: any) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      if ((b.streak || 0) !== (a.streak || 0)) return (b.streak || 0) - (a.streak || 0);
+      return (a.youngName || '').localeCompare(b.youngName || '');
+    });
+
+    return adjusted;
   }
 
   /**

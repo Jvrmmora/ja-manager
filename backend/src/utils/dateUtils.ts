@@ -235,3 +235,60 @@ export const getCurrentYearColombia = (): number => {
 
   return parseInt(formatter.format(now));
 };
+
+/**
+ * Helpers semanales (domingo a sábado) en zona horaria de Colombia
+ */
+export const getStartOfWeekColombia = (date?: Date | string): Date => {
+  const target = date ? (typeof date === 'string' ? new Date(date) : date) : new Date();
+
+  // Obtener y normalizar a fecha local Colombia (año/mes/día)
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: COLOMBIA_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short',
+  });
+
+  const parts = formatter.formatToParts(target);
+  const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
+  const month = (parseInt(parts.find(p => p.type === 'month')?.value || '1') - 1);
+  const day = parseInt(parts.find(p => p.type === 'day')?.value || '1');
+  const local = new Date(year, month, day, 0, 0, 0, 0);
+
+  // Calcular desplazamiento hasta domingo (0)
+  const dayOfWeek = local.getDay(); // 0..6, 0=domingo
+  const start = new Date(local);
+  start.setDate(local.getDate() - dayOfWeek);
+  start.setHours(0, 0, 0, 0);
+  return start;
+};
+
+export const getEndOfWeekColombia = (date?: Date | string): Date => {
+  const start = getStartOfWeekColombia(date);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6); // sábado
+  end.setHours(23, 59, 59, 999);
+  return end;
+};
+
+/**
+ * Devuelve true si la fecha cae en sábado en Colombia
+ */
+export const isSaturdayColombia = (date: Date | string): boolean => {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  // Normalizamos a fecha local para evitar cruces de UTC
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: COLOMBIA_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const parts = formatter.formatToParts(d);
+  const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
+  const month = (parseInt(parts.find(p => p.type === 'month')?.value || '1') - 1);
+  const day = parseInt(parts.find(p => p.type === 'day')?.value || '1');
+  const local = new Date(year, month, day, 12, 0, 0, 0); // medio día evita ruido
+  return local.getDay() === 6; // 6 = sábado
+};
