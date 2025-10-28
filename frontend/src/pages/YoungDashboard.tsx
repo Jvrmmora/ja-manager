@@ -11,6 +11,7 @@ import ImageModal from '../components/ImageModal';
 import PointsStatsCards from '../components/PointsStatsCards';
 import PointsBreakdownModal from '../components/PointsBreakdownModal';
 import BirthdayBanner from '../components/BirthdayBanner';
+import LeaderboardSection from '../components/LeaderboardSection';
 import { authService } from '../services/auth';
 import { getCurrentUserProfile, getMyAttendanceHistory } from '../services/api';
 import type { IYoung } from '../types';
@@ -35,6 +36,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(true); // Estado de carga
   const [showImageModal, setShowImageModal] = useState(false);
   const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
+  const [showRankingModal, setShowRankingModal] = useState(false);
 
   useEffect(() => {
     // Obtener información del usuario
@@ -362,6 +364,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
               <PointsStatsCards
                 youngId={userInfo.id}
                 onViewDetails={() => setShowPointsBreakdown(true)}
+                onViewRanking={() => setShowRankingModal(true)}
               />
             )}
 
@@ -445,6 +448,21 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
           onClose={() => setShowPointsBreakdown(false)}
           young={userInfo as IYoung}
         />
+      )}
+
+      {/* Modal de Ranking */}
+      {showRankingModal && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={() => setShowRankingModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <LeaderboardSection />
+          </div>
+        </div>
       )}
     </div>
   );

@@ -107,10 +107,6 @@ const LeaderboardSection: React.FC = () => {
   const getTop3 = () => leaderboard.slice(0, 3);
   const getRest = () => leaderboard.slice(3);
 
-  const currentUserEntry = leaderboard.find(
-    entry => entry.youngId === currentUserId
-  );
-
   // Componente para el indicador de cambio de posición
   const RankChangeIndicator: React.FC<{ youngId: string }> = ({ youngId }) => {
     const change = rankChanges.get(youngId);
@@ -395,63 +391,8 @@ const LeaderboardSection: React.FC = () => {
             </div>
           )}
 
-          {/* Mi posición (si no está en top 3) */}
-          {currentUserEntry && currentUserEntry.currentRank > 3 && (
-            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-lg p-3 sm:p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 min-w-0">
-                  <div className="text-xl sm:text-2xl font-bold text-amber-700 dark:text-amber-400 shrink-0">
-                    #{currentUserEntry.currentRank}
-                  </div>
-                  {currentUserEntry.profileImage ? (
-                    <img
-                      src={currentUserEntry.profileImage}
-                      alt={currentUserEntry.youngName}
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shrink-0"
-                    />
-                  ) : (
-                    <div
-                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br ${getColorFromName(currentUserEntry.youngName, currentUserEntry.currentRank)} flex items-center justify-center text-white text-base sm:text-lg font-bold shrink-0`}
-                    >
-                      {getInitials(currentUserEntry.youngName)}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <div className="font-bold text-sm sm:text-base text-gray-900 dark:text-white">
-                      Tu Posición
-                    </div>
-                    <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
-                      {currentUserEntry.youngName}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 shrink-0">
-                  {/* Racha solo para admin */}
-                  {isAdmin &&
-                    currentUserEntry.streak &&
-                    currentUserEntry.streak > 0 && (
-                      <div className="hidden sm:block">
-                        <StreakBadge
-                          streak={currentUserEntry.streak}
-                          isActive={true}
-                        />
-                      </div>
-                    )}
-                  <div className="text-right">
-                    <div className="text-lg sm:text-xl lg:text-2xl font-bold text-amber-700 dark:text-amber-400">
-                      {currentUserEntry.totalPoints}
-                    </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                      puntos
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tabla completa - Solo para admin (a partir del 4to lugar) */}
-          {isAdmin && getRest().length > 0 && (
+          {/* Tabla completa - Para admin y young (a partir del 4to lugar) */}
+          {getRest().length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -472,9 +413,6 @@ const LeaderboardSection: React.FC = () => {
                         Joven
                       </th>
                       <th className="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                        Grupo
-                      </th>
-                      <th className="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                         Racha
                       </th>
                       <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
@@ -483,7 +421,7 @@ const LeaderboardSection: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {getRest().map(entry => (
+                    {getRest().map((entry, index) => (
                       <tr
                         key={entry.youngId}
                         className={`
@@ -493,7 +431,7 @@ const LeaderboardSection: React.FC = () => {
                       >
                         <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap">
                           <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                            #{entry.currentRank}
+                            #{index + 4}
                           </div>
                         </td>
                         <td className="px-2 sm:px-4 py-3 sm:py-4">
@@ -548,79 +486,6 @@ const LeaderboardSection: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </div>
-          )}
-
-          {/* Lista simple del resto - Solo para Young */}
-          {isYoung && getRest().length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-              <div className="p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <span className="material-symbols-rounded text-blue-500">
-                    format_list_numbered
-                  </span>
-                  Otros Participantes
-                </h3>
-                <div className="space-y-2">
-                  {getRest().map(entry => (
-                    <motion.div
-                      key={entry.youngId}
-                      layout
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                        entry.youngId === currentUserId
-                          ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700'
-                          : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        {/* Posición */}
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                          #{entry.currentRank}
-                        </div>
-
-                        {/* Avatar y nombre */}
-                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                          {entry.profileImage ? (
-                            <img
-                              src={entry.profileImage}
-                              alt={entry.youngName}
-                              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
-                            />
-                          ) : (
-                            <div
-                              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br ${getColorFromName(entry.youngName, entry.currentRank)} flex items-center justify-center text-white text-sm font-bold flex-shrink-0`}
-                            >
-                              {getInitials(entry.youngName)}
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <div className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
-                              {entry.youngName}
-                            </div>
-                            {entry.youngId === currentUserId && (
-                              <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                                Tu posición
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Puntos */}
-                      <div className="flex-shrink-0 ml-3">
-                        <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-white font-bold text-sm">
-                          <span className="material-symbols-rounded text-sm">
-                            star
-                          </span>
-                          <span>{entry.totalPoints}</span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
               </div>
             </div>
           )}

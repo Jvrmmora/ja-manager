@@ -7,11 +7,13 @@ import { hasDeepChanged } from '../hooks/useDeepCompareEffect';
 interface PointsStatsCardsProps {
   youngId: string;
   onViewDetails: () => void;
+  onViewRanking?: () => void;
 }
 
 const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
   youngId,
   onViewDetails,
+  onViewRanking,
 }) => {
   const [breakdown, setBreakdown] = useState<IPointsBreakdown | null>(null);
   const [position, setPosition] = useState<{
@@ -184,7 +186,8 @@ const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          className={`group relative bg-gradient-to-br ${getRankingStyles(position?.rank).gradient} rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden ${getRankingStyles(position?.rank).animation}`}
+          onClick={onViewRanking}
+          className={`group relative bg-gradient-to-br ${getRankingStyles(position?.rank).gradient} rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden ${getRankingStyles(position?.rank).animation} ${onViewRanking ? 'cursor-pointer hover:scale-105' : ''}`}
         >
           {/* Borde animado para top 3 */}
           {position && position.rank <= 3 && (
