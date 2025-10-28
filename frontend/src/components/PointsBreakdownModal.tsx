@@ -282,9 +282,14 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
                         Posición
                       </span>
                     </div>
-                    <div className="text-4xl font-bold">#{position.rank}</div>
+                    <div className="text-4xl font-bold">
+                      #{position.totalParticipants > 0 ? position.rank : 0}
+                    </div>
                     <div className="text-sm opacity-90 mt-1">
-                      de {position.totalParticipants} participantes
+                      de {position.totalParticipants}{' '}
+                      {position.totalParticipants === 1
+                        ? 'participante'
+                        : 'participantes'}
                     </div>
                   </div>
                 )}

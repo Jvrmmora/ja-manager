@@ -16,6 +16,9 @@ import { authService } from '../services/auth';
 import { getCurrentUserProfile, getMyAttendanceHistory } from '../services/api';
 import type { IYoung } from '../types';
 import logo from '../assets/logos/logo.png';
+import { seasonService } from '../services/seasonService';
+import ToastContainer from '../components/ToastContainer';
+import { useToast } from '../hooks/useToast';
 
 interface YoungDashboardProps {
   onProfileUpdate?: () => void;
@@ -37,6 +40,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
   const [showRankingModal, setShowRankingModal] = useState(false);
+  const { toasts, showError, removeToast } = useToast();
 
   useEffect(() => {
     // Obtener información del usuario
@@ -137,14 +141,24 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   };
 
   // Funciones para manejar el scanner QR
-  const handleOpenQRScanner = () => {
+  const handleOpenQRScanner = async () => {
     // No abrir el scanner si ya se registró asistencia hoy
     if (hasAttendanceToday) {
       return;
     }
-
-    setIsScanning(true);
-    setShowQRScanner(true);
+    try {
+      const active = await seasonService.getActive();
+      if (!active) {
+        showError(
+          'Debes crear y activar una Temporada antes de registrar asistencia'
+        );
+        return;
+      }
+      setIsScanning(true);
+      setShowQRScanner(true);
+    } catch (e) {
+      showError('No se pudo verificar la temporada activa');
+    }
   };
 
   const handleCloseQRScanner = () => {
@@ -464,6 +478,9 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
           </div>
         </div>
       )}
+
+      {/* Toasts */}
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>
   );
 };

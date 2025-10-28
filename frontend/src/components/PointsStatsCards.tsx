@@ -187,10 +187,18 @@ const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
           onClick={onViewRanking}
-          className={`group relative bg-gradient-to-br ${getRankingStyles(position?.rank).gradient} rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden ${getRankingStyles(position?.rank).animation} ${onViewRanking ? 'cursor-pointer hover:scale-105' : ''}`}
+          className={`group relative bg-gradient-to-br ${
+            position && position.totalParticipants > 0
+              ? getRankingStyles(position?.rank).gradient
+              : 'from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700'
+          } rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden ${
+            position && position.totalParticipants > 0
+              ? getRankingStyles(position?.rank).animation
+              : ''
+          } ${onViewRanking ? 'cursor-pointer hover:scale-105' : ''}`}
         >
           {/* Borde animado para top 3 */}
-          {position && position.rank <= 3 && (
+          {position && position.totalParticipants > 0 && position.rank <= 3 && (
             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer-border"></div>
           )}
 
@@ -201,7 +209,9 @@ const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
             {/* Header */}
             <div className="flex items-center gap-2 mb-4">
               <span className="material-symbols-rounded text-white text-2xl">
-                {getRankingStyles(position?.rank).icon}
+                {position && position.totalParticipants > 0
+                  ? getRankingStyles(position?.rank).icon
+                  : 'military_tech'}
               </span>
               <h3 className="text-sm font-medium text-white/90 uppercase tracking-wide">
                 Tu Posición
@@ -212,7 +222,7 @@ const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
             {position ? (
               <div className="mb-3">
                 <div className="text-5xl font-bold text-white mb-1">
-                  #{position.rank}
+                  #{position.totalParticipants > 0 ? position.rank : 0}
                 </div>
                 <p className="text-sm text-white/80">
                   de {position.totalParticipants}{' '}
@@ -229,16 +239,18 @@ const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
             )}
 
             {/* Badge si es top 3 */}
-            {position && getRankingStyles(position.rank).badge && (
-              <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                <span className="material-symbols-rounded text-white text-lg">
-                  {getRankingStyles(position.rank).icon}
-                </span>
-                <span className="text-xs font-semibold text-white">
-                  {getRankingStyles(position.rank).badge}
-                </span>
-              </div>
-            )}
+            {position &&
+              position.totalParticipants > 0 &&
+              getRankingStyles(position.rank).badge && (
+                <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                  <span className="material-symbols-rounded text-white text-lg">
+                    {getRankingStyles(position.rank).icon}
+                  </span>
+                  <span className="text-xs font-semibold text-white">
+                    {getRankingStyles(position.rank).badge}
+                  </span>
+                </div>
+              )}
           </div>
         </motion.div>
       </div>

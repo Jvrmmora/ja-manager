@@ -322,7 +322,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
       // Mostrar animación de puntos después de 1 segundo
       setTimeout(() => {
         // Usar los puntos que vienen del resultado del backend
-        const points = result?.points?.earned || 10;
+        const points = result?.points?.earned ?? 0;
         setPointsEarned(points);
         setShowPointsAnimation(true);
       }, 1000);

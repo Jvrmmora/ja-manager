@@ -16,6 +16,7 @@ import {
 } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import LoadingSpinner from './LoadingSpinner';
+import { seasonService } from '../services/seasonService';
 import { POINTS_PRESETS } from '../constants/points';
 import {
   formatDisplayDate,
@@ -172,6 +173,24 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
     }
   };
 
+  const ensureActiveSeason = async (): Promise<boolean> => {
+    try {
+      const active = await seasonService.getActive();
+      if (!active) {
+        const msg = 'Debes crear y activar una Temporada antes de generar QR.';
+        setError(msg);
+        onError?.(msg);
+        return false;
+      }
+      return true;
+    } catch (e: any) {
+      const msg = 'No se pudo verificar la temporada activa.';
+      setError(msg);
+      onError?.(msg);
+      return false;
+    }
+  };
+
   const handleGenerateQR = async () => {
     try {
       setIsGenerating(true);
@@ -258,7 +277,8 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
                   : 'No hay código QR activo para el día de hoy'}
               </p>
               <motion.button
-                onClick={() => {
+                onClick={async () => {
+                  if (!(await ensureActiveSeason())) return;
                   setIsRegenerate(false);
                   setSelectedPoints(10);
                   setShowConfigModal(true);
@@ -373,7 +393,10 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
               {/* Botones de acción */}
               <div className="flex gap-3 justify-center">
                 <motion.button
-                  onClick={() => setShowFullscreen(true)}
+                  onClick={async () => {
+                    if (!(await ensureActiveSeason())) return;
+                    setShowFullscreen(true);
+                  }}
                   className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium flex items-center gap-2"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -383,7 +406,8 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
                 </motion.button>
 
                 <motion.button
-                  onClick={() => {
+                  onClick={async () => {
+                    if (!(await ensureActiveSeason())) return;
                     setIsRegenerate(true);
                     setSelectedPoints(qrData?.qrCode?.points || 10);
                     setShowConfigModal(true);
