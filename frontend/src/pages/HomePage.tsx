@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import YoungForm from '../components/YoungForm';
 import EditYoungForm from '../components/EditYoungForm';
 import YoungCard from '../components/YoungCard';
@@ -109,6 +109,56 @@ function HomePage() {
   // Estados para nuevas secciones
   const [showLeaderboardSection, setShowLeaderboardSection] = useState(false);
   const [showSeasonsSection, setShowSeasonsSection] = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showQRMenu, setShowQRMenu] = useState(false);
+  const [showRankingMenu, setShowRankingMenu] = useState(false);
+
+  // Refs para cerrar dropdowns al hacer clic fuera
+  const addMenuRef = useRef<HTMLDivElement | null>(null);
+  const qrMenuRef = useRef<HTMLDivElement | null>(null);
+  const rankingMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        showAddMenu &&
+        addMenuRef.current &&
+        !addMenuRef.current.contains(target)
+      ) {
+        setShowAddMenu(false);
+      }
+      if (
+        showQRMenu &&
+        qrMenuRef.current &&
+        !qrMenuRef.current.contains(target)
+      ) {
+        setShowQRMenu(false);
+      }
+      if (
+        showRankingMenu &&
+        rankingMenuRef.current &&
+        !rankingMenuRef.current.contains(target)
+      ) {
+        setShowRankingMenu(false);
+      }
+    };
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowAddMenu(false);
+        setShowQRMenu(false);
+        setShowRankingMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [showAddMenu, showQRMenu, showRankingMenu]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [nextPageToLoad, setNextPageToLoad] = useState(2); // Track próxima página para cargar
@@ -666,135 +716,170 @@ function HomePage() {
         {/* Barra de acciones */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
           <div className="flex flex-col sm:flex-row gap-4">
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            {/* Split button: Agregar + menú */}
+            <div className="relative inline-flex" ref={addMenuRef}>
+              <button
+                onClick={() => setShowForm(true)}
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-l-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                />
-              </svg>
-              Agregar Joven
-            </button>
-
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                <span className="material-symbols-rounded text-base">add</span>
+                <span>Agregar Joven</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddMenu(prev => !prev)}
+                className="px-3 py-3 rounded-r-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow border-l border-blue-500/40"
+                aria-haspopup="menu"
+                aria-expanded={showAddMenu}
+                title="Más acciones"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
-              Importar Excel
-            </button>
+                <span className="material-symbols-rounded text-base">
+                  expand_more
+                </span>
+              </button>
 
-            <button
-              onClick={() => setShowBirthdayDashboard(!showBirthdayDashboard)}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                showBirthdayDashboard
-                  ? 'bg-yellow-600 text-white hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800'
-                  : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-900/50'
-              }`}
-            >
-              🎂{' '}
-              {showBirthdayDashboard ? 'Ocultar Cumpleaños' : 'Ver Cumpleaños'}
-            </button>
-
-            <button
-              onClick={() => setShowQRSection(!showQRSection)}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                showQRSection
-                  ? 'bg-purple-600 text-white hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800'
-                  : 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-900/50'
-              }`}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+              {showAddMenu && (
+                <div className="absolute left-0 z-30 mt-2 w-56 rounded-xl bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      setShowForm(true);
+                      setShowAddMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+                  >
+                    <span className="material-symbols-rounded text-base">
+                      person_add
+                    </span>
+                    <span>Agregar Joven</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowImportModal(true);
+                      setShowAddMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-emerald-700 dark:text-emerald-300"
+                  >
+                    <span className="material-symbols-rounded text-base">
+                      upload
+                    </span>
+                    <span>Importar Excel</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* Split button: Gestión QR + menú (incluye Ver Asistencias) */}
+            <div className="relative inline-flex" ref={qrMenuRef}>
+              <button
+                onClick={() => {
+                  setShowQRSection(true);
+                  setShowQRMenu(false);
+                }}
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-l-xl text-white shadow-lg bg-gradient-to-r from-purple-500 to-fuchsia-600 hover:from-purple-600 hover:to-fuchsia-700 transition-all"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
-                />
-              </svg>
-              {showQRSection ? 'Ocultar QR' : 'Gestión QR'}
-            </button>
-
-            <button
-              onClick={() => setShowAttendanceSection(!showAttendanceSection)}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                showAttendanceSection
-                  ? 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800'
-                  : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50'
-              }`}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                <span className="material-symbols-rounded text-base">
+                  qr_code_2
+                </span>
+                <span>Gestión QR</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowQRMenu(prev => !prev)}
+                className="px-3 py-3 rounded-r-xl text-white shadow-lg bg-gradient-to-r from-purple-500 to-fuchsia-600 hover:from-purple-600 hover:to-fuchsia-700 transition-all border-l border-white/20"
+                aria-haspopup="menu"
+                aria-expanded={showQRMenu}
+                title="Más acciones"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
-              {showAttendanceSection
-                ? 'Ocultar Asistencias'
-                : 'Ver Asistencias'}
-            </button>
+                <span className="material-symbols-rounded text-base">
+                  expand_more
+                </span>
+              </button>
 
-            <button
-              onClick={() => setShowLeaderboardSection(!showLeaderboardSection)}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                showLeaderboardSection
-                  ? 'bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-800'
-                  : 'bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50'
-              }`}
-            >
-              <span className="material-symbols-rounded text-base">
-                leaderboard
-              </span>
-              {showLeaderboardSection ? 'Ocultar Ranking' : 'Ver Ranking'}
-            </button>
+              {showQRMenu && (
+                <div className="absolute left-0 z-30 mt-2 w-56 rounded-xl bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      setShowQRSection(true);
+                      setShowQRMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+                  >
+                    <span className="material-symbols-rounded text-base">
+                      qr_code_2
+                    </span>
+                    <span>Gestión QR</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAttendanceSection(true);
+                      setShowQRMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-emerald-700 dark:text-emerald-300"
+                  >
+                    <span className="material-symbols-rounded text-base">
+                      how_to_reg
+                    </span>
+                    <span>Ver Asistencias</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
-            <button
-              onClick={() => setShowSeasonsSection(!showSeasonsSection)}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                showSeasonsSection
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800'
-                  : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50'
-              }`}
-            >
-              <span className="material-symbols-rounded text-base">
-                calendar_today
-              </span>
-              {showSeasonsSection ? 'Ocultar Temporadas' : 'Gestión Temporadas'}
-            </button>
+            {/* Split button: Ver Ranking + menú (incluye Gestión Temporadas) */}
+            <div className="relative inline-flex" ref={rankingMenuRef}>
+              <button
+                onClick={() => {
+                  setShowLeaderboardSection(true);
+                  setShowRankingMenu(false);
+                }}
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-l-xl text-white shadow-lg bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 transition-all"
+              >
+                <span className="material-symbols-rounded text-base">
+                  leaderboard
+                </span>
+                <span>Ver Ranking</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowRankingMenu(prev => !prev)}
+                className="px-3 py-3 rounded-r-xl text-white shadow-lg bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 transition-all border-l border-white/20"
+                aria-haspopup="menu"
+                aria-expanded={showRankingMenu}
+                title="Más acciones"
+              >
+                <span className="material-symbols-rounded text-base">
+                  expand_more
+                </span>
+              </button>
+
+              {showRankingMenu && (
+                <div className="absolute left-0 z-30 mt-2 w-64 rounded-xl bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      setShowLeaderboardSection(true);
+                      setShowRankingMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+                  >
+                    <span className="material-symbols-rounded text-base">
+                      leaderboard
+                    </span>
+                    <span>Ver Ranking</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowSeasonsSection(true);
+                      setShowRankingMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-indigo-700 dark:text-indigo-300"
+                  >
+                    <span className="material-symbols-rounded text-base">
+                      calendar_month
+                    </span>
+                    <span>Gestión Temporadas</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Contador de resultados */}

@@ -7,16 +7,16 @@ export interface IYoung {
   profileImage?: string;
   gender: 'masculino' | 'femenino' | '';
   role:
-    | 'lider juvenil'
-    | 'colaborador'
-    | 'director'
-    | 'subdirector'
-    | 'club guias'
-    | 'club conquistadores'
-    | 'club aventureros'
-    | 'escuela sabatica'
-    | 'joven adventista'
-    | 'simpatizante';
+  | 'lider juvenil'
+  | 'colaborador'
+  | 'director'
+  | 'subdirector'
+  | 'club guias'
+  | 'club conquistadores'
+  | 'club aventureros'
+  | 'escuela sabatica'
+  | 'joven adventista'
+  | 'simpatizante';
   role_name?: string; // Nombre del rol del sistema
   role_id?: string; // ID del rol
   // Grupo opcional 1..5
@@ -30,7 +30,7 @@ export interface IYoung {
 }
 
 export interface IYoungCreate
-  extends Omit<IYoung, 'id' | 'createdAt' | 'updatedAt'> {}
+  extends Omit<IYoung, 'id' | 'createdAt' | 'updatedAt'> { }
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -59,13 +59,13 @@ export interface PaginationQuery {
   role?: string;
   groups?: string[] | undefined; // Array de grupos para filtrar (1-5)
   sortBy?:
-    | 'fullName'
-    | 'birthday'
-    | 'email'
-    | 'role'
-    | 'gender'
-    | 'createdAt'
-    | 'updatedAt';
+  | 'fullName'
+  | 'birthday'
+  | 'email'
+  | 'role'
+  | 'gender'
+  | 'createdAt'
+  | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
 }
 
@@ -200,6 +200,7 @@ export interface ISeasonUpdate {
 export type TransactionType =
   | 'ATTENDANCE'
   | 'ACTIVITY'
+  | 'REFERRAL'
   | 'REFERRAL_BONUS'
   | 'REFERRAL_WELCOME';
 
@@ -210,6 +211,7 @@ export interface IPointsTransaction {
   type: TransactionType;
   points: number;
   description: string;
+  referredYoungId?: string | { id?: string; fullName?: string };
   metadata?: Record<string, any>;
   createdAt: string | Date;
 }

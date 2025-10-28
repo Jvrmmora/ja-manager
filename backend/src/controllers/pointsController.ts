@@ -11,8 +11,15 @@ export const assignPoints = async (
   next: NextFunction
 ) => {
   try {
-    const { youngId, type, description, points, seasonId, activityCategoryId } =
-      req.body;
+    const {
+      youngId,
+      type,
+      description,
+      points,
+      seasonId,
+      activityCategoryId,
+      referredYoungId,
+    } = req.body;
 
     // @ts-ignore - El usuario autenticado está en req.user
     const assignedBy = req.user?.userId;
@@ -46,7 +53,18 @@ export const assignPoints = async (
       });
     }
 
-    // Crear la transacción usando el servicio genérico
+    // Validación adicional para transacciones de referidos
+    if (
+      (type === 'REFERRAL_BONUS' || type === 'REFERRAL_WELCOME') &&
+      !referredYoungId
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'El campo referredYoungId es obligatorio para transacciones de referidos',
+      });
+    }
+
+    // Crear la transacción usando el servicio genérico (incluye referredYoungId cuando aplique)
     const transaction = await pointsService.createTransaction({
       youngId,
       seasonId,
@@ -54,6 +72,7 @@ export const assignPoints = async (
       type,
       activityCategoryId, // Opcional
       description,
+      referredYoungId,
       assignedBy,
     });
 

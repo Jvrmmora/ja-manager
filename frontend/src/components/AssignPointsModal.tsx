@@ -33,6 +33,8 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
+  const [selectedYoung, setSelectedYoung] = useState<IYoung | null>(null);
+  const [assignBoth, setAssignBoth] = useState<boolean>(false);
 
   // Cerrar dropdown cuando se hace click fuera
   useEffect(() => {
@@ -86,9 +88,14 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
       console.log('🔍 Search response:', data); // Debug
 
       if (data.success && data.data) {
-        // El backend devuelve data.data directamente como array
-        const results = Array.isArray(data.data) ? data.data : [];
-        console.log('✅ Results found:', results.length); // Debug
+        // El backend puede devolver:
+        // 1) data.data como array directamente
+        // 2) data.data como objeto con la lista en data.data.data (con paginación)
+        const results = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.data?.data)
+            ? data.data.data
+            : [];
         setYoungsList(results);
         setShowDropdown(true); // Asegurar que el dropdown se muestre
       } else {
@@ -108,14 +115,11 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
     ? youngsList.filter(y => y.id !== young.id)
     : [];
 
-  // Obtener el joven seleccionado (puede estar en la lista actual o necesitamos buscarlo)
-  const selectedYoung = Array.isArray(youngsList)
-    ? youngsList.find(y => y.id === referredYoungId)
-    : undefined;
-
   // Seleccionar un joven
-  const handleSelectYoung = (youngId: string) => {
-    setReferredYoungId(youngId);
+  const handleSelectYoung = (youngEntity: IYoung) => {
+    if (!youngEntity?.id) return;
+    setReferredYoungId(youngEntity.id);
+    setSelectedYoung(youngEntity);
     setShowDropdown(false);
     setSearchQuery('');
   };
@@ -155,10 +159,7 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
     }
 
     // Validación para tipos que requieren joven referido
-    if (
-      (type === 'REFERRAL_BONUS' || type === 'REFERRAL_WELCOME') &&
-      !referredYoungId
-    ) {
+    if (type === 'REFERRAL' && !referredYoungId) {
       const errorMsg = 'Debe seleccionar el joven referido';
       setError(errorMsg);
       onError?.(errorMsg);
@@ -167,25 +168,47 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
 
     try {
       setLoading(true);
+      const trimmedDescription = description.trim();
 
-      // Preparar datos según el tipo
-      const requestData: any = {
-        youngId: young.id,
-        points,
-        type,
-        description: description.trim(),
+      const makeRequest = async (
+        targetYoungId: string,
+        theType: TransactionType,
+        theReferredId?: string
+      ) => {
+        const payload: any = {
+          youngId: targetYoungId,
+          points,
+          type: theType,
+          description: trimmedDescription,
+        };
+        if (theType === 'REFERRAL_BONUS' || theType === 'REFERRAL_WELCOME') {
+          payload.referredYoungId = theReferredId;
+        }
+        await pointsService.assign(payload);
       };
 
-      // Agregar referredYoungId si es necesario
-      if (type === 'REFERRAL_BONUS' || type === 'REFERRAL_WELCOME') {
-        requestData.referredYoungId = referredYoungId;
+      if (type === 'REFERRAL') {
+        const selectedId = selectedYoung?.id || referredYoungId;
+        if (!selectedId) {
+          throw new Error('Debe seleccionar el joven referido');
+        }
+
+        if (assignBoth) {
+          await makeRequest(young.id!, 'REFERRAL_BONUS', selectedId);
+          await makeRequest(selectedId, 'REFERRAL_WELCOME', young.id!);
+          onSuccess?.(
+            `${points} pts a ${young.fullName} (bono) y a ${selectedYoung?.fullName || 'referido'} (bienvenida)`
+          );
+        } else {
+          await makeRequest(young.id!, 'REFERRAL_BONUS', selectedId);
+          onSuccess?.(`${points} pts de bono asignados a ${young.fullName}`);
+        }
+      } else {
+        await makeRequest(young.id!, type);
+        onSuccess?.(
+          `${points} puntos asignados exitosamente a ${young.fullName}`
+        );
       }
-
-      await pointsService.assign(requestData);
-
-      onSuccess?.(
-        `${points} puntos asignados exitosamente a ${young.fullName}`
-      );
       handleClose();
     } catch (error: any) {
       console.error('Error assigning points:', error);
@@ -211,6 +234,8 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
     setSearchQuery('');
     setShowDropdown(false);
     setYoungsList([]);
+    setSelectedYoung(null);
+    setAssignBoth(false);
     setError(null);
     onClose();
   };
@@ -271,6 +296,19 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
             </div>
           )}
 
+          {(type === 'REFERRAL_BONUS' || type === 'REFERRAL_WELCOME') && (
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <input
+                type="checkbox"
+                checked={assignBoth}
+                onChange={e => setAssignBoth(e.target.checked)}
+                className="rounded border-gray-300 dark:border-gray-600"
+                disabled={loading}
+              />
+              Asignar ambos (quien refiere y referido)
+            </label>
+          )}
+
           {/* Joven info */}
           <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
             {young.profileImage ? (
@@ -304,10 +342,7 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
               disabled={loading}
             >
               <option value="ACTIVITY">Actividad</option>
-              <option value="REFERRAL_BONUS">
-                Bono Referido (quien refiere)
-              </option>
-              <option value="REFERRAL_WELCOME">Bono Referido (referido)</option>
+              <option value="REFERRAL">Bono Referido</option>
             </select>
             <div className="mt-1 flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
               <span className="material-symbols-rounded text-sm">
@@ -315,7 +350,7 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                   ? 'sports_score'
                   : type === 'ATTENDANCE'
                     ? 'event_available'
-                    : type === 'REFERRAL_BONUS'
+                    : type === 'REFERRAL' || type === 'REFERRAL_BONUS'
                       ? 'person_add'
                       : 'how_to_reg'}
               </span>
@@ -324,16 +359,14 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                   'Puntos por participar en actividades especiales'}
                 {type === 'ATTENDANCE' &&
                   'Puntos por asistencia (asignados automáticamente vía QR)'}
-                {type === 'REFERRAL_BONUS' &&
-                  'Puntos para quien invita a un nuevo joven'}
-                {type === 'REFERRAL_WELCOME' &&
-                  'Puntos de bienvenida para el joven referido'}
+                {type === 'REFERRAL' &&
+                  'Puntos por referidos (puedes asignar a ambos o solo al que refiere)'}
               </span>
             </div>
           </div>
 
           {/* Selector de Joven Referido - Solo para bonos de referidos */}
-          {(type === 'REFERRAL_BONUS' || type === 'REFERRAL_WELCOME') && (
+          {type === 'REFERRAL' && (
             <div className="relative young-selector">
               <label className="form-label">
                 Joven Referido <span className="text-red-500">*</span>
@@ -365,6 +398,8 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                       onClick={() => {
                         setReferredYoungId('');
                         setSearchQuery('');
+                        setSelectedYoung(null);
+                        setShowDropdown(true);
                       }}
                       className="flex-shrink-0 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors"
                       disabled={loading}
@@ -421,9 +456,7 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                           <button
                             key={youngItem.id}
                             type="button"
-                            onClick={() =>
-                              youngItem.id && handleSelectYoung(youngItem.id)
-                            }
+                            onClick={() => handleSelectYoung(youngItem)}
                             className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                           >
                             {youngItem.profileImage ? (
@@ -483,10 +516,20 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                 )}
               </div>
 
+              {/* Opción asignar ambos - debajo del input */}
+              <label className="mt-2 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={assignBoth}
+                  onChange={e => setAssignBoth(e.target.checked)}
+                  className="rounded border-gray-300 dark:border-gray-600"
+                  disabled={loading}
+                />
+                Asignar ambos (quien refiere y referido)
+              </label>
+
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {type === 'REFERRAL_BONUS'
-                  ? 'Selecciona a quién refirió este joven'
-                  : 'Selecciona quién fue el referidor'}
+                Selecciona a quién refirió este joven
               </p>
             </div>
           )}
@@ -569,8 +612,7 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                       </li>
                     </ul>
                   )}
-                  {(type === 'REFERRAL_BONUS' ||
-                    type === 'REFERRAL_WELCOME') && (
+                  {type === 'REFERRAL' && (
                     <ul className="space-y-0.5">
                       <li>
                         • <strong>70 pts</strong>: Invitar a un amigo (mayor

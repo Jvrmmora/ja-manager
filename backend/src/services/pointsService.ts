@@ -249,7 +249,7 @@ class PointsService {
       },
     ]);
 
-    // Convertir el resultado del aggregate a un objeto
+    // Convertir el resultado del aggregate a un objeto (compatibilidad de nombres)
     const breakdown = {
       ATTENDANCE: 0,
       ACTIVITY: 0,
@@ -258,8 +258,14 @@ class PointsService {
     };
 
     pointsByType.forEach((item: any) => {
-      if (item._id in breakdown) {
-        breakdown[item._id as keyof typeof breakdown] = item.totalPoints;
+      const key =
+        item._id === 'REFERRAL_BONUS'
+          ? 'REFERRER_BONUS'
+          : item._id === 'REFERRAL_WELCOME'
+            ? 'REFERRED_BONUS'
+            : item._id;
+      if (key in breakdown) {
+        breakdown[key as keyof typeof breakdown] = item.totalPoints;
       }
     });
 
@@ -345,12 +351,20 @@ class PointsService {
           },
           referrerPoints: {
             $sum: {
-              $cond: [{ $eq: ['$type', 'REFERRER_BONUS'] }, '$points', 0],
+              $cond: [
+                { $in: ['$type', ['REFERRER_BONUS', 'REFERRAL_BONUS']] },
+                '$points',
+                0,
+              ],
             },
           },
           referredPoints: {
             $sum: {
-              $cond: [{ $eq: ['$type', 'REFERRED_BONUS'] }, '$points', 0],
+              $cond: [
+                { $in: ['$type', ['REFERRED_BONUS', 'REFERRAL_WELCOME']] },
+                '$points',
+                0,
+              ],
             },
           },
           bonusPoints: {

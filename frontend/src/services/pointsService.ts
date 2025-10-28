@@ -77,7 +77,18 @@ export const pointsService = {
 
     // Validar si la respuesta fue exitosa
     if (!response.ok || !data.success) {
-      throw new Error(data.message || data.error || 'Error al asignar puntos');
+      const errorMsg =
+        data?.message ||
+        (typeof data?.error === 'string'
+          ? data.error
+          : data?.error?.message ||
+          (Array.isArray(data?.error?.details?.fields)
+            ? data.error.details.fields
+              .map((f: any) => `${f.field}: ${f.message}`)
+              .join(', ')
+            : undefined)) ||
+        'Error al asignar puntos';
+      throw new Error(errorMsg);
     }
 
     if (!data.transaction) {

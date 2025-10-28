@@ -169,25 +169,21 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 relative overflow-hidden">
-          {/* Decoración de fondo */}
-          <div className="absolute top-0 right-0 text-6xl opacity-20 transform rotate-12">
-            🎉
-          </div>
-          <div className="absolute bottom-0 left-0 text-4xl opacity-20">🎂</div>
-          <div className="absolute top-4 left-20 text-2xl opacity-30">🎈</div>
-
+        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-6 relative overflow-hidden">
           <div className="flex justify-between items-center relative z-10">
             <div>
-              <h2 className="text-2xl font-bold">🎂 Dashboard de Cumpleaños</h2>
-              <p className="text-orange-100 mt-1">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <span className="material-symbols-rounded text-3xl">cake</span>
+                Dashboard de Cumpleaños
+              </h2>
+              <p className="text-white/80 mt-1">
                 Cumpleaños de este mes:{' '}
                 <span className="font-semibold">{currentMonth}</span>
               </p>
             </div>
             <button
               onClick={onClose}
-              className="text-white hover:text-orange-200 transition-colors p-2 bg-white bg-opacity-20 rounded-full"
+              className="text-white hover:text-white/90 transition-colors p-2 bg-white/20 rounded-full"
             >
               <svg
                 className="w-6 h-6"
@@ -220,13 +216,15 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
                   onClick={() => setSelectedMonth(index)}
                   className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     selectedMonth === index
-                      ? 'bg-orange-500 text-white shadow-lg transform scale-105'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-900/30 hover:text-orange-700 dark:hover:text-orange-300'
+                      ? 'bg-indigo-600 text-white shadow-lg transform scale-105'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
                   }`}
                 >
-                  {month}
+                  <span className="align-middle">{month}</span>
                   {index === getCurrentMonthColombia() && (
-                    <span className="ml-1 text-xs">📅</span>
+                    <span className="ml-1 text-xs align-middle material-symbols-rounded">
+                      event
+                    </span>
                   )}
                 </button>
               ))}
@@ -246,7 +244,7 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
               {selectedGroups.length > 0 && (
                 <button
                   onClick={() => setSelectedGroups([])}
-                  className="px-3 py-2 text-sm text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200 border border-orange-300 dark:border-orange-600 hover:border-orange-400 dark:hover:border-orange-500 rounded-lg transition-colors"
+                  className="px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 border border-indigo-300 dark:border-indigo-600 hover:border-indigo-400 dark:hover:border-indigo-500 rounded-lg transition-colors"
                 >
                   Limpiar filtro
                 </button>
@@ -255,30 +253,34 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
           </div>
 
           {/* Estadísticas del mes */}
-          <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg p-4 mb-6">
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-100 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-orange-800 dark:text-orange-300">
+                <h3 className="text-lg font-semibold text-indigo-800 dark:text-indigo-300">
                   {months[selectedMonth]} {getCurrentYearColombia()}
                 </h3>
-                <p className="text-orange-600 dark:text-orange-400">
+                <p className="text-indigo-700 dark:text-indigo-300">
                   {filteredYoung.length} cumpleaños este mes
                   {selectedGroups.length > 0 && (
-                    <span className="text-orange-500 dark:text-orange-400 text-sm ml-2">
+                    <span className="text-indigo-600 dark:text-indigo-300 text-sm ml-2">
                       (Grupos:{' '}
                       {selectedGroups.map(g => `Nivel ${g}`).join(', ')})
                     </span>
                   )}
                 </p>
               </div>
-              <div className="text-3xl">🎉</div>
+              <span className="material-symbols-rounded text-white/80 text-3xl bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full p-2">
+                celebration
+              </span>
             </div>
           </div>
 
           {/* Lista de cumpleañeros */}
           {filteredYoung.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">🎂</div>
+              <span className="material-symbols-rounded text-6xl mb-4 text-indigo-500">
+                cake
+              </span>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 No hay cumpleaños en {months[selectedMonth]}
               </h3>
@@ -291,11 +293,11 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
               {filteredYoung.map(young => (
                 <div
                   key={young.id}
-                  className="bg-white dark:bg-gray-700 border border-orange-200 dark:border-orange-700 rounded-lg p-4 hover:shadow-lg transition-shadow duration-200"
+                  className="bg-white dark:bg-gray-700 border border-indigo-200 dark:border-indigo-700 rounded-lg p-4 hover:shadow-lg transition-shadow duration-200"
                 >
                   {/* Header de la tarjeta */}
                   <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center overflow-hidden">
+                    <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center overflow-hidden">
                       {young.profileImage ? (
                         <img
                           src={young.profileImage}
@@ -304,7 +306,7 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
                         />
                       ) : (
                         <svg
-                          className="w-6 h-6 text-orange-600 dark:text-orange-400"
+                          className="w-6 h-6 text-indigo-600 dark:text-indigo-400"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -326,21 +328,26 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
                         {young.role}
                       </p>
                     </div>
-                    <div className="text-2xl">🎂</div>
+                    <span className="material-symbols-rounded text-xl text-indigo-500">
+                      cake
+                    </span>
                   </div>
 
                   {/* Información de cumpleaños */}
-                  <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 mb-3">
+                  <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 mb-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-orange-800 dark:text-orange-300">
-                          📅 {formatBirthday(young.birthday)}
+                        <p className="text-sm font-medium text-indigo-800 dark:text-indigo-300 flex items-center gap-1">
+                          <span className="material-symbols-rounded text-base">
+                            event
+                          </span>
+                          {formatBirthday(young.birthday)}
                         </p>
-                        <p className="text-xs text-orange-600 dark:text-orange-400">
+                        <p className="text-xs text-indigo-700 dark:text-indigo-400">
                           Cumple {calculateAge(young.birthday)} años
                         </p>
                       </div>
-                      <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                      <div className="text-lg font-bold text-indigo-700 dark:text-indigo-300">
                         {(() => {
                           // Parsear la fecha evitando problemas de zona horaria
                           const birthdayStr = young.birthday.toString();
@@ -360,7 +367,9 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
                   {/* Información adicional */}
                   <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                     <div className="flex items-center">
-                      <span className="w-4 h-4 mr-2">👤</span>
+                      <span className="material-symbols-rounded text-base mr-2">
+                        person
+                      </span>
                       <span className="capitalize">{young.gender}</span>
                       <span className="mx-2">•</span>
                       <span>{young.ageRange} años</span>
@@ -368,7 +377,9 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center flex-1">
-                        <span className="w-4 h-4 mr-2">📱</span>
+                        <span className="material-symbols-rounded text-base mr-2">
+                          phone_iphone
+                        </span>
                         <span className="text-sm">
                           {young.phone || 'No registrado'}
                         </span>
@@ -393,19 +404,21 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
                     </div>
 
                     <div className="flex items-center">
-                      <span className="w-4 h-4 mr-2">📧</span>
+                      <span className="material-symbols-rounded text-base mr-2">
+                        mail
+                      </span>
                       <span className="truncate">{young.email}</span>
                     </div>
                   </div>
 
                   {/* Habilidades */}
                   {young.skills && young.skills.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-orange-100 dark:border-orange-800">
+                    <div className="mt-3 pt-3 border-t border-indigo-100 dark:border-indigo-800">
                       <div className="flex flex-wrap gap-1">
                         {young.skills.slice(0, 3).map((skill, index) => (
                           <span
                             key={index}
-                            className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-1 rounded-full text-xs"
+                            className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-full text-xs"
                           >
                             {skill}
                           </span>
@@ -433,7 +446,7 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
             </p>
             <button
               onClick={onClose}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
             >
               Cerrar
             </button>

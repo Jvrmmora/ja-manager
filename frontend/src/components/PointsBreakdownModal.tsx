@@ -77,6 +77,10 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
         return 'event_available';
       case 'ACTIVITY':
         return 'sports_score';
+      case 'REFERRAL_BONUS':
+        return 'person_add';
+      case 'REFERRAL_WELCOME':
+        return 'how_to_reg';
       case 'REFERRER_BONUS':
         return 'person_add';
       case 'REFERRED_BONUS':
@@ -92,8 +96,11 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
         return 'Asistencia';
       case 'ACTIVITY':
         return 'Actividad';
+      case 'REFERRAL_BONUS':
+      case 'REFERRAL_WELCOME':
+        return 'Bono Referido';
       case 'REFERRER_BONUS':
-        return 'Referido';
+        return 'Bono Referido';
       case 'REFERRED_BONUS':
         return 'Bono Referido';
       default:
@@ -253,27 +260,27 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  {/* Bono Referido total */}
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 col-span-2">
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 mb-1">
                       <span className="material-symbols-rounded text-sm">
                         person_add
                       </span>
-                      <span className="text-sm">Referidos</span>
-                    </div>
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {breakdown.byType.REFERRER_BONUS}
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 mb-1">
-                      <span className="material-symbols-rounded text-sm">
-                        how_to_reg
-                      </span>
                       <span className="text-sm">Bono Referido</span>
                     </div>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {breakdown.byType.REFERRED_BONUS}
+                      {(() => {
+                        const bonus =
+                          (breakdown.byType as any).REFERRER_BONUS ?? 0;
+                        const welcome =
+                          (breakdown.byType as any).REFERRED_BONUS ?? 0;
+                        const old1 =
+                          (breakdown.byType as any).REFERRAL_BONUS ?? 0;
+                        const old2 =
+                          (breakdown.byType as any).REFERRAL_WELCOME ?? 0;
+                        const combined = (breakdown.byType as any).REFERRAL;
+                        return combined ?? bonus + welcome + old1 + old2;
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -313,6 +320,28 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
                                 </span>
                                 <span className="text-sm text-gray-700 dark:text-gray-300">
                                   {getTypeName(transaction.type)}
+                                  {(() => {
+                                    const ref = (transaction as any)
+                                      .referredYoungId as
+                                      | undefined
+                                      | string
+                                      | { id?: string; fullName?: string };
+                                    const refName =
+                                      ref && typeof ref === 'object'
+                                        ? ref.fullName
+                                        : undefined;
+                                    if (!refName) return null;
+                                    const isBonus =
+                                      transaction.type === 'REFERRAL_BONUS' ||
+                                      transaction.type === 'REFERRER_BONUS';
+                                    return (
+                                      <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">
+                                        {isBonus
+                                          ? `a ${refName}`
+                                          : `de ${refName}`}
+                                      </span>
+                                    );
+                                  })()}
                                 </span>
                               </div>
                             </td>
