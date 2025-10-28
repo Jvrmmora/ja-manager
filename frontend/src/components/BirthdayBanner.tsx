@@ -13,7 +13,9 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
   onEditProfile,
 }) => {
   const [isBirthdayMonth, setIsBirthdayMonth] = useState(false);
-  const confettiIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const confettiIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
   const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

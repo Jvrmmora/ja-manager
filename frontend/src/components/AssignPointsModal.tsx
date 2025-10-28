@@ -30,9 +30,9 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
   const [loadingYoungs, setLoadingYoungs] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
+  const [searchTimeout, setSearchTimeout] = useState<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const [selectedYoung, setSelectedYoung] = useState<IYoung | null>(null);
   const [assignBoth, setAssignBoth] = useState<boolean>(false);
 
