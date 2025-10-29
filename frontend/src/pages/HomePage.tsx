@@ -171,6 +171,10 @@ function HomePage() {
     sortOrder: 'asc',
   });
 
+  // Ref para trackear página actual sin causar re-renders
+  const currentPageRef = useRef(1);
+  const isLoadingPageRef = useRef(false);
+
   // Hook para manejo de toasts
   const { toasts, showSuccess, showError, removeToast } = useToast();
 
@@ -244,18 +248,25 @@ function HomePage() {
     ) => {
       try {
         // Prevenir llamadas duplicadas para la misma página en modo append
-        if (append && page <= currentPage) {
-          console.log(
-            '🚫 Evitando carga duplicada de página:',
-            page,
-            'currentPage:',
-            currentPage
-          );
-          return;
+        if (append) {
+          // Usar ref para verificar sin causar re-renders
+          if (page <= currentPageRef.current || isLoadingPageRef.current) {
+            console.log(
+              '🚫 Evitando carga duplicada de página:',
+              page,
+              'currentPageRef:',
+              currentPageRef.current,
+              'isLoading:',
+              isLoadingPageRef.current
+            );
+            return;
+          }
+          isLoadingPageRef.current = true;
         }
 
         if (!append) {
           if (!silent) setLoading(true);
+          isLoadingPageRef.current = false; // Reset al empezar nueva búsqueda
         } else {
           setLoadingMore(true);
         }
@@ -328,13 +339,19 @@ function HomePage() {
             );
             return newList;
           });
-          setCurrentPage(page);
-          setNextPageToLoad(page + 1);
+          const newCurrentPage = page;
+          setCurrentPage(newCurrentPage);
+          currentPageRef.current = newCurrentPage;
+          setNextPageToLoad(newCurrentPage + 1);
+          isLoadingPageRef.current = false; // Reset flag de carga
         } else {
           // Nueva búsqueda: reemplazar lista
           setYoungList(youngArray);
-          setCurrentPage(pagination?.currentPage || 1);
-          setNextPageToLoad((pagination?.currentPage || 1) + 1);
+          const newCurrentPage = pagination?.currentPage || 1;
+          setCurrentPage(newCurrentPage);
+          currentPageRef.current = newCurrentPage;
+          setNextPageToLoad(newCurrentPage + 1);
+          isLoadingPageRef.current = false; // Reset flag de carga
           console.log('📝 Lista reemplazada:', youngArray.length, 'elementos');
         }
 
@@ -351,36 +368,62 @@ function HomePage() {
       } catch (err) {
         console.error('❌ Error al obtener jóvenes:', err);
         setError(err instanceof Error ? err.message : 'Error desconocido');
+        isLoadingPageRef.current = false; // Reset en caso de error
       } finally {
         if (!silent) setLoading(false);
         setLoadingMore(false);
+        if (!append) {
+          isLoadingPageRef.current = false; // Asegurar reset en nuevas búsquedas
+        }
       }
     },
-    [currentPage, filters]
+    [filters] // Removido currentPage de dependencias para evitar re-renders infinitos
   );
 
   // Hook para cargar más contenido con scroll infinito
-  const loadMore = () => {
-    if (!isLoadingMore && hasMore && !loadingMore) {
+  const loadMore = useCallback(() => {
+    // Verificar que no esté cargando y que haya más páginas
+    if (
+      !isLoadingMore &&
+      !loadingMore &&
+      !isLoadingPageRef.current &&
+      hasMore &&
+      nextPageToLoad > currentPageRef.current
+    ) {
       console.log(
         '🔄 Activando carga de más elementos. Página a cargar:',
-        nextPageToLoad
+        nextPageToLoad,
+        'currentPageRef:',
+        currentPageRef.current
       );
       setIsLoadingMore(true);
       fetchYoung(nextPageToLoad, true).finally(() => {
         setIsLoadingMore(false);
       });
+    } else {
+      console.log('🚫 No se puede cargar más:', {
+        isLoadingMore,
+        loadingMore,
+        isLoadingPageRef: isLoadingPageRef.current,
+        hasMore,
+        nextPageToLoad,
+        currentPageRef: currentPageRef.current,
+      });
     }
-  };
+  }, [isLoadingMore, loadingMore, hasMore, nextPageToLoad, fetchYoung]);
 
   // Usar el hook de scroll infinito
   useInfiniteScroll(loadMore, hasMore, loadingMore || isLoadingMore);
 
   // Cargar datos iniciales
   useEffect(() => {
-    fetchYoung();
+    // Inicializar refs
+    currentPageRef.current = 1;
+    isLoadingPageRef.current = false;
+    fetchYoung(1, false);
     fetchAllYoung();
-  }, [fetchYoung]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo ejecutar una vez al montar
 
   // Actualización reactiva del dashboard cuando se asignan puntos
   useEffect(() => {
@@ -422,9 +465,11 @@ function HomePage() {
     console.log('🔍 Aplicando filtros:', newFilters);
     setFilters(newFilters);
     setCurrentPage(1);
+    currentPageRef.current = 1; // Reset ref
     setNextPageToLoad(2);
     setHasMore(true);
     setIsLoadingMore(false);
+    isLoadingPageRef.current = false; // Reset flag de carga
     fetchYoung(1, false, newFilters);
   };
 
