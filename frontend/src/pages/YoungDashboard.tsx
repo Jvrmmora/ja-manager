@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { EyeIcon } from '@heroicons/react/24/outline';
 import ProfileDropdown from '../components/ProfileDropdown';
 import ThemeToggle from '../components/ThemeToggle';
@@ -19,6 +19,7 @@ import logo from '../assets/logos/logo.png';
 import { seasonService } from '../services/seasonService';
 import ToastContainer from '../components/ToastContainer';
 import { useToast } from '../hooks/useToast';
+import { getCurrentDateTimeColombia } from '../utils/dateUtils';
 
 interface YoungDashboardProps {
   onProfileUpdate?: () => void;
@@ -41,6 +42,10 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
   const [showRankingModal, setShowRankingModal] = useState(false);
   const { toasts, showError, removeToast } = useToast();
+  const [currentHour, setCurrentHour] = useState<number>(() => {
+    const now = getCurrentDateTimeColombia();
+    return now.getHours();
+  });
 
   useEffect(() => {
     // Obtener información del usuario
@@ -93,6 +98,44 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
     }
     return 'Usuario';
   };
+
+  // Actualizar la hora cada minuto para actualizar el saludo si cambia
+  useEffect(() => {
+    const updateHour = () => {
+      const now = getCurrentDateTimeColombia();
+      setCurrentHour(now.getHours());
+    };
+    
+    // Actualizar inmediatamente
+    updateHour();
+    
+    // Actualizar cada minuto
+    const interval = setInterval(updateHour, 60000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Función para obtener el saludo según la hora de Colombia
+  const greeting = useMemo(() => {
+    const firstName = getFirstName();
+    
+    if (currentHour >= 5 && currentHour < 12) {
+      return {
+        text: `Buenos días, ${firstName}`,
+        icon: 'wb_sunny', // Icono de sol para la mañana
+      };
+    } else if (currentHour >= 12 && currentHour < 19) {
+      return {
+        text: `Buenas tardes, ${firstName}`,
+        icon: 'brightness_4', // Icono de sol de tarde
+      };
+    } else {
+      return {
+        text: `Buenas noches, ${firstName}`,
+        icon: 'nightlight', // Icono de luna para la noche
+      };
+    }
+  }, [currentHour, userInfo?.fullName]);
 
   const handleOpenChangePassword = () => {
     setShowChangePasswordModal(true);
@@ -274,8 +317,11 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
               </button>
             </div>
 
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              ¡Hola, {getFirstName()}! 👋
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 flex items-center justify-center gap-2">
+              <span className="material-symbols-rounded text-amber-500 dark:text-amber-400 text-4xl">
+                {greeting.icon}
+              </span>
+              {greeting.text}
             </h2>
 
             <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">

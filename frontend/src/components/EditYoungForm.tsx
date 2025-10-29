@@ -117,11 +117,13 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
   };
 
   const validateEmail = (email: string): boolean => {
+    // Si el email está vacío, es válido (opcional)
     if (!email.trim()) {
-      setEmailError('El email es requerido');
-      return false;
+      setEmailError('');
+      return true;
     }
 
+    // Si tiene contenido, validar formato
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setEmailError('Formato de email inválido');
@@ -182,8 +184,8 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
       return;
     }
 
-    // Validar email antes de enviar
-    if (!validateEmail(formData.email)) {
+    // Validar formato de email si está presente (es opcional)
+    if (formData.email.trim() && !validateEmail(formData.email)) {
       return;
     }
 
@@ -368,7 +370,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
 
           {/* Email */}
           <div>
-            <label className="form-label">Email *</label>
+            <label className="form-label">Email (opcional)</label>
             <input
               type="email"
               name="email"
@@ -377,7 +379,6 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
               onBlur={() => validateEmail(formData.email)}
               className={`form-input ${emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
               placeholder="ejemplo@correo.com"
-              required
             />
             {emailError && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -389,39 +390,39 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
           {/* Género */}
           <div>
             <label className="form-label">Género (opcional)</label>
-            <div className="flex gap-4">
-              <label className="flex items-center text-gray-700 dark:text-gray-300">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <label className="flex items-center cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <input
                   type="radio"
                   name="gender"
                   value=""
                   checked={formData.gender === ''}
                   onChange={handleInputChange}
-                  className="mr-2 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  className="mr-2 w-4 h-4 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 cursor-pointer"
                 />
-                No especificado
+                <span className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">No especificado</span>
               </label>
-              <label className="flex items-center text-gray-700 dark:text-gray-300">
+              <label className="flex items-center cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <input
                   type="radio"
                   name="gender"
                   value="masculino"
                   checked={formData.gender === 'masculino'}
                   onChange={handleInputChange}
-                  className="mr-2 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  className="mr-2 w-4 h-4 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 cursor-pointer"
                 />
-                Masculino
+                <span className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">Masculino</span>
               </label>
-              <label className="flex items-center text-gray-700 dark:text-gray-300">
+              <label className="flex items-center cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <input
                   type="radio"
                   name="gender"
                   value="femenino"
                   checked={formData.gender === 'femenino'}
                   onChange={handleInputChange}
-                  className="mr-2 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  className="mr-2 w-4 h-4 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 cursor-pointer"
                 />
-                Femenino
+                <span className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">Femenino</span>
               </label>
             </div>
           </div>

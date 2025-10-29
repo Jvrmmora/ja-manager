@@ -109,10 +109,15 @@ const youngSchema = new Schema<IYoungDocument>(
       default: null,
       unique: true,
       sparse: true, // Permite múltiples valores null pero emails únicos
-      match: [
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        'Por favor ingrese un email válido',
-      ],
+      validate: {
+        validator: function(email: string | null | undefined) {
+          // Permitir null, undefined o strings vacíos
+          if (!email || email.trim() === '') return true;
+          // Si tiene valor, validar formato
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        },
+        message: 'Por favor ingrese un email válido',
+      },
     },
     skills: {
       type: [String],

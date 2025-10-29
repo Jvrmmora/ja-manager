@@ -220,17 +220,26 @@ const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
 
             {/* Ranking */}
             {position ? (
-              <div className="mb-3">
-                <div className="text-5xl font-bold text-white mb-1">
-                  #{position.totalParticipants > 0 ? position.rank : 0}
+              position.rank > 0 && position.totalParticipants > 0 ? (
+                <div className="mb-3">
+                  <div className="text-5xl font-bold text-white mb-1">
+                    #{position.rank}
+                  </div>
+                  <p className="text-sm text-white/80">
+                    de {position.totalParticipants}{' '}
+                    {position.totalParticipants === 1
+                      ? 'participante'
+                      : 'participantes'}
+                  </p>
                 </div>
-                <p className="text-sm text-white/80">
-                  de {position.totalParticipants}{' '}
-                  {position.totalParticipants === 1
-                    ? 'participante'
-                    : 'participantes'}
-                </p>
-              </div>
+              ) : (
+                <div className="mb-3">
+                  <div className="text-3xl font-bold text-white mb-1">#0</div>
+                  <p className="text-sm text-white/80">
+                    Sin puntos aún. ¡Participa en actividades para subir de posición!
+                  </p>
+                </div>
+              )
             ) : (
               <div className="mb-3">
                 <div className="text-3xl font-bold text-white mb-1">—</div>
@@ -240,6 +249,7 @@ const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
 
             {/* Badge si es top 3 */}
             {position &&
+              position.rank > 0 &&
               position.totalParticipants > 0 &&
               getRankingStyles(position.rank).badge && (
                 <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">

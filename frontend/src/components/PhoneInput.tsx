@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 
 interface PhoneInputProps {
   value: string;
@@ -26,6 +26,8 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
   const [selectedCountry, setSelectedCountry] = React.useState(countries[0]);
   const [phoneNumber, setPhoneNumber] = React.useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const cursorPositionRef = useRef<number>(0);
 
   // Inicializar valores cuando el componente se monta
   React.useEffect(() => {
@@ -39,8 +41,61 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
         // Si no tiene código de país, usar el valor completo como número
         setPhoneNumber(value);
       }
+    } else {
+      setPhoneNumber('');
     }
   }, [value]);
+
+  // Función para formatear número colombiano preservando la posición del cursor
+  const formatColombianPhone = (value: string, cursorPos: number): { formatted: string; newCursorPos: number } => {
+    // Remover todo excepto números
+    const digitsOnly = value.replace(/\D/g, '');
+    
+    if (digitsOnly.length === 0) {
+      return { formatted: '', newCursorPos: 0 };
+    }
+
+    // Limitar a 10 dígitos
+    const limitedDigits = digitsOnly.slice(0, 10);
+    
+    // Calcular cuántos dígitos hay antes del cursor en el valor original (sin espacios)
+    const digitsBeforeCursor = value.slice(0, cursorPos).replace(/\D/g, '').length;
+    
+    // Formatear
+    let formatted = '';
+    let newCursorPos = 0;
+    
+    if (limitedDigits.length > 6) {
+      formatted = `${limitedDigits.slice(0, 3)} ${limitedDigits.slice(3, 6)} ${limitedDigits.slice(6)}`;
+    } else if (limitedDigits.length > 3) {
+      formatted = `${limitedDigits.slice(0, 3)} ${limitedDigits.slice(3)}`;
+    } else {
+      formatted = limitedDigits;
+    }
+
+    // Calcular nueva posición del cursor
+    // Si el cursor estaba después del último dígito, ponerlo al final
+    if (digitsBeforeCursor >= limitedDigits.length) {
+      newCursorPos = formatted.length;
+    } else {
+      // Contar espacios antes de la posición objetivo
+      let spacesBefore = 0;
+      let digitCount = 0;
+      for (let i = 0; i < formatted.length; i++) {
+        if (formatted[i] === ' ') {
+          spacesBefore++;
+        } else {
+          digitCount++;
+          if (digitCount >= digitsBeforeCursor) {
+            newCursorPos = i + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    return { formatted, newCursorPos };
+  };
 
   const handleCountryChange = (country: typeof countries[0]) => {
     setSelectedCountry(country);
@@ -56,24 +111,39 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let inputValue = e.target.value;
+    const input = e.target;
+    const cursorPos = input.selectionStart || 0;
+    let inputValue = input.value;
     
-    // Permitir solo números, espacios y guiones
-    inputValue = inputValue.replace(/[^\d\s-]/g, '');
+    // Guardar posición del cursor antes de formatear
+    cursorPositionRef.current = cursorPos;
     
     // Formatear para Colombia: XXX XXX XXXX
-    if (selectedCountry.code === '+57' && inputValue.length > 0) {
-      inputValue = inputValue.replace(/\D/g, ''); // Solo números
-      if (inputValue.length <= 10) {
-        if (inputValue.length > 6) {
-          inputValue = inputValue.replace(/(\d{3})(\d{3})(\d{1,4})/, '$1 $2 $3');
-        } else if (inputValue.length > 3) {
-          inputValue = inputValue.replace(/(\d{3})(\d{1,3})/, '$1 $2');
+    if (selectedCountry.code === '+57') {
+      const { formatted, newCursorPos } = formatColombianPhone(inputValue, cursorPos);
+      inputValue = formatted;
+      
+      setPhoneNumber(inputValue);
+      
+      // Restaurar posición del cursor después de actualizar el estado
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
         }
-      }
+      }, 0);
+    } else {
+      // Para otros países, solo permitir números
+      inputValue = inputValue.replace(/[^\d\s-]/g, '');
+      setPhoneNumber(inputValue);
+      
+      // Mantener posición del cursor
+      setTimeout(() => {
+        if (inputRef.current) {
+          const newPos = Math.min(cursorPos, inputValue.length);
+          inputRef.current.setSelectionRange(newPos, newPos);
+        }
+      }, 0);
     }
-    
-    setPhoneNumber(inputValue);
     
     // Solo enviar el código de país si hay un número
     if (inputValue.trim()) {
@@ -125,7 +195,9 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
           {/* Input del número */}
           <input
+            ref={inputRef}
             type="tel"
+            inputMode="numeric"
             value={phoneNumber}
             onChange={handlePhoneChange}
             placeholder={placeholder}

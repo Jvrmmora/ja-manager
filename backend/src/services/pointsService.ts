@@ -602,9 +602,10 @@ class PointsService {
       (entry: any) => entry._id.toString() === youngId
     );
 
+    // Si el joven no tiene puntos (no aparece en el ranking), retornar posición 0
     if (youngIndex === -1) {
       return {
-        rank: totalParticipants + 1,
+        rank: 0,
         totalParticipants,
         percentile: 0,
       };
