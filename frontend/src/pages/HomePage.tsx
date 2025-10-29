@@ -160,7 +160,6 @@ function HomePage() {
     };
   }, [showAddMenu, showQRMenu, showRankingMenu]);
 
-  const [currentPage, setCurrentPage] = useState(1);
   const [nextPageToLoad, setNextPageToLoad] = useState(2); // Track próxima página para cargar
   const [isLoadingMore, setIsLoadingMore] = useState(false); // Prevenir múltiples llamadas simultáneas
   const [filteredTotal, setFilteredTotal] = useState<number | null>(null); // Total de resultados filtrados
@@ -340,7 +339,6 @@ function HomePage() {
             return newList;
           });
           const newCurrentPage = page;
-          setCurrentPage(newCurrentPage);
           currentPageRef.current = newCurrentPage;
           setNextPageToLoad(newCurrentPage + 1);
           isLoadingPageRef.current = false; // Reset flag de carga
@@ -348,7 +346,6 @@ function HomePage() {
           // Nueva búsqueda: reemplazar lista
           setYoungList(youngArray);
           const newCurrentPage = pagination?.currentPage || 1;
-          setCurrentPage(newCurrentPage);
           currentPageRef.current = newCurrentPage;
           setNextPageToLoad(newCurrentPage + 1);
           isLoadingPageRef.current = false; // Reset flag de carga
@@ -464,7 +461,6 @@ function HomePage() {
   const handleFilterChange = (newFilters: PaginationQuery) => {
     console.log('🔍 Aplicando filtros:', newFilters);
     setFilters(newFilters);
-    setCurrentPage(1);
     currentPageRef.current = 1; // Reset ref
     setNextPageToLoad(2);
     setHasMore(true);
