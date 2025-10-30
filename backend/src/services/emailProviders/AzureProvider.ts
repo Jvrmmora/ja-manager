@@ -195,13 +195,19 @@ export class AzureProvider implements EmailProvider {
     }
     .cta-button {
       display: inline-block;
-      background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
-      color: white;
-      padding: 15px 30px;
+      background: #2563eb;
+      color: #ffffff;
+      padding: 8px 16px;
       text-decoration: none;
       border-radius: 8px;
-      font-weight: bold;
+      font-weight: 500;
+      font-size: 16px;
       margin: 20px 0;
+      text-align: center;
+      transition: background-color 0.2s;
+    }
+    .cta-button:hover {
+      background: #1d4ed8;
     }
     .footer {
       background: #2d3748;
@@ -233,9 +239,9 @@ export class AzureProvider implements EmailProvider {
       <p style="font-size: 16px; color: #4a5568; margin-bottom: 30px">Se ha recibido una nueva solicitud de registro en el sistema:</p>
       <div class="info-box">
         <h3 style="color: #2d3748; margin-top: 0">Información del solicitante:</h3>
-        <p><strong>Nombre:</strong> ${params.toName}</p>
-        <p><strong>Email:</strong> ${params.toEmail}</p>
-        ${params.placa ? `<p><strong>Placa asignada:</strong> ${params.placa}</p>` : ''}
+        <p><strong>Nombre:</strong> ${params.applicantName || params.toName}</p>
+        <p><strong>Email:</strong> <a href="mailto:${params.applicantEmail || params.toEmail}" style="color: #3b82f6; text-decoration: none;">${params.applicantEmail || params.toEmail}</a></p>
+        ${params.placa ? `<p><strong>Placa asignada:</strong> <strong style="color: #3b82f6;">${params.placa}</strong></p>` : ''}
         <p><strong>Fecha de solicitud:</strong> ${new Date().toLocaleDateString('es-CO', {
       year: 'numeric',
       month: 'long',
@@ -246,7 +252,7 @@ export class AzureProvider implements EmailProvider {
       </div>
       <p style="font-size: 16px; color: #4a5568; margin: 30px 0">Por favor, revisa la solicitud en el panel de administración.</p>
       <div style="text-align: center; margin: 40px 0">
-        <a href="https://yellow-river-04315080f.3.azurestaticapps.net/" class="cta-button">📋 Revisar Solicitud</a>
+        <a href="https://yellow-river-04315080f.3.azurestaticapps.net/" class="cta-button" style="display: inline-block; background: #2563eb; color: #ffffff !important; padding: 8px 16px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 16px;">📋 Revisar Solicitud</a>
       </div>
     </div>
     <div class="footer">
@@ -350,13 +356,19 @@ export class AzureProvider implements EmailProvider {
     }
     .cta-button {
       display: inline-block;
-      background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
-      color: white;
-      padding: 15px 30px;
+      background: #2563eb;
+      color: #ffffff;
+      padding: 8px 16px;
       text-decoration: none;
       border-radius: 8px;
-      font-weight: bold;
+      font-weight: 500;
+      font-size: 16px;
       margin: 20px 0;
+      text-align: center;
+      transition: background-color 0.2s;
+    }
+    .cta-button:hover {
+      background: #1d4ed8;
     }
     .steps-list {
       background: #f8fafc;
@@ -505,13 +517,19 @@ export class AzureProvider implements EmailProvider {
     }
     .cta-button {
       display: inline-block;
-      background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
-      color: white;
-      padding: 15px 30px;
+      background: #2563eb;
+      color: #ffffff;
+      padding: 8px 16px;
       text-decoration: none;
       border-radius: 8px;
-      font-weight: bold;
+      font-weight: 500;
+      font-size: 16px;
       margin: 20px 0;
+      text-align: center;
+      transition: background-color 0.2s;
+    }
+    .cta-button:hover {
+      background: #1d4ed8;
     }
     .footer {
       background: #2d3748;

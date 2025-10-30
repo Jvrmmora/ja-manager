@@ -2,15 +2,17 @@ import React, { useState } from 'react';
 // import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth';
 import ThemeToggle from './ThemeToggle';
+import RegistrationModal from './RegistrationModal';
 
 // Importar la imagen
 import logo from '../assets/logos/logo_2.png';
 
 interface LoginProps {
   onLoginSuccess?: () => void;
+  showToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+const Login: React.FC<LoginProps> = ({ onLoginSuccess, showToast }) => {
   // const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
@@ -19,6 +21,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -296,12 +299,25 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             </button>
           </form>
 
-          {/* Footer */}
+          {/* Footer con botón de registro */}
           <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-            <p>Sistema de Gestión de Jóvenes © 2025 by Jamomodev</p>
+            <p className="mb-4">Sistema de Gestión de Jóvenes © 2025 by Jamomodev</p>
+            <button
+              onClick={() => setShowRegistrationModal(true)}
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
+            >
+              ¿No tienes cuenta? Regístrate aquí
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Modal de registro */}
+      <RegistrationModal
+        isOpen={showRegistrationModal}
+        onClose={() => setShowRegistrationModal(false)}
+        showToast={showToast}
+      />
     </div>
   );
 };

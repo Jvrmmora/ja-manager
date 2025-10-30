@@ -18,6 +18,10 @@ const parseFormData = (req: any, res: any, next: any) => {
   next();
 };
 
+// Rutas públicas para validaciones (sin autenticación)
+router.get('/check-email', RegistrationController.checkEmailUnique);
+router.get('/check-placa', RegistrationController.checkPlacaExists);
+
 // Ruta pública para crear solicitud de registro (sin autenticación)
 router.post(
   '/',

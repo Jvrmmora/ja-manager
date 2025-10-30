@@ -26,11 +26,11 @@ export const createYoungSchema = Joi.object({
 
   birthday: Joi.date()
     .max('now')
-    .min(new Date(Date.now() - 50 * 365 * 24 * 60 * 60 * 1000)) // Máximo 50 años atrás
+    .min(new Date('1925-01-01')) // Acepta desde 1925
     .required()
     .messages({
       'date.max': 'La fecha de cumpleaños no puede ser futura',
-      'date.min': 'La fecha de cumpleaños es muy antigua',
+      'date.min': 'La fecha de cumpleaños debe ser desde 1925 en adelante',
       'any.required': 'La fecha de cumpleaños es obligatoria',
     }),
 
@@ -269,7 +269,7 @@ export const partialRegistrationSchema = Joi.object({
 
   birthday: Joi.date()
     .max('now')
-    .min(new Date(Date.now() - 50 * 365 * 24 * 60 * 60 * 1000))
+    .min(new Date('1925-01-01'))
     .required()
     .messages({
       'date.max': 'La fecha de cumpleaños no puede ser futura',

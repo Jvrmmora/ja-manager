@@ -160,18 +160,18 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
       <div className="relative">
         <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-blue-400 focus-within:border-blue-500 dark:focus-within:border-blue-400 bg-white dark:bg-gray-700">
           {/* Dropdown de países */}
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <button
               type="button"
-              className="flex items-center px-3 py-2 bg-gray-50 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors duration-200 focus:outline-none focus:ring-0"
+              className="flex items-center px-3 py-2 bg-gray-50 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors duration-200 focus:outline-none focus:ring-0 whitespace-nowrap"
               onClick={() => {
                 // Aquí podrías implementar un dropdown personalizado si quieres
                 // Por ahora uso el select nativo pero estilizado
               }}
             >
-              <span className="text-xl mr-2">{selectedCountry.flag}</span>
+              <span className="text-xl mr-1.5">{selectedCountry.flag}</span>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{selectedCountry.code}</span>
-              <svg className="w-4 h-4 ml-2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 ml-1.5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -201,7 +201,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
             value={phoneNumber}
             onChange={handlePhoneChange}
             placeholder={placeholder}
-            className={`flex-1 px-3 py-2 focus:outline-none bg-white dark:bg-gray-700 ${
+            className={`flex-1 min-w-0 px-3 py-2 focus:outline-none bg-white dark:bg-gray-700 ${
               error ? 'text-red-900 dark:text-red-300' : 'text-gray-900 dark:text-gray-100'
             } placeholder-gray-500 dark:placeholder-gray-400`}
             maxLength={selectedCountry.code === '+57' ? 13 : 20}

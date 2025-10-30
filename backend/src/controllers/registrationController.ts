@@ -40,18 +40,32 @@ async function generatePlacaForRegistration(fullName: string): Promise<string> {
     }
 
     // Generar el siguiente consecutivo
-    const existingPlaques = await Young.find({
+    // Buscar placas en Young (aprobados) y RegistrationRequest (pendientes) para evitar duplicados
+    const existingYoungPlaques = await Young.find({
         placa: { $regex: /^@MOD/ },
     })
         .select('placa')
         .sort({ placa: -1 })
         .limit(100);
 
+    const existingRequestPlaques = await RegistrationRequest.find({
+        placa: { $regex: /^@MOD/ },
+    })
+        .select('placa')
+        .sort({ placa: -1 })
+        .limit(100);
+
+    // Combinar todas las placas existentes
+    const allExistingPlaques = [
+        ...existingYoungPlaques.map(y => y.placa).filter(Boolean),
+        ...existingRequestPlaques.map(r => r.placa).filter(Boolean),
+    ];
+
     let nextConsecutive = 1;
-    if (existingPlaques.length > 0) {
-        const consecutives = existingPlaques
-            .map(young => {
-                const match = young.placa?.match(/(\d{3})$/);
+    if (allExistingPlaques.length > 0) {
+        const consecutives = allExistingPlaques
+            .map(placa => {
+                const match = placa?.match(/(\d{3})$/);
                 return match ? parseInt(match[1], 10) : 0;
             })
             .filter(num => num > 0);
@@ -66,6 +80,115 @@ async function generatePlacaForRegistration(fullName: string): Promise<string> {
 }
 
 export class RegistrationController {
+    /**
+     * Validar si un email es único (no existe en Young ni en RegistrationRequest pendiente)
+     */
+    static checkEmailUnique = asyncHandler(
+        async (req: Request, res: Response): Promise<void> => {
+            const { email } = req.query;
+
+            if (!email || typeof email !== 'string') {
+                res.status(400).json({
+                    success: false,
+                    exists: false,
+                    message: 'Email requerido',
+                });
+                return;
+            }
+
+            const normalizedEmail = email.trim().toLowerCase();
+
+            // Verificar en Young
+            const existingYoung = await Young.findOne({
+                email: normalizedEmail,
+            });
+
+            if (existingYoung) {
+                res.status(200).json({
+                    success: true,
+                    exists: true,
+                    message: 'Este email ya está registrado',
+                });
+                return;
+            }
+
+            // Verificar en RegistrationRequest pendiente
+            const existingRequest = await RegistrationRequest.findOne({
+                email: normalizedEmail,
+                status: 'pending',
+            });
+
+            if (existingRequest) {
+                res.status(200).json({
+                    success: true,
+                    exists: true,
+                    message: 'Ya existe una solicitud pendiente con este email',
+                });
+                return;
+            }
+
+            res.status(200).json({
+                success: true,
+                exists: false,
+                message: 'Email disponible',
+            });
+        }
+    );
+
+    /**
+     * Validar si una placa de referido existe en Young
+     */
+    static checkPlacaExists = asyncHandler(
+        async (req: Request, res: Response): Promise<void> => {
+            const { placa } = req.query;
+
+            if (!placa || typeof placa !== 'string') {
+                res.status(400).json({
+                    success: false,
+                    exists: false,
+                    message: 'Placa requerida',
+                });
+                return;
+            }
+
+            const normalizedPlaca = placa.trim().toUpperCase();
+
+            // Validar formato
+            const placaRegex = /^@MOD[A-Z]{2,4}\d{3}$/;
+            if (!placaRegex.test(normalizedPlaca)) {
+                res.status(400).json({
+                    success: false,
+                    exists: false,
+                    message: 'Formato de placa inválido',
+                });
+                return;
+            }
+
+            // Verificar si existe en Young
+            const existingYoung = await Young.findOne({
+                placa: normalizedPlaca,
+            });
+
+            if (existingYoung) {
+                res.status(200).json({
+                    success: true,
+                    exists: true,
+                    message: 'Placa encontrada',
+                    data: {
+                        fullName: existingYoung.fullName,
+                    },
+                });
+                return;
+            }
+
+            res.status(200).json({
+                success: true,
+                exists: false,
+                message: 'Placa no encontrada',
+            });
+        }
+    );
+
     /**
      * Crear solicitud de registro parcial
      */
@@ -169,6 +292,9 @@ export class RegistrationController {
                         message: `Nueva solicitud de registro de ${savedRequest.fullName}`,
                         type: 'registration_request',
                         placa: savedRequest.placa,
+                        // Información del solicitante
+                        applicantName: savedRequest.fullName,
+                        applicantEmail: savedRequest.email || '',
                     });
                 }
             } catch (emailError) {

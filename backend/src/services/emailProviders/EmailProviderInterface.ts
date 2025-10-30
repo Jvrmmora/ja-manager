@@ -6,6 +6,9 @@ export interface EmailParams {
   type: 'registration_request' | 'approval' | 'rejection';
   placa?: string;
   rejectionReason?: string;
+  // Para emails de solicitud de registro: información del solicitante
+  applicantName?: string;
+  applicantEmail?: string;
 }
 
 export interface EmailProvider {

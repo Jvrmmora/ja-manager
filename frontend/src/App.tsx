@@ -4,6 +4,8 @@ import Login from './components/Login';
 import HomePage from './pages/HomePage';
 import YoungDashboard from './pages/YoungDashboard';
 import { ThemeProvider } from './context/ThemeContext';
+import ToastContainer from './components/ToastContainer';
+import { useToast } from './hooks/useToast';
 // import LoadingSpinner from './components/LoadingSpinner';
 import { authService } from './services/auth';
 
@@ -11,6 +13,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toasts, showToast, removeToast } = useToast();
 
   useEffect(() => {
     checkAuthStatus();
@@ -121,7 +124,8 @@ function App() {
     console.log('🔐 Mostrando login...');
     return (
       <ThemeProvider>
-        <Login onLoginSuccess={handleLoginSuccess} />
+        <Login onLoginSuccess={handleLoginSuccess} showToast={showToast} />
+        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       </ThemeProvider>
     );
   }
@@ -142,6 +146,7 @@ function App() {
           <HomePage />
         </>
       )}
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </ThemeProvider>
   );
 }
