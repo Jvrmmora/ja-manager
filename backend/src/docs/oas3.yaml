@@ -42,6 +42,8 @@ tags:
     description: Gestión de temporadas para el sistema de puntos y gamificación
   - name: Points
     description: Sistema de puntos, transacciones y gamificación
+  - name: Registration
+    description: Solicitudes de registro parcial para nuevos jóvenes (requiere aprobación del administrador)
 
 paths:
   /health:
@@ -1861,6 +1863,305 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /registration:
+    post:
+      summary: Crear solicitud de registro parcial
+      description: |
+        Crea una solicitud de registro parcial. El usuario proporciona sus datos y contraseña,
+        y se le asigna una placa automáticamente. La solicitud queda en estado "pending" hasta
+        que un Super Admin la apruebe o rechace. Esta ruta es pública (no requiere autenticación).
+
+        **Validaciones:**
+        - Email debe ser único y válido
+        - Contraseña debe cumplir requisitos de seguridad (mínimo 8 caracteres, mayúscula, minúscula, número)
+        - Placa de referido debe existir en el sistema (si se proporciona)
+      tags: [Registration]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - fullName
+                - ageRange
+                - birthday
+                - role
+                - email
+                - password
+                - passwordConfirmation
+              properties:
+                fullName:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                  description: Nombre completo del solicitante
+                  example: 'María González López'
+                ageRange:
+                  type: string
+                  enum: ['13-15', '16-18', '19-21', '22-25', '26-30', '30+']
+                  description: Rango de edad
+                  example: '19-21'
+                phone:
+                  type: string
+                  description: Número de teléfono (opcional)
+                  pattern: '^[+]?[\\d\\s\\-()]{8,15}$'
+                  example: '+573001234567'
+                birthday:
+                  type: string
+                  format: date
+                  description: Fecha de nacimiento
+                  example: '2004-05-15'
+                gender:
+                  type: string
+                  enum: ['masculino', 'femenino', '']
+                  description: Género (opcional)
+                  example: 'femenino'
+                role:
+                  type: string
+                  enum:
+                    - 'lider juvenil'
+                    - 'simpatizante'
+                    - 'joven adventista'
+                    - 'colaborador'
+                    - 'director'
+                    - 'subdirector'
+                    - 'club guias'
+                    - 'club conquistadores'
+                    - 'club aventureros'
+                    - 'escuela sabatica'
+                  description: Rol en la iglesia
+                  example: 'joven adventista'
+                email:
+                  type: string
+                  format: email
+                  description: Email del solicitante (obligatorio para registro)
+                  example: 'maria.gonzalez@example.com'
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 50
+                  description: Contraseña elegida por el usuario
+                  example: 'MiPassword123'
+                passwordConfirmation:
+                  type: string
+                  description: Confirmación de contraseña (debe coincidir con password)
+                  example: 'MiPassword123'
+                skills:
+                  type: string
+                  description: Array de habilidades en formato JSON string (opcional)
+                  example: '["música", "liderazgo"]'
+                group:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: Grupo de clasificación (opcional)
+                  example: 2
+                referredByPlaca:
+                  type: string
+                  pattern: '^@MOD[A-Z]{2,4}\\d{3}$'
+                  description: Placa del joven que lo refirió (opcional, debe existir)
+                  example: '@MODJAVI001'
+                profileImage:
+                  type: string
+                  format: binary
+                  description: Imagen de perfil (opcional)
+      responses:
+        '201':
+          description: Solicitud creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationRequestResponse'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Placa de referido no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email ya está registrado o existe solicitud pendiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    get:
+      summary: Obtener todas las solicitudes de registro
+      description: |
+        Obtiene todas las solicitudes de registro con paginación y filtros.
+        Solo disponible para Super Admin. Retorna solicitudes en estado pending, approved o rejected.
+      tags: [Registration]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Número de página
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Cantidad de resultados por página
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 100
+          description: Búsqueda por nombre, email o placa
+      responses:
+        '200':
+          description: Solicitudes obtenidas exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationRequestListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: No tiene permisos (solo Super Admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /registration/{id}:
+    get:
+      summary: Obtener solicitud de registro por ID
+      description: Obtiene los detalles completos de una solicitud de registro específica. Solo Super Admin.
+      tags: [Registration]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID de la solicitud de registro
+      responses:
+        '200':
+          description: Solicitud obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationRequestDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: No tiene permisos (solo Super Admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Solicitud no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /registration/{id}/review:
+    put:
+      summary: Aprobar o rechazar solicitud de registro
+      description: |
+        Permite a un Super Admin aprobar o rechazar una solicitud de registro.
+
+        **Al aprobar:**
+        - Se crea el joven en el sistema con los datos de la solicitud
+        - Se asigna el rol "Young role"
+        - Se envía email de aprobación al usuario
+
+        **Al rechazar:**
+        - Se marca la solicitud como rechazada
+        - Se puede incluir una razón de rechazo
+        - Se envía email de rechazo al usuario
+      tags: [Registration]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID de la solicitud de registro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [approved, rejected]
+                  description: Estado a asignar a la solicitud
+                  example: approved
+                rejectionReason:
+                  type: string
+                  maxLength: 500
+                  description: Razón del rechazo (solo si status es rejected)
+                  example: 'Datos incompletos o no verificables'
+      responses:
+        '200':
+          description: Solicitud procesada exitosamente
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ReviewApprovalResponse'
+                  - $ref: '#/components/schemas/ReviewRejectionResponse'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: No tiene permisos (solo Super Admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Solicitud no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: La solicitud ya fue procesada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 components:
   schemas:
     Young:
@@ -2759,6 +3060,365 @@ components:
               format: date
               example: '2024-03-31'
 
+    # ===== Registration Schemas =====
+    RegistrationRequestResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: 'Solicitud de registro creada exitosamente. Tu placa asignada es: @MODMARIA001'
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              description: ID de la solicitud creada
+              example: '507f1f77bcf86cd799439011'
+            placa:
+              type: string
+              pattern: '^@MOD[A-Z]{2,4}\\d{3}$'
+              description: Placa asignada automáticamente al solicitante
+              example: '@MODMARIA001'
+            fullName:
+              type: string
+              example: 'María González López'
+            email:
+              type: string
+              format: email
+              example: 'maria.gonzalez@example.com'
+            status:
+              type: string
+              enum: [pending, approved, rejected]
+              example: pending
+
+    RegistrationRequestDetail:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: 'Solicitud obtenida exitosamente'
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              example: '507f1f77bcf86cd799439011'
+            fullName:
+              type: string
+              example: 'María González López'
+            email:
+              type: string
+              format: email
+              example: 'maria.gonzalez@example.com'
+            placa:
+              type: string
+              pattern: '^@MOD[A-Z]{2,4}\\d{3}$'
+              example: '@MODMARIA001'
+            ageRange:
+              type: string
+              enum: ['13-15', '16-18', '19-21', '22-25', '26-30', '30+']
+              example: '19-21'
+            phone:
+              type: string
+              example: '+573001234567'
+            birthday:
+              type: string
+              format: date
+              example: '2004-05-15'
+            gender:
+              type: string
+              enum: [masculino, femenino, '']
+              example: 'femenino'
+            role:
+              type: string
+              example: 'joven adventista'
+            skills:
+              type: array
+              items:
+                type: string
+              example: ['música', 'liderazgo']
+            profileImage:
+              type: string
+              format: uri
+              nullable: true
+              example: 'https://res.cloudinary.com/demo/image/upload/sample.jpg'
+            group:
+              type: integer
+              minimum: 1
+              maximum: 5
+              nullable: true
+              example: 2
+            referredBy:
+              type: object
+              nullable: true
+              properties:
+                id:
+                  type: string
+                  example: '507f1f77bcf86cd799439012'
+                fullName:
+                  type: string
+                  example: 'Javier Montaño'
+                placa:
+                  type: string
+                  example: '@MODJAVI001'
+                email:
+                  type: string
+                  format: email
+                  example: 'jvrm.mora@gmail.com'
+            referredByPlaca:
+              type: string
+              nullable: true
+              example: '@MODJAVI001'
+            status:
+              type: string
+              enum: [pending, approved, rejected]
+              example: pending
+            reviewedBy:
+              type: object
+              nullable: true
+              properties:
+                id:
+                  type: string
+                  example: '507f1f77bcf86cd799439013'
+                fullName:
+                  type: string
+                  example: 'Admin Usuario'
+                email:
+                  type: string
+                  format: email
+                  example: 'admin@example.com'
+            reviewedAt:
+              type: string
+              format: date-time
+              nullable: true
+              example: '2024-01-15T10:30:00.000Z'
+            rejectionReason:
+              type: string
+              nullable: true
+              maxLength: 500
+              example: 'Datos incompletos'
+            createdAt:
+              type: string
+              format: date-time
+              example: '2024-01-10T08:00:00.000Z'
+            updatedAt:
+              type: string
+              format: date-time
+              example: '2024-01-10T08:00:00.000Z'
+
+    RegistrationRequestListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: 'Solicitudes obtenidas exitosamente'
+        data:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: '507f1f77bcf86cd799439011'
+                  fullName:
+                    type: string
+                    example: 'María González López'
+                  email:
+                    type: string
+                    format: email
+                    example: 'maria.gonzalez@example.com'
+                  placa:
+                    type: string
+                    pattern: '^@MOD[A-Z]{2,4}\\d{3}$'
+                    example: '@MODMARIA001'
+                  ageRange:
+                    type: string
+                    enum: ['13-15', '16-18', '19-21', '22-25', '26-30', '30+']
+                    example: '19-21'
+                  phone:
+                    type: string
+                    nullable: true
+                    example: '+573001234567'
+                  birthday:
+                    type: string
+                    format: date
+                    example: '2004-05-15'
+                  gender:
+                    type: string
+                    enum: [masculino, femenino, '']
+                    nullable: true
+                    example: 'femenino'
+                  role:
+                    type: string
+                    example: 'joven adventista'
+                  skills:
+                    type: array
+                    items:
+                      type: string
+                    example: ['música', 'liderazgo']
+                  profileImage:
+                    type: string
+                    format: uri
+                    nullable: true
+                    example: 'https://res.cloudinary.com/demo/image/upload/sample.jpg'
+                  group:
+                    type: integer
+                    minimum: 1
+                    maximum: 5
+                    nullable: true
+                    example: 2
+                  referredBy:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: string
+                        example: '507f1f77bcf86cd799439012'
+                      fullName:
+                        type: string
+                        example: 'Javier Montaño'
+                      placa:
+                        type: string
+                        example: '@MODJAVI001'
+                  referredByPlaca:
+                    type: string
+                    nullable: true
+                    example: '@MODJAVI001'
+                  status:
+                    type: string
+                    enum: [pending, approved, rejected]
+                    example: pending
+                  reviewedBy:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: string
+                        example: '507f1f77bcf86cd799439013'
+                      fullName:
+                        type: string
+                        example: 'Admin Usuario'
+                      email:
+                        type: string
+                        format: email
+                        example: 'admin@example.com'
+                  reviewedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    example: '2024-01-15T10:30:00.000Z'
+                  rejectionReason:
+                    type: string
+                    nullable: true
+                    maxLength: 500
+                    example: null
+                  createdAt:
+                    type: string
+                    format: date-time
+                    example: '2024-01-10T08:00:00.000Z'
+                  updatedAt:
+                    type: string
+                    format: date-time
+                    example: '2024-01-10T08:00:00.000Z'
+            pagination:
+              $ref: '#/components/schemas/PaginationInfo'
+
+    ReviewApprovalResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: 'Solicitud aprobada y joven creado exitosamente'
+        data:
+          type: object
+          properties:
+            request:
+              type: object
+              properties:
+                id:
+                  type: string
+                  example: '507f1f77bcf86cd799439011'
+                status:
+                  type: string
+                  enum: [approved]
+                  example: approved
+            young:
+              type: object
+              properties:
+                id:
+                  type: string
+                  example: '507f1f77bcf86cd799439014'
+                fullName:
+                  type: string
+                  example: 'María González López'
+                placa:
+                  type: string
+                  pattern: '^@MOD[A-Z]{2,4}\\d{3}$'
+                  example: '@MODMARIA001'
+                email:
+                  type: string
+                  format: email
+                  example: 'maria.gonzalez@example.com'
+
+    ReviewRejectionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: 'Solicitud rechazada exitosamente'
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              example: '507f1f77bcf86cd799439011'
+            status:
+              type: string
+              enum: [rejected]
+              example: rejected
+            rejectionReason:
+              type: string
+              nullable: true
+              maxLength: 500
+              example: 'Datos incompletos o no verificables'
+
+    PaginationInfo:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          example: 1
+        totalPages:
+          type: integer
+          example: 5
+        totalItems:
+          type: integer
+          example: 47
+        hasNextPage:
+          type: boolean
+          example: true
+        hasPreviousPage:
+          type: boolean
+          example: false
+
     ErrorResponse:
       type: object
       properties:
@@ -2831,8 +3491,16 @@ components:
 
         **Scopes disponibles:**
         - `young:read` - Leer información de jóvenes
-        - `young:write` - Crear y actualizar jóvenes
+        - `young:create` - Crear jóvenes
+        - `young:update` - Actualizar jóvenes
         - `young:delete` - Eliminar jóvenes
+        - `young:stats` - Ver estadísticas de jóvenes
+        - `placa:generate` - Generar placa para jóvenes
+        - `password:reset` - Resetear contraseñas
         - `import:read` - Descargar plantillas y exportar datos
-        - `import:write` - Importar datos desde Excel
-        - `admin:all` - Acceso completo a todas las funciones
+        - `import:create` - Importar datos desde Excel
+        - `registration:create` - Crear solicitud de registro
+        - `registration:read` - Ver solicitudes de registro
+        - `registration:review` - Revisar solicitudes de registro
+        - `system:health` - Verificar estado del sistema
+        - `auth:login` - Iniciar sesión

@@ -182,6 +182,29 @@ export const getCurrentUserProfile = async (): Promise<any> => {
   return result.data; // Devolver directamente los datos del usuario
 };
 
+// Función para crear solicitud de registro (pública, no requiere autenticación)
+export const createRegistrationRequest = async (
+  formData: FormData
+): Promise<any> => {
+  const url = buildApiUrl('registration');
+  
+  // Esta ruta no requiere token
+  const response = await fetch(url, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(
+      errorData.message || errorData.error?.message || 'Error al crear solicitud de registro'
+    );
+  }
+
+  const result = await response.json();
+  return result;
+};
+
 // ========== FUNCIONES QR Y ASISTENCIAS ==========
 
 // Generar QR del día (solo administradores)

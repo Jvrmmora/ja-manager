@@ -241,3 +241,151 @@ export const resetPasswordSchema = Joi.object({
       'any.required': 'La nueva contraseña es obligatoria',
     }),
 });
+
+// Esquema para registro parcial (con password y verificación)
+export const partialRegistrationSchema = Joi.object({
+  fullName: Joi.string().trim().min(2).max(100).required().messages({
+    'string.empty': 'El nombre completo es obligatorio',
+    'string.min': 'El nombre debe tener al menos 2 caracteres',
+    'string.max': 'El nombre no puede exceder 100 caracteres',
+  }),
+
+  ageRange: Joi.string()
+    .valid('13-15', '16-18', '19-21', '22-25', '26-30', '30+')
+    .required()
+    .messages({
+      'any.only': 'Rango de edad no válido',
+      'any.required': 'El rango de edad es obligatorio',
+    }),
+
+  phone: Joi.string()
+    .trim()
+    .pattern(/^[\+]?[\d\s\-\(\)]{8,15}$/)
+    .optional()
+    .allow('')
+    .messages({
+      'string.pattern.base': 'Formato de teléfono no válido',
+    }),
+
+  birthday: Joi.date()
+    .max('now')
+    .min(new Date(Date.now() - 50 * 365 * 24 * 60 * 60 * 1000))
+    .required()
+    .messages({
+      'date.max': 'La fecha de cumpleaños no puede ser futura',
+      'date.min': 'La fecha de cumpleaños es muy antigua',
+      'any.required': 'La fecha de cumpleaños es obligatoria',
+    }),
+
+  profileImage: Joi.string().uri().optional().allow(null, '').messages({
+    'string.uri': 'La URL de la imagen no es válida',
+  }),
+
+  gender: Joi.string()
+    .valid('masculino', 'femenino', '')
+    .optional()
+    .allow('')
+    .messages({
+      'any.only': 'El género debe ser masculino, femenino o no especificado',
+    }),
+
+  role: Joi.string()
+    .valid(
+      'lider juvenil',
+      'simpatizante',
+      'joven adventista',
+      'colaborador',
+      'director',
+      'subdirector',
+      'club guias',
+      'club conquistadores',
+      'club aventureros',
+      'escuela sabatica'
+    )
+    .required()
+    .messages({
+      'any.only': 'Rol no válido',
+      'any.required': 'El rol es obligatorio',
+    }),
+
+  email: Joi.string()
+    .email()
+    .trim()
+    .lowercase()
+    .required()
+    .messages({
+      'string.email': 'Formato de email no válido',
+      'any.required': 'El email es obligatorio para el registro',
+    }),
+
+  password: Joi.string()
+    .min(8)
+    .max(50)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&._\-+=]{8,50}$/)
+    .required()
+    .messages({
+      'string.empty': 'La contraseña es obligatoria',
+      'string.min': 'La contraseña debe tener al menos 8 caracteres',
+      'string.max': 'La contraseña no puede exceder 50 caracteres',
+      'string.pattern.base':
+        'La contraseña debe incluir al menos una mayúscula, una minúscula y un número. Caracteres especiales permitidos: @$!%*?&._-+=',
+      'any.required': 'La contraseña es obligatoria',
+    }),
+
+  passwordConfirmation: Joi.string()
+    .valid(Joi.ref('password'))
+    .required()
+    .messages({
+      'any.only': 'Las contraseñas no coinciden',
+      'any.required': 'La confirmación de contraseña es obligatoria',
+    }),
+
+  skills: Joi.array()
+    .items(
+      Joi.string().trim().min(2).max(50).messages({
+        'string.min': 'Cada habilidad debe tener al menos 2 caracteres',
+        'string.max': 'Cada habilidad no puede exceder 50 caracteres',
+      })
+    )
+    .default([])
+    .optional(),
+
+  group: Joi.number().integer().min(1).max(5).optional().messages({
+    'number.base': 'El grupo debe ser un número',
+    'number.min': 'El grupo debe ser entre 1 y 5',
+    'number.max': 'El grupo debe ser entre 1 y 5',
+  }),
+
+  referredByPlaca: Joi.string()
+    .trim()
+    .pattern(/^@MOD[A-Z]{2,4}\d{3}$/)
+    .optional()
+    .allow('', null)
+    .messages({
+      'string.pattern.base': 'Formato de placa de referido no válido',
+    }),
+});
+
+// Esquema para aprobar/rechazar solicitud
+export const reviewRequestSchema = Joi.object({
+  status: Joi.string()
+    .valid('approved', 'rejected')
+    .required()
+    .messages({
+      'any.only': 'El estado debe ser approved o rejected',
+      'any.required': 'El estado es obligatorio',
+    }),
+  rejectionReason: Joi.string()
+    .trim()
+    .max(500)
+    .optional()
+    .allow('', null)
+    .when('status', {
+      is: 'rejected',
+      then: Joi.optional(),
+      otherwise: Joi.forbidden(),
+    })
+    .messages({
+      'string.max': 'La razón de rechazo no puede exceder 500 caracteres',
+    }),
+});

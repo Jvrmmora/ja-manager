@@ -38,6 +38,11 @@ export const SCOPES = {
   
   // Auth endpoints
   'auth:login': 'Iniciar sesión',
+  
+  // Registration endpoints
+  'registration:create': 'Crear solicitud de registro',
+  'registration:read': 'Ver solicitudes de registro',
+  'registration:review': 'Revisar solicitudes de registro',
 } as const;
 
 /**

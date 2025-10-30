@@ -12,6 +12,7 @@ import qrRoutes from './routes/qrRoutes';
 import attendanceRoutes from './routes/attendanceRoutes';
 import seasonRoutes from './routes/seasonRoutes';
 import pointsRoutes from './routes/pointsRoutes';
+import registrationRoutes from './routes/registrationRoutes';
 import { DatabaseSeeder } from './seeders/DatabaseSeeder';
 import { authenticateToken } from './middleware/auth';
 import { ensureDatabaseConnection } from './middleware/databaseCheck';
@@ -159,6 +160,9 @@ const setupRoutes = () => {
 
   // Rutas de autenticación (algunas requieren BD pero no autenticación previa)
   app.use('/api/auth', ensureDatabaseConnection, authRoutes);
+
+  // Rutas de registro (públicas para crear solicitud, protegidas para gestión)
+  app.use('/api/registration', ensureDatabaseConnection, registrationRoutes);
 
   // Rutas protegidas que requieren autenticación y conexión a BD
   app.use(
