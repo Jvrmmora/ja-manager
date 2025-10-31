@@ -31,7 +31,6 @@ const RegistrationRequestsManager: React.FC<RegistrationRequestsManagerProps> = 
   const [filters, setFilters] = useState<RegistrationRequestsPaginationQuery>({
     page: 1,
     limit: 10,
-    status: undefined,
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
@@ -94,11 +93,18 @@ const RegistrationRequestsManager: React.FC<RegistrationRequestsManagerProps> = 
   }, [loadRequests]);
 
   const handleStatusFilter = (status: RegistrationRequestStatus | undefined) => {
-    setFilters(prev => ({
-      ...prev,
-      status,
-      page: 1,
-    }));
+    setFilters(prev => {
+      const newFilters: RegistrationRequestsPaginationQuery = {
+        ...prev,
+        page: 1,
+      };
+      if (status) {
+        newFilters.status = status;
+      } else {
+        delete newFilters.status;
+      }
+      return newFilters;
+    });
   };
 
   const handleSearch = (value: string) => {
@@ -142,10 +148,16 @@ const RegistrationRequestsManager: React.FC<RegistrationRequestsManagerProps> = 
 
     try {
       setActionLoading(rejectingRequest.id);
-      await reviewRegistrationRequest(rejectingRequest.id, {
+      const reviewData: {
+        status: 'rejected';
+        rejectionReason?: string;
+      } = {
         status: 'rejected',
-        rejectionReason: rejectionReason.trim() || undefined,
-      });
+      };
+      if (rejectionReason.trim()) {
+        reviewData.rejectionReason = rejectionReason.trim();
+      }
+      await reviewRegistrationRequest(rejectingRequest.id, reviewData);
       onShowSuccess?.(
         `Solicitud de ${rejectingRequest.fullName} rechazada exitosamente`
       );

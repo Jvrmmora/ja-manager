@@ -316,7 +316,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, showToast }) => {
       <RegistrationModal
         isOpen={showRegistrationModal}
         onClose={() => setShowRegistrationModal(false)}
-        showToast={showToast}
+        {...(showToast && { showToast })}
       />
     </div>
   );
