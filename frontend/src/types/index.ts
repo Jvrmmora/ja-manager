@@ -260,3 +260,52 @@ export interface ILeaderboardEntry {
   };
   streak?: number;
 }
+
+// ===== Solicitudes de Registro =====
+export type RegistrationRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface IRegistrationRequest {
+  id: string;
+  fullName: string;
+  ageRange: string;
+  phone?: string;
+  birthday: Date | string;
+  gender?: 'masculino' | 'femenino' | '';
+  role: string;
+  email?: string;
+  skills: string[];
+  profileImage?: string;
+  group?: number;
+  placa?: string;
+  referredBy?: {
+    id: string;
+    fullName: string;
+    placa?: string;
+    email?: string;
+  } | null;
+  referredByPlaca?: string;
+  status: RegistrationRequestStatus;
+  reviewedBy?: {
+    id: string;
+    fullName: string;
+    email?: string;
+  } | null;
+  reviewedAt?: Date | string;
+  rejectionReason?: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+export interface IReviewRequest {
+  status: 'approved' | 'rejected';
+  rejectionReason?: string;
+}
+
+export interface RegistrationRequestsPaginationQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: RegistrationRequestStatus;
+  sortBy?: 'createdAt' | 'fullName' | 'email' | 'status';
+  sortOrder?: 'asc' | 'desc';
+}

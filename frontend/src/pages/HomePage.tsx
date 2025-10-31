@@ -14,11 +14,13 @@ import QRGenerator from '../components/QRGenerator';
 import AttendanceList from '../components/AttendanceList';
 import LeaderboardSection from '../components/LeaderboardSection';
 import SeasonManager from '../components/SeasonManager';
+import RegistrationRequestsManager from '../components/RegistrationRequestsManager';
 import {
   apiRequest,
   apiUpload,
   debugAuthState,
   getCurrentUserProfile,
+  getAllRegistrationRequests,
 } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import type { IYoung, PaginationQuery } from '../types';
@@ -109,9 +111,11 @@ function HomePage() {
   // Estados para nuevas secciones
   const [showLeaderboardSection, setShowLeaderboardSection] = useState(false);
   const [showSeasonsSection, setShowSeasonsSection] = useState(false);
+  const [showRegistrationRequestsSection, setShowRegistrationRequestsSection] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showQRMenu, setShowQRMenu] = useState(false);
   const [showRankingMenu, setShowRankingMenu] = useState(false);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   // Refs para cerrar dropdowns al hacer clic fuera
   const addMenuRef = useRef<HTMLDivElement | null>(null);
@@ -412,13 +416,29 @@ function HomePage() {
   // Usar el hook de scroll infinito
   useInfiniteScroll(loadMore, hasMore, loadingMore || isLoadingMore);
 
-  // Cargar datos iniciales
+  // Cargar datos iniciales y perfil del usuario
   useEffect(() => {
     // Inicializar refs
     currentPageRef.current = 1;
     isLoadingPageRef.current = false;
     fetchYoung(1, false);
     fetchAllYoung();
+    
+    // Cargar perfil del usuario actual
+    const loadCurrentUser = async () => {
+      try {
+        const userData = await getCurrentUserProfile();
+        setCurrentUser(userData);
+        
+        // Si es Super Admin, cargar conteo de solicitudes pendientes
+        if (userData?.role_name === 'Super Admin') {
+          loadPendingRequestsCount();
+        }
+      } catch (error) {
+        console.error('Error loading current user:', error);
+      }
+    };
+    loadCurrentUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Solo ejecutar una vez al montar
 
@@ -732,7 +752,38 @@ function HomePage() {
   const handleProfileUpdated = (updatedUser: IYoung) => {
     setCurrentUser(updatedUser);
     showSuccess('Perfil actualizado exitosamente');
+    
+    // Si es Super Admin, actualizar conteo de solicitudes pendientes
+    if (updatedUser?.role_name === 'Super Admin') {
+      loadPendingRequestsCount();
+    }
   };
+
+  // Función para cargar el conteo de solicitudes pendientes
+  const loadPendingRequestsCount = async () => {
+    try {
+      const result = await getAllRegistrationRequests({
+        page: 1,
+        limit: 1,
+        status: 'pending',
+      });
+      setPendingRequestsCount(result.pagination?.totalItems || 0);
+    } catch (error) {
+      console.error('Error loading pending requests count:', error);
+      setPendingRequestsCount(0);
+    }
+  };
+
+  // Verificar si el usuario es Super Admin
+  const isSuperAdmin = currentUser?.role_name === 'Super Admin';
+
+  // Cargar conteo de solicitudes pendientes cuando se abre la sección
+  useEffect(() => {
+    if (showRegistrationRequestsSection && isSuperAdmin) {
+      loadPendingRequestsCount();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showRegistrationRequestsSection, isSuperAdmin]);
 
   const displayTotal =
     filteredTotal !== null ? filteredTotal : allYoungList.length;
@@ -903,6 +954,26 @@ function HomePage() {
                 </div>
               )}
             </div>
+
+            {/* Botón para Gestión de Solicitudes (solo Super Admin) */}
+            {isSuperAdmin && (
+              <button
+                onClick={() => {
+                  setShowRegistrationRequestsSection(true);
+                }}
+                className="relative inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition-all shadow"
+              >
+                <span className="material-symbols-rounded text-base">
+                  assignment_ind
+                </span>
+                <span>Solicitudes</span>
+                {pendingRequestsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full border-2 border-white dark:border-gray-800">
+                    {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* Split button: Ver Ranking + menú (incluye Gestión Temporadas) */}
             <div className="relative inline-flex" ref={rankingMenuRef}>
@@ -1272,6 +1343,47 @@ function HomePage() {
                 <SeasonManager
                   onShowSuccess={showSuccess}
                   onShowError={showError}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sección de Gestión de Solicitudes de Registro (solo Super Admin) */}
+        {showRegistrationRequestsSection && isSuperAdmin && (
+          <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <span className="material-symbols-rounded text-3xl text-purple-600 dark:text-purple-400">
+                      assignment_ind
+                    </span>
+                    Gestión de Solicitudes de Registro
+                  </h2>
+                  <button
+                    onClick={() => setShowRegistrationRequestsSection(false)}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <RegistrationRequestsManager
+                  onShowSuccess={showSuccess}
+                  onShowError={showError}
+                  onPendingCountChange={setPendingRequestsCount}
                 />
               </div>
             </div>

@@ -566,6 +566,7 @@ class PointsService {
 
   /**
    * Obtener la posición de un joven específico en el ranking
+   * Usa la misma lógica de ordenamiento que getLeaderboard (puntos, racha, nombre)
    */
   async getYoungPosition(youngId: string, seasonId?: string) {
     // Obtener temporada activa o usar la especificada
@@ -583,8 +584,8 @@ class PointsService {
 
     const sid = season._id;
 
-    // Obtener todos los puntos totales ordenados
-    const allTotals = await PointsTransaction.aggregate([
+    // Usar la misma lógica que getLeaderboard para obtener el ranking completo
+    const aggregation: any[] = [
       { $match: { seasonId: new mongoose.Types.ObjectId(sid as any) } },
       {
         $group: {
@@ -592,14 +593,88 @@ class PointsService {
           totalPoints: { $sum: '$points' },
         },
       },
-      { $sort: { totalPoints: -1 } },
-    ]);
+      {
+        $lookup: {
+          from: 'youngs',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'young',
+        },
+      },
+      { $unwind: '$young' },
+      // Traer racha vigente
+      {
+        $lookup: {
+          from: 'streaks',
+          let: { youngId: '$_id' },
+          pipeline: [
+            { $match: { $expr: { $and: [{ $eq: ['$youngId', '$$youngId'] }, { $eq: ['$seasonId', new mongoose.Types.ObjectId(sid as any)] }] } } },
+            { $project: { currentStreakWeeks: 1, lastAttendanceSaturday: 1 } },
+          ],
+          as: 'streak',
+        },
+      },
+      { $unwind: { path: '$streak', preserveNullAndEmptyArrays: true } },
+    ];
 
-    const totalParticipants = allTotals.length;
+    // Ordenar igual que getLeaderboard: puntos, racha, nombre
+    aggregation.push({
+      $sort: {
+        totalPoints: -1,
+        'streak.currentStreakWeeks': -1,
+        'young.fullName': 1,
+      },
+    });
+
+    // Proyectar campos necesarios
+    aggregation.push({
+      $project: {
+        youngId: '$_id',
+        youngName: '$young.fullName',
+        totalPoints: 1,
+        streak: '$streak.currentStreakWeeks',
+        streakLastAttendanceSaturday: '$streak.lastAttendanceSaturday',
+        _id: 0,
+      },
+    });
+
+    const allTotals = await PointsTransaction.aggregate(aggregation);
+
+    // Aplicar el mismo ajuste de racha que getLeaderboard
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // domingo
+    const currentSaturday = new Date(weekStart);
+    currentSaturday.setDate(weekStart.getDate() + 6);
+    currentSaturday.setHours(0, 0, 0, 0);
+
+    const adjusted = allTotals.map((r: any) => {
+      let effectiveStreak = r.streak || 0;
+      if (r.streakLastAttendanceSaturday) {
+        const last = new Date(r.streakLastAttendanceSaturday);
+        const weeksBetween = Math.round(
+          (currentSaturday.getTime() - last.getTime()) / (7 * 24 * 60 * 60 * 1000)
+        );
+        if (weeksBetween >= 3) {
+          effectiveStreak = 0;
+        }
+      }
+      return { ...r, streak: effectiveStreak };
+    });
+
+    // Re-ordenar después del ajuste de racha
+    adjusted.sort((a: any, b: any) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      if ((b.streak || 0) !== (a.streak || 0)) return (b.streak || 0) - (a.streak || 0);
+      return (a.youngName || '').localeCompare(b.youngName || '');
+    });
+
+    const totalParticipants = adjusted.length;
 
     // Encontrar la posición del joven específico
-    const youngIndex = allTotals.findIndex(
-      (entry: any) => entry._id.toString() === youngId
+    const youngIndex = adjusted.findIndex(
+      (entry: any) => entry.youngId.toString() === youngId
     );
 
     // Si el joven no tiene puntos (no aparece en el ranking), retornar posición 0

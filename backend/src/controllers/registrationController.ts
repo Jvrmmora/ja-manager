@@ -345,15 +345,22 @@ export class RegistrationController {
                 search,
                 sortBy,
                 sortOrder,
+                status,
             }: {
                 page?: number;
                 limit?: number;
                 search?: string;
                 sortBy?: string;
                 sortOrder?: string;
+                status?: string;
             } = value;
 
             const filters: any = {};
+
+            // Filtrar por estado si se proporciona
+            if (status && ['pending', 'approved', 'rejected'].includes(status)) {
+                filters.status = status;
+            }
 
             if (search && search.trim() !== '') {
                 filters.$or = [

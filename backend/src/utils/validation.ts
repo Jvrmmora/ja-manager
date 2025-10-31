@@ -197,6 +197,10 @@ export const querySchema = Joi.object({
     )
     .optional()
     .allow(''),
+  status: Joi.string()
+    .valid('pending', 'approved', 'rejected')
+    .optional()
+    .allow(''),
   sortBy: Joi.string()
     .valid(
       'fullName',
