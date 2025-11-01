@@ -14,8 +14,13 @@ interface LoginProps {
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess, showToast }) => {
   // const navigate = useNavigate();
+  
+  // Leer query params para pre-rellenar placa desde QR
+  const urlParams = new URLSearchParams(window.location.search);
+  const placaFromQR = urlParams.get('placa') || '';
+  
   const [formData, setFormData] = useState({
-    username: '',
+    username: placaFromQR,
     password: ''
   });
   const [loading, setLoading] = useState(false);

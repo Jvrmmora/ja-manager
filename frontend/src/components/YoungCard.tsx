@@ -7,6 +7,7 @@ import DeleteConfirmModal from './DeleteConfirmModal';
 import PointsCard from './PointsCard';
 import PointsBreakdownModal from './PointsBreakdownModal';
 import AssignPointsModal from './AssignPointsModal';
+import WelcomeCard from './WelcomeCard';
 import { generatePlaca } from '../services/api';
 import { authService } from '../services/auth';
 import { formatBirthdayWithYear, formatDateTime } from '../utils/dateUtils';
@@ -54,6 +55,7 @@ const YoungCard: React.FC<YoungCardProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showPointsModal, setShowPointsModal] = useState(false);
   const [showAssignPointsModal, setShowAssignPointsModal] = useState(false);
+  const [showWelcomeCard, setShowWelcomeCard] = useState(false);
 
   // Obtener información del usuario actual
   const currentUser = authService.getUserInfo();
@@ -253,6 +255,27 @@ const YoungCard: React.FC<YoungCardProps> = ({
 
           {/* Botones de acción */}
           <div className="flex items-center gap-2 flex-shrink-0">
+            {young.placa && (
+              <button
+                onClick={() => setShowWelcomeCard(true)}
+                className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors flex-shrink-0"
+                title="Ver tarjeta de bienvenida"
+              >
+                <svg
+                  className="w-4 h-4 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </button>
+            )}
             <button
               onClick={handleEdit}
               className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors flex-shrink-0"
@@ -555,6 +578,40 @@ const YoungCard: React.FC<YoungCardProps> = ({
         youngName={young.fullName}
         loading={isDeleting}
       />
+
+      {/* Modal de Tarjeta de Bienvenida */}
+      {showWelcomeCard && young.placa && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+          onClick={() => setShowWelcomeCard(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Botón de cerrar */}
+            <button
+              onClick={() => setShowWelcomeCard(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <WelcomeCard young={young} />
+          </div>
+        </div>
+      )}
 
       {/* Modal de desglose de puntos */}
       <PointsBreakdownModal

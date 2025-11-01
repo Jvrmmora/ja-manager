@@ -105,20 +105,20 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
       const now = getCurrentDateTimeColombia();
       setCurrentHour(now.getHours());
     };
-    
+
     // Actualizar inmediatamente
     updateHour();
-    
+
     // Actualizar cada minuto
     const interval = setInterval(updateHour, 60000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
   // Función para obtener el saludo según la hora de Colombia
   const greeting = useMemo(() => {
     const firstName = getFirstName();
-    
+
     if (currentHour >= 5 && currentHour < 12) {
       return {
         text: `Buenos días, ${firstName}`,
