@@ -114,15 +114,49 @@ Debe mostrar el XML con las URLs de tu sitio.
 
 ## 📝 Próximos Pasos Recomendados
 
-### 1. Crear Imagen OG (Open Graph)
+### 1. ✅ Crear Imagen OG (Open Graph) - CRÍTICO PARA WHATSAPP
 
-Crea una imagen `og-image.jpg` de 1200x630px y súbela a `/public/og-image.jpg`
+**IMPORTANTE:** Para que WhatsApp muestre el logo al compartir, necesitas crear la imagen OG.
 
-Contenido sugerido:
+**Ubicación:** `frontend/public/og-image.jpg`
 
-- Logo de Jóvenes Modelia
-- Texto: "Jóvenes Modelia - Plataforma Digital"
-- Colores de la marca (#3B82F6)
+**Especificaciones:**
+
+- Tamaño: 1200x630 píxeles (ratio 1.91:1)
+- Formato: JPG
+- Contenido sugerido:
+  - Logo de Jóvenes Modelia
+  - Texto: "Jóvenes Modelia - Plataforma Digital"
+  - Colores de la marca (#3B82F6)
+
+**Opciones para generar:**
+
+1. **Script automático (bash):**
+
+   ```bash
+   cd frontend
+   ./scripts/generate-og-image.sh
+   ```
+
+   Requiere: `brew install imagemagick` (macOS) o `sudo apt-get install imagemagick` (Linux)
+
+2. **Script automático (Node.js):**
+
+   ```bash
+   cd frontend
+   npm install --save-dev sharp
+   node scripts/generate-og-image.js
+   ```
+
+3. **Manualmente:**
+   - Ver instrucciones detalladas en: `frontend/scripts/README.md`
+
+**Después de crear la imagen:**
+
+1. Publica los cambios
+2. Limpia la caché de WhatsApp en: https://developers.facebook.com/tools/debug/
+3. Ingresa tu URL y haz clic en "Scrape Again"
+4. Comparte el enlace en WhatsApp para verificar
 
 ### 2. Actualizar Sitemap dinámicamente
 
