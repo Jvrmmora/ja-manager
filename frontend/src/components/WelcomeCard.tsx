@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
-import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import type { IYoung } from '../types';
 import logo2 from '../assets/logos/logo_2.png';
 
@@ -12,7 +12,7 @@ interface WelcomeCardProps {
 
 const WelcomeCard: React.FC<WelcomeCardProps> = ({ young, onDownload }) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   // Generar URL de login con la placa para acceso rápido
   // Como la app usa App.tsx para manejar rutas, simplemente apuntamos a la raíz
@@ -21,10 +21,10 @@ const WelcomeCard: React.FC<WelcomeCardProps> = ({ young, onDownload }) => {
     ? `${window.location.origin}?placa=${encodeURIComponent(young.placa)}`
     : `${window.location.origin}`;
 
-  const handleDownload = async () => {
+  const handleShare = async () => {
     if (!cardRef.current) return;
 
-    setIsDownloading(true);
+    setIsSharing(true);
     try {
       // Generar imagen del canvas
       const canvas = await html2canvas(cardRef.current, {
@@ -35,29 +35,61 @@ const WelcomeCard: React.FC<WelcomeCardProps> = ({ young, onDownload }) => {
         allowTaint: true,
       });
 
-      // Convertir a blob y descargar
-      canvas.toBlob((blob) => {
+      // Convertir a blob
+      canvas.toBlob(async (blob) => {
         if (!blob) {
           console.error('Error generando imagen');
-          setIsDownloading(false);
+          setIsSharing(false);
           return;
         }
 
+        const fileName = `tarjeta_bienvenida_${young.placa || 'usuario'}.png`;
+        const file = new File([blob], fileName, { type: 'image/png' });
+
+        // Intentar usar Web Share API si está disponible
+        if (navigator.share) {
+          try {
+            // Verificar si se puede compartir el archivo
+            const canShareFile = navigator.canShare && navigator.canShare({ files: [file] });
+            
+            if (canShareFile) {
+              await navigator.share({
+                title: `Tarjeta de bienvenida - ${young.fullName}`,
+                text: `¡Mira mi tarjeta de bienvenida de Jóvenes Modelia! ${young.placa ? `Mi placa es: ${young.placa}` : ''}`,
+                files: [file],
+              });
+              setIsSharing(false);
+              onDownload?.();
+              return;
+            }
+          } catch (shareError: any) {
+            // Si el usuario cancela la compartición, no es un error real
+            if (shareError.name !== 'AbortError') {
+              console.log('Error al compartir, usando descarga como fallback:', shareError);
+              // Continuar con el fallback de descarga
+            } else {
+              setIsSharing(false);
+              return;
+            }
+          }
+        }
+
+        // Fallback: descargar si Web Share API no está disponible
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `tarjeta_bienvenida_${young.placa || 'usuario'}.png`;
+        link.download = fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
 
-        setIsDownloading(false);
+        setIsSharing(false);
         onDownload?.();
       }, 'image/png');
     } catch (error) {
       console.error('Error al exportar imagen:', error);
-      setIsDownloading(false);
+      setIsSharing(false);
     }
   };
 
@@ -126,14 +158,14 @@ const WelcomeCard: React.FC<WelcomeCardProps> = ({ young, onDownload }) => {
         </div>
       </div>
 
-      {/* Botón de descarga */}
+      {/* Botón de compartir */}
       <button
-        onClick={handleDownload}
-        disabled={isDownloading}
+        onClick={handleShare}
+        disabled={isSharing}
         className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <ArrowDownTrayIcon className="w-5 h-5" />
-        {isDownloading ? 'Generando...' : 'Descargar tarjeta'}
+        <ArrowUpTrayIcon className="w-5 h-5" />
+        {isSharing ? 'Generando...' : 'Compartir tarjeta'}
       </button>
     </div>
   );
