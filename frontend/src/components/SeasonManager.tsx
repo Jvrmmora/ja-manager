@@ -313,7 +313,9 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
         }}
         onConfirm={confirmDelete}
         seasonName={deletingSeason?.name || 'esta temporada'}
-        isActive={deletingSeason?.status === 'ACTIVE' || deletingSeason?.isActive}
+        isActive={
+          !!(deletingSeason?.status === 'ACTIVE' || deletingSeason?.isActive)
+        }
         loading={!!actionLoading}
       />
     </div>
