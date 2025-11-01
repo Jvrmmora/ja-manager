@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { seasonService } from '../services/seasonService';
 import type { ISeason } from '../types';
 import SeasonModal from './SeasonModal';
-import DeleteConfirmModal from './DeleteConfirmModal';
+import SeasonDeleteConfirmModal from './SeasonDeleteConfirmModal';
 
 interface SeasonManagerProps {
   onShowSuccess?: (message: string) => void;
@@ -267,18 +267,16 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
                           <span className="material-symbols-rounded">edit</span>
                         </button>
 
-                        {/* Botón eliminar (solo si no está activa) */}
-                        {!season.isActive && (
-                          <button
-                            onClick={() => handleDelete(season)}
-                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                            title="Eliminar temporada"
-                          >
-                            <span className="material-symbols-rounded">
-                              delete
-                            </span>
-                          </button>
-                        )}
+                        {/* Botón eliminar - disponible para todas las temporadas */}
+                        <button
+                          onClick={() => handleDelete(season)}
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          title="Eliminar temporada"
+                        >
+                          <span className="material-symbols-rounded">
+                            delete
+                          </span>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -307,14 +305,15 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
       />
 
       {/* Modal confirmar eliminación */}
-      <DeleteConfirmModal
+      <SeasonDeleteConfirmModal
         isOpen={showDeleteModal}
         onClose={() => {
           setShowDeleteModal(false);
           setDeletingSeason(null);
         }}
         onConfirm={confirmDelete}
-        youngName={deletingSeason?.name || 'esta temporada'}
+        seasonName={deletingSeason?.name || 'esta temporada'}
+        isActive={deletingSeason?.status === 'ACTIVE' || deletingSeason?.isActive}
         loading={!!actionLoading}
       />
     </div>

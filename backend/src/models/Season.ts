@@ -116,6 +116,7 @@ const seasonSchema = new Schema<ISeasonDocument, ISeasonModel>(
       virtuals: true,
       transform: function (doc, ret: any) {
         ret.id = ret._id.toString();
+        ret.isActive = ret.status === 'ACTIVE';
         delete ret._id;
         delete ret.__v;
         return ret;

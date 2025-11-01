@@ -1,5 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import Season from '../models/Season';
+import PointsTransaction from '../models/PointsTransaction';
+import Streak from '../models/Streak';
+import Attendance from '../models/Attendance';
 
 /**
  * Crear una nueva temporada
@@ -302,15 +306,49 @@ export const deleteSeason = async (
       });
     }
 
-    // No permitir eliminar temporadas activas
-    if (season.status === 'ACTIVE') {
-      return res.status(400).json({
-        success: false,
-        message:
-          'No se puede eliminar una temporada activa. Finalízala primero.',
+    // Obtener las transacciones de asistencia ANTES de eliminarlas para poder eliminar las asistencias relacionadas
+    const attendanceTransactions = await PointsTransaction.find({
+      seasonId: id,
+      type: 'ATTENDANCE',
+    }).select('eventId youngId');
+
+    // 1. Eliminar todas las asistencias relacionadas con esta temporada
+    // Eliminamos las asistencias que coinciden exactamente con las transacciones de asistencia
+    // de esta temporada (matching both youngId and qrCodeId/eventId)
+    if (attendanceTransactions.length > 0) {
+      // Crear un conjunto de combinaciones únicas de (youngId, qrCodeId) usando string
+      const uniquePairs = new Set<string>();
+      attendanceTransactions.forEach(t => {
+        const youngId = t.youngId?.toString();
+        const qrCodeId = t.eventId?.toString();
+        if (youngId && qrCodeId) {
+          uniquePairs.add(`${youngId}:${qrCodeId}`);
+        }
       });
+
+      // Construir un array de condiciones $or para eliminar todas las asistencias en una sola consulta
+      const orConditions = Array.from(uniquePairs).map(pair => {
+        const [youngId, qrCodeId] = pair.split(':');
+        return {
+          youngId: new mongoose.Types.ObjectId(youngId),
+          qrCodeId: new mongoose.Types.ObjectId(qrCodeId),
+        };
+      });
+
+      if (orConditions.length > 0) {
+        await Attendance.deleteMany({
+          $or: orConditions,
+        });
+      }
     }
 
+    // 2. Eliminar todos los puntos (transacciones) de esta temporada
+    await PointsTransaction.deleteMany({ seasonId: id });
+
+    // 3. Eliminar todas las rachas de esta temporada
+    await Streak.deleteMany({ seasonId: id });
+
+    // 4. Finalmente, eliminar la temporada
     await season.deleteOne();
 
     res.status(200).json({
