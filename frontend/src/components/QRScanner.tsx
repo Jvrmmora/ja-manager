@@ -115,6 +115,35 @@ const QRScanner: React.FC<QRScannerProps> = ({
   // Solicitar permisos de cámara
   const requestCameraPermission = async () => {
     try {
+      // Primero verificar si ya tenemos permisos usando la API de Permissions
+      // Esto evita pedir permisos cada vez si ya fueron concedidos
+      if ('permissions' in navigator) {
+        try {
+          const permissionStatus = await navigator.permissions.query({
+            name: 'camera' as PermissionName,
+          });
+
+          if (permissionStatus.state === 'granted') {
+            // Ya tenemos permisos, continuar directamente
+            setCameraState('granted');
+            return;
+          } else if (permissionStatus.state === 'denied') {
+            setCameraState('denied');
+            throw new Error(
+              'Permisos de cámara denegados. Por favor, habilita los permisos en la configuración del navegador.'
+            );
+          }
+          // Si es 'prompt', continuar con la solicitud normal
+        } catch (permError) {
+          // La API de permissions puede no estar disponible en algunos navegadores
+          // Continuar con el método tradicional
+          console.log(
+            'Permissions API no disponible, usando método tradicional'
+          );
+        }
+      }
+
+      // Solicitar permisos con getUserMedia
       const constraints = {
         video: {
           facingMode: { ideal: 'environment' }, // Preferir cámara trasera
@@ -126,8 +155,14 @@ const QRScanner: React.FC<QRScannerProps> = ({
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
-      // Cerrar el stream inmediatamente - solo necesitamos los permisos
-      stream.getTracks().forEach(track => track.stop());
+      // NO cerrar el stream inmediatamente - esto causaba que el navegador olvidara el permiso
+      // El stream se cerrará cuando QrScanner.start() cree su propio stream
+      // Esto permite que el navegador recuerde el permiso concedido
+
+      // Pequeño delay antes de cerrar para que el navegador registre el permiso
+      setTimeout(() => {
+        stream.getTracks().forEach(track => track.stop());
+      }, 100);
 
       setCameraState('granted');
     } catch (error: any) {
@@ -138,7 +173,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
       switch (error.name) {
         case 'NotAllowedError':
           errorMessage =
-            'Permisos de cámara denegados. Por favor, permite el acceso a la cámara.';
+            'Permisos de cámara denegados. Por favor, permite el acceso a la cámara en la configuración del navegador.';
           break;
         case 'NotFoundError':
           errorMessage = 'No se encontró ninguna cámara en el dispositivo';
