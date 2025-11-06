@@ -72,17 +72,21 @@ export const generateDailyQR = async (
       return;
     }
 
-    // Desactivar QRs anteriores del día
-    await QRCodeModel.updateMany({ dailyDate: today }, { isActive: false });
+    // Desactivar TODOS los QRs anteriores (no solo del día actual)
+    // Esto asegura que solo haya un QR activo a la vez en toda la base de datos
+    await QRCodeModel.updateMany({ isActive: true }, { isActive: false });
 
     // Crear nuevo QR con puntos configurables
     const code = crypto.randomUUID();
-    const expiresAt = createExpirationDate(2); // Expira en 2 horas en tiempo de Colombia
+    const expiresAt = createExpirationDate(2); // Expira en 2 horas
 
     const newQR = new QRCodeModel({
       code,
       generatedBy: adminId,
-      generatedAt: getCurrentDateTimeColombia(),
+      // Usamos new Date() directamente en lugar de getCurrentDateTimeColombia()
+      // porque MongoDB guarda en UTC y el frontend formatea con timeZone: 'America/Bogota'
+      // Esto evita problemas de conversión de zona horaria al enviar al cliente
+      generatedAt: new Date(),
       expiresAt,
       isActive: true,
       dailyDate: today,
