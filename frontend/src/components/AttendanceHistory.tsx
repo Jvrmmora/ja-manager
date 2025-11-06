@@ -46,8 +46,22 @@ const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({
   };
 
   const formatDate = (dateString: string) => {
+    // Si es formato YYYY-MM-DD, parsearlo como fecha local
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      const [year, month, day] = dateString.split('-').map(Number);
+      const date = new Date(year, month - 1, day, 12, 0, 0);
+      return date.toLocaleDateString('es-CO', {
+        timeZone: 'America/Bogota',
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    }
+    // Si es un timestamp completo, usar zona horaria de Colombia
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
+    return date.toLocaleDateString('es-CO', {
+      timeZone: 'America/Bogota',
       weekday: 'short',
       year: 'numeric',
       month: 'short',
@@ -56,8 +70,10 @@ const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({
   };
 
   const formatTime = (dateString: string) => {
+    // Formatear con zona horaria de Colombia
     const date = new Date(dateString);
-    return date.toLocaleTimeString('es-ES', {
+    return date.toLocaleTimeString('es-CO', {
+      timeZone: 'America/Bogota',
       hour: '2-digit',
       minute: '2-digit',
     });
