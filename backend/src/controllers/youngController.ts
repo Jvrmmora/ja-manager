@@ -730,12 +730,12 @@ export class YoungController {
       }
 
       // Generar el siguiente consecutivo
+      // IMPORTANTE: No usar .limit() para buscar TODAS las placas y encontrar el máximo consecutivo real
       const existingPlaques = await Young.find({
         placa: { $regex: /^@MOD/ },
       })
         .select('placa')
-        .sort({ placa: -1 })
-        .limit(10);
+        .lean(); // .lean() para mejor rendimiento
 
       let nextConsecutive = 1;
       if (existingPlaques.length > 0) {

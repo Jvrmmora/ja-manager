@@ -90,7 +90,9 @@ export const scanQRAndRegisterAttendance = async (
       youngId,
       qrCodeId: qrCode._id,
       attendanceDate: today,
-      scannedAt: getCurrentDateTimeColombia(),
+      // Usamos new Date() directamente para que MongoDB guarde en UTC
+      // y el frontend formatee con la zona horaria de Colombia
+      scannedAt: new Date(),
       ipAddress: req.ip || req.connection.remoteAddress,
       userAgent: req.get('User-Agent'),
     });
