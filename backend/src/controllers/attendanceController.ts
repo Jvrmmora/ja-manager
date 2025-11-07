@@ -10,6 +10,8 @@ import {
   isExpired,
 } from '../utils/dateUtils';
 import { pointsService } from '../services/pointsService';
+import Season from '../models/Season';
+import { registerAttendanceCore } from '../services/attendanceService';
 
 // Escanear QR y registrar asistencia (solo jóvenes)
 export const scanQRAndRegisterAttendance = async (
@@ -17,136 +19,174 @@ export const scanQRAndRegisterAttendance = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { code } = req.body; // Quitar points del request, ahora viene del QR
+    const { code } = req.body;
     const youngId = req.user?.userId;
-
     if (!youngId) {
-      res.status(401).json({
-        success: false,
-        message: 'Usuario no autenticado',
-      });
+      res
+        .status(401)
+        .json({ success: false, message: 'Usuario no autenticado' });
       return;
     }
-
     if (!code) {
-      res.status(400).json({
-        success: false,
-        message: 'Código QR requerido',
-      });
+      res.status(400).json({ success: false, message: 'Código QR requerido' });
       return;
     }
-
-    // Verificar que el usuario es un joven (no admin)
     const isAdmin = req.user?.role_name === 'Super Admin';
     if (isAdmin) {
-      res.status(403).json({
-        success: false,
-        message: 'Los administradores no pueden registrar asistencia',
-      });
+      res
+        .status(403)
+        .json({
+          success: false,
+          message: 'Los administradores no pueden registrar asistencia',
+        });
       return;
     }
+    const qrCode = await QRCodeModel.findOne({ code, isActive: true });
+    if (!qrCode) {
+      res
+        .status(404)
+        .json({ success: false, message: 'Código QR inválido o no existe' });
+      return;
+    }
+    if (isExpired(qrCode.expiresAt)) {
+      res
+        .status(400)
+        .json({ success: false, message: 'El código QR ha expirado' });
+      return;
+    }
+    let result;
+    try {
+      result = await registerAttendanceCore(youngId, qrCode, {
+        ipAddress: req.ip || (req.connection as any).remoteAddress,
+        userAgent: req.get('User-Agent'),
+      });
+    } catch (err: any) {
+      if (err.message === 'ALREADY_REGISTERED') {
+        res
+          .status(409)
+          .json({
+            success: false,
+            message: 'Ya registraste tu asistencia el día de hoy',
+          });
+        return;
+      }
+      throw err;
+    }
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: '¡Asistencia registrada exitosamente!',
+        data: result,
+      });
+  } catch (error) {
+    console.error('Error registrando asistencia (scan):', error);
+    ErrorHandler.handleError(error, req, res);
+  }
+};
 
-    // Buscar el QR code
+export const manualRegisterAttendance = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const adminId = req.user?.userId;
+    if (!adminId) {
+      res
+        .status(401)
+        .json({ success: false, message: 'Usuario no autenticado' });
+      return;
+    }
+    const isAdmin = req.user?.role_name === 'Super Admin';
+    if (!isAdmin) {
+      res
+        .status(403)
+        .json({
+          success: false,
+          message: 'Solo administradores pueden registrar asistencia manual',
+        });
+      return;
+    }
+    const { youngId } = req.body;
+    if (!youngId) {
+      res.status(400).json({ success: false, message: 'youngId requerido' });
+      return;
+    }
+    const young = await Young.findById(youngId).select('role_name');
+    if (!young) {
+      res.status(404).json({ success: false, message: 'Joven no encontrado' });
+      return;
+    }
+    if (young.role_name === 'Super Admin') {
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: 'No se puede registrar asistencia para administradores',
+        });
+      return;
+    }
+    const activeSeason = await Season.findOne({ status: 'ACTIVE' });
+    if (!activeSeason) {
+      res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            'No hay temporada activa. Active una temporada antes de registrar asistencia manual.',
+        });
+      return;
+    }
+    const today = getCurrentDateColombia();
     const qrCode = await QRCodeModel.findOne({
-      code,
+      dailyDate: today,
       isActive: true,
     });
-
     if (!qrCode) {
-      res.status(404).json({
-        success: false,
-        message: 'Código QR inválido o no existe',
-      });
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: 'No hay QR activo para hoy. Genere uno primero.',
+        });
       return;
     }
-
-    // Verificar si el QR ha expirado
     if (isExpired(qrCode.expiresAt)) {
-      res.status(400).json({
-        success: false,
-        message: 'El código QR ha expirado',
-      });
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: 'El QR activo ha expirado. Genere uno nuevo.',
+        });
       return;
     }
-
-    const today = getCurrentDateColombia();
-
-    // Verificar si el joven ya registró asistencia hoy
-    const existingAttendance = await AttendanceModel.findOne({
-      youngId,
-      attendanceDate: today,
-    });
-
-    if (existingAttendance) {
-      res.status(409).json({
-        success: false,
-        message: 'Ya registraste tu asistencia el día de hoy',
-      });
-      return;
-    }
-
-    // Crear nuevo registro de asistencia
-    const attendance = new AttendanceModel({
-      youngId,
-      qrCodeId: qrCode._id,
-      attendanceDate: today,
-      // Usamos new Date() directamente para que MongoDB guarde en UTC
-      // y el frontend formatee con la zona horaria de Colombia
-      scannedAt: new Date(),
-      ipAddress: req.ip || req.connection.remoteAddress,
-      userAgent: req.get('User-Agent'),
-    });
-
-    await attendance.save();
-
-    // Incrementar contador de uso del QR
-    await QRCodeModel.findByIdAndUpdate(qrCode._id, {
-      $inc: { usageCount: 1 },
-    });
-
-    // ✨ NUEVO: Asignar puntos por asistencia
-    let pointsTransaction = null;
-    let totalPoints = 0;
+    let result;
     try {
-      // Usar los puntos configurados en el QR
-      const attendancePoints = qrCode.points || 10; // Default 10 si no está configurado
-      pointsTransaction = await pointsService.assignAttendancePoints(
-        youngId,
-        (qrCode._id as any).toString(),
-        attendancePoints
-      );
-      totalPoints = await pointsService.getTotalPoints(youngId);
-    } catch (error) {
-      // Si falla la asignación de puntos, solo logueamos pero no bloqueamos la asistencia
-      console.warn(
-        'No se pudieron asignar puntos (no hay temporada activa):',
-        error
-      );
+      result = await registerAttendanceCore(youngId, qrCode, {
+        ipAddress: req.ip || (req.connection as any).remoteAddress,
+        userAgent: req.get('User-Agent'),
+      });
+    } catch (err: any) {
+      if (err.message === 'ALREADY_REGISTERED' || err.code === 11000) {
+        res
+          .status(409)
+          .json({
+            success: false,
+            message: 'El joven ya registró asistencia hoy',
+          });
+        return;
+      }
+      throw err;
     }
-
-    // Obtener información del joven para la respuesta
-    const young = await Young.findById(youngId).select('fullName placa');
-
-    res.status(201).json({
-      success: true,
-      message: '¡Asistencia registrada exitosamente!',
-      data: {
-        attendance,
-        young,
-        attendanceDate: today,
-        scannedAt: attendance.scannedAt,
-        // ✨ NUEVO: Incluir información de puntos en la respuesta
-        points: pointsTransaction
-          ? {
-              earned: pointsTransaction.points,
-              total: totalPoints,
-              description: pointsTransaction.description,
-            }
-          : null,
-      },
-    });
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: '¡Asistencia registrada manualmente!',
+        data: result,
+      });
   } catch (error) {
-    console.error('Error registrando asistencia:', error);
+    console.error('Error en registro manual de asistencia:', error);
     ErrorHandler.handleError(error, req, res);
   }
 };

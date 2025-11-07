@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticateToken, requireScope } from '../middleware/auth';
 import {
   scanQRAndRegisterAttendance,
+  manualRegisterAttendance,
   getMyAttendanceHistory,
   getTodayAttendances,
   getAttendancesByDate,
@@ -12,6 +13,7 @@ const router = express.Router();
 
 // Escanear QR y registrar asistencia
 router.post('/scan', authenticateToken, scanQRAndRegisterAttendance);
+router.post('/manual', authenticateToken, manualRegisterAttendance);
 
 // Obtener mi historial de asistencias
 router.get('/my-history', authenticateToken, getMyAttendanceHistory);

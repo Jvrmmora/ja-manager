@@ -187,7 +187,7 @@ export const createRegistrationRequest = async (
   formData: FormData
 ): Promise<any> => {
   const url = buildApiUrl('registration');
-  
+
   // Esta ruta no requiere token
   const response = await fetch(url, {
     method: 'POST',
@@ -197,7 +197,9 @@ export const createRegistrationRequest = async (
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(
-      errorData.message || errorData.error?.message || 'Error al crear solicitud de registro'
+      errorData.message ||
+        errorData.error?.message ||
+        'Error al crear solicitud de registro'
     );
   }
 
@@ -295,6 +297,22 @@ export const scanQRAndRegisterAttendance = async (
     throw error;
   }
 };
+export const manualRegisterAttendance = async (
+  youngId: string
+): Promise<any> => {
+  const response = await apiRequest('attendance/manual', {
+    method: 'POST',
+    body: JSON.stringify({ youngId }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(
+      errorData.message || 'Error al registrar asistencia manual'
+    );
+  }
+  const result = await response.json();
+  return result.data;
+};
 
 // Obtener mi historial de asistencias
 export const getMyAttendanceHistory = async (
@@ -387,16 +405,14 @@ export const getAttendanceStats = async (
 // ========== FUNCIONES PARA SOLICITUDES DE REGISTRO ==========
 
 // Obtener todas las solicitudes de registro (solo Super Admin)
-export const getAllRegistrationRequests = async (
-  params?: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    status?: 'pending' | 'approved' | 'rejected';
-    sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
-  }
-): Promise<any> => {
+export const getAllRegistrationRequests = async (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}): Promise<any> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.limit) queryParams.append('limit', params.limit.toString());
@@ -422,9 +438,7 @@ export const getAllRegistrationRequests = async (
 };
 
 // Obtener una solicitud por ID (solo Super Admin)
-export const getRegistrationRequestById = async (
-  id: string
-): Promise<any> => {
+export const getRegistrationRequestById = async (id: string): Promise<any> => {
   const response = await apiRequest(`registration/${id}`, {
     method: 'GET',
   });

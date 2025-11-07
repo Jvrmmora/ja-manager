@@ -62,6 +62,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, showToast }) => {
         // const userRole = authService.getUserRole();
         const isFirstLogin = authService.isFirstLogin();
 
+        // Limpiar query params de la URL (ej: ?placa=XYZ) después de login exitoso
+        if (window.location.search) {
+          const cleanUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+
         // Llamar callback de éxito
         if (onLoginSuccess) {
           onLoginSuccess();

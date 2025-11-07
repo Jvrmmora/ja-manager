@@ -63,6 +63,9 @@ export class YoungController {
 
       if (search && search.trim() !== '') {
         const searchTerm = search.trim();
+        const placaLike = searchTerm.startsWith('@')
+          ? searchTerm.toUpperCase()
+          : searchTerm.toUpperCase();
 
         // Si la búsqueda contiene espacios, buscar la frase completa y también palabras individuales
         if (searchTerm.includes(' ')) {
@@ -73,6 +76,7 @@ export class YoungController {
             { fullName: { $regex: searchTerm, $options: 'i' } },
             { phone: { $regex: searchTerm, $options: 'i' } },
             { email: { $regex: searchTerm, $options: 'i' } },
+            { placa: { $regex: placaLike, $options: 'i' } },
             // Buscar que el nombre contenga todas las palabras (en cualquier orden)
             {
               $and: words.map(word => ({
@@ -82,11 +86,17 @@ export class YoungController {
           ];
         } else {
           // Búsqueda simple para una sola palabra
-          filters.$or = [
+          const basicOr: any[] = [
             { fullName: { $regex: searchTerm, $options: 'i' } },
             { phone: { $regex: searchTerm, $options: 'i' } },
             { email: { $regex: searchTerm, $options: 'i' } },
+            { placa: { $regex: placaLike, $options: 'i' } },
           ];
+          // Si parece una placa (empieza con @), priorizar coincidencia exacta (case-insensitive)
+          if (searchTerm.startsWith('@')) {
+            basicOr.unshift({ placa: placaLike });
+          }
+          filters.$or = basicOr;
         }
       }
 

@@ -13,6 +13,12 @@ export interface LoginResponse {
     expiresIn: string;
     first_login: boolean;
   };
+  error?: {
+    type?: string;
+    message?: string;
+    stack?: string;
+  };
+  timestamp?: string;
 }
 
 export interface UserProfile {
@@ -50,13 +56,21 @@ class AuthService {
       const data: LoginResponse = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Error en el login');
+        // Extraer mensaje correcto desde estructura de error del backend
+        const backendMsg = data.error?.message || data.message;
+        throw new Error(backendMsg || 'Usuario o contraseña incorrectos');
+      }
+
+      // Si responde 200 pero success=false, también lanzar error para manejo uniforme
+      if (!data.success) {
+        const backendMsg = data.error?.message || data.message;
+        throw new Error(backendMsg || 'Usuario o contraseña incorrectos');
       }
 
       if (data.success && data.data.token) {
         // Guardar token en localStorage
         setAuthToken(data.data.token);
-        
+
         // Obtener información del usuario
         try {
           const profile = await this.getProfile();
@@ -65,7 +79,10 @@ class AuthService {
           localStorage.setItem('firstLogin', data.data.first_login.toString());
           console.log('✅ Perfil guardado correctamente:', profile.data);
         } catch (profileError) {
-          console.error('Error obteniendo perfil después del login:', profileError);
+          console.error(
+            'Error obteniendo perfil después del login:',
+            profileError
+          );
         }
       }
 
@@ -153,16 +170,19 @@ class AuthService {
       const currentUserInfo = this.getUserInfo();
       const mergedUserInfo = { ...currentUserInfo, ...updatedUserData };
       localStorage.setItem('userInfo', JSON.stringify(mergedUserInfo));
-      
+
       // También actualizar userRole si está presente en los datos actualizados
       if (mergedUserInfo.role_name) {
         localStorage.setItem('userRole', mergedUserInfo.role_name);
         console.log('🔄 UserRole actualizado a:', mergedUserInfo.role_name);
       }
-      
+
       // Disparar evento personalizado para notificar el cambio
       window.dispatchEvent(new CustomEvent('userInfoUpdated'));
-      console.log('📝 Evento userInfoUpdated disparado con datos:', mergedUserInfo);
+      console.log(
+        '📝 Evento userInfoUpdated disparado con datos:',
+        mergedUserInfo
+      );
     } catch (error) {
       console.error('Error actualizando información del usuario:', error);
     }
@@ -171,7 +191,11 @@ class AuthService {
   /**
    * Resetear contraseña
    */
-  async resetPassword(id: string, currentPassword: string, newPassword: string): Promise<any> {
+  async resetPassword(
+    id: string,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<any> {
     try {
       const response = await apiRequest(`young/${id}/reset-password`, {
         method: 'PUT',

@@ -12,6 +12,9 @@ import ToastContainer from '../components/ToastContainer';
 import ThemeToggle from '../components/ThemeToggle';
 import QRGenerator from '../components/QRGenerator';
 import AttendanceList from '../components/AttendanceList';
+import ManualAttendanceButton from '../components/ManualAttendanceButton';
+import ManualAttendanceModal from '../components/ManualAttendanceModal';
+import AttendanceModal from '../components/AttendanceModal';
 import LeaderboardSection from '../components/LeaderboardSection';
 import SeasonManager from '../components/SeasonManager';
 import RegistrationRequestsManager from '../components/RegistrationRequestsManager';
@@ -107,11 +110,17 @@ function HomePage() {
   const [showQRSection, setShowQRSection] = useState(false);
   const [showAttendanceSection, setShowAttendanceSection] = useState(false);
   const [attendanceRefresh, setAttendanceRefresh] = useState(0);
+  const [showManualAttendanceModal, setShowManualAttendanceModal] =
+    useState(false);
+  const [manualAttendanceResult, setManualAttendanceResult] =
+    useState<any>(null);
+  const [showManualSuccessModal, setShowManualSuccessModal] = useState(false);
 
   // Estados para nuevas secciones
   const [showLeaderboardSection, setShowLeaderboardSection] = useState(false);
   const [showSeasonsSection, setShowSeasonsSection] = useState(false);
-  const [showRegistrationRequestsSection, setShowRegistrationRequestsSection] = useState(false);
+  const [showRegistrationRequestsSection, setShowRegistrationRequestsSection] =
+    useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showQRMenu, setShowQRMenu] = useState(false);
   const [showRankingMenu, setShowRankingMenu] = useState(false);
@@ -423,13 +432,13 @@ function HomePage() {
     isLoadingPageRef.current = false;
     fetchYoung(1, false);
     fetchAllYoung();
-    
+
     // Cargar perfil del usuario actual
     const loadCurrentUser = async () => {
       try {
         const userData = await getCurrentUserProfile();
         setCurrentUser(userData);
-        
+
         // Si es Super Admin, cargar conteo de solicitudes pendientes
         if (userData?.role_name === 'Super Admin') {
           loadPendingRequestsCount();
@@ -752,7 +761,7 @@ function HomePage() {
   const handleProfileUpdated = (updatedUser: IYoung) => {
     setCurrentUser(updatedUser);
     showSuccess('Perfil actualizado exitosamente');
-    
+
     // Si es Super Admin, actualizar conteo de solicitudes pendientes
     if (updatedUser?.role_name === 'Super Admin') {
       loadPendingRequestsCount();
@@ -1267,6 +1276,13 @@ function HomePage() {
                   </button>
                 </div>
                 <AttendanceList refreshTrigger={attendanceRefresh} />
+                {isSuperAdmin && (
+                  <div className="mt-6 max-w-sm">
+                    <ManualAttendanceButton
+                      onClick={() => setShowManualAttendanceModal(true)}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1401,6 +1417,26 @@ function HomePage() {
           onProfileUpdated={handleProfileUpdated}
         />
       </div>
+      <ManualAttendanceModal
+        isOpen={showManualAttendanceModal}
+        onClose={() => setShowManualAttendanceModal(false)}
+        onSuccess={data => {
+          setShowManualAttendanceModal(false);
+          setManualAttendanceResult(data);
+          setShowManualSuccessModal(true);
+          setAttendanceRefresh(prev => prev + 1);
+        }}
+      />
+      <AttendanceModal
+        isOpen={showManualSuccessModal}
+        onClose={() => setShowManualSuccessModal(false)}
+        success={true}
+        message={
+          manualAttendanceResult ? '¡Asistencia registrada manualmente!' : ''
+        }
+        subtitle={manualAttendanceResult?.young?.fullName}
+        date={manualAttendanceResult?.attendanceDate}
+      />
     </div>
   );
 }

@@ -44,6 +44,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
   onShowSuccess: _onShowSuccess,
   onShowError,
 }) => {
+  // Usar siempre strings vacíos en lugar de undefined para evitar controlled/uncontrolled warnings
   const [formData, setFormData] = useState<YoungFormData>({
     fullName: '',
     ageRange: '',
@@ -53,7 +54,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
     role: 'colaborador',
     email: '',
     skills: [],
-    group: undefined,
+    group: '',
   });
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -66,27 +67,31 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
     if (isOpen && young) {
       // Formatear la fecha correctamente evitando problemas de timezone
       let formattedBirthday: string;
-      const birthdayStr = young.birthday.toString();
-
-      if (/^\d{4}-\d{2}-\d{2}/.test(birthdayStr)) {
-        // Si viene en formato YYYY-MM-DD o YYYY-MM-DDTHH:mm:ss
-        const datePart = birthdayStr.split('T')[0];
-        const parsedDate = parseYYYYMMDD(datePart);
-        formattedBirthday = formatDateColombia(parsedDate);
+      const birthdayRaw = (young as any)?.birthday;
+      if (!birthdayRaw) {
+        formattedBirthday = '';
       } else {
-        const birthdayDate = new Date(young.birthday);
-        formattedBirthday = formatDateColombia(birthdayDate);
+        const birthdayStr = birthdayRaw.toString();
+        if (/^\d{4}-\d{2}-\d{2}/.test(birthdayStr)) {
+          // Si viene en formato YYYY-MM-DD o YYYY-MM-DDTHH:mm:ss
+          const datePart = birthdayStr.split('T')[0];
+          const parsedDate = parseYYYYMMDD(datePart);
+          formattedBirthday = formatDateColombia(parsedDate);
+        } else {
+          const birthdayDate = new Date(birthdayRaw);
+          formattedBirthday = formatDateColombia(birthdayDate);
+        }
       }
 
       setFormData({
-        fullName: young.fullName,
-        ageRange: young.ageRange,
-        phone: young.phone,
-        birthday: formattedBirthday,
-        gender: young.gender,
-        role: young.role,
-        email: young.email,
-        group: young.group,
+        fullName: young.fullName || '',
+        ageRange: young.ageRange || '',
+        phone: young.phone || '',
+        birthday: formattedBirthday || '',
+        gender: young.gender || '',
+        role: young.role || 'colaborador',
+        email: young.email || '',
+        group: (young.group ?? '') as any,
         skills: young.skills || [],
       });
 
@@ -179,13 +184,15 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
     e.preventDefault();
 
     // Validaciones básicas
-    if (!formData.fullName.trim()) {
+    const fullNameVal = (formData.fullName || '').trim();
+    if (!fullNameVal) {
       onShowError?.('El nombre completo es obligatorio');
       return;
     }
 
     // Validar formato de email si está presente (es opcional)
-    if (formData.email.trim() && !validateEmail(formData.email)) {
+    const emailVal = (formData.email || '').trim();
+    if (emailVal && !validateEmail(emailVal)) {
       return;
     }
 
@@ -203,7 +210,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
         role: 'colaborador',
         email: '',
         skills: [],
-        group: undefined,
+        group: '',
       });
       setImagePreview(null);
       setEmailError('');
@@ -400,7 +407,9 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
                   onChange={handleInputChange}
                   className="mr-2 w-4 h-4 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 cursor-pointer"
                 />
-                <span className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">No especificado</span>
+                <span className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">
+                  No especificado
+                </span>
               </label>
               <label className="flex items-center cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <input
@@ -411,7 +420,9 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
                   onChange={handleInputChange}
                   className="mr-2 w-4 h-4 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 cursor-pointer"
                 />
-                <span className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">Masculino</span>
+                <span className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">
+                  Masculino
+                </span>
               </label>
               <label className="flex items-center cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <input
@@ -422,7 +433,9 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
                   onChange={handleInputChange}
                   className="mr-2 w-4 h-4 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 cursor-pointer"
                 />
-                <span className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">Femenino</span>
+                <span className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">
+                  Femenino
+                </span>
               </label>
             </div>
           </div>
@@ -455,9 +468,13 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
             <label className="form-label">Grupo (opcional)</label>
             <div className="relative">
               <GroupSelect
-                value={formData.group}
+                value={
+                  formData.group === ''
+                    ? undefined
+                    : (formData.group as number | undefined)
+                }
                 onChange={(v?: number) =>
-                  setFormData(prev => ({ ...prev, group: v }))
+                  setFormData(prev => ({ ...prev, group: v ?? '' }))
                 }
               />
             </div>
