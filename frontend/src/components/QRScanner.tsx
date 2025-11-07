@@ -11,6 +11,12 @@ import AttendanceModal from './AttendanceModal';
 import PointsAnimation from './PointsAnimation';
 import { useTheme } from '../context/ThemeContext';
 import { formatDisplayDate } from '../utils/dateUtils';
+import {
+  getSharedCameraStream,
+  setSharedCameraStream,
+  wasPermissionGrantedThisSession,
+  markPermissionGrantedForSession,
+} from '../utils/cameraStream';
 
 interface QRScannerProps {
   isOpen: boolean;
@@ -27,6 +33,8 @@ const QRScanner: React.FC<QRScannerProps> = ({
   const scannerRef = useRef<QrScanner | null>(null);
   // Mantener referencia al stream inicial (permiso) para iOS Safari/Chrome
   const initialStreamRef = useRef<MediaStream | null>(null);
+  // Posible stream compartido de la sesión (si existe)
+  const sharedStreamRef = useRef<MediaStream | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +42,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
     'prompt' | 'granted' | 'denied'
   >('prompt');
   const { isDark } = useTheme();
+  // Guardaremos el permiso en sessionStorage para la sesión activa
   const CAMERA_PERMISSION_KEY = 'cameraPermissionGranted';
 
   // Usar refs para estados críticos que no deben causar re-renders
@@ -92,7 +101,9 @@ const QRScanner: React.FC<QRScannerProps> = ({
     } else {
       cleanup();
       setError(null);
-      setCameraState('prompt');
+      // No forzar a 'prompt' si ya estaba concedido; esto evita que el modal
+      // revoque visualmente el estado durante la misma sesión.
+      setCameraState(prev => (prev === 'granted' ? 'granted' : 'prompt'));
     }
 
     return cleanup;
@@ -115,11 +126,25 @@ const QRScanner: React.FC<QRScannerProps> = ({
         throw new Error('No se encontró ninguna cámara en el dispositivo');
       }
 
-      // 1. Intentar detectar si ya se concedió antes (localStorage / enumerateDevices)
+      // 1. Intentar detectar si ya se concedió antes (sessionStorage / enumerateDevices)
       const stored =
         typeof window !== 'undefined' &&
-        localStorage.getItem(CAMERA_PERMISSION_KEY);
+        (sessionStorage.getItem(CAMERA_PERMISSION_KEY) ||
+          (wasPermissionGrantedThisSession() ? 'true' : null));
       let previouslyGranted = stored === 'true';
+
+      // 1.a Reusar stream compartido si existe
+      sharedStreamRef.current = getSharedCameraStream();
+      if (previouslyGranted && sharedStreamRef.current && videoRef.current) {
+        try {
+          videoRef.current.srcObject = sharedStreamRef.current;
+          setCameraState('granted');
+          setIsInitializing(false);
+          return;
+        } catch (_) {
+          // si falla, continuamos con el flujo normal
+        }
+      }
       if (!previouslyGranted && navigator.mediaDevices?.enumerateDevices) {
         try {
           const devices = await navigator.mediaDevices.enumerateDevices();
@@ -128,7 +153,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
             d => d.kind === 'videoinput' && !!d.label
           );
           if (previouslyGranted) {
-            localStorage.setItem(CAMERA_PERMISSION_KEY, 'true');
+            sessionStorage.setItem(CAMERA_PERMISSION_KEY, 'true');
           }
         } catch (_) {
           // ignorar
@@ -165,7 +190,8 @@ const QRScanner: React.FC<QRScannerProps> = ({
           if (permissionStatus.state === 'granted') {
             // Ya tenemos permisos, continuar directamente
             setCameraState('granted');
-            localStorage.setItem(CAMERA_PERMISSION_KEY, 'true');
+            sessionStorage.setItem(CAMERA_PERMISSION_KEY, 'true');
+            markPermissionGrantedForSession();
             return;
           } else if (permissionStatus.state === 'denied') {
             setCameraState('denied');
@@ -200,10 +226,13 @@ const QRScanner: React.FC<QRScannerProps> = ({
         videoRef.current.srcObject = stream;
       }
       setCameraState('granted');
-      localStorage.setItem(CAMERA_PERMISSION_KEY, 'true');
+      sessionStorage.setItem(CAMERA_PERMISSION_KEY, 'true');
+      markPermissionGrantedForSession();
+      // Guardar como stream compartido de la sesión para reuso posterior
+      setSharedCameraStream(stream);
     } catch (error: any) {
       setCameraState('denied');
-      localStorage.setItem(CAMERA_PERMISSION_KEY, 'false');
+      sessionStorage.setItem(CAMERA_PERMISSION_KEY, 'false');
 
       let errorMessage = 'Error al acceder a la cámara';
 
@@ -276,7 +305,13 @@ const QRScanner: React.FC<QRScannerProps> = ({
         config
       );
 
-      await scannerRef.current.start();
+      // Si ya tenemos un stream compartido asignado al video, evitar que
+      // QrScanner reabra otro stream para minimizar prompts visibles.
+      if (videoRef.current.srcObject) {
+        await scannerRef.current.start(); // inicia el worker y usa el video existente
+      } else {
+        await scannerRef.current.start();
+      }
       setIsScanning(true);
       setIsInitializing(false);
 
@@ -449,7 +484,8 @@ const QRScanner: React.FC<QRScannerProps> = ({
   const handleClose = () => {
     cleanup();
     setError(null);
-    setCameraState('prompt');
+    // Mantener 'granted' si ya se concedió durante esta sesión
+    setCameraState(prev => (prev === 'granted' ? 'granted' : 'prompt'));
     setShowModal(false);
     setModalData(null);
     setShowPointsAnimation(false);
