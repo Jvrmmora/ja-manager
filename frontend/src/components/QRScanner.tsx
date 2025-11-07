@@ -25,6 +25,8 @@ const QRScanner: React.FC<QRScannerProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const scannerRef = useRef<QrScanner | null>(null);
+  // Mantener referencia al stream inicial (permiso) para iOS Safari/Chrome
+  const initialStreamRef = useRef<MediaStream | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +34,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
     'prompt' | 'granted' | 'denied'
   >('prompt');
   const { isDark } = useTheme();
+  const CAMERA_PERMISSION_KEY = 'cameraPermissionGranted';
 
   // Usar refs para estados críticos que no deben causar re-renders
   const canScanRef = useRef(false);
@@ -59,6 +62,16 @@ const QRScanner: React.FC<QRScannerProps> = ({
     // Limpiar refs
     canScanRef.current = false;
     isProcessingRef.current = false;
+
+    // Detener stream inicial si sigue activo
+    if (initialStreamRef.current) {
+      try {
+        initialStreamRef.current.getTracks().forEach(t => t.stop());
+      } catch (e) {
+        // ignore
+      }
+      initialStreamRef.current = null;
+    }
 
     if (scannerRef.current) {
       try {
@@ -102,6 +115,32 @@ const QRScanner: React.FC<QRScannerProps> = ({
         throw new Error('No se encontró ninguna cámara en el dispositivo');
       }
 
+      // 1. Intentar detectar si ya se concedió antes (localStorage / enumerateDevices)
+      const stored =
+        typeof window !== 'undefined' &&
+        localStorage.getItem(CAMERA_PERMISSION_KEY);
+      let previouslyGranted = stored === 'true';
+      if (!previouslyGranted && navigator.mediaDevices?.enumerateDevices) {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          // En la mayoría de navegadores, label solo está disponible si ya se concedió permiso
+          previouslyGranted = devices.some(
+            d => d.kind === 'videoinput' && !!d.label
+          );
+          if (previouslyGranted) {
+            localStorage.setItem(CAMERA_PERMISSION_KEY, 'true');
+          }
+        } catch (_) {
+          // ignorar
+        }
+      }
+
+      if (previouslyGranted) {
+        setCameraState('granted');
+        setIsInitializing(false);
+        return; // El efecto useEffect inicializará el scanner
+      }
+
       // Solicitar permisos primero
       await requestCameraPermission();
     } catch (error: any) {
@@ -126,6 +165,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
           if (permissionStatus.state === 'granted') {
             // Ya tenemos permisos, continuar directamente
             setCameraState('granted');
+            localStorage.setItem(CAMERA_PERMISSION_KEY, 'true');
             return;
           } else if (permissionStatus.state === 'denied') {
             setCameraState('denied');
@@ -154,19 +194,16 @@ const QRScanner: React.FC<QRScannerProps> = ({
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-      // NO cerrar el stream inmediatamente - esto causaba que el navegador olvidara el permiso
-      // El stream se cerrará cuando QrScanner.start() cree su propio stream
-      // Esto permite que el navegador recuerde el permiso concedido
-
-      // Pequeño delay antes de cerrar para que el navegador registre el permiso
-      setTimeout(() => {
-        stream.getTracks().forEach(track => track.stop());
-      }, 100);
-
+      // Guardar stream para asociarlo al elemento video (permite a iOS Safari "recordar" que el permiso se usó)
+      initialStreamRef.current = stream;
+      if (videoRef.current && !videoRef.current.srcObject) {
+        videoRef.current.srcObject = stream;
+      }
       setCameraState('granted');
+      localStorage.setItem(CAMERA_PERMISSION_KEY, 'true');
     } catch (error: any) {
       setCameraState('denied');
+      localStorage.setItem(CAMERA_PERMISSION_KEY, 'false');
 
       let errorMessage = 'Error al acceder a la cámara';
 
@@ -242,6 +279,16 @@ const QRScanner: React.FC<QRScannerProps> = ({
       await scannerRef.current.start();
       setIsScanning(true);
       setIsInitializing(false);
+
+      // Una vez que el scanner tiene su propio stream, podemos cerrar el inicial si es distinto
+      if (initialStreamRef.current) {
+        try {
+          initialStreamRef.current.getTracks().forEach(t => t.stop());
+        } catch (e) {
+          // ignore
+        }
+        initialStreamRef.current = null;
+      }
 
       // Activar refs para permitir scanning
       canScanRef.current = true;
