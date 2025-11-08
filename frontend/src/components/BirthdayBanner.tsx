@@ -6,13 +6,22 @@ import { formatBirthday } from '../utils/dateUtils';
 interface BirthdayBannerProps {
   birthday?: Date | string | null;
   onEditProfile?: () => void;
+  onOpenMonthBirthdays?: () => void; // Abrir modal simplificado para cumpleaños del mes
 }
 
 const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
   birthday,
   onEditProfile,
+  onOpenMonthBirthdays,
 }) => {
   const [isBirthdayMonth, setIsBirthdayMonth] = useState(false);
+  // Nombre del mes actual en español (capitalizado)
+  const monthName = (() => {
+    const raw = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(
+      new Date()
+    );
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  })();
   const confettiIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
     null
   );
@@ -114,15 +123,28 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
                 </p>
               </div>
             </div>
-            {onEditProfile && (
-              <button
-                onClick={onEditProfile}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm"
-              >
-                <span className="material-symbols-rounded text-lg">edit</span>
-                <span className="hidden sm:inline">Agregar Fecha</span>
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {onOpenMonthBirthdays && (
+                <button
+                  onClick={onOpenMonthBirthdays}
+                  className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  title="Cumpleaños del mes"
+                >
+                  <span className="material-symbols-rounded text-2xl">
+                    arrow_forward
+                  </span>
+                </button>
+              )}
+              {onEditProfile && (
+                <button
+                  onClick={onEditProfile}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                >
+                  <span className="material-symbols-rounded text-lg">edit</span>
+                  <span className="hidden sm:inline">Agregar Fecha</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </motion.div>
@@ -149,7 +171,7 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-30"></div>
 
         {/* Contenido */}
-        <div className="relative z-10 flex items-center justify-between">
+        <div className="relative z-10 flex items-center justify-between sm:pr-40">
           <div className="flex items-center gap-4">
             {/* Ícono animado si es el mes */}
             {isBirthdayMonth ? (
@@ -194,6 +216,7 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
               <p className="text-2xl font-bold text-white">
                 {formatBirthday(birthday)}
               </p>
+              {/* Texto mes actual (se moverá al lado derecho junto a la flecha) */}
             </div>
           </div>
 
@@ -221,6 +244,24 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
               >
                 star
               </motion.span>
+            </div>
+          )}
+
+          {/* Botón + texto mes actual al lado derecho */}
+          {onOpenMonthBirthdays && (
+            <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3 sm:absolute sm:right-4 sm:top-1/2 sm:-translate-y-1/2">
+              <p className="text-xs sm:text-sm font-bold text-white text-right leading-tight max-w-[160px] break-words select-none">
+                Cumpleaños mes {monthName}
+              </p>
+              <button
+                onClick={onOpenMonthBirthdays}
+                className="w-10 h-10 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/40 transition-colors shadow-lg"
+                title="Ver cumpleaños del mes"
+              >
+                <span className="material-symbols-rounded text-2xl">
+                  arrow_forward
+                </span>
+              </button>
             </div>
           )}
         </div>

@@ -11,6 +11,8 @@ import ImageModal from '../components/ImageModal';
 import PointsStatsCards from '../components/PointsStatsCards';
 import PointsBreakdownModal from '../components/PointsBreakdownModal';
 import BirthdayBanner from '../components/BirthdayBanner';
+import MonthBirthdaysModal from '../components/MonthBirthdaysModal.tsx';
+import BirthdayBoardFullscreen from '../components/BirthdayBoardFullscreen';
 import LeaderboardSection from '../components/LeaderboardSection';
 import { authService } from '../services/auth';
 import { getCurrentUserProfile, getMyAttendanceHistory } from '../services/api';
@@ -41,6 +43,8 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
   const [showRankingModal, setShowRankingModal] = useState(false);
+  const [showMonthBirthdays, setShowMonthBirthdays] = useState(false);
+  const [showBirthdayBoard, setShowBirthdayBoard] = useState(false);
   const { toasts, showError, removeToast } = useToast();
   const [currentHour, setCurrentHour] = useState<number>(() => {
     const now = getCurrentDateTimeColombia();
@@ -432,6 +436,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
             <BirthdayBanner
               birthday={userInfo?.birthday}
               onEditProfile={handleOpenProfile}
+              onOpenMonthBirthdays={() => setShowBirthdayBoard(true)}
             />
 
             {/* Historial de asistencias */}
@@ -523,6 +528,25 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
             <LeaderboardSection />
           </div>
         </div>
+      )}
+
+      {/* Modal de Cumpleaños del Mes (vista reducida) */}
+      {showMonthBirthdays && (
+        <MonthBirthdaysModal
+          isOpen={showMonthBirthdays}
+          onClose={() => setShowMonthBirthdays(false)}
+        />
+      )}
+
+      {/* Pantalla completa: tablero de cumpleaños */}
+      {showBirthdayBoard && (
+        <BirthdayBoardFullscreen
+          isOpen={showBirthdayBoard}
+          onClose={() => setShowBirthdayBoard(false)}
+          defaultGroup={1}
+          currentMonthOnly={true}
+          fixedGroup={1}
+        />
       )}
 
       {/* Toasts */}

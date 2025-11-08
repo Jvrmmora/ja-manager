@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { IYoung } from '../types';
 import MultiGroupSelect from './MultiGroupSelect';
+import BirthdayBoardFullscreen from './BirthdayBoardFullscreen';
 import {
   getCurrentMonthColombia,
   getCurrentYearColombia,
@@ -24,6 +25,7 @@ const BirthdayDashboard: React.FC<BirthdayDashboardProps> = ({
   );
   const [filteredYoung, setFilteredYoung] = useState<IYoung[]>([]);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [showFullscreenBoard, setShowFullscreenBoard] = useState(false);
 
   const months = [
     'Enero',
@@ -269,9 +271,20 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
                   )}
                 </p>
               </div>
-              <span className="material-symbols-rounded text-white/80 text-3xl bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full p-2">
-                celebration
-              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowFullscreenBoard(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium shadow"
+                >
+                  <span className="material-symbols-rounded text-base">
+                    fullscreen
+                  </span>
+                  <span>Ampliar</span>
+                </button>
+                <span className="material-symbols-rounded text-white/80 text-3xl bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full p-2">
+                  celebration
+                </span>
+              </div>
             </div>
           </div>
 
@@ -453,6 +466,13 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
           </div>
         </div>
       </div>
+      {showFullscreenBoard && (
+        <BirthdayBoardFullscreen
+          isOpen={showFullscreenBoard}
+          onClose={() => setShowFullscreenBoard(false)}
+          defaultGroup={Number(selectedGroups[0] ?? 1)}
+        />
+      )}
     </div>
   );
 };
