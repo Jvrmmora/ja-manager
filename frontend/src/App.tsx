@@ -8,6 +8,10 @@ import ToastContainer from './components/ToastContainer';
 import { useToast } from './hooks/useToast';
 // import LoadingSpinner from './components/LoadingSpinner';
 import { authService } from './services/auth';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
+import NotFound from './pages/NotFound';
+import AttendanceScanPage from './pages/AttendanceScanPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -25,7 +29,10 @@ function App() {
         try {
           const updatedUserInfo = JSON.parse(event.newValue);
           setUserRole(updatedUserInfo.role_name);
-          console.log('🔄 Rol actualizado por storage event:', updatedUserInfo.role_name);
+          console.log(
+            '🔄 Rol actualizado por storage event:',
+            updatedUserInfo.role_name
+          );
         } catch (error) {
           console.error('Error parsing updated user info:', error);
         }
@@ -34,11 +41,16 @@ function App() {
 
     // Escuchar eventos personalizados para actualizaciones internas
     const handleUserInfoUpdate = () => {
-      console.log('📝 Evento personalizado de actualización de perfil detectado');
+      console.log(
+        '📝 Evento personalizado de actualización de perfil detectado'
+      );
       const userInfo = authService.getUserInfo();
       if (userInfo) {
         setUserRole(userInfo.role_name);
-        console.log('🔄 Rol actualizado por evento personalizado:', userInfo.role_name);
+        console.log(
+          '🔄 Rol actualizado por evento personalizado:',
+          userInfo.role_name
+        );
       }
     };
 
@@ -56,19 +68,21 @@ function App() {
       console.log('🔍 Verificando estado de autenticación...');
       const authenticated = authService.isAuthenticated();
       console.log('🔍 ¿Está autenticado?', authenticated);
-      
+
       if (authenticated) {
         // Obtener información del usuario
         const userInfo = authService.getUserInfo();
         console.log('👤 Información del usuario:', userInfo);
-        
+
         if (userInfo) {
           setIsAuthenticated(true);
           setUserRole(userInfo.role_name);
           console.log('✅ Usuario autenticado con rol:', userInfo.role_name);
         } else {
           // Token inválido o expirado
-          console.log('❌ No se pudo obtener información del usuario, haciendo logout');
+          console.log(
+            '❌ No se pudo obtener información del usuario, haciendo logout'
+          );
           authService.logout();
           setIsAuthenticated(false);
           setUserRole(null);
@@ -96,17 +110,19 @@ function App() {
   };
 
   const handleProfileUpdate = () => {
-    console.log('📝 Perfil actualizado, refrescando información del usuario...');
+    console.log(
+      '📝 Perfil actualizado, refrescando información del usuario...'
+    );
     const userInfo = authService.getUserInfo();
     console.log('👤 Nueva información del usuario:', userInfo);
     setUserRole(userInfo?.role_name || null);
     console.log('🔄 Nuevo rol establecido:', userInfo?.role_name || null);
   };
 
-  console.log('🎯 Renderizando App - Estado actual:', { 
-    loading, 
-    isAuthenticated, 
-    userRole 
+  console.log('🎯 Renderizando App - Estado actual:', {
+    loading,
+    isAuthenticated,
+    userRole,
   });
 
   if (loading) {
@@ -120,32 +136,65 @@ function App() {
     );
   }
 
-  if (!isAuthenticated) {
-    console.log('🔐 Mostrando login...');
-    return (
-      <ThemeProvider>
-        <Login onLoginSuccess={handleLoginSuccess} showToast={showToast} />
-        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
-      </ThemeProvider>
-    );
-  }
-
-  // Decidir qué dashboard mostrar basado en el role
-  console.log('🏠 Decidiendo dashboard para rol:', userRole);
-  
   return (
     <ThemeProvider>
-      {userRole === 'Young role' ? (
-        <>
-          {console.log('👤 Mostrando YoungDashboard')}
-          <YoungDashboard onProfileUpdate={handleProfileUpdate} />
-        </>
-      ) : (
-        <>
-          {console.log('👑 Mostrando HomePage (Admin)')}
-          <HomePage />
-        </>
-      )}
+      <BrowserRouter>
+        <Routes>
+          {/* Root: decide based on auth and role */}
+          <Route
+            path="/"
+            element={
+              isAuthenticated ? (
+                userRole === 'Young role' ? (
+                  <Navigate to="/dashboard" replace />
+                ) : (
+                  <Navigate to="/admin" replace />
+                )
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+
+          {/* Login route */}
+          <Route
+            path="/login"
+            element={
+              isAuthenticated ? (
+                userRole === 'Young role' ? (
+                  <Navigate to="/dashboard" replace />
+                ) : (
+                  <Navigate to="/admin" replace />
+                )
+              ) : (
+                <Login
+                  onLoginSuccess={handleLoginSuccess}
+                  showToast={showToast}
+                />
+              )
+            }
+          />
+
+          {/* QR Scan from external camera */}
+          <Route path="/attendance/scan" element={<AttendanceScanPage />} />
+
+          {/* Protected admin route */}
+          <Route element={<ProtectedRoute redirectTo="/login" />}>
+            <Route path="/admin" element={<HomePage />} />
+          </Route>
+
+          {/* Protected young dashboard */}
+          <Route element={<ProtectedRoute redirectTo="/login" />}>
+            <Route
+              path="/dashboard"
+              element={<YoungDashboard onProfileUpdate={handleProfileUpdate} />}
+            />
+          </Route>
+
+          {/* 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </ThemeProvider>
   );
