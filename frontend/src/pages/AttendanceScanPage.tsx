@@ -41,19 +41,14 @@ const AttendanceScanPage: React.FC = () => {
   const handleScan = async (code: string) => {
     setLoading(true);
     try {
-      const response = await scanQRAndRegisterAttendance(code);
-      const data = await response.json();
+      // La función ya devuelve el objeto de resultado (no un Response)
+      const result = await scanQRAndRegisterAttendance(code);
+      const points = result?.points?.earned ?? result?.points_earned ?? 0;
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Error al registrar asistencia');
-      }
-
-      // Extraer la información relevante de la respuesta
-      const attendance = data.data;
       setModalData({
         success: true,
-        message: `¡Asistencia registrada!`,
-        subtitle: `+${attendance.points_earned || 0} puntos`,
+        message: '¡Has registrado tu asistencia hoy satisfactoriamente!',
+        subtitle: `+${points} puntos`,
         date: new Date().toLocaleDateString('es-ES', {
           weekday: 'long',
           year: 'numeric',
