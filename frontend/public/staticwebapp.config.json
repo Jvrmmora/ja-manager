@@ -10,7 +10,7 @@
     }
   ],
   "globalHeaders": {
-    "content-security-policy": "default-src https: 'unsafe-eval' 'unsafe-inline'; object-src 'none'; img-src https: data: blob: 'self'; script-src https: 'unsafe-inline' 'unsafe-eval'; style-src https: 'unsafe-inline'; connect-src https: 'self'; worker-src 'self' blob:; child-src 'self' blob:"
+    "content-security-policy": "default-src https: 'unsafe-eval' 'unsafe-inline'; object-src 'none'; img-src https: data: blob: 'self'; script-src https: 'unsafe-inline' 'unsafe-eval'; style-src https: 'unsafe-inline'; font-src https: data: 'self'; connect-src https: 'self'; worker-src 'self' blob:; child-src 'self' blob:"
   },
   "mimeTypes": {
     ".json": "application/json"
