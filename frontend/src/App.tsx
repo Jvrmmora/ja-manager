@@ -8,10 +8,22 @@ import ToastContainer from './components/ToastContainer';
 import { useToast } from './hooks/useToast';
 // import LoadingSpinner from './components/LoadingSpinner';
 import { authService } from './services/auth';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import NotFound from './pages/NotFound';
 import AttendanceScanPage from './pages/AttendanceScanPage';
+
+// Componente para manejar la redirección con query params
+const RedirectToLogin = () => {
+  const location = useLocation();
+  return <Navigate to={`/login${location.search}`} replace />;
+};
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -151,7 +163,7 @@ function App() {
                   <Navigate to="/admin" replace />
                 )
               ) : (
-                <Navigate to="/login" replace />
+                <RedirectToLogin />
               )
             }
           />
