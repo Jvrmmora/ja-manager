@@ -108,40 +108,85 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
         transition={{ duration: 0.3 }}
         className="max-w-4xl mx-auto mb-8"
       >
-        <div className="relative bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-700 dark:to-gray-600 rounded-xl p-4 shadow-md">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-rounded text-gray-600 dark:text-gray-300 text-2xl">
+        <div className="relative bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-700 dark:to-gray-600 rounded-xl p-5 shadow-md">
+          <div className="flex items-center justify-between gap-3">
+            {/* Información del cumpleaños no registrado */}
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <span className="material-symbols-rounded text-gray-600 dark:text-gray-300 text-3xl sm:text-4xl flex-shrink-0">
                 cake
               </span>
-              <div>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              <div className="flex-1 min-w-0">
+                <p className="text-base sm:text-lg font-bold text-gray-700 dark:text-gray-200">
                   Fecha de cumpleaños
                 </p>
-                <p className="text-xs text-gray-600 dark:text-gray-300">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   No registrada
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Botones del lado derecho */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Botón de cumpleaños del mes */}
               {onOpenMonthBirthdays && (
-                <button
+                <motion.button
                   onClick={onOpenMonthBirthdays}
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="group relative"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   title="Cumpleaños del mes"
                 >
-                  <span className="material-symbols-rounded text-2xl">
-                    arrow_forward
-                  </span>
-                </button>
+                  <div className="flex flex-col items-center gap-1 sm:flex-row sm:items-center sm:gap-2.5">
+                    {/* Texto del mes - solo visible en desktop */}
+                    <div className="hidden sm:flex flex-col items-end justify-center">
+                      <p className="text-xs font-bold text-gray-700 dark:text-gray-200 leading-tight whitespace-nowrap">
+                        Cumpleaños
+                      </p>
+                      <p className="text-sm font-bold text-gray-700 dark:text-gray-200 leading-tight whitespace-nowrap">
+                        mes {monthName}
+                      </p>
+                    </div>
+
+                    {/* Botón circular con flecha */}
+                    <div className="relative">
+                      {/* Pulso de fondo */}
+                      <motion.div
+                        className="absolute inset-0 bg-white/30 dark:bg-gray-500/30 rounded-full"
+                        animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      />
+
+                      <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-lg group-hover:bg-gray-50 dark:group-hover:bg-gray-700 transition-all duration-300 border-2 border-gray-400/40 dark:border-gray-500/40 group-hover:border-gray-500/60 dark:group-hover:border-gray-400/60">
+                        <motion.span
+                          className="material-symbols-rounded text-gray-700 dark:text-gray-200 text-2xl sm:text-3xl font-bold"
+                          animate={{ x: [0, 3, 0] }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                          }}
+                        >
+                          arrow_forward
+                        </motion.span>
+                      </div>
+                    </div>
+
+                    {/* Texto móvil */}
+                    <p className="sm:hidden text-[10px] font-bold text-gray-700 dark:text-gray-200 leading-tight text-center whitespace-nowrap">
+                      Cumple. {monthName}
+                    </p>
+                  </div>
+                </motion.button>
               )}
+
+              {/* Botón de editar perfil - más compacto en móvil */}
               {onEditProfile && (
                 <button
                   onClick={onEditProfile}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                  className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm border border-gray-300 dark:border-gray-600"
                 >
                   <span className="material-symbols-rounded text-lg">edit</span>
-                  <span className="hidden sm:inline">Agregar Fecha</span>
+                  <span>Agregar Fecha</span>
                 </button>
               )}
             </div>
@@ -171,99 +216,98 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-30"></div>
 
         {/* Contenido */}
-        <div className="relative z-10 flex items-center justify-between sm:pr-40">
-          <div className="flex items-center gap-4">
-            {/* Ícono animado si es el mes */}
-            {isBirthdayMonth ? (
-              <motion.span
-                className="material-symbols-rounded text-white text-4xl"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  rotate: [0, 10, -10, 0],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  repeatDelay: 3,
-                }}
-              >
-                celebration
-              </motion.span>
-            ) : (
-              <span className="material-symbols-rounded text-white text-4xl">
-                cake
-              </span>
-            )}
+        <div className="relative z-10">
+          <div className="flex items-start justify-between gap-4">
+            {/* Lado izquierdo: Ícono + Info */}
+            <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+              {/* Ícono animado si es el mes */}
+              {isBirthdayMonth ? (
+                <motion.span
+                  className="material-symbols-rounded text-white text-3xl sm:text-4xl flex-shrink-0 mt-0.5"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    rotate: [0, 10, -10, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatDelay: 3,
+                  }}
+                >
+                  celebration
+                </motion.span>
+              ) : (
+                <span className="material-symbols-rounded text-white text-3xl sm:text-4xl flex-shrink-0 mt-0.5">
+                  cake
+                </span>
+              )}
 
-            {/* Información */}
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-lg font-bold text-white">Tu Cumpleaños</h3>
+              {/* Información */}
+              <div className="flex-1 min-w-0 pt-0.5">
+                <h3 className="text-base sm:text-lg font-bold text-white mb-1">
+                  Tu Cumpleaños
+                </h3>
+                <p className="text-xl sm:text-2xl font-bold text-white leading-tight">
+                  {formatBirthday(birthday)}
+                </p>
+              </div>
+            </div>
+
+            {/* Lado derecho: Badge + Botón */}
+            {onOpenMonthBirthdays && (
+              <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                {/* Badge "¡Tu mes!" arriba - solo cuando es su cumpleaños */}
                 {isBirthdayMonth && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.3, type: 'spring' }}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white/25 backdrop-blur-sm rounded-full text-xs font-semibold text-white"
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3, type: 'spring', bounce: 0.5 }}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-white/25 backdrop-blur-sm rounded-full border border-white/30"
                   >
-                    <span className="material-symbols-rounded text-sm">
+                    <span className="material-symbols-rounded text-white text-sm">
                       stars
                     </span>
-                    ¡Es tu mes!
-                  </motion.span>
+                    <span className="text-xs font-bold text-white whitespace-nowrap">
+                      ¡Tu mes!
+                    </span>
+                  </motion.div>
                 )}
+
+                {/* Botón de flecha */}
+                <motion.button
+                  onClick={onOpenMonthBirthdays}
+                  className="group relative"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  title="Ver cumpleaños del mes"
+                >
+                  <div className="relative">
+                    {/* Pulso de fondo animado */}
+                    <motion.div
+                      className="absolute inset-0 bg-white/20 rounded-full"
+                      animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+
+                    {/* Botón circular */}
+                    <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center shadow-lg group-hover:bg-white/50 transition-all duration-300 border-2 border-white/50 group-hover:border-white/70">
+                      <motion.span
+                        className="material-symbols-rounded text-white text-2xl sm:text-3xl font-bold"
+                        animate={{ x: [0, 3, 0] }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                        }}
+                      >
+                        arrow_forward
+                      </motion.span>
+                    </div>
+                  </div>
+                </motion.button>
               </div>
-              <p className="text-2xl font-bold text-white">
-                {formatBirthday(birthday)}
-              </p>
-              {/* Texto mes actual (se moverá al lado derecho junto a la flecha) */}
-            </div>
+            )}
           </div>
-
-          {/* Decoración con partículas sutiles (solo si es el mes) */}
-          {isBirthdayMonth && (
-            <div className="hidden md:flex items-center gap-2">
-              <motion.span
-                className="material-symbols-rounded text-white/60 text-xl"
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0 }}
-              >
-                star
-              </motion.span>
-              <motion.span
-                className="material-symbols-rounded text-white/60 text-xl"
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
-              >
-                star
-              </motion.span>
-              <motion.span
-                className="material-symbols-rounded text-white/60 text-xl"
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.6 }}
-              >
-                star
-              </motion.span>
-            </div>
-          )}
-
-          {/* Botón + texto mes actual al lado derecho */}
-          {onOpenMonthBirthdays && (
-            <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3 sm:absolute sm:right-4 sm:top-1/2 sm:-translate-y-1/2">
-              <p className="text-xs sm:text-sm font-bold text-white text-right leading-tight max-w-[160px] break-words select-none">
-                Cumpleaños mes {monthName}
-              </p>
-              <button
-                onClick={onOpenMonthBirthdays}
-                className="w-10 h-10 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/40 transition-colors shadow-lg"
-                title="Ver cumpleaños del mes"
-              >
-                <span className="material-symbols-rounded text-2xl">
-                  arrow_forward
-                </span>
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </motion.div>
