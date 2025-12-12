@@ -13,7 +13,9 @@ import attendanceRoutes from './routes/attendanceRoutes';
 import seasonRoutes from './routes/seasonRoutes';
 import pointsRoutes from './routes/pointsRoutes';
 import registrationRoutes from './routes/registrationRoutes';
+import birthdayRoutes from './routes/birthdayRoutes';
 import { DatabaseSeeder } from './seeders/DatabaseSeeder';
+import { startBirthdayScheduler } from './services/birthdayScheduler';
 import { authenticateToken } from './middleware/auth';
 import { ensureDatabaseConnection } from './middleware/databaseCheck';
 import { connectDatabase } from './config/database';
@@ -85,6 +87,9 @@ const initializeApp = async () => {
 
     // Ejecutar seeders
     await DatabaseSeeder.runAllSeeders();
+
+    // Iniciar scheduler de cumpleaños
+    startBirthdayScheduler();
 
     // Configurar rutas después de que la BD esté lista
     setupRoutes();
@@ -188,6 +193,9 @@ const setupRoutes = () => {
   // Rutas de puntos y temporadas (sistema de gamificación)
   app.use('/api/seasons', ensureDatabaseConnection, seasonRoutes);
   app.use('/api/points', ensureDatabaseConnection, pointsRoutes);
+
+  // Rutas de cumpleaños
+  app.use('/api/birthday', ensureDatabaseConnection, birthdayRoutes);
 
   // Ruta por defecto
   app.get('/', (_req, res) => {

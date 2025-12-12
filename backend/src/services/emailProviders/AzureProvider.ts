@@ -9,7 +9,8 @@ export class AzureProvider implements EmailProvider {
   private connectionString: string;
 
   constructor() {
-    this.connectionString = process.env.AZURE_COMMUNICATION_CONNECTION_STRING || '';
+    this.connectionString =
+      process.env.AZURE_COMMUNICATION_CONNECTION_STRING || '';
     this.fromEmail = process.env.EMAIL_FROM || '';
     this.fromName = process.env.EMAIL_FROM_NAME || 'JA Manager';
 
@@ -29,11 +30,14 @@ export class AzureProvider implements EmailProvider {
 
   async sendEmail(params: EmailParams): Promise<void> {
     if (!this.isConfigured()) {
-      logger.warn('Azure Communication Services no está configurado, omitiendo envío de email', {
-        context: 'AzureProvider',
-        method: 'sendEmail',
-        toEmail: params.toEmail,
-      });
+      logger.warn(
+        'Azure Communication Services no está configurado, omitiendo envío de email',
+        {
+          context: 'AzureProvider',
+          method: 'sendEmail',
+          toEmail: params.toEmail,
+        }
+      );
       return;
     }
 
@@ -49,6 +53,9 @@ export class AzureProvider implements EmailProvider {
           break;
         case 'rejection':
           emailSubject = `Solicitud de Registro - Actualización`;
+          break;
+        case 'birthday':
+          emailSubject = `¡Feliz Cumpleaños ${params.toName}! 🎂`;
           break;
         default:
           emailSubject = params.subject || params.message;
@@ -77,16 +84,21 @@ export class AzureProvider implements EmailProvider {
       const poller = await this.emailClient!.beginSend(emailMessage);
       const result = await poller.pollUntilDone();
 
-      logger.info('Email enviado exitosamente con Azure Communication Services', {
-        context: 'AzureProvider',
-        method: 'sendEmail',
-        type: params.type,
-        toEmail: params.toEmail,
-        messageId: result.id,
-      });
+      logger.info(
+        'Email enviado exitosamente con Azure Communication Services',
+        {
+          context: 'AzureProvider',
+          method: 'sendEmail',
+          type: params.type,
+          toEmail: params.toEmail,
+          messageId: result.id,
+        }
+      );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorDetails = error instanceof Error ? error.stack : JSON.stringify(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const errorDetails =
+        error instanceof Error ? error.stack : JSON.stringify(error);
 
       logger.error('Error enviando email con Azure Communication Services', {
         context: 'AzureProvider',
@@ -110,6 +122,8 @@ export class AzureProvider implements EmailProvider {
         return this.generateApprovalTemplate(params);
       case 'rejection':
         return this.generateRejectionTemplate(params);
+      case 'birthday':
+        return this.generateBirthdayTemplate(params);
       default:
         return `<p>${params.message}</p>`;
     }
@@ -123,6 +137,8 @@ export class AzureProvider implements EmailProvider {
         return `¡Solicitud Aprobada!\n\nHola ${params.toName},\n\nTu solicitud de registro ha sido aprobada.\n\nPlaca asignada: ${params.placa || 'N/A'}\nEmail: ${params.toEmail}\n\n¡Bienvenido a la familia juvenil!`;
       case 'rejection':
         return `Solicitud Rechazada\n\nHola ${params.toName},\n\nTu solicitud de registro ha sido rechazada.\n\n${params.rejectionReason ? `Razón: ${params.rejectionReason}\n` : ''}\nSi tienes alguna pregunta, contacta con el administrador.`;
+      case 'birthday':
+        return `¡Feliz Cumpleaños ${params.toName}!\n\nDesde el Ministerio Juvenil Modelia te enviamos un fuerte abrazo y nuestros mejores deseos en este día tan especial.\n\nQue Dios siga guiando tu vida y llenándola de bendiciones.\n\n¡Disfruta tu día al máximo!\n\nTienes ${params.birthdayPoints || 100} puntos de regalo. Reclama tu regalo iniciando sesión en JA Manager.\n\nNota: Los puntos solo pueden reclamarse una vez al año. Válido desde tu cumpleaños hasta 10 días después.`;
       default:
         return params.message;
     }
@@ -242,13 +258,16 @@ export class AzureProvider implements EmailProvider {
         <p><strong>Nombre:</strong> ${params.applicantName || params.toName}</p>
         <p><strong>Email:</strong> <a href="mailto:${params.applicantEmail || params.toEmail}" style="color: #3b82f6; text-decoration: none;">${params.applicantEmail || params.toEmail}</a></p>
         ${params.placa ? `<p><strong>Placa asignada:</strong> <strong style="color: #3b82f6;">${params.placa}</strong></p>` : ''}
-        <p><strong>Fecha de solicitud:</strong> ${new Date().toLocaleDateString('es-CO', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })}</p>
+        <p><strong>Fecha de solicitud:</strong> ${new Date().toLocaleDateString(
+          'es-CO',
+          {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }
+        )}</p>
       </div>
       <p style="font-size: 16px; color: #4a5568; margin: 30px 0">Por favor, revisa la solicitud en el panel de administración.</p>
       <div style="text-align: center; margin: 40px 0">
@@ -562,17 +581,192 @@ export class AzureProvider implements EmailProvider {
         <h2>Lo sentimos 😔</h2>
         <p style="font-size: 18px; margin: 0">Tu solicitud de registro ha sido rechazada</p>
       </div>
-      ${params.rejectionReason ? `
+      ${
+        params.rejectionReason
+          ? `
       <div class="reason-box">
         <h3 style="color: #dc2626; margin-top: 0">Razón del rechazo:</h3>
         <p style="margin: 0; color: #4a5568">${params.rejectionReason}</p>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
       <p style="font-size: 16px; color: #4a5568; margin: 30px 0">Si tienes alguna pregunta o crees que esto es un error, por favor contacta con el administrador del sistema.</p>
       <div style="text-align: center; margin: 40px 0">
         <a href="https://yellow-river-04315080f.3.azurestaticapps.net/" class="cta-button">🔄 Intentar Nuevamente</a>
       </div>
-      <p style="font-size: 16px; color: #4a556撃; text-align: center; margin-top: 30px">Gracias por tu interés en formar parte de nuestra comunidad.</p>
+      <p style="font-size: 16px; color: #4a5568; text-align: center; margin-top: 30px">Gracias por tu interés en formar parte de nuestra comunidad.</p>
+    </div>
+    <div class="footer">
+      <div class="footer-logo">JA Manager</div>
+      <div class="footer-text">Sistema de Gestión de Jóvenes Adventistas</div>
+      <div class="footer-text">© 2025 by Jamomodev</div>
+    </div>
+  </div>
+</body>
+</html>
+    `.trim();
+  }
+
+  private generateBirthdayTemplate(params: EmailParams): string {
+    const claimUrl = `https://yellow-river-04315080f.3.azurestaticapps.net/birthday-claim?token=${params.birthdayToken}`;
+    const points = params.birthdayPoints || 100;
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¡Feliz Cumpleaños!</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f7fa;
+    }
+    .container {
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    .email-header {
+      background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
+      padding: 40px 30px;
+      text-align: center;
+      color: white;
+    }
+    .logo {
+      width: 200px;
+      margin: 0 auto 20px;
+    }
+    .logo img {
+      width: 100%;
+      height: auto;
+    }
+    .birthday-icon {
+      font-size: 64px;
+      margin: 20px 0;
+    }
+    .email-content {
+      padding: 40px 30px;
+    }
+    .celebration-box {
+      background: linear-gradient(135deg, #FDF4FF 0%, #F3E8FF 100%);
+      border-left: 4px solid #8B5CF6;
+      padding: 25px;
+      border-radius: 8px;
+      margin: 25px 0;
+    }
+    .points-box {
+      background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
+      color: white;
+      font-size: 28px;
+      font-weight: bold;
+      text-align: center;
+      padding: 30px;
+      border-radius: 12px;
+      margin: 30px 0;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+    }
+    .points-box .icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    .cta-button {
+      display: inline-block;
+      background: #10B981;
+      color: #ffffff;
+      padding: 16px 32px;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 18px;
+      margin: 20px 0;
+      text-align: center;
+      transition: background-color 0.2s;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+    .cta-button:hover {
+      background: #059669;
+    }
+    .disclaimer {
+      background: #F3F4F6;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 25px 0;
+      font-size: 14px;
+      color: #6B7280;
+      text-align: center;
+    }
+    .footer {
+      background: #2d3748;
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .footer-logo {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .footer-text {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="email-header">
+      <div class="logo">
+        <img src="https://yellow-river-04315080f.3.azurestaticapps.net/assets/logo_2-DuTkiqwv.png" alt="JOVENES MODELIA" />
+      </div>
+      <div class="birthday-icon">🎂</div>
+      <h1 style="color: white; margin: 10px 0; font-size: 32px;">¡Feliz Cumpleaños!</h1>
+      <p style="color: rgba(255, 255, 255, 0.9); font-size: 20px; margin: 10px 0;">${params.toName}</p>
+    </div>
+    <div class="email-content">
+      <div class="celebration-box">
+        <p style="font-size: 18px; color: #2d3748; margin: 0 0 15px 0; line-height: 1.8;">
+          Desde el <strong>Ministerio Juvenil Modelia</strong> te enviamos un fuerte abrazo y nuestros mejores deseos en este día tan especial.
+        </p>
+        <p style="font-size: 16px; color: #4a5568; margin: 0 0 15px 0; line-height: 1.8;">
+          Que Dios siga guiando tu vida y llenándola de bendiciones.
+        </p>
+        <p style="font-size: 18px; color: #8B5CF6; margin: 0; font-weight: 600;">
+          ¡Disfruta tu día al máximo! 🎉
+        </p>
+      </div>
+      
+      <h2 style="color: #2d3748; text-align: center; margin: 40px 0 20px;">Tenemos un regalo especial para ti</h2>
+      
+      <div class="points-box">
+        <div class="icon">🎁</div>
+        <div>${points} PUNTOS DE REGALO</div>
+      </div>
+      
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="${claimUrl}" class="cta-button">Reclamar Mi Regalo</a>
+      </div>
+      
+      <div class="disclaimer">
+        <strong>📌 Nota importante:</strong><br>
+        Los puntos solo pueden reclamarse una vez al año.<br>
+        Válido desde tu cumpleaños hasta 10 días después.<br>
+        <em>Si ya reclamaste los puntos antes, no serán reclamados de nuevo.</em>
+      </div>
+      
+      <p style="font-size: 16px; color: #4a5568; text-align: center; margin-top: 30px;">
+        Con cariño,<br>
+        <strong>Ministerio Juvenil Modelia</strong>
+      </p>
     </div>
     <div class="footer">
       <div class="footer-logo">JA Manager</div>

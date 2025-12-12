@@ -3,12 +3,15 @@ export interface EmailParams {
   toName: string;
   subject?: string;
   message: string;
-  type: 'registration_request' | 'approval' | 'rejection';
+  type: 'registration_request' | 'approval' | 'rejection' | 'birthday';
   placa?: string;
   rejectionReason?: string;
   // Para emails de solicitud de registro: información del solicitante
   applicantName?: string;
   applicantEmail?: string;
+  // Para emails de cumpleaños
+  birthdayToken?: string;
+  birthdayPoints?: number;
 }
 
 export interface EmailProvider {

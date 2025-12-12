@@ -6,7 +6,7 @@ const API_BASE_URL =
 console.log('🔧 API_BASE_URL:', API_BASE_URL);
 
 // Función para obtener el token del localStorage
-const getAuthToken = (): string | null => {
+export const getAuthToken = (): string | null => {
   return localStorage.getItem('authToken');
 };
 

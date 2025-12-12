@@ -240,7 +240,11 @@ export const getCurrentYearColombia = (): number => {
  * Helpers semanales (domingo a sábado) en zona horaria de Colombia
  */
 export const getStartOfWeekColombia = (date?: Date | string): Date => {
-  const target = date ? (typeof date === 'string' ? new Date(date) : date) : new Date();
+  const target = date
+    ? typeof date === 'string'
+      ? new Date(date)
+      : date
+    : new Date();
 
   // Obtener y normalizar a fecha local Colombia (año/mes/día)
   const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -253,7 +257,7 @@ export const getStartOfWeekColombia = (date?: Date | string): Date => {
 
   const parts = formatter.formatToParts(target);
   const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
-  const month = (parseInt(parts.find(p => p.type === 'month')?.value || '1') - 1);
+  const month = parseInt(parts.find(p => p.type === 'month')?.value || '1') - 1;
   const day = parseInt(parts.find(p => p.type === 'day')?.value || '1');
   const local = new Date(year, month, day, 0, 0, 0, 0);
 
@@ -287,8 +291,66 @@ export const isSaturdayColombia = (date: Date | string): boolean => {
   });
   const parts = formatter.formatToParts(d);
   const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
-  const month = (parseInt(parts.find(p => p.type === 'month')?.value || '1') - 1);
+  const month = parseInt(parts.find(p => p.type === 'month')?.value || '1') - 1;
   const day = parseInt(parts.find(p => p.type === 'day')?.value || '1');
   const local = new Date(year, month, day, 12, 0, 0, 0); // medio día evita ruido
   return local.getDay() === 6; // 6 = sábado
+};
+
+/**
+ * Valida si el joven está dentro de la ventana de reclamación de puntos de cumpleaños
+ * Reglas:
+ * - Solo pueden reclamar en su día de cumpleaños o después
+ * - Si el cumpleaños es día 30 o 31, tienen hasta el día 10 del mes siguiente
+ * - Si el cumpleaños es antes del día 30, tienen hasta 10 días después en el mismo mes
+ * - Solo pueden reclamar una vez por año
+ */
+export const isWithinBirthdayClaimWindow = (
+  birthday: Date | string,
+  claimedDate?: Date | string | null
+): boolean => {
+  const today = getCurrentDateTimeColombia();
+  const birthDate =
+    typeof birthday === 'string' ? new Date(birthday) : birthday;
+
+  // Extraer mes y día del cumpleaños
+  const birthMonth = birthDate.getMonth();
+  const birthDay = birthDate.getDate();
+
+  // Extraer mes, día y año actual
+  const currentMonth = today.getMonth();
+  const currentDay = today.getDate();
+  const currentYear = today.getFullYear();
+
+  // Si ya reclamó este año, no puede reclamar de nuevo
+  if (claimedDate) {
+    const claimed =
+      typeof claimedDate === 'string' ? new Date(claimedDate) : claimedDate;
+    if (claimed.getFullYear() === currentYear) {
+      return false;
+    }
+  }
+
+  // Verificar si estamos en el mes de cumpleaños
+  if (currentMonth === birthMonth) {
+    // Solo puede reclamar en su día de cumpleaños o después
+    if (currentDay >= birthDay) {
+      // Si el cumpleaños es día 30 o 31, la ventana se extiende al mes siguiente
+      if (birthDay >= 30) {
+        return true;
+      }
+      // Si el cumpleaños es antes del día 30, verificar que no hayan pasado más de 10 días
+      return currentDay <= birthDay + 10;
+    }
+    return false;
+  }
+
+  // Verificar si estamos en el mes siguiente (para cumpleaños días 30 o 31)
+  const nextMonth = (birthMonth + 1) % 12;
+  if (currentMonth === nextMonth && birthDay >= 30) {
+    // Puede reclamar hasta el día 10 del mes siguiente
+    return currentDay <= 10;
+  }
+
+  return false;
 };

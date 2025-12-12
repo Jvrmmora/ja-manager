@@ -7,16 +7,16 @@ export interface IYoung {
   profileImage?: string;
   gender: 'masculino' | 'femenino' | '';
   role:
-  | 'lider juvenil'
-  | 'colaborador'
-  | 'director'
-  | 'subdirector'
-  | 'club guias'
-  | 'club conquistadores'
-  | 'club aventureros'
-  | 'escuela sabatica'
-  | 'joven adventista'
-  | 'simpatizante';
+    | 'lider juvenil'
+    | 'colaborador'
+    | 'director'
+    | 'subdirector'
+    | 'club guias'
+    | 'club conquistadores'
+    | 'club aventureros'
+    | 'escuela sabatica'
+    | 'joven adventista'
+    | 'simpatizante';
   role_name?: string; // Nombre del rol del sistema
   role_id?: string; // ID del rol
   // Grupo opcional 1..5
@@ -25,12 +25,13 @@ export interface IYoung {
   skills: string[];
   placa?: string; // Placa generada del joven
   totalPoints?: number; // ✅ Puntos totales de la temporada activa
+  birthdayPointsClaimed?: Date | string | null; // Fecha de última reclamación de puntos de cumpleaños
   createdAt?: Date | string;
   updatedAt?: Date | string;
 }
 
 export interface IYoungCreate
-  extends Omit<IYoung, 'id' | 'createdAt' | 'updatedAt'> { }
+  extends Omit<IYoung, 'id' | 'createdAt' | 'updatedAt'> {}
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -59,13 +60,13 @@ export interface PaginationQuery {
   role?: string;
   groups?: string[] | undefined; // Array de grupos para filtrar (1-5)
   sortBy?:
-  | 'fullName'
-  | 'birthday'
-  | 'email'
-  | 'role'
-  | 'gender'
-  | 'createdAt'
-  | 'updatedAt';
+    | 'fullName'
+    | 'birthday'
+    | 'email'
+    | 'role'
+    | 'gender'
+    | 'createdAt'
+    | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
 }
 

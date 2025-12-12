@@ -467,8 +467,29 @@ class PointsService {
           from: 'streaks',
           let: { youngId: '$_id' },
           pipeline: [
-            { $match: { $expr: { $and: [{ $eq: ['$youngId', '$$youngId'] }, { $eq: ['$seasonId', new mongoose.Types.ObjectId(seasonId as any)] }] } } },
-            { $project: { currentStreakWeeks: 1, bestStreakWeeks: 1, violetFlameAwarded: 1, lastAttendanceSaturday: 1 } },
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$youngId', '$$youngId'] },
+                    {
+                      $eq: [
+                        '$seasonId',
+                        new mongoose.Types.ObjectId(seasonId as any),
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              $project: {
+                currentStreakWeeks: 1,
+                bestStreakWeeks: 1,
+                violetFlameAwarded: 1,
+                lastAttendanceSaturday: 1,
+              },
+            },
           ],
           as: 'streak',
         },
@@ -546,7 +567,8 @@ class PointsService {
       if (r.streakLastAttendanceSaturday) {
         const last = new Date(r.streakLastAttendanceSaturday);
         const weeksBetween = Math.round(
-          (currentSaturday.getTime() - last.getTime()) / (7 * 24 * 60 * 60 * 1000)
+          (currentSaturday.getTime() - last.getTime()) /
+            (7 * 24 * 60 * 60 * 1000)
         );
         if (weeksBetween >= 3) {
           effectiveStreak = 0;
@@ -557,7 +579,8 @@ class PointsService {
 
     adjusted.sort((a: any, b: any) => {
       if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
-      if ((b.streak || 0) !== (a.streak || 0)) return (b.streak || 0) - (a.streak || 0);
+      if ((b.streak || 0) !== (a.streak || 0))
+        return (b.streak || 0) - (a.streak || 0);
       return (a.youngName || '').localeCompare(b.youngName || '');
     });
 
@@ -608,7 +631,21 @@ class PointsService {
           from: 'streaks',
           let: { youngId: '$_id' },
           pipeline: [
-            { $match: { $expr: { $and: [{ $eq: ['$youngId', '$$youngId'] }, { $eq: ['$seasonId', new mongoose.Types.ObjectId(sid as any)] }] } } },
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$youngId', '$$youngId'] },
+                    {
+                      $eq: [
+                        '$seasonId',
+                        new mongoose.Types.ObjectId(sid as any),
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
             { $project: { currentStreakWeeks: 1, lastAttendanceSaturday: 1 } },
           ],
           as: 'streak',
@@ -654,7 +691,8 @@ class PointsService {
       if (r.streakLastAttendanceSaturday) {
         const last = new Date(r.streakLastAttendanceSaturday);
         const weeksBetween = Math.round(
-          (currentSaturday.getTime() - last.getTime()) / (7 * 24 * 60 * 60 * 1000)
+          (currentSaturday.getTime() - last.getTime()) /
+            (7 * 24 * 60 * 60 * 1000)
         );
         if (weeksBetween >= 3) {
           effectiveStreak = 0;
@@ -666,7 +704,8 @@ class PointsService {
     // Re-ordenar después del ajuste de racha
     adjusted.sort((a: any, b: any) => {
       if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
-      if ((b.streak || 0) !== (a.streak || 0)) return (b.streak || 0) - (a.streak || 0);
+      if ((b.streak || 0) !== (a.streak || 0))
+        return (b.streak || 0) - (a.streak || 0);
       return (a.youngName || '').localeCompare(b.youngName || '');
     });
 
@@ -693,6 +732,81 @@ class PointsService {
       rank,
       totalParticipants,
       percentile: Math.round(percentile),
+    };
+  }
+
+  /**
+   * Reclamar puntos de cumpleaños
+   */
+  async claimBirthdayPoints(youngId: string): Promise<{
+    success: boolean;
+    points: number;
+    youngName: string;
+    message: string;
+  }> {
+    // Importar módulos necesarios
+    const Young = (await import('../models/Young')).default;
+    const { isWithinBirthdayClaimWindow } = await import('../utils/dateUtils');
+
+    // Obtener el joven
+    const young = await Young.findById(youngId);
+    if (!young) {
+      throw new Error('Joven no encontrado');
+    }
+
+    if (!young.birthday) {
+      throw new Error('El joven no tiene fecha de cumpleaños registrada');
+    }
+
+    // Obtener temporada activa
+    const activeSeason = await Season.findOne({ status: 'ACTIVE' });
+    if (!activeSeason) {
+      throw new Error('No hay temporada activa');
+    }
+
+    // Obtener puntos de cumpleaños de la configuración de la temporada
+    const birthdayPoints = activeSeason.settings.birthdayBonusPoints || 100;
+
+    // Validar ventana de reclamación
+    const isWithinWindow = isWithinBirthdayClaimWindow(
+      young.birthday,
+      young.birthdayPointsClaimed
+    );
+
+    if (!isWithinWindow) {
+      // Verificar si ya reclamó este año
+      if (young.birthdayPointsClaimed) {
+        const claimedYear = new Date(young.birthdayPointsClaimed).getFullYear();
+        const currentYear = new Date().getFullYear();
+
+        if (claimedYear === currentYear) {
+          throw new Error('Ya reclamaste tus puntos de cumpleaños este año');
+        }
+      }
+
+      throw new Error(
+        'No estás en la ventana de reclamación de puntos de cumpleaños'
+      );
+    }
+
+    // Crear transacción de puntos
+    const transaction = await PointsTransaction.create({
+      youngId: young._id,
+      seasonId: activeSeason._id,
+      points: birthdayPoints,
+      type: 'BIRTHDAY',
+      description: 'Puntos de cumpleaños',
+    });
+
+    // Actualizar campo birthdayPointsClaimed
+    young.birthdayPointsClaimed = new Date();
+    await young.save();
+
+    return {
+      success: true,
+      points: birthdayPoints,
+      youngName: young.fullName,
+      message: `¡Feliz cumpleaños ${young.fullName}! Has recibido ${birthdayPoints} puntos`,
     };
   }
 }

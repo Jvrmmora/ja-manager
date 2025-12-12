@@ -4,6 +4,7 @@ import EditYoungForm from '../components/EditYoungForm';
 import YoungCard from '../components/YoungCard';
 import FilterBar from '../components/FilterBar';
 import BirthdayDashboard from '../components/BirthdayDashboard';
+import BirthdayStatsModal from '../components/BirthdayStatsModal';
 import ImportModal from '../components/ImportModal';
 import ProfileDropdown from '../components/ProfileDropdown';
 import ProfileModal from '../components/ProfileModal';
@@ -102,6 +103,7 @@ function HomePage() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingYoung, setEditingYoung] = useState<IYoung | null>(null);
   const [showBirthdayDashboard, setShowBirthdayDashboard] = useState(false);
+  const [showBirthdayStats, setShowBirthdayStats] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<IYoung | null>(null);
@@ -984,6 +986,16 @@ function HomePage() {
               </button>
             )}
 
+            {/* Botón de Estadísticas de Cumpleaños */}
+            <button
+              onClick={() => setShowBirthdayStats(true)}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all shadow"
+              title="Ver estadísticas de cumpleaños"
+            >
+              <span className="material-symbols-rounded text-base">cake</span>
+              <span>Estadísticas</span>
+            </button>
+
             {/* Split button: Ver Ranking + menú (incluye Gestión Temporadas) */}
             <div className="relative inline-flex" ref={rankingMenuRef}>
               <button
@@ -1204,6 +1216,13 @@ function HomePage() {
             isOpen={showBirthdayDashboard}
             onClose={() => setShowBirthdayDashboard(false)}
             youngList={allYoungList}
+          />
+        )}
+
+        {showBirthdayStats && (
+          <BirthdayStatsModal
+            isOpen={showBirthdayStats}
+            onClose={() => setShowBirthdayStats(false)}
           />
         )}
 

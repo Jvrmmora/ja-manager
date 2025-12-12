@@ -1,20 +1,28 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { formatBirthday } from '../utils/dateUtils';
+import { authService } from '../services/auth';
 
 interface BirthdayBannerProps {
   birthday?: Date | string | null;
+  birthdayPointsClaimed?: Date | string | null;
   onEditProfile?: () => void;
   onOpenMonthBirthdays?: () => void; // Abrir modal simplificado para cumpleaños del mes
 }
 
 const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
   birthday,
+  birthdayPointsClaimed,
   onEditProfile,
   onOpenMonthBirthdays,
 }) => {
+  const navigate = useNavigate();
   const [isBirthdayMonth, setIsBirthdayMonth] = useState(false);
+  const [canClaim, setCanClaim] = useState(false);
+  const [alreadyClaimed, setAlreadyClaimed] = useState(false);
+
   // Nombre del mes actual en español (capitalizado)
   const monthName = (() => {
     const raw = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(
@@ -30,6 +38,7 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
   useEffect(() => {
     if (!birthday) {
       setIsBirthdayMonth(false);
+      setCanClaim(false);
       return;
     }
 
@@ -42,6 +51,51 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
     const isMonth = birthdayDate.getMonth() === currentDate.getMonth();
     setIsBirthdayMonth(isMonth);
 
+    // Verificar si puede reclamar puntos
+    const birthDay = birthdayDate.getDate();
+    const currentDay = currentDate.getDate();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+
+    // Verificar si ya reclamó este año
+    if (birthdayPointsClaimed) {
+      const claimedDate = new Date(birthdayPointsClaimed);
+      const claimedYear = claimedDate.getFullYear();
+
+      if (claimedYear === currentYear) {
+        setAlreadyClaimed(true);
+        setCanClaim(false);
+      } else {
+        setAlreadyClaimed(false);
+        // Verificar ventana de reclamación
+        checkClaimWindow();
+      }
+    } else {
+      setAlreadyClaimed(false);
+      checkClaimWindow();
+    }
+
+    function checkClaimWindow() {
+      // Solo puede reclamar en su día de cumpleaños o después
+      if (isMonth && currentDay >= birthDay) {
+        // Si cumple día 30 o 31, puede reclamar hasta el 10 del mes siguiente
+        if (birthDay >= 30) {
+          setCanClaim(true);
+        } else {
+          // Si cumple antes del 30, puede reclamar hasta 10 días después
+          setCanClaim(currentDay <= birthDay + 10);
+        }
+      } else if (
+        currentMonth === (birthdayDate.getMonth() + 1) % 12 &&
+        birthDay >= 30
+      ) {
+        // Mes siguiente, solo si cumple día 30 o 31
+        setCanClaim(currentDay <= 10);
+      } else {
+        setCanClaim(false);
+      }
+    }
+
     // Si es el mes de cumpleaños, iniciar confeti
     if (isMonth) {
       startConfettiLoop();
@@ -50,7 +104,7 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
     return () => {
       stopConfettiLoop();
     };
-  }, [birthday]);
+  }, [birthday, birthdayPointsClaimed]);
 
   const startConfettiLoop = () => {
     // Lanzar confeti inmediatamente
@@ -250,6 +304,48 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
                 <p className="text-xl sm:text-2xl font-bold text-white leading-tight">
                   {formatBirthday(birthday)}
                 </p>
+
+                {/* Botón de reclamar puntos o badge de reclamado */}
+                {alreadyClaimed && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-green-500/30 backdrop-blur-sm rounded-full border border-green-300/50"
+                  >
+                    <span className="material-symbols-rounded text-white text-sm">
+                      check_circle
+                    </span>
+                    <span className="text-xs font-semibold text-white">
+                      Puntos Reclamados
+                    </span>
+                  </motion.div>
+                )}
+
+                {canClaim && !alreadyClaimed && (
+                  <motion.button
+                    onClick={() => navigate('/birthday-claim?auto=true')}
+                    className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-gray-900 rounded-lg font-bold text-sm shadow-lg transition-all duration-200"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    animate={{
+                      boxShadow: [
+                        '0 0 20px rgba(250, 204, 21, 0.5)',
+                        '0 0 40px rgba(250, 204, 21, 0.8)',
+                        '0 0 20px rgba(250, 204, 21, 0.5)',
+                      ],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  >
+                    <span className="material-symbols-rounded text-lg">
+                      redeem
+                    </span>
+                    <span>¡Reclamar Puntos!</span>
+                  </motion.button>
+                )}
               </div>
             </div>
 

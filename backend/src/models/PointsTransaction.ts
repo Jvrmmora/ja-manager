@@ -5,7 +5,8 @@ export type PointsTransactionType =
   | 'ACTIVITY'
   | 'REFERRAL_BONUS'
   | 'REFERRAL_WELCOME'
-  | 'BONUS';
+  | 'BONUS'
+  | 'BIRTHDAY';
 
 export interface IPointsTransaction {
   id?: string;
@@ -23,7 +24,7 @@ export interface IPointsTransaction {
 
 export interface IPointsTransactionDocument
   extends Omit<IPointsTransaction, 'id'>,
-  Document { }
+    Document {}
 
 interface IPointsTransactionModel
   extends mongoose.Model<IPointsTransactionDocument> {
