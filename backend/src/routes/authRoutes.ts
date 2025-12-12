@@ -11,4 +11,7 @@ router.post('/login', AuthController.login);
 router.get('/profile', authenticateToken, AuthController.getProfile);
 router.post('/logout', authenticateToken, AuthController.logout);
 
+// Ruta de prueba de email (solo admin)
+router.post('/test-email', authenticateToken, AuthController.testEmail);
+
 export default router;

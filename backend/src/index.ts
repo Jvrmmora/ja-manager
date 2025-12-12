@@ -202,6 +202,7 @@ const setupRoutes = () => {
         'POST /api/auth/login - Iniciar sesión',
         'GET /api/auth/profile - Perfil usuario (autenticado)',
         'POST /api/auth/logout - Cerrar sesión (autenticado)',
+        'POST /api/auth/test-email - Enviar email de prueba (admin)',
         'GET /api/young - Obtener jóvenes (autenticado)',
         'POST /api/young - Crear joven (autenticado)',
         'GET /api/young/stats - Estadísticas (autenticado)',

@@ -22,23 +22,26 @@ export const SCOPES = {
   'young:update': 'Actualizar jóvenes',
   'young:delete': 'Eliminar jóvenes',
   'young:stats': 'Ver estadísticas de jóvenes',
-  
+
   // Placa management
   'placa:generate': 'Generar placa para jóvenes',
-  
+
   // Password management
   'password:reset': 'Resetear contraseñas',
-  
+
   // Import/Export endpoints
   'import:read': 'Descargar plantillas y exportar datos',
   'import:create': 'Importar datos desde Excel',
-  
+
   // System endpoints
   'system:health': 'Verificar estado del sistema',
-  
+
   // Auth endpoints
   'auth:login': 'Iniciar sesión',
-  
+
+  // Email endpoints
+  'email:test': 'Enviar email de prueba',
+
   // Registration endpoints
   'registration:create': 'Crear solicitud de registro',
   'registration:read': 'Ver solicitudes de registro',
@@ -48,14 +51,18 @@ export const SCOPES = {
 /**
  * Middleware para verificar el token JWT
  */
-export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
+export const authenticateToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     // Verificar que la conexión a MongoDB esté activa
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
         success: false,
         error: 'Servicio no disponible',
-        message: 'La base de datos no está disponible en este momento'
+        message: 'La base de datos no está disponible en este momento',
       });
     }
 
@@ -66,7 +73,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       return res.status(401).json({
         success: false,
         error: 'Token de acceso requerido',
-        message: 'No se proporcionó un token de autenticación'
+        message: 'No se proporcionó un token de autenticación',
       });
     }
 
@@ -75,7 +82,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       return res.status(403).json({
         success: false,
         error: 'Token inválido',
-        message: 'El token proporcionado no es válido o ha expirado'
+        message: 'El token proporcionado no es válido o ha expirado',
       });
     }
 
@@ -85,7 +92,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       return res.status(403).json({
         success: false,
         error: 'Rol no encontrado',
-        message: 'El rol del usuario no existe en el sistema'
+        message: 'El rol del usuario no existe en el sistema',
       });
     }
 
@@ -97,7 +104,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     return res.status(500).json({
       success: false,
       error: 'Error interno del servidor',
-      message: 'Error al procesar la autenticación'
+      message: 'Error al procesar la autenticación',
     });
   }
 };
@@ -112,17 +119,17 @@ export const requireScope = (requiredScope: keyof typeof SCOPES) => {
         return res.status(401).json({
           success: false,
           error: 'Usuario no autenticado',
-          message: 'Debe estar autenticado para acceder a este recurso'
+          message: 'Debe estar autenticado para acceder a este recurso',
         });
       }
 
       const userScopes = req.userRole.scopes || [];
-      
+
       if (!userScopes.includes(requiredScope)) {
         return res.status(403).json({
           success: false,
           error: 'Permisos insuficientes',
-          message: `No tiene permisos para: ${SCOPES[requiredScope]}`
+          message: `No tiene permisos para: ${SCOPES[requiredScope]}`,
         });
       }
 
@@ -132,7 +139,7 @@ export const requireScope = (requiredScope: keyof typeof SCOPES) => {
       return res.status(500).json({
         success: false,
         error: 'Error interno del servidor',
-        message: 'Error al verificar permisos'
+        message: 'Error al verificar permisos',
       });
     }
   };
@@ -141,6 +148,8 @@ export const requireScope = (requiredScope: keyof typeof SCOPES) => {
 /**
  * Middleware combinado: autenticar + verificar scope
  */
-export const authenticateAndAuthorize = (requiredScope: keyof typeof SCOPES) => {
+export const authenticateAndAuthorize = (
+  requiredScope: keyof typeof SCOPES
+) => {
   return [authenticateToken, requireScope(requiredScope)];
 };
