@@ -40,7 +40,7 @@ const BirthdayStatsModal: React.FC<BirthdayStatsModalProps> = ({
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/birthday/stats`,
+        `${import.meta.env.VITE_API_URL}/birthday/stats`,
         {
           headers: {
             Authorization: `Bearer ${getAuthToken()}`,

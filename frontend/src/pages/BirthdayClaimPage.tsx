@@ -95,7 +95,7 @@ const BirthdayClaimPage: React.FC = () => {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/birthday/claim`,
+        `${import.meta.env.VITE_API_URL}/birthday/claim`,
         {
           method: 'POST',
           headers: {
