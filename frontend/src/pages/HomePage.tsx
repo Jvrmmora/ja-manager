@@ -853,6 +853,7 @@ function HomePage() {
         <StatsCards
           youngList={allYoungList}
           onBirthdayClick={() => setShowBirthdayDashboard(true)}
+          onBirthdayStatsClick={() => setShowBirthdayStats(true)}
         />
 
         {/* Barra de acciones */}
@@ -985,16 +986,6 @@ function HomePage() {
                 )}
               </button>
             )}
-
-            {/* Botón de Estadísticas de Cumpleaños */}
-            <button
-              onClick={() => setShowBirthdayStats(true)}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all shadow"
-              title="Ver estadísticas de cumpleaños"
-            >
-              <span className="material-symbols-rounded text-base">cake</span>
-              <span>Estadísticas</span>
-            </button>
 
             {/* Split button: Ver Ranking + menú (incluye Gestión Temporadas) */}
             <div className="relative inline-flex" ref={rankingMenuRef}>
