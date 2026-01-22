@@ -6,18 +6,46 @@
       "/css/*",
       "/js/*",
       "/api/*",
-      "/assets/*"
+      "/assets/*",
+      "/*.js",
+      "/*.css",
+      "/*.json"
     ]
   },
   "routes": [
+    {
+      "route": "/assets/*.js",
+      "headers": {
+        "Content-Type": "text/javascript; charset=utf-8"
+      }
+    },
+    {
+      "route": "/assets/*.mjs",
+      "headers": {
+        "Content-Type": "text/javascript; charset=utf-8"
+      }
+    },
+    {
+      "route": "/assets/*.css",
+      "headers": {
+        "Content-Type": "text/css; charset=utf-8"
+      }
+    },
+    {
+      "route": "/*.js",
+      "headers": {
+        "Content-Type": "text/javascript; charset=utf-8"
+      }
+    },
     {
       "route": "/api/*",
       "allowedRoles": ["anonymous"]
     }
   ],
   "globalHeaders": {
-    "content-security-policy": "default-src https: 'unsafe-eval' 'unsafe-inline'; object-src 'none'; img-src https: data: blob: 'self'; script-src https: 'unsafe-inline' 'unsafe-eval'; style-src https: 'unsafe-inline'; font-src https: data: 'self'; connect-src https: 'self'; worker-src 'self' blob:; child-src 'self' blob:",
-    "X-Content-Type-Options": "nosniff"
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block"
   },
   "mimeTypes": {
     ".json": "application/json",
