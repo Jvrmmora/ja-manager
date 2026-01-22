@@ -1,7 +1,13 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/images/*.{png,jpg,gif,ico}", "/css/*", "/js/*", "/api/*"]
+    "exclude": [
+      "/images/*.{png,jpg,gif,ico}",
+      "/css/*",
+      "/js/*",
+      "/api/*",
+      "/assets/*"
+    ]
   },
   "routes": [
     {
@@ -10,9 +16,24 @@
     }
   ],
   "globalHeaders": {
-    "content-security-policy": "default-src https: 'unsafe-eval' 'unsafe-inline'; object-src 'none'; img-src https: data: blob: 'self'; script-src https: 'unsafe-inline' 'unsafe-eval'; style-src https: 'unsafe-inline'; font-src https: data: 'self'; connect-src https: 'self'; worker-src 'self' blob:; child-src 'self' blob:"
+    "content-security-policy": "default-src https: 'unsafe-eval' 'unsafe-inline'; object-src 'none'; img-src https: data: blob: 'self'; script-src https: 'unsafe-inline' 'unsafe-eval'; style-src https: 'unsafe-inline'; font-src https: data: 'self'; connect-src https: 'self'; worker-src 'self' blob:; child-src 'self' blob:",
+    "X-Content-Type-Options": "nosniff"
   },
   "mimeTypes": {
-    ".json": "application/json"
+    ".json": "application/json",
+    ".js": "text/javascript",
+    ".mjs": "text/javascript",
+    ".css": "text/css",
+    ".html": "text/html",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".svg": "image/svg+xml",
+    ".ico": "image/x-icon",
+    ".woff": "font/woff",
+    ".woff2": "font/woff2",
+    ".ttf": "font/ttf",
+    ".eot": "application/vnd.ms-fontobject"
   }
 }
