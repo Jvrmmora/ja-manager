@@ -4,6 +4,7 @@ import EditYoungForm from '../components/EditYoungForm';
 import YoungCard from '../components/YoungCard';
 import FilterBar from '../components/FilterBar';
 import BirthdayDashboard from '../components/BirthdayDashboard';
+import BirthdayStatsModal from '../components/BirthdayStatsModal';
 import ImportModal from '../components/ImportModal';
 import ProfileDropdown from '../components/ProfileDropdown';
 import ProfileModal from '../components/ProfileModal';
@@ -102,6 +103,7 @@ function HomePage() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingYoung, setEditingYoung] = useState<IYoung | null>(null);
   const [showBirthdayDashboard, setShowBirthdayDashboard] = useState(false);
+  const [showBirthdayStats, setShowBirthdayStats] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<IYoung | null>(null);
@@ -851,6 +853,7 @@ function HomePage() {
         <StatsCards
           youngList={allYoungList}
           onBirthdayClick={() => setShowBirthdayDashboard(true)}
+          onBirthdayStatsClick={() => setShowBirthdayStats(true)}
         />
 
         {/* Barra de acciones */}
@@ -1204,6 +1207,13 @@ function HomePage() {
             isOpen={showBirthdayDashboard}
             onClose={() => setShowBirthdayDashboard(false)}
             youngList={allYoungList}
+          />
+        )}
+
+        {showBirthdayStats && (
+          <BirthdayStatsModal
+            isOpen={showBirthdayStats}
+            onClose={() => setShowBirthdayStats(false)}
           />
         )}
 

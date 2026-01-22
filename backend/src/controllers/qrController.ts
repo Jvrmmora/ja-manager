@@ -37,7 +37,12 @@ export const generateDailyQR = async (
       return;
     }
 
-    const { force = false, points = 10 } = req.body; // Aceptar force y points
+    const {
+      force = false,
+      points = 10,
+      speedBonusEnabled = false,
+      bonusDecayMinutes = 10,
+    } = req.body; // Aceptar force, points y bonus
     const today = getCurrentDateColombia(); // Fecha actual en Colombia (YYYY-MM-DD)
 
     // Verificar si ya existe un QR activo para hoy
@@ -92,6 +97,8 @@ export const generateDailyQR = async (
       dailyDate: today,
       usageCount: 0,
       points, // Puntos configurados por el admin
+      speedBonusEnabled, // Si está habilitado el bonus por velocidad
+      bonusDecayMinutes, // Duración del bonus en minutos
     });
 
     await newQR.save();
@@ -156,6 +163,18 @@ export const getCurrentQR = async (
       errorCorrectionLevel: 'M',
     });
 
+    // Calcular información del bonus
+    const currentSpeedBonus = currentQR.getCurrentSpeedBonus();
+    const bonusExpiresAt = currentQR.speedBonusEnabled
+      ? new Date(
+          currentQR.generatedAt.getTime() +
+            (currentQR.bonusDecayMinutes || 10) * 60 * 1000
+        )
+      : null;
+    const hasBonusExpired = currentQR.speedBonusEnabled
+      ? new Date().getTime() >= (bonusExpiresAt?.getTime() || 0)
+      : false;
+
     res.status(200).json({
       success: true,
       message: 'QR activo encontrado',
@@ -163,6 +182,9 @@ export const getCurrentQR = async (
         qrCode: currentQR,
         qrImage,
         qrUrl,
+        currentSpeedBonus,
+        bonusExpiresAt,
+        hasBonusExpired,
       },
     });
   } catch (error) {

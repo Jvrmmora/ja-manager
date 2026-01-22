@@ -440,7 +440,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       // Mostrar mensaje de éxito
       if (showToast) {
         showToast(
-          'Solicitud enviada exitosamente. El administrador revisará tu solicitud y te notificará por correo.',
+          'Solicitud enviada exitosamente. El administrador revisará tu solicitud y te notificará por correo. Por favor, revisa tu bandeja de entrada y la carpeta de spam.',
           'success'
         );
       }

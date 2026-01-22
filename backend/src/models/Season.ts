@@ -17,6 +17,7 @@ export interface ISeason {
     referralWelcomePoints: number;
     streakMinDays: number;
     streakLostAfterDays: number;
+    birthdayBonusPoints: number;
   };
   createdAt?: Date;
   updatedAt?: Date;
@@ -107,6 +108,12 @@ const seasonSchema = new Schema<ISeasonDocument, ISeasonModel>(
         required: true,
         default: 2,
         min: [1, 'Los días para perder racha deben ser al menos 1'],
+      },
+      birthdayBonusPoints: {
+        type: Number,
+        required: true,
+        default: 100,
+        min: [1, 'Los puntos de cumpleaños deben ser al menos 1'],
       },
     },
   },

@@ -5,7 +5,8 @@ export type PointsTransactionType =
   | 'ACTIVITY'
   | 'REFERRAL_BONUS'
   | 'REFERRAL_WELCOME'
-  | 'BONUS';
+  | 'BONUS'
+  | 'BIRTHDAY';
 
 export interface IPointsTransaction {
   id?: string;
@@ -18,12 +19,14 @@ export interface IPointsTransaction {
   eventId?: mongoose.Types.ObjectId | string;
   referredYoungId?: mongoose.Types.ObjectId | string;
   assignedBy?: mongoose.Types.ObjectId | string;
+  speedBonus?: number; // Bonus por velocidad en escaneo
+  timeToScanSeconds?: number; // Tiempo transcurrido desde generación del QR hasta escaneo
   createdAt?: Date;
 }
 
 export interface IPointsTransactionDocument
   extends Omit<IPointsTransaction, 'id'>,
-  Document { }
+    Document {}
 
 interface IPointsTransactionModel
   extends mongoose.Model<IPointsTransactionDocument> {
@@ -120,6 +123,15 @@ const pointsTransactionSchema = new Schema<
       required: function (this: IPointsTransactionDocument) {
         return this.type === 'ACTIVITY';
       },
+    },
+    speedBonus: {
+      type: Number,
+      default: 0,
+      min: [0, 'El bonus por velocidad no puede ser negativo'],
+    },
+    timeToScanSeconds: {
+      type: Number,
+      min: [0, 'El tiempo de escaneo no puede ser negativo'],
     },
   },
   {

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { QrCodeIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { LightningBonus } from './LightningBonus';
+import { getCurrentQR } from '../services/api';
 
 interface AnimatedScanButtonProps {
   onClick: () => void;
@@ -17,6 +19,83 @@ const AnimatedScanButton: React.FC<AnimatedScanButtonProps> = ({
   isCompleted = false, // Nuevo prop
   className = '',
 }) => {
+  const [bonusInfo, setBonusInfo] = useState<{
+    currentBonus: number;
+    maxBonus: number;
+    decayPercent: number;
+    qrGeneratedAt?: string | Date;
+    bonusDecayMinutes?: number;
+  } | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Función para obtener y calcular el bonus actual
+  const fetchBonusInfo = async () => {
+    try {
+      const response = await getCurrentQR();
+      if (
+        response.data.qrCode.speedBonusEnabled &&
+        !response.data.hasBonusExpired
+      ) {
+        const currentBonus = response.data.currentSpeedBonus;
+        const maxBonus = Math.floor(response.data.qrCode.points * 0.5);
+        const decayPercent = maxBonus > 0 ? (currentBonus / maxBonus) * 100 : 0;
+
+        setBonusInfo({
+          currentBonus,
+          maxBonus,
+          decayPercent,
+          qrGeneratedAt: response.data.qrCode.generatedAt,
+          bonusDecayMinutes: response.data.qrCode.bonusDecayMinutes || 10,
+        });
+      } else {
+        setBonusInfo(null);
+      }
+    } catch (error) {
+      // Si no hay QR activo o hay error, no mostrar bonus
+      setBonusInfo(null);
+    }
+  };
+
+  // Efecto para obtener bonus al montar y actualizar cada 5s
+  useEffect(() => {
+    // Solo ejecutar si no está completado y no está deshabilitado
+    if (isCompleted || disabled) {
+      setBonusInfo(null);
+      return;
+    }
+
+    // Fetch inicial
+    fetchBonusInfo();
+
+    // Configurar interval de 5s para mantener datos frescos
+    intervalRef.current = setInterval(fetchBonusInfo, 5000);
+
+    // Pausar cuando la pestaña está en background (Page Visibility API)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Pausar
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      } else {
+        // Reanudar
+        fetchBonusInfo();
+        intervalRef.current = setInterval(fetchBonusInfo, 5000);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isCompleted, disabled]);
+
   // Si está completado, mostrar un label en lugar de botón
   if (isCompleted) {
     return (
@@ -242,6 +321,28 @@ const AnimatedScanButton: React.FC<AnimatedScanButtonProps> = ({
       <span className="relative z-10 text-base">
         {isScanning ? 'Escaneando...' : 'Registrar Asistencia'}
       </span>
+
+      {/* Badge de bonus de velocidad */}
+      {bonusInfo &&
+        bonusInfo.currentBonus >= 1 &&
+        !isScanning &&
+        bonusInfo.qrGeneratedAt && (
+          <motion.div
+            className="absolute -top-2 -right-2 bg-gradient-to-br from-yellow-400 via-orange-500 to-orange-600 px-2 py-1 rounded-full shadow-lg flex items-center gap-1"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+          >
+            <LightningBonus
+              bonusPoints={bonusInfo.currentBonus}
+              decayPercent={bonusInfo.decayPercent}
+              maxBonus={bonusInfo.maxBonus}
+              bonusDecayMinutes={bonusInfo.bonusDecayMinutes ?? 10}
+              qrGeneratedAt={bonusInfo.qrGeneratedAt}
+            />
+            <span className="text-xs font-bold text-white">pts</span>
+          </motion.div>
+        )}
 
       {/* Puntos de carga cuando está escaneando */}
       {isScanning && (

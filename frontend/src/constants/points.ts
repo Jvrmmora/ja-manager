@@ -75,6 +75,14 @@ export const POINTS_CATEGORIES = {
       '-30': 'Comportamiento inadecuado',
     },
   },
+  BIRTHDAY: {
+    label: 'Cumpleaños',
+    description: 'Puntos especiales de cumpleaños',
+    suggested: [100] as const,
+    recommendations: {
+      100: 'Regalo de cumpleaños (una vez al año)',
+    },
+  },
 } as const;
 
 /**
@@ -87,6 +95,7 @@ export const DEFAULT_POINTS_BY_TYPE = {
   REFERRAL: 70,
   STREAK: 30,
   PENALTY: -10,
+  BIRTHDAY: 100,
 } as const;
 
 /**

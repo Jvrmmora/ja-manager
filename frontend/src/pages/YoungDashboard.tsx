@@ -435,6 +435,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
             {/* Banner de Cumpleaños */}
             <BirthdayBanner
               birthday={userInfo?.birthday}
+              birthdayPointsClaimed={userInfo?.birthdayPointsClaimed}
               onEditProfile={handleOpenProfile}
               onOpenMonthBirthdays={() => setShowBirthdayBoard(true)}
             />

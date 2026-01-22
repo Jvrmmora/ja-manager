@@ -2,16 +2,14 @@ import jwt from 'jsonwebtoken';
 import { IAuthUser } from '../types';
 
 export class JWTService {
-  private static readonly secretKey = process.env.JWT_SECRET || 'your-super-secret-key';
+  private static readonly secretKey =
+    process.env.JWT_SECRET || 'your-super-secret-key';
 
   /**
    * Genera un token JWT
    */
   static generateToken(payload: IAuthUser): string {
-    return jwt.sign(
-      payload, 
-      this.secretKey
-    );
+    return jwt.sign(payload, this.secretKey);
   }
 
   /**
@@ -43,5 +41,46 @@ export class JWTService {
    */
   static getExpirationTime(): string {
     return process.env.JWT_EXPIRES_IN || '10d';
+  }
+
+  /**
+   * Genera un token JWT especial para redención de puntos de cumpleaños
+   */
+  static generateBirthdayToken(
+    youngId: string,
+    youngEmail: string,
+    expiresIn: string = '30d'
+  ): string {
+    const payload = {
+      youngId,
+      type: 'birthday',
+      email: youngEmail,
+    };
+
+    return jwt.sign(payload, this.secretKey, { expiresIn } as jwt.SignOptions);
+  }
+
+  /**
+   * Verifica y decodifica un token de cumpleaños
+   */
+  static verifyBirthdayToken(
+    token: string
+  ): { youngId: string; email: string } | null {
+    try {
+      const decoded = jwt.verify(token, this.secretKey) as any;
+
+      // Validar que sea un token de cumpleaños
+      if (decoded.type !== 'birthday') {
+        return null;
+      }
+
+      return {
+        youngId: decoded.youngId,
+        email: decoded.email,
+      };
+    } catch (error) {
+      // Token expirado o inválido
+      return null;
+    }
   }
 }

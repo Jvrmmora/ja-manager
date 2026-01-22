@@ -110,7 +110,7 @@ const youngSchema = new Schema<IYoungDocument>(
       unique: true,
       sparse: true, // Permite múltiples valores null pero emails únicos
       validate: {
-        validator: function(email: string | null | undefined) {
+        validator: function (email: string | null | undefined) {
           // Permitir null, undefined o strings vacíos
           if (!email || email.trim() === '') return true;
           // Si tiene valor, validar formato
@@ -145,6 +145,12 @@ const youngSchema = new Schema<IYoungDocument>(
     referredBy: {
       type: Schema.Types.ObjectId,
       ref: 'Young',
+      required: false,
+      default: null,
+    },
+    // Campo para tracking de puntos de cumpleaños reclamados
+    birthdayPointsClaimed: {
+      type: Date,
       required: false,
       default: null,
     },

@@ -10,11 +10,13 @@ import {
 interface StatsCardsProps {
   youngList: IYoung[];
   onBirthdayClick?: () => void;
+  onBirthdayStatsClick?: () => void;
 }
 
 const StatsCards: React.FC<StatsCardsProps> = ({
   youngList,
   onBirthdayClick,
+  onBirthdayStatsClick,
 }) => {
   // Calcular estadísticas
   const totalYoung = youngList.length;
@@ -106,31 +108,49 @@ const StatsCards: React.FC<StatsCardsProps> = ({
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {stats.map((stat, index) => {
         if (stat.color === 'orange') {
-          // Card especial estilo "young role"
+          // Card especial con split button integrado
           return (
             <div
               key={index}
-              onClick={onBirthdayClick}
-              className="cursor-pointer rounded-xl p-6 shadow-lg bg-gradient-to-r from-purple-400 to-indigo-500 dark:from-purple-600 dark:to-indigo-700 hover:shadow-xl transition-all"
+              className="rounded-xl shadow-lg bg-gradient-to-r from-purple-400 to-indigo-500 dark:from-purple-600 dark:to-indigo-700 overflow-hidden"
             >
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-rounded text-white text-2xl">
-                  cake
-                </span>
-                <div>
-                  <p className="text-sm font-medium text-white/90">
-                    Ver Cumpleaños
-                  </p>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <p className="text-3xl font-bold text-white">
-                      {stat.value}
+              <div
+                onClick={onBirthdayClick}
+                className="cursor-pointer p-6 hover:bg-white/10 transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-rounded text-white text-2xl">
+                    cake
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-white/90">
+                      Ver Cumpleaños
                     </p>
-                    <span className="text-xs text-white/80">
-                      en {monthName}
-                    </span>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <p className="text-3xl font-bold text-white">
+                        {stat.value}
+                      </p>
+                      <span className="text-xs text-white/80">
+                        en {monthName}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
+              {/* Botón de estadísticas en la parte inferior */}
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  onBirthdayStatsClick?.();
+                }}
+                className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium transition-all flex items-center justify-center gap-2"
+                title="Ver estadísticas de cumpleaños"
+              >
+                <span className="material-symbols-rounded text-base">
+                  insights
+                </span>
+                <span className="text-sm">Estadísticas</span>
+              </button>
             </div>
           );
         }

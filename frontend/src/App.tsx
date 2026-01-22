@@ -18,6 +18,7 @@ import {
 import ProtectedRoute from './components/ProtectedRoute';
 import NotFound from './pages/NotFound';
 import AttendanceScanPage from './pages/AttendanceScanPage';
+import BirthdayClaimPage from './pages/BirthdayClaimPage';
 
 // Componente para manejar la redirección con query params
 const RedirectToLogin = () => {
@@ -189,6 +190,9 @@ function App() {
 
           {/* QR Scan from external camera */}
           <Route path="/attendance/scan" element={<AttendanceScanPage />} />
+
+          {/* Birthday claim page - requires authentication */}
+          <Route path="/birthday-claim" element={<BirthdayClaimPage />} />
 
           {/* Protected admin route */}
           <Route element={<ProtectedRoute redirectTo="/login" />}>
