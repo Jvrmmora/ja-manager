@@ -67,6 +67,8 @@ class PointsService {
     youngId: string,
     eventId: string,
     customPoints?: number, // Puntos personalizados (para eventos especiales)
+    speedBonus?: number, // Bonus por velocidad
+    timeToScanSeconds?: number, // Tiempo transcurrido en segundos
     seasonId?: string
   ) {
     // Obtener temporada activa o usar la especificada
@@ -92,10 +94,13 @@ class PointsService {
     // Usar puntos personalizados si se proporcionan, sino usar los de la temporada
     const pointsToAssign = customPoints ?? season.settings.attendancePoints;
 
-    // Descripción más específica si son puntos personalizados
+    // Descripción más específica si son puntos personalizados o hay bonus
     let description = 'Asistencia registrada';
     if (customPoints && customPoints > season.settings.attendancePoints) {
-      description = `Asistencia a evento especial (${customPoints} pts)`;
+      description = `Asistencia registrada (${customPoints} pts)`;
+    }
+    if (speedBonus && speedBonus > 0) {
+      description += ` + ⚡ Bonus velocidad`;
     }
 
     // Crear transacción de puntos por asistencia
@@ -107,6 +112,21 @@ class PointsService {
       eventId,
       description,
     });
+
+    // Actualizar campos de speedBonus y timeToScanSeconds si están presentes
+    if (speedBonus !== undefined || timeToScanSeconds !== undefined) {
+      await PointsTransaction.findByIdAndUpdate(attendanceTx._id, {
+        $set: {
+          ...(speedBonus !== undefined && { speedBonus }),
+          ...(timeToScanSeconds !== undefined && { timeToScanSeconds }),
+        },
+      });
+      // Actualizar el objeto en memoria
+      if (speedBonus !== undefined)
+        (attendanceTx as any).speedBonus = speedBonus;
+      if (timeToScanSeconds !== undefined)
+        (attendanceTx as any).timeToScanSeconds = timeToScanSeconds;
+    }
 
     // Actualizar racha (solo sábados) y, si corresponde, otorgar BONUS de Llama Violeta (100 pts, 1x/temporada)
     try {

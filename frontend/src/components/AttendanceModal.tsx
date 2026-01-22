@@ -25,10 +25,10 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
 }) => {
   React.useEffect(() => {
     if (isOpen) {
-      // Auto-close después de 3 segundos
+      // Auto-close después de 2 segundos
       const timer = setTimeout(() => {
         onClose();
-      }, 3000);
+      }, 2000);
 
       return () => clearTimeout(timer);
     }
@@ -115,7 +115,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
             className="absolute bottom-0 left-0 h-1 bg-white/30 rounded-b-2xl"
             initial={{ width: '100%' }}
             animate={{ width: '0%' }}
-            transition={{ duration: 3, ease: 'linear' }}
+            transition={{ duration: 2, ease: 'linear' }}
           />
 
           {/* Botón de cerrar */}

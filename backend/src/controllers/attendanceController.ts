@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import QRCodeModel from '../models/QRCode';
 import AttendanceModel from '../models/Attendance';
 import Young from '../models/Young';
@@ -33,12 +34,10 @@ export const scanQRAndRegisterAttendance = async (
     }
     const isAdmin = req.user?.role_name === 'Super Admin';
     if (isAdmin) {
-      res
-        .status(403)
-        .json({
-          success: false,
-          message: 'Los administradores no pueden registrar asistencia',
-        });
+      res.status(403).json({
+        success: false,
+        message: 'Los administradores no pueden registrar asistencia',
+      });
       return;
     }
     const qrCode = await QRCodeModel.findOne({ code, isActive: true });
@@ -62,23 +61,19 @@ export const scanQRAndRegisterAttendance = async (
       });
     } catch (err: any) {
       if (err.message === 'ALREADY_REGISTERED') {
-        res
-          .status(409)
-          .json({
-            success: false,
-            message: 'Ya registraste tu asistencia el día de hoy',
-          });
+        res.status(409).json({
+          success: false,
+          message: 'Ya registraste tu asistencia el día de hoy',
+        });
         return;
       }
       throw err;
     }
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: '¡Asistencia registrada exitosamente!',
-        data: result,
-      });
+    res.status(201).json({
+      success: true,
+      message: '¡Asistencia registrada exitosamente!',
+      data: result,
+    });
   } catch (error) {
     console.error('Error registrando asistencia (scan):', error);
     ErrorHandler.handleError(error, req, res);
@@ -99,12 +94,10 @@ export const manualRegisterAttendance = async (
     }
     const isAdmin = req.user?.role_name === 'Super Admin';
     if (!isAdmin) {
-      res
-        .status(403)
-        .json({
-          success: false,
-          message: 'Solo administradores pueden registrar asistencia manual',
-        });
+      res.status(403).json({
+        success: false,
+        message: 'Solo administradores pueden registrar asistencia manual',
+      });
       return;
     }
     const { youngId } = req.body;
@@ -118,23 +111,19 @@ export const manualRegisterAttendance = async (
       return;
     }
     if (young.role_name === 'Super Admin') {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: 'No se puede registrar asistencia para administradores',
-        });
+      res.status(400).json({
+        success: false,
+        message: 'No se puede registrar asistencia para administradores',
+      });
       return;
     }
     const activeSeason = await Season.findOne({ status: 'ACTIVE' });
     if (!activeSeason) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message:
-            'No hay temporada activa. Active una temporada antes de registrar asistencia manual.',
-        });
+      res.status(400).json({
+        success: false,
+        message:
+          'No hay temporada activa. Active una temporada antes de registrar asistencia manual.',
+      });
       return;
     }
     const today = getCurrentDateColombia();
@@ -143,21 +132,17 @@ export const manualRegisterAttendance = async (
       isActive: true,
     });
     if (!qrCode) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: 'No hay QR activo para hoy. Genere uno primero.',
-        });
+      res.status(400).json({
+        success: false,
+        message: 'No hay QR activo para hoy. Genere uno primero.',
+      });
       return;
     }
     if (isExpired(qrCode.expiresAt)) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: 'El QR activo ha expirado. Genere uno nuevo.',
-        });
+      res.status(400).json({
+        success: false,
+        message: 'El QR activo ha expirado. Genere uno nuevo.',
+      });
       return;
     }
     let result;
@@ -168,23 +153,19 @@ export const manualRegisterAttendance = async (
       });
     } catch (err: any) {
       if (err.message === 'ALREADY_REGISTERED' || err.code === 11000) {
-        res
-          .status(409)
-          .json({
-            success: false,
-            message: 'El joven ya registró asistencia hoy',
-          });
+        res.status(409).json({
+          success: false,
+          message: 'El joven ya registró asistencia hoy',
+        });
         return;
       }
       throw err;
     }
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: '¡Asistencia registrada manualmente!',
-        data: result,
-      });
+    res.status(201).json({
+      success: true,
+      message: '¡Asistencia registrada manualmente!',
+      data: result,
+    });
   } catch (error) {
     console.error('Error en registro manual de asistencia:', error);
     ErrorHandler.handleError(error, req, res);
@@ -307,10 +288,27 @@ export const getAttendancesByDate = async (
       .sort({ scannedAt: 1 })
       .lean();
 
-    // Obtener total de jóvenes para estadísticas
-    const totalYoung = await Young.countDocuments({
-      role_name: { $nin: ['admin', 'Super Admin'] },
-    });
+    // Obtener jóvenes activos (con puntos en temporada activa) para estadísticas
+    const Season = mongoose.model('Season');
+    const activeSeason = await Season.findOne({ status: 'ACTIVE' });
+
+    let activeYoungCount = 0;
+    if (activeSeason) {
+      // Contar jóvenes que tienen al menos un punto en la temporada activa
+      const PointsTransaction = mongoose.model('PointsTransaction');
+      const activeYoungIds = await PointsTransaction.distinct('youngId', {
+        seasonId: activeSeason._id,
+      });
+      activeYoungCount = activeYoungIds.length;
+    }
+
+    // Si no hay temporada activa o no hay jóvenes activos, usar total de jóvenes como fallback
+    const totalYoung =
+      activeYoungCount > 0
+        ? activeYoungCount
+        : await Young.countDocuments({
+            role_name: { $nin: ['admin', 'Super Admin'] },
+          });
 
     res.status(200).json({
       success: true,
@@ -371,10 +369,27 @@ export const getTodayAttendances = async (
       .sort({ scannedAt: 1 })
       .lean();
 
-    // Obtener total de jóvenes para estadísticas
-    const totalYoung = await Young.countDocuments({
-      role_name: { $nin: ['admin', 'Super Admin'] },
-    });
+    // Obtener jóvenes activos (con puntos en temporada activa) para estadísticas
+    const Season = mongoose.model('Season');
+    const activeSeason = await Season.findOne({ status: 'ACTIVE' });
+
+    let activeYoungCount = 0;
+    if (activeSeason) {
+      // Contar jóvenes que tienen al menos un punto en la temporada activa
+      const PointsTransaction = mongoose.model('PointsTransaction');
+      const activeYoungIds = await PointsTransaction.distinct('youngId', {
+        seasonId: activeSeason._id,
+      });
+      activeYoungCount = activeYoungIds.length;
+    }
+
+    // Si no hay temporada activa o no hay jóvenes activos, usar total de jóvenes como fallback
+    const totalYoung =
+      activeYoungCount > 0
+        ? activeYoungCount
+        : await Young.countDocuments({
+            role_name: { $nin: ['admin', 'Super Admin'] },
+          });
 
     res.status(200).json({
       success: true,

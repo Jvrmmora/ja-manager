@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { formatBirthday } from '../utils/dateUtils';
-import { authService } from '../services/auth';
 
 interface BirthdayBannerProps {
   birthday?: Date | string | null;

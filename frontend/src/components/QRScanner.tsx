@@ -59,6 +59,8 @@ const QRScanner: React.FC<QRScannerProps> = ({
   } | null>(null);
   const [showPointsAnimation, setShowPointsAnimation] = useState(false);
   const [pointsEarned, setPointsEarned] = useState(10); // Puntos por defecto
+  const [basePoints, setBasePoints] = useState(10); // Puntos base
+  const [speedBonus, setSpeedBonus] = useState(0); // Bonus por velocidad
 
   // Detectar si es dispositivo móvil
   const isMobile =
@@ -436,13 +438,18 @@ const QRScanner: React.FC<QRScannerProps> = ({
       });
       setShowModal(true);
 
-      // Mostrar animación de puntos después de 1 segundo
+      // Mostrar animación de puntos después de que se cierre el modal (2s)
       setTimeout(() => {
         // Usar los puntos que vienen del resultado del backend
-        const points = result?.points?.earned ?? 0;
-        setPointsEarned(points);
+        const totalPoints = result?.points?.earned ?? 0;
+        const base = result?.points?.basePoints ?? totalPoints;
+        const bonus = result?.points?.speedBonus ?? 0;
+
+        setPointsEarned(totalPoints);
+        setBasePoints(base);
+        setSpeedBonus(bonus);
         setShowPointsAnimation(true);
-      }, 1000);
+      }, 2500);
 
       if (onSuccess) {
         onSuccess(result);
@@ -451,7 +458,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
       // Cerrar scanner completamente después de las animaciones
       setTimeout(() => {
         handleClose(); // Usar handleClose en lugar de onClose para limpieza completa
-      }, 4000); // Aumentado para dar tiempo a la animación
+      }, 7000); // Tiempo total: modal 2s + animación puntos 4.5s
     } catch (error: any) {
       // Limpiar refs en error
       isProcessingRef.current = false;
@@ -789,6 +796,8 @@ const QRScanner: React.FC<QRScannerProps> = ({
       {showPointsAnimation && (
         <PointsAnimation
           points={pointsEarned}
+          basePoints={basePoints}
+          speedBonus={speedBonus}
           type="attendance"
           onComplete={() => setShowPointsAnimation(false)}
         />

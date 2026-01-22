@@ -44,6 +44,8 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
   const [lastAttendanceCount, setLastAttendanceCount] = useState(0);
   const [showConfigModal, setShowConfigModal] = useState(false); // Modal de configuración
   const [selectedPoints, setSelectedPoints] = useState(10); // Puntos seleccionados
+  const [speedBonusEnabled, setSpeedBonusEnabled] = useState(false); // Bonus de velocidad habilitado
+  const [bonusDecayMinutes, setBonusDecayMinutes] = useState(10); // Duración del bonus en minutos
   const [isRegenerate, setIsRegenerate] = useState(false); // Si es regeneración
 
   // Hook para el contador regresivo
@@ -196,8 +198,13 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
       setIsGenerating(true);
       setError(null);
 
-      // Pasar force=isRegenerate y selectedPoints
-      const data = await generateDailyQR(isRegenerate, selectedPoints);
+      // Pasar force=isRegenerate, selectedPoints, speedBonusEnabled y bonusDecayMinutes
+      const data = await generateDailyQR(
+        isRegenerate,
+        selectedPoints,
+        speedBonusEnabled,
+        bonusDecayMinutes
+      );
       setQrData(data);
       await loadStats();
 
@@ -205,6 +212,8 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
       setShowConfigModal(false);
       setIsRegenerate(false);
       setSelectedPoints(10);
+      setSpeedBonusEnabled(false);
+      setBonusDecayMinutes(10);
 
       if (onSuccess) {
         onSuccess(data);
@@ -470,7 +479,7 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
                   initial={{ scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2 }}
-                  className="mb-8"
+                  className="mb-6"
                 >
                   <img
                     src={qrData.qrImage}
@@ -478,6 +487,15 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
                     className="w-80 h-80 border-8 border-white rounded-3xl shadow-2xl"
                   />
                 </motion.div>
+
+                {/* Bonus por Velocidad - Indicador dinámico en tiempo real */}
+                {qrData?.qrCode?.speedBonusEnabled && (
+                  <LiveBonusDisplay
+                    maxBonus={Math.floor(qrData.qrCode.points * 0.5)}
+                    bonusDecayMinutes={qrData.qrCode.bonusDecayMinutes || 10}
+                    qrGeneratedAt={qrData.qrCode.generatedAt}
+                  />
+                )}
 
                 {/* Información del QR */}
                 <motion.div
@@ -794,6 +812,96 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
                     </div>
                   )}
                 </div>
+
+                {/* Bonus por Velocidad */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <input
+                      type="checkbox"
+                      id="speedBonus"
+                      checked={speedBonusEnabled}
+                      onChange={e => setSpeedBonusEnabled(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor="speedBonus"
+                      className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
+                    >
+                      ⚡ Activar bonus de velocidad (+50%)
+                    </label>
+                  </div>
+                  <p
+                    className={`text-xs mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                  >
+                    Recompensa a quienes escanean más rápido con un bonus que
+                    disminuye con el tiempo
+                  </p>
+
+                  {/* Input de duración (solo si está habilitado) */}
+                  {speedBonusEnabled && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-3"
+                    >
+                      <div>
+                        <label
+                          className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                        >
+                          Duración del bonus (minutos)
+                        </label>
+                        <input
+                          type="number"
+                          min="5"
+                          max="30"
+                          value={bonusDecayMinutes}
+                          onChange={e =>
+                            setBonusDecayMinutes(parseInt(e.target.value) || 10)
+                          }
+                          className={`w-full px-3 py-2 rounded-lg border ${
+                            isDark
+                              ? 'bg-gray-700 border-gray-600 text-white'
+                              : 'bg-white border-gray-300 text-gray-900'
+                          } focus:ring-2 focus:ring-blue-500`}
+                        />
+                      </div>
+
+                      {/* Preview del bonus */}
+                      <div
+                        className={`p-3 rounded-lg ${isDark ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200'} border`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="material-symbols-rounded text-green-500 text-sm mt-0.5">
+                            bolt
+                          </span>
+                          <div
+                            className={`text-xs ${isDark ? 'text-green-300' : 'text-green-700'}`}
+                          >
+                            <p className="font-semibold mb-1">
+                              Preview del bonus:
+                            </p>
+                            <ul className="space-y-0.5">
+                              <li>
+                                • <strong>Bonus inicial:</strong> +
+                                {Math.floor(selectedPoints * 0.5)} pts (50% de{' '}
+                                {selectedPoints})
+                              </li>
+                              <li>
+                                • <strong>Bonus final:</strong> 0 pts en{' '}
+                                {bonusDecayMinutes} minutos
+                              </li>
+                              <li>
+                                • <strong>Decaimiento:</strong> Lineal (hacia
+                                abajo)
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
               </div>
 
               {/* Footer */}
@@ -838,6 +946,102 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
         )}
       </AnimatePresence>
     </>
+  );
+};
+
+// Componente para mostrar el bonus en tiempo real
+const LiveBonusDisplay: React.FC<{
+  maxBonus: number;
+  bonusDecayMinutes: number;
+  qrGeneratedAt: string | Date;
+}> = ({ maxBonus, bonusDecayMinutes, qrGeneratedAt }) => {
+  const [currentBonus, setCurrentBonus] = useState(maxBonus);
+
+  useEffect(() => {
+    const updateBonus = () => {
+      const now = new Date().getTime();
+      const generatedTime = new Date(qrGeneratedAt).getTime();
+      const elapsedMs = now - generatedTime;
+      const decayDurationMs = bonusDecayMinutes * 60 * 1000;
+
+      if (elapsedMs >= decayDurationMs) {
+        setCurrentBonus(0);
+        return;
+      }
+
+      const remainingPercent = Math.max(
+        0,
+        Math.min(100, ((decayDurationMs - elapsedMs) / decayDurationMs) * 100)
+      );
+      const calculatedBonus = Math.max(
+        0,
+        Math.floor((remainingPercent / 100) * maxBonus)
+      );
+
+      setCurrentBonus(calculatedBonus);
+    };
+
+    // Actualizar inmediatamente
+    updateBonus();
+
+    // Actualizar cada segundo
+    const interval = setInterval(updateBonus, 1000);
+
+    return () => clearInterval(interval);
+  }, [maxBonus, bonusDecayMinutes, qrGeneratedAt]);
+
+  if (currentBonus < 1) {
+    return null;
+  }
+
+  return (
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0, y: 20 }}
+      animate={{ scale: 1, opacity: 1, y: 0 }}
+      transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+      className="mb-6 bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-orange-600/20 backdrop-blur-sm border-2 border-orange-400/50 rounded-2xl px-8 py-4 shadow-2xl"
+    >
+      <div className="flex items-center justify-center gap-3">
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            rotate: [0, 5, -5, 0],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        >
+          <span
+            className="material-symbols-rounded text-5xl text-yellow-400"
+            style={{
+              fontVariationSettings:
+                '"FILL" 1, "wght" 700, "GRAD" 0, "opsz" 48',
+              filter: 'drop-shadow(0 0 10px rgba(251, 191, 36, 0.8))',
+            }}
+          >
+            bolt
+          </span>
+        </motion.div>
+        <div className="text-center">
+          <p className="text-sm font-semibold text-yellow-300 uppercase tracking-wide">
+            Bonus Activo
+          </p>
+          <motion.p
+            key={currentBonus}
+            initial={{ scale: 1.2 }}
+            animate={{ scale: 1 }}
+            className="text-4xl font-bold text-white"
+          >
+            +{currentBonus} pts
+          </motion.p>
+          <p className="text-xs text-orange-200 mt-1">
+            ¡Escanea rápido para obtenerlo!
+          </p>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 

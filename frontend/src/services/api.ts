@@ -212,11 +212,17 @@ export const createRegistrationRequest = async (
 // Generar QR del día (solo administradores)
 export const generateDailyQR = async (
   force?: boolean,
-  points?: number
+  points?: number,
+  speedBonusEnabled?: boolean,
+  bonusDecayMinutes?: number
 ): Promise<any> => {
   const body: any = {};
   if (force) body.force = true;
   if (points !== undefined) body.points = points;
+  if (speedBonusEnabled !== undefined)
+    body.speedBonusEnabled = speedBonusEnabled;
+  if (bonusDecayMinutes !== undefined)
+    body.bonusDecayMinutes = bonusDecayMinutes;
 
   const response = await apiRequest('qr/generate', {
     method: 'POST',

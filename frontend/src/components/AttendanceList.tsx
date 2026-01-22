@@ -307,7 +307,7 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
                 <p
                   className={`text-sm ${isDark ? 'text-blue-300' : 'text-blue-700'}`}
                 >
-                  Total Jóvenes
+                  Jóvenes Activos
                 </p>
               </div>
             </div>

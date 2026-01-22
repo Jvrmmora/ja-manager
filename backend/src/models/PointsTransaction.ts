@@ -19,6 +19,8 @@ export interface IPointsTransaction {
   eventId?: mongoose.Types.ObjectId | string;
   referredYoungId?: mongoose.Types.ObjectId | string;
   assignedBy?: mongoose.Types.ObjectId | string;
+  speedBonus?: number; // Bonus por velocidad en escaneo
+  timeToScanSeconds?: number; // Tiempo transcurrido desde generación del QR hasta escaneo
   createdAt?: Date;
 }
 
@@ -121,6 +123,15 @@ const pointsTransactionSchema = new Schema<
       required: function (this: IPointsTransactionDocument) {
         return this.type === 'ACTIVITY';
       },
+    },
+    speedBonus: {
+      type: Number,
+      default: 0,
+      min: [0, 'El bonus por velocidad no puede ser negativo'],
+    },
+    timeToScanSeconds: {
+      type: Number,
+      min: [0, 'El tiempo de escaneo no puede ser negativo'],
     },
   },
   {

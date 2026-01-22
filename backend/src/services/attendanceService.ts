@@ -16,6 +16,8 @@ export interface RegisterAttendanceResult {
   scannedAt: Date;
   points: null | {
     earned: number;
+    basePoints: number;
+    speedBonus: number;
     total: number;
     description?: string;
   };
@@ -53,14 +55,33 @@ export const registerAttendanceCore = async (
 
   let pointsInfo: RegisterAttendanceResult['points'] = null;
   try {
-    const attendancePoints = qrCode.points || 10;
+    // Calcular bonus por velocidad
+    const basePoints = qrCode.points || 10;
+    const speedBonus = qrCode.getCurrentSpeedBonus
+      ? qrCode.getCurrentSpeedBonus()
+      : 0;
+    const totalPoints = basePoints + speedBonus;
+
+    // Calcular tiempo de escaneo en segundos
+    const timeToScanSeconds = Math.floor(
+      (new Date().getTime() - qrCode.generatedAt.getTime()) / 1000
+    );
+
     const tx = await pointsService.assignAttendancePoints(
       youngId,
       (qrCode._id as any).toString(),
-      attendancePoints
+      totalPoints,
+      speedBonus,
+      timeToScanSeconds
     );
     const total = await pointsService.getTotalPoints(youngId);
-    pointsInfo = { earned: tx.points, total, description: tx.description };
+    pointsInfo = {
+      earned: tx.points,
+      basePoints,
+      speedBonus,
+      total,
+      description: tx.description,
+    };
   } catch (err) {
     console.warn('No se pudieron asignar puntos (pointsService)', err);
   }
