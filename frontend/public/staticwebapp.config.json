@@ -1,67 +1,12 @@
 {
   "navigationFallback": {
-    "rewrite": "/index.html",
-    "exclude": [
-      "/images/*.{png,jpg,gif,ico}",
-      "/css/*",
-      "/js/*",
-      "/api/*",
-      "/assets/*",
-      "/*.js",
-      "/*.css",
-      "/*.json"
-    ]
+    "rewrite": "/index.html"
   },
-  "routes": [
-    {
-      "route": "/assets/*.js",
-      "headers": {
-        "Content-Type": "text/javascript; charset=utf-8"
-      }
-    },
-    {
-      "route": "/assets/*.mjs",
-      "headers": {
-        "Content-Type": "text/javascript; charset=utf-8"
-      }
-    },
-    {
-      "route": "/assets/*.css",
-      "headers": {
-        "Content-Type": "text/css; charset=utf-8"
-      }
-    },
-    {
-      "route": "/*.js",
-      "headers": {
-        "Content-Type": "text/javascript; charset=utf-8"
-      }
-    },
-    {
-      "route": "/api/*",
-      "allowedRoles": ["anonymous"]
+  "routes": [],
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/index.html",
+      "statusCode": 200
     }
-  ],
-  "globalHeaders": {
-    "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
-    "X-XSS-Protection": "1; mode=block"
-  },
-  "mimeTypes": {
-    ".json": "application/json",
-    ".js": "text/javascript",
-    ".mjs": "text/javascript",
-    ".css": "text/css",
-    ".html": "text/html",
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".gif": "image/gif",
-    ".svg": "image/svg+xml",
-    ".ico": "image/x-icon",
-    ".woff": "font/woff",
-    ".woff2": "font/woff2",
-    ".ttf": "font/ttf",
-    ".eot": "application/vnd.ms-fontobject"
   }
 }
