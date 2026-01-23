@@ -22,8 +22,18 @@ jobs:
         with:
           submodules: true
           lfs: false
+
+      # Configurar Node.js con la versión requerida
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
+
       - name: Get Id Token
         uses: actions/github-script@v6
         id: idtoken
@@ -32,6 +42,7 @@ jobs:
             const coredemo = require('@actions/core')
             return await coredemo.getIDToken()
           result-encoding: string
+
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -46,6 +57,9 @@ jobs:
           github_id_token: ${{ steps.idtoken.outputs.result }}
           skip_app_build: false
           ###### End of Repository/Build Configurations ######
+        env:
+          # Variables de entorno para el build de Vite
+          VITE_API_URL: https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
