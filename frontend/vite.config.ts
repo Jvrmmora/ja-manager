@@ -6,11 +6,6 @@ export default defineConfig({
   plugins: [react()],
   clearScreen: false,
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
-      },
-    },
     assetsInlineLimit: 0, // Evitar inline de assets
   },
   server: {
