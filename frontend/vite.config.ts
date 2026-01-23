@@ -5,15 +5,6 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   clearScreen: false,
-  base: '/',
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    emptyOutDir: true,
-    sourcemap: false,
-    minify: 'esbuild',
-    assetsInlineLimit: 0,
-  },
   server: {
     host: '0.0.0.0', // Escuchar en todas las interfaces
     port: 3000,
