@@ -26,7 +26,7 @@ const AnimatedScanButton: React.FC<AnimatedScanButtonProps> = ({
     qrGeneratedAt?: string | Date;
     bonusDecayMinutes?: number;
   } | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Función para obtener y calcular el bonus actual
   const fetchBonusInfo = async () => {
