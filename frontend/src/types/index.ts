@@ -149,6 +149,7 @@ export interface ISeason {
     referralWelcomePoints: number;
     streakMinDays: number;
     streakLostAfterDays: number;
+    birthdayBonusPoints: number;
   };
   prizes?: {
     first?: string;
@@ -190,6 +191,7 @@ export interface ISeasonUpdate {
     referralWelcomePoints?: number;
     streakMinDays?: number;
     streakLostAfterDays?: number;
+    birthdayBonusPoints?: number;
   };
   prizes?: {
     first?: string;

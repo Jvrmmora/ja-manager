@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface ISeason {
   id?: string;
   name: string;
+  description?: string;
   startDate: Date;
   endDate: Date;
   status: 'UPCOMING' | 'ACTIVE' | 'COMPLETED';
@@ -40,6 +41,11 @@ const seasonSchema = new Schema<ISeasonDocument, ISeasonModel>(
       required: [true, 'El nombre de la temporada es obligatorio'],
       trim: true,
       maxlength: [100, 'El nombre no puede exceder 100 caracteres'],
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [500, 'La descripción no puede exceder 500 caracteres'],
     },
     startDate: {
       type: Date,

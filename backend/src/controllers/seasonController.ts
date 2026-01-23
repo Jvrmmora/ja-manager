@@ -14,7 +14,8 @@ export const createSeason = async (
   next: NextFunction
 ) => {
   try {
-    const { name, startDate, endDate, status, prizes, settings } = req.body;
+    const { name, description, startDate, endDate, status, prizes, settings } =
+      req.body;
 
     // Validar que las fechas sean válidas
     if (new Date(startDate) >= new Date(endDate)) {
@@ -38,6 +39,7 @@ export const createSeason = async (
 
     const season = await Season.create({
       name,
+      description,
       startDate,
       endDate,
       status: status || 'UPCOMING',
@@ -48,6 +50,7 @@ export const createSeason = async (
         referralWelcomePoints: settings?.referralWelcomePoints || 10,
         streakMinDays: settings?.streakMinDays || 3,
         streakLostAfterDays: settings?.streakLostAfterDays || 2,
+        birthdayBonusPoints: settings?.birthdayBonusPoints || 100,
       },
     });
 

@@ -6,7 +6,7 @@ interface SeasonModalProps {
   isOpen: boolean;
   onClose: () => void;
   season?: ISeason | null; // Si existe, es edición
-  onSuccess: (message: string) => void;
+  onSuccess: (message: string) => void | Promise<void>;
   onError: (message: string) => void;
 }
 
@@ -27,6 +27,7 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
     referralWelcomePoints: 10,
     streakMinDays: 3,
     streakLostAfterDays: 2,
+    birthdayBonusPoints: 100,
   });
   const [loading, setLoading] = useState(false);
 
@@ -45,6 +46,7 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
         referralWelcomePoints: season.settings?.referralWelcomePoints || 10,
         streakMinDays: season.settings?.streakMinDays || 3,
         streakLostAfterDays: season.settings?.streakLostAfterDays || 2,
+        birthdayBonusPoints: season.settings?.birthdayBonusPoints || 100,
       });
     } else if (isOpen && !season) {
       // Reset para nueva temporada
@@ -58,13 +60,23 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
         referralWelcomePoints: 10,
         streakMinDays: 3,
         streakLostAfterDays: 2,
+        birthdayBonusPoints: 100,
       });
     }
   }, [isOpen, season]);
 
   const formatDateForInput = (date: string | Date): string => {
+    // Si ya es un string en formato YYYY-MM-DD, devolverlo directamente
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+      return date.split('T')[0];
+    }
+
+    // Si es una fecha, formatear correctamente sin conversión de zona horaria
     const d = new Date(date);
-    return d.toISOString().split('T')[0];
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -102,11 +114,12 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
             referralWelcomePoints: formData.referralWelcomePoints,
             streakMinDays: formData.streakMinDays,
             streakLostAfterDays: formData.streakLostAfterDays,
+            birthdayBonusPoints: formData.birthdayBonusPoints,
           },
         };
 
         await seasonService.update(season.id, updateData);
-        onSuccess('Temporada actualizada exitosamente');
+        await onSuccess('Temporada actualizada exitosamente');
       } else {
         // Crear nueva temporada
         const createData: ISeasonCreate = {
@@ -120,11 +133,12 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
             referralWelcomePoints: formData.referralWelcomePoints,
             streakMinDays: formData.streakMinDays,
             streakLostAfterDays: formData.streakLostAfterDays,
+            birthdayBonusPoints: formData.birthdayBonusPoints,
           },
         };
 
         await seasonService.create(createData);
-        onSuccess('Temporada creada exitosamente');
+        await onSuccess('Temporada creada exitosamente');
       }
 
       handleClose();
@@ -147,6 +161,7 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
       referralWelcomePoints: 10,
       streakMinDays: 3,
       streakLostAfterDays: 2,
+      birthdayBonusPoints: 100,
     });
     onClose();
   };
@@ -398,6 +413,33 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Ausencias consecutivas que rompen la racha
+                </p>
+              </div>
+
+              {/* Puntos por cumpleaños */}
+              <div>
+                <label className="form-label flex items-center gap-2">
+                  <span className="material-symbols-rounded text-sm text-gray-500">
+                    cake
+                  </span>
+                  Puntos por Cumpleaños
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.birthdayBonusPoints}
+                  onChange={e =>
+                    setFormData({
+                      ...formData,
+                      birthdayBonusPoints: parseInt(e.target.value) || 100,
+                    })
+                  }
+                  className="form-input"
+                  disabled={loading}
+                  required
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Puntos otorgados en el cumpleaños del joven
                 </p>
               </div>
             </div>
