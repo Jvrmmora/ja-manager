@@ -43,23 +43,30 @@ jobs:
             return await coredemo.getIDToken()
           result-encoding: string
 
-      - name: Build And Deploy
+      # Instalar dependencias y construir el frontend explícitamente
+      - name: Install Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Frontend (Vite)
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_API_URL: https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api
+
+      - name: Build And Deploy (Upload Dist)
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_YELLOW_RIVER_04315080F }}
           action: 'upload'
           ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
-          # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
-          app_location: './frontend' # App source code path
-          api_location: '' # Api source code path - optional
-          output_location: 'dist' # Built app content directory - optional
+          # Para SWA, cuando subimos artefactos ya construidos, usar app_location apuntando a dist
+          app_location: './frontend/dist'
+          api_location: ''
           github_id_token: ${{ steps.idtoken.outputs.result }}
-          skip_app_build: false
+          skip_app_build: true
           ###### End of Repository/Build Configurations ######
-        env:
-          # Variables de entorno para el build de Vite
-          VITE_API_URL: https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'

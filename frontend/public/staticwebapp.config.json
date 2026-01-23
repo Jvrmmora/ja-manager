@@ -5,7 +5,12 @@
       "/images/*.{png,jpg,gif,ico,svg,webp}",
       "/css/*",
       "/assets/*.{js,css,png,jpg,gif,svg,webp,woff,woff2}",
-      "/api/*"
+      "/api/*",
+      "/manifest.json",
+      "/favicon-*",
+      "/robots.txt",
+      "/sitemap.xml",
+      "/og-image.jpg"
     ]
   },
   "routes": [
