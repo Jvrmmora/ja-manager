@@ -117,7 +117,17 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
   };
 
   const formatDate = (date: string | Date) => {
-    return new Date(date).toLocaleDateString('es-CO', {
+    // Parsear la fecha sin conversión de zona horaria
+    let d: Date;
+    if (typeof date === 'string') {
+      // Si es string en formato ISO (YYYY-MM-DD), crear la fecha en UTC y ajustar a local
+      const [year, month, day] = date.split('T')[0].split('-').map(Number);
+      d = new Date(year, month - 1, day);
+    } else {
+      d = new Date(date);
+    }
+
+    return d.toLocaleDateString('es-CO', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -295,9 +305,9 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
           setEditingSeason(null);
         }}
         season={editingSeason}
-        onSuccess={message => {
+        onSuccess={async message => {
           onShowSuccess?.(message);
-          loadSeasons();
+          await loadSeasons();
         }}
         onError={message => {
           onShowError?.(message);

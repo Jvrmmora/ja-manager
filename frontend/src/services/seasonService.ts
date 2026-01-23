@@ -43,6 +43,13 @@ export const seasonService = {
       body: JSON.stringify(seasonData),
     });
     const data = await response.json();
+
+    if (!response.ok || data.success === false) {
+      throw new Error(
+        data.message || data.error?.message || 'Error al crear la temporada'
+      );
+    }
+
     return data.data;
   },
 
@@ -55,6 +62,15 @@ export const seasonService = {
       body: JSON.stringify(seasonData),
     });
     const data = await response.json();
+
+    if (!response.ok || data.success === false) {
+      throw new Error(
+        data.message ||
+          data.error?.message ||
+          'Error al actualizar la temporada'
+      );
+    }
+
     return data.data;
   },
 
@@ -73,6 +89,13 @@ export const seasonService = {
       method: 'POST',
     });
     const data = await response.json();
+
+    if (!response.ok || data.success === false) {
+      throw new Error(
+        data.message || data.error?.message || 'Error al activar la temporada'
+      );
+    }
+
     return data.data;
   },
 
