@@ -1,12 +1,12 @@
 {
+  "platform": {
+    "apiRuntime": "node:18"
+  },
   "navigationFallback": {
     "rewrite": "/index.html"
   },
-  "routes": [],
-  "responseOverrides": {
-    "404": {
-      "rewrite": "/index.html",
-      "statusCode": 200
-    }
+  "mimeTypes": {
+    ".js": "text/javascript",
+    ".json": "application/json"
   }
 }

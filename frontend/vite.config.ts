@@ -5,8 +5,14 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   clearScreen: false,
+  base: '/',
   build: {
-    assetsInlineLimit: 0, // Evitar inline de assets
+    outDir: 'dist',
+    assetsDir: 'assets',
+    emptyOutDir: true,
+    sourcemap: false,
+    minify: 'terser',
+    assetsInlineLimit: 0,
   },
   server: {
     host: '0.0.0.0', // Escuchar en todas las interfaces
