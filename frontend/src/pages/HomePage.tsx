@@ -17,6 +17,11 @@ import ManualAttendanceButton from '../components/ManualAttendanceButton';
 import ManualAttendanceModal from '../components/ManualAttendanceModal';
 import AttendanceModal from '../components/AttendanceModal';
 import LeaderboardSection from '../components/LeaderboardSection';
+import SeasonStatsBar from '../components/SeasonStatsBar';
+import FullscreenLeaderboard from '../components/FullscreenLeaderboard';
+import { SeasonProvider, useSeason } from '../context/SeasonContext';
+import { pointsService } from '../services/pointsService';
+import { seasonService } from '../services/seasonService';
 import SeasonManager from '../components/SeasonManager';
 import RegistrationRequestsManager from '../components/RegistrationRequestsManager';
 import {
@@ -27,7 +32,12 @@ import {
   getAllRegistrationRequests,
 } from '../services/api';
 import { useToast } from '../hooks/useToast';
-import type { IYoung, PaginationQuery } from '../types';
+import type {
+  IYoung,
+  PaginationQuery,
+  ILeaderboardEntry,
+  ISeason,
+} from '../types';
 import logo from '../assets/logos/logo.png';
 
 interface YoungFormData {
@@ -92,6 +102,23 @@ const useInfiniteScroll = (
   }, [callback, hasMore, loading]);
 };
 
+// Componente auxiliar para actualizar el SeasonContext en HomePage
+const SeasonDataUpdater = ({
+  activeSeason,
+}: {
+  activeSeason: ISeason | null;
+}) => {
+  const { setActiveSeason } = useSeason();
+
+  useEffect(() => {
+    if (activeSeason) {
+      setActiveSeason(activeSeason);
+    }
+  }, [activeSeason, setActiveSeason]);
+
+  return null;
+};
+
 function HomePage() {
   const [youngList, setYoungList] = useState<IYoung[]>([]);
   const [allYoungList, setAllYoungList] = useState<IYoung[]>([]); // Para estadísticas
@@ -120,6 +147,8 @@ function HomePage() {
 
   // Estados para nuevas secciones
   const [showLeaderboardSection, setShowLeaderboardSection] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<ILeaderboardEntry[]>([]);
+  const [activeSeason, setActiveSeason] = useState<ISeason | null>(null);
   const [showSeasonsSection, setShowSeasonsSection] = useState(false);
   const [showRegistrationRequestsSection, setShowRegistrationRequestsSection] =
     useState(false);
@@ -799,655 +828,688 @@ function HomePage() {
   const displayTotal =
     filteredTotal !== null ? filteredTotal : allYoungList.length;
 
+  // Cargar datos del leaderboard y temporada activa para el modal
+  useEffect(() => {
+    const loadLeaderboardData = async () => {
+      try {
+        const seasons = await seasonService.getAll();
+        const active = seasons.find(
+          (s: ISeason) => s.isActive || s.status === 'ACTIVE'
+        );
+        setActiveSeason(active || null);
+
+        if (active) {
+          const data = await pointsService.getLeaderboard({
+            seasonId: active.id,
+          });
+          setLeaderboard(data);
+        }
+      } catch (error) {
+        console.error('Error loading leaderboard:', error);
+      }
+    };
+
+    loadLeaderboardData();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header con ProfileDropdown */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo y título */}
-            <div className="flex items-center space-x-4">
-              <div className="w-8 h-8 flex items-center justify-center">
-                <img
-                  src={logo}
-                  alt="JA Manager Logo"
-                  className="w-8 h-8 object-contain"
-                />
+    <SeasonProvider>
+      <SeasonDataUpdater activeSeason={activeSeason} />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {/* Header con ProfileDropdown */}
+        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              {/* Logo y título */}
+              <div className="flex items-center space-x-4">
+                <div className="w-8 h-8 flex items-center justify-center">
+                  <img
+                    src={logo}
+                    alt="JA Manager Logo"
+                    className="w-8 h-8 object-contain"
+                  />
+                </div>
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    JA Manager
+                  </h1>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
+                    Dashboard de Administración
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  JA Manager
-                </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
-                  Dashboard de Administración
+
+              {/* Profile Dropdown y Theme Toggle */}
+              <div className="flex items-center space-x-4">
+                <ThemeToggle />
+                <ProfileDropdown onOpenProfile={handleOpenProfile} />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Dashboard de Cumpleaños */}
+          {showBirthdayDashboard && (
+            <div className="mb-8">
+              {/* <BirthdayDashboard /> */}
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-900/20">
+                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+                  🎂 Dashboard de Cumpleaños
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Próximamente: Vista de cumpleaños
                 </p>
               </div>
             </div>
+          )}
 
-            {/* Profile Dropdown y Theme Toggle */}
-            <div className="flex items-center space-x-4">
-              <ThemeToggle />
-              <ProfileDropdown onOpenProfile={handleOpenProfile} />
-            </div>
-          </div>
-        </div>
-      </header>
+          {/* Estadísticas */}
+          <StatsCards
+            youngList={allYoungList}
+            onBirthdayClick={() => setShowBirthdayDashboard(true)}
+            onBirthdayStatsClick={() => setShowBirthdayStats(true)}
+          />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Dashboard de Cumpleaños */}
-        {showBirthdayDashboard && (
-          <div className="mb-8">
-            {/* <BirthdayDashboard /> */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-900/20">
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                🎂 Dashboard de Cumpleaños
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                Próximamente: Vista de cumpleaños
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Estadísticas */}
-        <StatsCards
-          youngList={allYoungList}
-          onBirthdayClick={() => setShowBirthdayDashboard(true)}
-          onBirthdayStatsClick={() => setShowBirthdayStats(true)}
-        />
-
-        {/* Barra de acciones */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Split button: Agregar + menú */}
-            <div className="relative inline-flex" ref={addMenuRef}>
-              <button
-                onClick={() => setShowForm(true)}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-l-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow"
-              >
-                <span className="material-symbols-rounded text-base">add</span>
-                <span>Agregar Joven</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddMenu(prev => !prev)}
-                className="px-3 py-3 rounded-r-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow border-l border-blue-500/40"
-                aria-haspopup="menu"
-                aria-expanded={showAddMenu}
-                title="Más acciones"
-              >
-                <span className="material-symbols-rounded text-base">
-                  expand_more
-                </span>
-              </button>
-
-              {showAddMenu && (
-                <div className="absolute left-0 z-30 mt-2 w-56 rounded-xl bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <button
-                    onClick={() => {
-                      setShowForm(true);
-                      setShowAddMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
-                  >
-                    <span className="material-symbols-rounded text-base">
-                      person_add
-                    </span>
-                    <span>Agregar Joven</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowImportModal(true);
-                      setShowAddMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-emerald-700 dark:text-emerald-300"
-                  >
-                    <span className="material-symbols-rounded text-base">
-                      upload
-                    </span>
-                    <span>Importar Excel</span>
-                  </button>
-                </div>
-              )}
-            </div>
-            {/* Split button: Gestión QR + menú (incluye Ver Asistencias) */}
-            <div className="relative inline-flex" ref={qrMenuRef}>
-              <button
-                onClick={() => {
-                  setShowQRSection(true);
-                  setShowQRMenu(false);
-                }}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-l-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow"
-              >
-                <span className="material-symbols-rounded text-base">
-                  qr_code_2
-                </span>
-                <span>Gestión QR</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowQRMenu(prev => !prev)}
-                className="px-3 py-3 rounded-r-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow border-l border-blue-500/40"
-                aria-haspopup="menu"
-                aria-expanded={showQRMenu}
-                title="Más acciones"
-              >
-                <span className="material-symbols-rounded text-base">
-                  expand_more
-                </span>
-              </button>
-
-              {showQRMenu && (
-                <div className="absolute left-0 z-30 mt-2 w-56 rounded-xl bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <button
-                    onClick={() => {
-                      setShowQRSection(true);
-                      setShowQRMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
-                  >
-                    <span className="material-symbols-rounded text-base">
-                      qr_code_2
-                    </span>
-                    <span>Gestión QR</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowAttendanceSection(true);
-                      setShowQRMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-emerald-700 dark:text-emerald-300"
-                  >
-                    <span className="material-symbols-rounded text-base">
-                      how_to_reg
-                    </span>
-                    <span>Ver Asistencias</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Botón para Gestión de Solicitudes (solo Super Admin) */}
-            {isSuperAdmin && (
-              <button
-                onClick={() => {
-                  setShowRegistrationRequestsSection(true);
-                }}
-                className="relative inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition-all shadow"
-              >
-                <span className="material-symbols-rounded text-base">
-                  assignment_ind
-                </span>
-                <span>Solicitudes</span>
-                {pendingRequestsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full border-2 border-white dark:border-gray-800">
-                    {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
-                  </span>
-                )}
-              </button>
-            )}
-
-            {/* Split button: Ver Ranking + menú (incluye Gestión Temporadas) */}
-            <div className="relative inline-flex" ref={rankingMenuRef}>
-              <button
-                onClick={() => {
-                  setShowLeaderboardSection(true);
-                  setShowRankingMenu(false);
-                }}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-l-xl bg-yellow-600 text-white hover:bg-yellow-700 transition-all shadow"
-              >
-                <span className="material-symbols-rounded text-base">
-                  leaderboard
-                </span>
-                <span>Ver Ranking</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowRankingMenu(prev => !prev)}
-                className="px-3 py-3 rounded-r-xl bg-yellow-600 text-white hover:bg-yellow-700 transition-all shadow border-l border-yellow-500/40"
-                aria-haspopup="menu"
-                aria-expanded={showRankingMenu}
-                title="Más acciones"
-              >
-                <span className="material-symbols-rounded text-base">
-                  expand_more
-                </span>
-              </button>
-
-              {showRankingMenu && (
-                <div className="absolute left-0 z-30 mt-2 w-64 rounded-xl bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <button
-                    onClick={() => {
-                      setShowLeaderboardSection(true);
-                      setShowRankingMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
-                  >
-                    <span className="material-symbols-rounded text-base">
-                      leaderboard
-                    </span>
-                    <span>Ver Ranking</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowSeasonsSection(true);
-                      setShowRankingMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-indigo-700 dark:text-indigo-300"
-                  >
-                    <span className="material-symbols-rounded text-base">
-                      calendar_month
-                    </span>
-                    <span>Gestión Temporadas</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Contador de resultados */}
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            {loading ? (
-              <span>Cargando...</span>
-            ) : (
-              <span>
-                Mostrando {youngList.length} de {displayTotal} jóvenes
-                {filteredTotal !== null &&
-                  filteredTotal < allYoungList.length && (
-                    <span className="text-blue-600 dark:text-blue-400 ml-1">
-                      (filtrados)
-                    </span>
-                  )}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Barra de filtros */}
-        <FilterBar filters={filters} onFiltersChange={handleFilterChange} />
-
-        {/* Contenido principal */}
-        {error && (
-          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
-            ❌ {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">Cargando jóvenes...</p>
-          </div>
-        ) : (
-          <>
-            {youngList.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-12 h-12 text-gray-400 dark:text-gray-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  No hay jóvenes registrados
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  {filteredTotal !== null && allYoungList.length > 0
-                    ? 'No se encontraron jóvenes con los filtros aplicados'
-                    : 'Comienza agregando jóvenes a la plataforma'}
-                </p>
+          {/* Barra de acciones */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Split button: Agregar + menú */}
+              <div className="relative inline-flex" ref={addMenuRef}>
                 <button
                   onClick={() => setShowForm(true)}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-l-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow"
                 >
-                  Agregar Primer Joven
+                  <span className="material-symbols-rounded text-base">
+                    add
+                  </span>
+                  <span>Agregar Joven</span>
                 </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {youngList.map(young => (
-                  <YoungCard
-                    key={young.id || `young-${Math.random()}`}
-                    young={young}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onYoungUpdate={handleYoungUpdate}
-                    onShowSuccess={showSuccess}
-                    onShowError={showError}
-                  />
-                ))}
-              </div>
-            )}
+                <button
+                  type="button"
+                  onClick={() => setShowAddMenu(prev => !prev)}
+                  className="px-3 py-3 rounded-r-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow border-l border-blue-500/40"
+                  aria-haspopup="menu"
+                  aria-expanded={showAddMenu}
+                  title="Más acciones"
+                >
+                  <span className="material-symbols-rounded text-base">
+                    expand_more
+                  </span>
+                </button>
 
-            {/* Indicador de carga para scroll infinito */}
-            {loadingMore && (
-              <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                  Cargando más jóvenes...
-                </p>
-              </div>
-            )}
-
-            {/* Indicador de fin de resultados */}
-            {!hasMore && youngList.length > 0 && (
-              <div className="text-center py-8">
-                <div className="text-center text-gray-500 dark:text-gray-400">
-                  <svg
-                    className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500 mb-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    ></path>
-                  </svg>
-                  <p className="font-medium text-sm sm:text-base">
-                    ¡Has visto todos los jóvenes!
-                  </p>
-                  <p className="text-xs sm:text-sm mt-1">
-                    No hay más elementos para mostrar
-                  </p>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Modales */}
-        {showForm && (
-          <YoungForm
-            isOpen={showForm}
-            onSubmit={handleSubmit}
-            onClose={() => setShowForm(false)}
-            onShowSuccess={showSuccess}
-            onShowError={showError}
-          />
-        )}
-
-        {showEditForm && editingYoung && (
-          <EditYoungForm
-            isOpen={showEditForm}
-            young={editingYoung}
-            onSubmit={handleUpdate}
-            onClose={() => {
-              setShowEditForm(false);
-              setEditingYoung(null);
-            }}
-            onShowSuccess={showSuccess}
-            onShowError={showError}
-          />
-        )}
-
-        {showImportModal && (
-          <ImportModal
-            isOpen={showImportModal}
-            onClose={() => setShowImportModal(false)}
-            onSuccess={handleImportSuccess}
-            onShowSuccess={showSuccess}
-            onShowError={showError}
-          />
-        )}
-
-        {showBirthdayDashboard && (
-          <BirthdayDashboard
-            isOpen={showBirthdayDashboard}
-            onClose={() => setShowBirthdayDashboard(false)}
-            youngList={allYoungList}
-          />
-        )}
-
-        {showBirthdayStats && (
-          <BirthdayStatsModal
-            isOpen={showBirthdayStats}
-            onClose={() => setShowBirthdayStats(false)}
-          />
-        )}
-
-        {/* Sección de Gestión QR */}
-        {showQRSection && (
-          <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    Gestión de Código QR
-                  </h2>
-                  <button
-                    onClick={() => setShowQRSection(false)}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  >
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                {showAddMenu && (
+                  <div className="absolute left-0 z-30 mt-2 w-56 rounded-xl bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <button
+                      onClick={() => {
+                        setShowForm(true);
+                        setShowAddMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-                <QRGenerator
-                  onSuccess={() => {
-                    showSuccess('QR generado exitosamente');
-                    setAttendanceRefresh(prev => prev + 1);
+                      <span className="material-symbols-rounded text-base">
+                        person_add
+                      </span>
+                      <span>Agregar Joven</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowImportModal(true);
+                        setShowAddMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-emerald-700 dark:text-emerald-300"
+                    >
+                      <span className="material-symbols-rounded text-base">
+                        upload
+                      </span>
+                      <span>Importar Excel</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+              {/* Split button: Gestión QR + menú (incluye Ver Asistencias) */}
+              <div className="relative inline-flex" ref={qrMenuRef}>
+                <button
+                  onClick={() => {
+                    setShowQRSection(true);
+                    setShowQRMenu(false);
                   }}
-                  onError={error => showError(error)}
-                />
-              </div>
-            </div>
-          </div>
-        )}
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-l-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow"
+                >
+                  <span className="material-symbols-rounded text-base">
+                    qr_code_2
+                  </span>
+                  <span>Gestión QR</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowQRMenu(prev => !prev)}
+                  className="px-3 py-3 rounded-r-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow border-l border-blue-500/40"
+                  aria-haspopup="menu"
+                  aria-expanded={showQRMenu}
+                  title="Más acciones"
+                >
+                  <span className="material-symbols-rounded text-base">
+                    expand_more
+                  </span>
+                </button>
 
-        {/* Sección de Lista de Asistencias */}
-        {showAttendanceSection && (
-          <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    Asistencias del Día
-                  </h2>
-                  <button
-                    onClick={() => setShowAttendanceSection(false)}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  >
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                {showQRMenu && (
+                  <div className="absolute left-0 z-30 mt-2 w-56 rounded-xl bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <button
+                      onClick={() => {
+                        setShowQRSection(true);
+                        setShowQRMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-                <AttendanceList refreshTrigger={attendanceRefresh} />
-                {isSuperAdmin && (
-                  <div className="mt-6 max-w-sm">
-                    <ManualAttendanceButton
-                      onClick={() => setShowManualAttendanceModal(true)}
-                    />
+                      <span className="material-symbols-rounded text-base">
+                        qr_code_2
+                      </span>
+                      <span>Gestión QR</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAttendanceSection(true);
+                        setShowQRMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-emerald-700 dark:text-emerald-300"
+                    >
+                      <span className="material-symbols-rounded text-base">
+                        how_to_reg
+                      </span>
+                      <span>Ver Asistencias</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Botón para Gestión de Solicitudes (solo Super Admin) */}
+              {isSuperAdmin && (
+                <button
+                  onClick={() => {
+                    setShowRegistrationRequestsSection(true);
+                  }}
+                  className="relative inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition-all shadow"
+                >
+                  <span className="material-symbols-rounded text-base">
+                    assignment_ind
+                  </span>
+                  <span>Solicitudes</span>
+                  {pendingRequestsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full border-2 border-white dark:border-gray-800">
+                      {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
+                    </span>
+                  )}
+                </button>
+              )}
+
+              {/* Split button: Ver Ranking + menú (incluye Gestión Temporadas) */}
+              <div className="relative inline-flex" ref={rankingMenuRef}>
+                <button
+                  onClick={() => {
+                    setShowLeaderboardSection(true);
+                    setShowRankingMenu(false);
+                  }}
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-l-xl bg-yellow-600 text-white hover:bg-yellow-700 transition-all shadow"
+                >
+                  <span className="material-symbols-rounded text-base">
+                    leaderboard
+                  </span>
+                  <span>Ver Ranking</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRankingMenu(prev => !prev)}
+                  className="px-3 py-3 rounded-r-xl bg-yellow-600 text-white hover:bg-yellow-700 transition-all shadow border-l border-yellow-500/40"
+                  aria-haspopup="menu"
+                  aria-expanded={showRankingMenu}
+                  title="Más acciones"
+                >
+                  <span className="material-symbols-rounded text-base">
+                    expand_more
+                  </span>
+                </button>
+
+                {showRankingMenu && (
+                  <div className="absolute left-0 z-30 mt-2 w-64 rounded-xl bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <button
+                      onClick={() => {
+                        setShowLeaderboardSection(true);
+                        setShowRankingMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+                    >
+                      <span className="material-symbols-rounded text-base">
+                        leaderboard
+                      </span>
+                      <span>Ver Ranking</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowSeasonsSection(true);
+                        setShowRankingMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-indigo-700 dark:text-indigo-300"
+                    >
+                      <span className="material-symbols-rounded text-base">
+                        calendar_month
+                      </span>
+                      <span>Gestión Temporadas</span>
+                    </button>
                   </div>
                 )}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Sección de Ranking/Leaderboard */}
-        {showLeaderboardSection && (
-          <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
+            {/* Contador de resultados */}
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              {loading ? (
+                <span>Cargando...</span>
+              ) : (
+                <span>
+                  Mostrando {youngList.length} de {displayTotal} jóvenes
+                  {filteredTotal !== null &&
+                    filteredTotal < allYoungList.length && (
+                      <span className="text-blue-600 dark:text-blue-400 ml-1">
+                        (filtrados)
+                      </span>
+                    )}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Barra de filtros */}
+          <FilterBar filters={filters} onFiltersChange={handleFilterChange} />
+
+          {/* Contenido principal */}
+          {error && (
+            <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
+              ❌ {error}
+            </div>
+          )}
+
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="mt-2 text-gray-600">Cargando jóvenes...</p>
+            </div>
+          ) : (
+            <>
+              {youngList.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg
+                      className="w-12 h-12 text-gray-400 dark:text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    No hay jóvenes registrados
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    {filteredTotal !== null && allYoungList.length > 0
+                      ? 'No se encontraron jóvenes con los filtros aplicados'
+                      : 'Comienza agregando jóvenes a la plataforma'}
+                  </p>
+                  <button
+                    onClick={() => setShowForm(true)}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Agregar Primer Joven
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {youngList.map(young => (
+                    <YoungCard
+                      key={young.id || `young-${Math.random()}`}
+                      young={young}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onYoungUpdate={handleYoungUpdate}
+                      onShowSuccess={showSuccess}
+                      onShowError={showError}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Indicador de carga para scroll infinito */}
+              {loadingMore && (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    Cargando más jóvenes...
+                  </p>
+                </div>
+              )}
+
+              {/* Indicador de fin de resultados */}
+              {!hasMore && youngList.length > 0 && (
+                <div className="text-center py-8">
+                  <div className="text-center text-gray-500 dark:text-gray-400">
+                    <svg
+                      className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500 mb-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      ></path>
+                    </svg>
+                    <p className="font-medium text-sm sm:text-base">
+                      ¡Has visto todos los jóvenes!
+                    </p>
+                    <p className="text-xs sm:text-sm mt-1">
+                      No hay más elementos para mostrar
+                    </p>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Modales */}
+          {showForm && (
+            <YoungForm
+              isOpen={showForm}
+              onSubmit={handleSubmit}
+              onClose={() => setShowForm(false)}
+              onShowSuccess={showSuccess}
+              onShowError={showError}
+            />
+          )}
+
+          {showEditForm && editingYoung && (
+            <EditYoungForm
+              isOpen={showEditForm}
+              young={editingYoung}
+              onSubmit={handleUpdate}
+              onClose={() => {
+                setShowEditForm(false);
+                setEditingYoung(null);
+              }}
+              onShowSuccess={showSuccess}
+              onShowError={showError}
+            />
+          )}
+
+          {showImportModal && (
+            <ImportModal
+              isOpen={showImportModal}
+              onClose={() => setShowImportModal(false)}
+              onSuccess={handleImportSuccess}
+              onShowSuccess={showSuccess}
+              onShowError={showError}
+            />
+          )}
+
+          {showBirthdayDashboard && (
+            <BirthdayDashboard
+              isOpen={showBirthdayDashboard}
+              onClose={() => setShowBirthdayDashboard(false)}
+              youngList={allYoungList}
+            />
+          )}
+
+          {showBirthdayStats && (
+            <BirthdayStatsModal
+              isOpen={showBirthdayStats}
+              onClose={() => setShowBirthdayStats(false)}
+            />
+          )}
+
+          {/* Sección de Gestión QR */}
+          {showQRSection && (
+            <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      Gestión de Código QR
+                    </h2>
+                    <button
+                      onClick={() => setShowQRSection(false)}
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <QRGenerator
+                    onSuccess={() => {
+                      showSuccess('QR generado exitosamente');
+                      setAttendanceRefresh(prev => prev + 1);
+                    }}
+                    onError={error => showError(error)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sección de Lista de Asistencias */}
+          {showAttendanceSection && (
+            <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      Asistencias del Día
+                    </h2>
+                    <button
+                      onClick={() => setShowAttendanceSection(false)}
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <AttendanceList refreshTrigger={attendanceRefresh} />
+                  {isSuperAdmin && (
+                    <div className="mt-6 max-w-sm">
+                      <ManualAttendanceButton
+                        onClick={() => setShowManualAttendanceModal(true)}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sección de Ranking/Leaderboard */}
+          {showLeaderboardSection && (
+            <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <span className="material-symbols-rounded text-3xl text-primary">
                       leaderboard
                     </span>
                     Ranking de Puntos
                   </h2>
-                  <button
-                    onClick={() => setShowLeaderboardSection(false)}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  >
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  <div className="flex items-center gap-2">
+                    <FullscreenLeaderboard leaderboard={leaderboard} />
+                    <button
+                      onClick={() => setShowLeaderboardSection(false)}
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-                <LeaderboardSection />
+                <div className="p-6">
+                  <SeasonStatsBar activeParticipants={leaderboard.length} />
+                  <LeaderboardSection />
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Sección de Gestión de Temporadas */}
-        {showSeasonsSection && (
-          <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <span className="material-symbols-rounded text-3xl text-primary">
-                      calendar_today
-                    </span>
-                    Gestión de Temporadas
-                  </h2>
-                  <button
-                    onClick={() => setShowSeasonsSection(false)}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  >
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+          {/* Sección de Gestión de Temporadas */}
+          {showSeasonsSection && (
+            <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <span className="material-symbols-rounded text-3xl text-primary">
+                        calendar_today
+                      </span>
+                      Gestión de Temporadas
+                    </h2>
+                    <button
+                      onClick={() => setShowSeasonsSection(false)}
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <SeasonManager
+                    onShowSuccess={showSuccess}
+                    onShowError={showError}
+                  />
                 </div>
-                <SeasonManager
-                  onShowSuccess={showSuccess}
-                  onShowError={showError}
-                />
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Sección de Gestión de Solicitudes de Registro (solo Super Admin) */}
-        {showRegistrationRequestsSection && isSuperAdmin && (
-          <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <span className="material-symbols-rounded text-3xl text-purple-600 dark:text-purple-400">
-                      assignment_ind
-                    </span>
-                    Gestión de Solicitudes de Registro
-                  </h2>
-                  <button
-                    onClick={() => setShowRegistrationRequestsSection(false)}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  >
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+          {/* Sección de Gestión de Solicitudes de Registro (solo Super Admin) */}
+          {showRegistrationRequestsSection && isSuperAdmin && (
+            <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <span className="material-symbols-rounded text-3xl text-purple-600 dark:text-purple-400">
+                        assignment_ind
+                      </span>
+                      Gestión de Solicitudes de Registro
+                    </h2>
+                    <button
+                      onClick={() => setShowRegistrationRequestsSection(false)}
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <RegistrationRequestsManager
+                    onShowSuccess={showSuccess}
+                    onShowError={showError}
+                    onPendingCountChange={setPendingRequestsCount}
+                  />
                 </div>
-                <RegistrationRequestsManager
-                  onShowSuccess={showSuccess}
-                  onShowError={showError}
-                  onPendingCountChange={setPendingRequestsCount}
-                />
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Toast Container */}
-        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+          {/* Toast Container */}
+          <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
 
-        {/* Modal de perfil del admin */}
-        <ProfileModal
-          isOpen={showProfileModal}
-          onClose={handleCloseProfile}
-          young={currentUser}
-          onProfileUpdated={handleProfileUpdated}
+          {/* Modal de perfil del admin */}
+          <ProfileModal
+            isOpen={showProfileModal}
+            onClose={handleCloseProfile}
+            young={currentUser}
+            onProfileUpdated={handleProfileUpdated}
+          />
+        </div>
+        <ManualAttendanceModal
+          isOpen={showManualAttendanceModal}
+          onClose={() => setShowManualAttendanceModal(false)}
+          onSuccess={data => {
+            setShowManualAttendanceModal(false);
+            setManualAttendanceResult(data);
+            setShowManualSuccessModal(true);
+            setAttendanceRefresh(prev => prev + 1);
+          }}
+        />
+        <AttendanceModal
+          isOpen={showManualSuccessModal}
+          onClose={() => setShowManualSuccessModal(false)}
+          success={true}
+          message={
+            manualAttendanceResult ? '¡Asistencia registrada manualmente!' : ''
+          }
+          subtitle={manualAttendanceResult?.young?.fullName}
+          date={manualAttendanceResult?.attendanceDate}
         />
       </div>
-      <ManualAttendanceModal
-        isOpen={showManualAttendanceModal}
-        onClose={() => setShowManualAttendanceModal(false)}
-        onSuccess={data => {
-          setShowManualAttendanceModal(false);
-          setManualAttendanceResult(data);
-          setShowManualSuccessModal(true);
-          setAttendanceRefresh(prev => prev + 1);
-        }}
-      />
-      <AttendanceModal
-        isOpen={showManualSuccessModal}
-        onClose={() => setShowManualSuccessModal(false)}
-        success={true}
-        message={
-          manualAttendanceResult ? '¡Asistencia registrada manualmente!' : ''
-        }
-        subtitle={manualAttendanceResult?.young?.fullName}
-        date={manualAttendanceResult?.attendanceDate}
-      />
-    </div>
+    </SeasonProvider>
   );
 }
 

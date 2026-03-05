@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuthToken } from '../services/api';
+import { formatBirthday } from '../utils/dateUtils';
 
 interface BirthdayStats {
   emailsSentToday: number;
@@ -59,11 +60,6 @@ const BirthdayStatsModal: React.FC<BirthdayStatsModalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
   };
 
   if (!isOpen) return null;
@@ -204,7 +200,7 @@ const BirthdayStatsModal: React.FC<BirthdayStatsModalProps> = ({
                               {birthday.fullName}
                             </p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {formatDate(birthday.birthday)}
+                              {formatBirthday(birthday.birthday)}
                             </p>
                           </div>
                         </div>

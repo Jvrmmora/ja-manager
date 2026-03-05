@@ -79,11 +79,27 @@ const LeaderboardSection: React.FC = () => {
 
       const data = await pointsService.getLeaderboard(options);
 
-      // Detectar cambios de posición
-      if (hasDeepChanged(leaderboard, data) && leaderboard.length > 0) {
+      // Asignar previousRank basándose en el ranking anterior
+      const dataWithPreviousRank = data.map((entry: ILeaderboardEntry) => {
+        const previousEntry = leaderboard.find(
+          e => e.youngId === entry.youngId
+        );
+        return {
+          ...entry,
+          previousRank: previousEntry
+            ? previousEntry.currentRank
+            : entry.currentRank,
+        };
+      });
+
+      // Detectar cambios de posición para las animaciones temporales
+      if (
+        hasDeepChanged(leaderboard, dataWithPreviousRank) &&
+        leaderboard.length > 0
+      ) {
         const changes = new Map<string, { old: number; new: number }>();
 
-        data.forEach((newEntry: ILeaderboardEntry) => {
+        dataWithPreviousRank.forEach((newEntry: ILeaderboardEntry) => {
           const oldEntry = leaderboard.find(
             e => e.youngId === newEntry.youngId
           );
@@ -102,8 +118,8 @@ const LeaderboardSection: React.FC = () => {
       }
 
       // Solo actualizar si hay cambios
-      if (hasDeepChanged(leaderboard, data)) {
-        setLeaderboard(data);
+      if (hasDeepChanged(leaderboard, dataWithPreviousRank)) {
+        setLeaderboard(dataWithPreviousRank);
       }
     } catch (err: any) {
       console.error('Error loading leaderboard:', err);
@@ -115,6 +131,8 @@ const LeaderboardSection: React.FC = () => {
 
   const getTop3 = () => leaderboard.slice(0, 3);
   const getRest = () => leaderboard.slice(3);
+
+  // Componente mejorado para mostrar racha en el podio
   const StreakChip: React.FC<{ value?: number | undefined }> = ({ value }) => {
     if (!value || value <= 0) return null;
     const isViolet = value >= 4;
@@ -123,18 +141,18 @@ const LeaderboardSection: React.FC = () => {
       : 'from-orange-400 to-amber-500';
     return (
       <div
-        className={`absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full px-2 py-1 text-[10px] sm:text-xs font-bold text-white shadow bg-gradient-to-r ${base} flex items-center gap-1`}
+        className={`absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-bold text-white shadow-lg bg-gradient-to-r ${base} flex items-center gap-1`}
         title={`Racha: ${value} semana${value !== 1 ? 's' : ''}`}
       >
         <span className="material-symbols-rounded text-[12px] sm:text-sm">
           local_fire_department
         </span>
-        {value}
+        <span>{value}</span>
       </div>
     );
   };
 
-  // Componente para el indicador de cambio de posición
+  // Componente para el indicador de cambio de posición usando previousRank
   const RankChangeIndicator: React.FC<{ youngId: string }> = ({ youngId }) => {
     const change = rankChanges.get(youngId);
     if (!change) return null;
@@ -161,6 +179,47 @@ const LeaderboardSection: React.FC = () => {
         </div>
       </motion.div>
     );
+  };
+
+  // Componente para mostrar el cambio de posición basado en previousRank
+  const PositionChangeChip: React.FC<{ entry: ILeaderboardEntry }> = ({
+    entry,
+  }) => {
+    if (!entry.previousRank || entry.previousRank === entry.currentRank) {
+      // Sin cambio o posición igual
+      return (
+        <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+          <span className="material-symbols-rounded text-xs">remove</span>
+          <span className="text-xs font-medium">=</span>
+        </div>
+      );
+    }
+
+    const difference = entry.previousRank - entry.currentRank;
+    const isUp = difference > 0; // Subió (previousRank mayor que currentRank)
+    const isDown = difference < 0; // Bajó
+
+    if (isUp) {
+      return (
+        <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+          <span className="material-symbols-rounded text-xs">trending_up</span>
+          <span className="text-xs font-bold">+{Math.abs(difference)}</span>
+        </div>
+      );
+    }
+
+    if (isDown) {
+      return (
+        <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+          <span className="material-symbols-rounded text-xs">
+            trending_down
+          </span>
+          <span className="text-xs font-bold">-{Math.abs(difference)}</span>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -442,6 +501,9 @@ const LeaderboardSection: React.FC = () => {
                       <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                         Joven
                       </th>
+                      <th className="hidden md:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                        Cambio
+                      </th>
                       <th className="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                         Racha
                       </th>
@@ -490,6 +552,9 @@ const LeaderboardSection: React.FC = () => {
                               )}
                             </div>
                           </div>
+                        </td>
+                        <td className="hidden md:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center">
+                          <PositionChangeChip entry={entry} />
                         </td>
                         <td className="hidden sm:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center">
                           {entry.streak && entry.streak > 0 ? (

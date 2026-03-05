@@ -115,4 +115,71 @@
   .animate-shimmer-bronze {
     animation: shimmer-bronze 2s ease-in-out infinite;
   }
+
+  /* Animaciones sutiles para modo fullscreen (5 segundos) */
+  @keyframes shimmer-gold-subtle {
+    0%,
+    100% {
+      box-shadow:
+        0 0 25px rgba(251, 191, 36, 0.4),
+        0 0 50px rgba(251, 191, 36, 0.2),
+        0 0 75px rgba(251, 191, 36, 0.1);
+      filter: brightness(1) saturate(1);
+    }
+    50% {
+      box-shadow:
+        0 0 35px rgba(251, 191, 36, 0.6),
+        0 0 70px rgba(251, 191, 36, 0.4),
+        0 0 100px rgba(251, 191, 36, 0.2);
+      filter: brightness(1.1) saturate(1.2);
+    }
+  }
+
+  .animate-shimmer-gold {
+    animation: shimmer-gold-subtle 5s ease-in-out infinite;
+  }
+
+  @keyframes shimmer-silver-subtle {
+    0%,
+    100% {
+      box-shadow:
+        0 0 20px rgba(203, 213, 225, 0.4),
+        0 0 40px rgba(203, 213, 225, 0.2),
+        0 0 60px rgba(203, 213, 225, 0.1);
+      filter: brightness(1) saturate(1);
+    }
+    50% {
+      box-shadow:
+        0 0 30px rgba(203, 213, 225, 0.6),
+        0 0 60px rgba(203, 213, 225, 0.4),
+        0 0 90px rgba(203, 213, 225, 0.2);
+      filter: brightness(1.1) saturate(1.1);
+    }
+  }
+
+  .animate-shimmer-silver {
+    animation: shimmer-silver-subtle 5s ease-in-out infinite;
+  }
+
+  @keyframes shimmer-bronze-subtle {
+    0%,
+    100% {
+      box-shadow:
+        0 0 20px rgba(251, 146, 60, 0.4),
+        0 0 40px rgba(251, 146, 60, 0.2),
+        0 0 60px rgba(251, 146, 60, 0.1);
+      filter: brightness(1) saturate(1);
+    }
+    50% {
+      box-shadow:
+        0 0 30px rgba(251, 146, 60, 0.6),
+        0 0 60px rgba(251, 146, 60, 0.4),
+        0 0 90px rgba(251, 146, 60, 0.2);
+      filter: brightness(1.1) saturate(1.2);
+    }
+  }
+
+  .animate-shimmer-bronze {
+    animation: shimmer-bronze-subtle 5s ease-in-out infinite;
+  }
 }
