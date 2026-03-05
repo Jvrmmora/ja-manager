@@ -10,7 +10,7 @@ export interface IQRCode extends Document {
   usageCount: number;
   points: number; // Puntos que otorga este QR (configurable por admin)
   speedBonusEnabled?: boolean; // Si está habilitado el bonus por velocidad
-  bonusDecayMinutes?: number; // Duración del bonus en minutos (default: 10)
+  bonusDecayMinutes?: number; // Duración del bonus en minutos (default: 30)
   createdAt?: Date;
   updatedAt?: Date;
   getCurrentSpeedBonus(): number; // Método para calcular bonus actual
@@ -60,11 +60,11 @@ const qrCodeSchema = new Schema<IQRCode>(
     },
     speedBonusEnabled: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     bonusDecayMinutes: {
       type: Number,
-      default: 10,
+      default: 30,
       min: [5, 'La duración del bonus debe ser al menos 5 minutos'],
       max: [30, 'La duración del bonus no puede exceder 30 minutos'],
     },
@@ -101,7 +101,7 @@ qrCodeSchema.methods.getCurrentSpeedBonus = function (): number {
   const now = new Date();
   const elapsedMs = now.getTime() - this.generatedAt.getTime();
   const elapsedMinutes = elapsedMs / (1000 * 60);
-  const decayMinutes = this.bonusDecayMinutes || 10;
+  const decayMinutes = this.bonusDecayMinutes || 30;
 
   // Si ya pasó el tiempo de decaimiento, no hay bonus
   if (elapsedMinutes >= decayMinutes) {

@@ -13,7 +13,7 @@ export const LightningBonus: React.FC<LightningBonusProps> = ({
   bonusPoints: initialBonusPoints,
   decayPercent: initialDecayPercent,
   maxBonus = 50,
-  bonusDecayMinutes = 10,
+  bonusDecayMinutes = 30,
   qrGeneratedAt,
 }) => {
   // Estados para actualización en tiempo real

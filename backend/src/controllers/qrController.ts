@@ -40,8 +40,8 @@ export const generateDailyQR = async (
     const {
       force = false,
       points = 10,
-      speedBonusEnabled = false,
-      bonusDecayMinutes = 10,
+      speedBonusEnabled = true,
+      bonusDecayMinutes = 30,
     } = req.body; // Aceptar force, points y bonus
     const today = getCurrentDateColombia(); // Fecha actual en Colombia (YYYY-MM-DD)
 
@@ -168,7 +168,7 @@ export const getCurrentQR = async (
     const bonusExpiresAt = currentQR.speedBonusEnabled
       ? new Date(
           currentQR.generatedAt.getTime() +
-            (currentQR.bonusDecayMinutes || 10) * 60 * 1000
+            (currentQR.bonusDecayMinutes || 30) * 60 * 1000
         )
       : null;
     const hasBonusExpired = currentQR.speedBonusEnabled

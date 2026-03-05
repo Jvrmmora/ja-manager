@@ -16,6 +16,7 @@ import {
 } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import LoadingSpinner from './LoadingSpinner';
+import { QRCountdown } from './QRCountdown';
 import { seasonService } from '../services/seasonService';
 import { POINTS_PRESETS } from '../constants/points';
 import {
@@ -39,32 +40,13 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [countdown, setCountdown] = useState<string>('');
   const [liveAttendances, setLiveAttendances] = useState<any[]>([]);
   const [lastAttendanceCount, setLastAttendanceCount] = useState(0);
   const [showConfigModal, setShowConfigModal] = useState(false); // Modal de configuración
   const [selectedPoints, setSelectedPoints] = useState(10); // Puntos seleccionados
-  const [speedBonusEnabled, setSpeedBonusEnabled] = useState(false); // Bonus de velocidad habilitado
-  const [bonusDecayMinutes, setBonusDecayMinutes] = useState(10); // Duración del bonus en minutos
+  const [speedBonusEnabled, setSpeedBonusEnabled] = useState(true); // Bonus de velocidad habilitado
+  const [bonusDecayMinutes, setBonusDecayMinutes] = useState(30); // Duración del bonus en minutos
   const [isRegenerate, setIsRegenerate] = useState(false); // Si es regeneración
-
-  // Hook para el contador regresivo
-  useEffect(() => {
-    if (!qrData?.qrCode?.expiresAt) return;
-
-    const updateCountdown = () => {
-      const countdownText = formatCountdown(qrData.qrCode.expiresAt);
-      setCountdown(countdownText);
-    };
-
-    // Actualizar inmediatamente
-    updateCountdown();
-
-    // Actualizar cada segundo
-    const interval = setInterval(updateCountdown, 1000);
-
-    return () => clearInterval(interval);
-  }, [qrData?.qrCode?.expiresAt]);
 
   useEffect(() => {
     // Cargar QR existente al montar el componente
@@ -212,8 +194,8 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
       setShowConfigModal(false);
       setIsRegenerate(false);
       setSelectedPoints(10);
-      setSpeedBonusEnabled(false);
-      setBonusDecayMinutes(10);
+      setSpeedBonusEnabled(true);
+      setBonusDecayMinutes(30);
 
       if (onSuccess) {
         onSuccess(data);
@@ -332,13 +314,13 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
                 >
                   <strong>Expira:</strong>{' '}
                   <span
-                    className={
-                      countdown === 'Expirado'
+                    className={`${
+                      formatCountdown(qrData.qrCode.expiresAt) === 'Expirado'
                         ? 'text-red-500 font-semibold'
                         : 'text-red-600 font-mono font-semibold'
-                    }
+                    }`}
                   >
-                    {countdown}
+                    {formatCountdown(qrData.qrCode.expiresAt)}
                   </span>
                 </p>
                 <div
@@ -492,7 +474,7 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
                 {qrData?.qrCode?.speedBonusEnabled && (
                   <LiveBonusDisplay
                     maxBonus={Math.floor(qrData.qrCode.points * 0.5)}
-                    bonusDecayMinutes={qrData.qrCode.bonusDecayMinutes || 10}
+                    bonusDecayMinutes={qrData.qrCode.bonusDecayMinutes || 30}
                     qrGeneratedAt={qrData.qrCode.generatedAt}
                   />
                 )}
@@ -522,14 +504,20 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
                     </motion.div>
                   )}
 
-                  <p className="text-xl">
-                    Expira en:{' '}
-                    <span
-                      className={`font-mono font-bold text-2xl ${countdown === 'Expirado' ? 'text-red-400' : 'text-orange-400'}`}
-                    >
-                      {countdown}
-                    </span>
-                  </p>
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="space-y-2"
+                  >
+                    <p className="text-sm font-medium text-gray-400">
+                      Expira en:
+                    </p>
+                    <QRCountdown
+                      expiresAt={qrData.qrCode.expiresAt}
+                      isDark={isDark}
+                    />
+                  </motion.div>
                 </motion.div>
               </div>
 
@@ -810,96 +798,6 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
                         </p>
                       </div>
                     </div>
-                  )}
-                </div>
-
-                {/* Bonus por Velocidad */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <input
-                      type="checkbox"
-                      id="speedBonus"
-                      checked={speedBonusEnabled}
-                      onChange={e => setSpeedBonusEnabled(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label
-                      htmlFor="speedBonus"
-                      className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
-                    >
-                      ⚡ Activar bonus de velocidad (+50%)
-                    </label>
-                  </div>
-                  <p
-                    className={`text-xs mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
-                  >
-                    Recompensa a quienes escanean más rápido con un bonus que
-                    disminuye con el tiempo
-                  </p>
-
-                  {/* Input de duración (solo si está habilitado) */}
-                  {speedBonusEnabled && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="space-y-3"
-                    >
-                      <div>
-                        <label
-                          className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-                        >
-                          Duración del bonus (minutos)
-                        </label>
-                        <input
-                          type="number"
-                          min="5"
-                          max="30"
-                          value={bonusDecayMinutes}
-                          onChange={e =>
-                            setBonusDecayMinutes(parseInt(e.target.value) || 10)
-                          }
-                          className={`w-full px-3 py-2 rounded-lg border ${
-                            isDark
-                              ? 'bg-gray-700 border-gray-600 text-white'
-                              : 'bg-white border-gray-300 text-gray-900'
-                          } focus:ring-2 focus:ring-blue-500`}
-                        />
-                      </div>
-
-                      {/* Preview del bonus */}
-                      <div
-                        className={`p-3 rounded-lg ${isDark ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200'} border`}
-                      >
-                        <div className="flex items-start gap-2">
-                          <span className="material-symbols-rounded text-green-500 text-sm mt-0.5">
-                            bolt
-                          </span>
-                          <div
-                            className={`text-xs ${isDark ? 'text-green-300' : 'text-green-700'}`}
-                          >
-                            <p className="font-semibold mb-1">
-                              Preview del bonus:
-                            </p>
-                            <ul className="space-y-0.5">
-                              <li>
-                                • <strong>Bonus inicial:</strong> +
-                                {Math.floor(selectedPoints * 0.5)} pts (50% de{' '}
-                                {selectedPoints})
-                              </li>
-                              <li>
-                                • <strong>Bonus final:</strong> 0 pts en{' '}
-                                {bonusDecayMinutes} minutos
-                              </li>
-                              <li>
-                                • <strong>Decaimiento:</strong> Lineal (hacia
-                                abajo)
-                              </li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
                   )}
                 </div>
               </div>

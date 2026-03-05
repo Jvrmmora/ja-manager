@@ -45,7 +45,7 @@ const AnimatedScanButton: React.FC<AnimatedScanButtonProps> = ({
           maxBonus,
           decayPercent,
           qrGeneratedAt: response.data.qrCode.generatedAt,
-          bonusDecayMinutes: response.data.qrCode.bonusDecayMinutes || 10,
+          bonusDecayMinutes: response.data.qrCode.bonusDecayMinutes || 30,
         });
       } else {
         setBonusInfo(null);
@@ -337,7 +337,7 @@ const AnimatedScanButton: React.FC<AnimatedScanButtonProps> = ({
               bonusPoints={bonusInfo.currentBonus}
               decayPercent={bonusInfo.decayPercent}
               maxBonus={bonusInfo.maxBonus}
-              bonusDecayMinutes={bonusInfo.bonusDecayMinutes ?? 10}
+              bonusDecayMinutes={bonusInfo.bonusDecayMinutes ?? 30}
               qrGeneratedAt={bonusInfo.qrGeneratedAt}
             />
             <span className="text-xs font-bold text-white">pts</span>

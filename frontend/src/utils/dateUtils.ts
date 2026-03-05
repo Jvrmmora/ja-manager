@@ -153,6 +153,7 @@ export const formatDisplayTime = (date: Date | string): string => {
 export const getTimeUntilExpiration = (
   expirationDate: Date | string
 ): {
+  days: number;
   hours: number;
   minutes: number;
   seconds: number;
@@ -167,6 +168,7 @@ export const getTimeUntilExpiration = (
 
   if (timeLeft <= 0) {
     return {
+      days: 0,
       hours: 0,
       minutes: 0,
       seconds: 0,
@@ -174,11 +176,14 @@ export const getTimeUntilExpiration = (
     };
   }
 
-  const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+  const totalSeconds = Math.floor(timeLeft / 1000);
+  const days = Math.floor(totalSeconds / (24 * 60 * 60));
+  const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
+  const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+  const seconds = totalSeconds % 60;
 
   return {
+    days,
     hours,
     minutes,
     seconds,
