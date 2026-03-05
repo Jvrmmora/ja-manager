@@ -16,6 +16,7 @@ import BirthdayBoardFullscreen from '../components/BirthdayBoardFullscreen';
 import LeaderboardSection from '../components/LeaderboardSection';
 import SeasonStatsBar from '../components/SeasonStatsBar';
 import FullscreenLeaderboard from '../components/FullscreenLeaderboard';
+import ReferralShareModal from '../components/ReferralShareModal';
 import { SeasonProvider, useSeason } from '../context/SeasonContext';
 import { authService } from '../services/auth';
 import { getCurrentUserProfile, getMyAttendanceHistory } from '../services/api';
@@ -68,6 +69,8 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   // Estados para el nuevo ranking mejorado
   const [leaderboard, setLeaderboard] = useState<ILeaderboardEntry[]>([]);
   const [activeSeason, setActiveSeason] = useState<ISeason | null>(null);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [referralPoints, setReferralPoints] = useState(500);
 
   const { toasts, showError, removeToast } = useToast();
   const [currentHour, setCurrentHour] = useState<number>(() => {
@@ -263,6 +266,22 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
     setIsScanning(false);
   };
 
+  // Cargar puntos de referido de la temporada activa
+  useEffect(() => {
+    const loadReferralPoints = async () => {
+      try {
+        const activeSeason = await seasonService.getActive();
+        if (activeSeason?.settings?.referralBonusPoints) {
+          setReferralPoints(activeSeason.settings.referralBonusPoints);
+        }
+      } catch (error) {
+        console.error('Error al obtener puntos de referido:', error);
+        // Mantener valor por defecto (500)
+      }
+    };
+    loadReferralPoints();
+  }, []);
+
   // QRScanner maneja todo internamente
   const handleQRScanSuccess = (data: any) => {
     console.log('✅ Asistencia registrada exitosamente:', data);
@@ -386,25 +405,44 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
                 con la comunidad.
               </p>
 
-              {/* Información de la placa si la tiene */}
+              {/* Información de la placa - Sección mejorada */}
               {userInfo?.placa && (
-                <div className="inline-flex items-center px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-lg mb-6">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <div className="mb-6 mx-auto w-fit bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-700/50 rounded-xl p-4 shadow-sm flex items-center gap-4">
+                  {/* Tu Placa */}
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-blue-500 text-white rounded-lg flex-shrink-0">
+                      <svg
+                        className="w-5 h-5"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 font-medium uppercase tracking-wide">
+                        Tu Placa
+                      </p>
+                      <p className="text-lg font-bold text-blue-700 dark:text-blue-300 font-mono">
+                        {userInfo.placa}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Botón para invitar amigos */}
+                  <button
+                    onClick={() => setShowReferralModal(true)}
+                    className="px-5 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg transition-all active:scale-95 shadow-lg hover:shadow-xl flex items-center gap-2 whitespace-nowrap text-sm flex-shrink-0"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-                    />
-                  </svg>
-                  <span className="font-semibold">
-                    Tu Placa: {userInfo.placa}
-                  </span>
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                    </svg>
+                    Invitar amigos
+                  </button>
                 </div>
               )}
 
@@ -636,6 +674,16 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
             defaultGroup={1}
             currentMonthOnly={true}
             fixedGroup={1}
+          />
+        )}
+
+        {/* Modal para compartir referral */}
+        {userInfo?.placa && (
+          <ReferralShareModal
+            isOpen={showReferralModal}
+            onClose={() => setShowReferralModal(false)}
+            userPlaca={userInfo.placa}
+            referralPoints={referralPoints}
           />
         )}
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createRegistrationRequest } from '../services/api';
+import { authService } from '../services/auth';
 import PhoneInput from './PhoneInput';
 import LoadingSpinner from './LoadingSpinner';
 import { useTheme } from '../context/ThemeContext';
@@ -64,6 +65,27 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
     if (age >= 26 && age <= 30) return '26-30';
     return '30+';
   };
+
+  // Detectar query parameter de referido al abrir el modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const referredByParam = params.get('referredBy');
+
+    if (referredByParam) {
+      const normalizedPlaca = referredByParam.trim().toUpperCase();
+      const placaRegex = /^@MOD[A-Z]{2,4}\d{3}$/;
+
+      // Validar que el formato sea correcto
+      if (placaRegex.test(normalizedPlaca)) {
+        setFormData(prev => ({
+          ...prev,
+          referredByPlaca: normalizedPlaca,
+        }));
+      }
+    }
+  }, [isOpen]);
 
   // Validar placa de referido en tiempo real (debounce)
   useEffect(() => {
@@ -435,38 +457,89 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       }
 
       // Enviar solicitud
-      await createRegistrationRequest(formDataToSend);
+      const response = await createRegistrationRequest(formDataToSend);
 
-      // Mostrar mensaje de éxito
+      // **NUEVO: Auto-login después de registro exitoso**
+      // La respuesta ahora contiene la información del usuario creado
+      const registeredPlaca = response.data?.placa;
+      const registeredPassword = formData.password;
+
+      // Mostrar mensaje de éxito inicial
       if (showToast) {
         showToast(
-          'Solicitud enviada exitosamente. El administrador revisará tu solicitud y te notificará por correo. Por favor, revisa tu bandeja de entrada y la carpeta de spam.',
+          `¡Cuenta creada exitosamente! Tu placa es: ${registeredPlaca || 'N/A'}. Iniciando sesión...`,
           'success'
         );
       }
 
-      // Resetear formulario
-      setFormData({
-        fullName: '',
-        birthday: '',
-        gender: '' as 'masculino' | 'femenino' | '',
-        phone: '',
-        email: '',
-        password: '',
-        passwordConfirmation: '',
-        referredByPlaca: '',
-        profileImage: null,
-      });
-      setImagePreview(null);
-      setEmailExists(false);
-      setPlacaValid(null);
-      setPasswordsMatch(null);
-      setErrors({});
+      // Intentar auto-login usando la placa (no el email)
+      try {
+        await authService.login({
+          username: registeredPlaca,
+          password: registeredPassword,
+        });
 
-      // Cerrar modal después de un breve delay
-      setTimeout(() => {
+        // Login exitoso - mostrar mensaje y recargar
+        if (showToast) {
+          showToast('¡Bienvenido! Redirigiendo al dashboard...', 'success');
+        }
+
+        // Resetear formulario
+        setFormData({
+          fullName: '',
+          birthday: '',
+          gender: '' as 'masculino' | 'femenino' | '',
+          phone: '',
+          email: '',
+          password: '',
+          passwordConfirmation: '',
+          referredByPlaca: '',
+          profileImage: null,
+        });
+        setImagePreview(null);
+        setEmailExists(false);
+        setPlacaValid(null);
+        setPasswordsMatch(null);
+        setErrors({});
+
+        // Cerrar modal y recargar para actualizar el estado de autenticación
         onClose();
-      }, 2000);
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      } catch (loginError) {
+        // Si falla el auto-login, mostrar mensaje pero la cuenta sí fue creada
+        console.error('Error en auto-login:', loginError);
+        if (showToast) {
+          showToast(
+            'Cuenta creada exitosamente. Por favor, inicia sesión manualmente.',
+            'warning'
+          );
+        }
+
+        // Resetear formulario igualmente
+        setFormData({
+          fullName: '',
+          birthday: '',
+          gender: '' as 'masculino' | 'femenino' | '',
+          phone: '',
+          email: '',
+          password: '',
+          passwordConfirmation: '',
+          referredByPlaca: '',
+          profileImage: null,
+        });
+        setImagePreview(null);
+        setEmailExists(false);
+        setPlacaValid(null);
+        setPasswordsMatch(null);
+        setErrors({});
+
+        // Cerrar modal
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      }
     } catch (error: unknown) {
       console.error('Error en registro:', error);
       const errorMessage =
@@ -992,17 +1065,44 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             )}
           </div>
 
-          {/* Placa de Referido */}
-          <div>
-            <label
-              htmlFor="referredByPlaca"
-              className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }`}
-            >
-              Placa de Referido (Opcional)
-            </label>
+          {/* Placa de Referido - Mejorado UI/UX */}
+          <div
+            className={`p-4 rounded-lg border-2 transition-all ${
+              isDark
+                ? 'bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-500/40 hover:border-purple-500/60'
+                : 'bg-gradient-to-br from-purple-50 to-blue-50 border-purple-300 hover:border-purple-500'
+            } ${formData.referredByPlaca ? (isDark ? 'border-purple-500/80' : 'border-purple-500') : ''}`}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <span className="material-symbols-rounded text-lg text-purple-600 dark:text-purple-400">
+                people_alt
+              </span>
+              <label
+                htmlFor="referredByPlaca"
+                className={`font-semibold text-sm ${
+                  isDark ? 'text-purple-300' : 'text-purple-700'
+                }`}
+              >
+                Placa de Referido (Opcional)
+              </label>
+              {placaValid === true && (
+                <span className="ml-auto flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-500/20 text-green-700 dark:text-green-300 rounded-full">
+                  <span className="material-symbols-rounded text-sm">
+                    check_circle
+                  </span>
+                  Válida
+                </span>
+              )}
+            </div>
+
             <div className="relative">
+              <span
+                className={`absolute left-3 top-1/2 transform -translate-y-1/2 material-symbols-rounded text-lg ${
+                  isDark ? 'text-purple-400' : 'text-purple-500'
+                }`}
+              >
+                badge
+              </span>
               <input
                 type="text"
                 id="referredByPlaca"
@@ -1010,17 +1110,23 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 value={formData.referredByPlaca}
                 onChange={handleInputChange}
                 disabled={loading}
-                className={`w-full px-3 py-2 pr-10 border rounded-md ${
+                className={`w-full pl-10 pr-10 py-2.5 border-2 rounded-lg font-mono text-sm transition-all ${
                   isDark
-                    ? 'bg-gray-700 border-gray-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-900'
+                    ? 'bg-gray-800 text-white placeholder-gray-500'
+                    : 'bg-white text-gray-900 placeholder-gray-400'
                 } ${
                   placaValid === false
-                    ? 'border-red-500'
+                    ? isDark
+                      ? 'border-red-500 bg-red-900/10'
+                      : 'border-red-500 bg-red-50'
                     : placaValid === true
-                      ? 'border-green-500'
-                      : ''
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      ? isDark
+                        ? 'border-green-500 bg-green-900/10'
+                        : 'border-green-500 bg-green-50'
+                      : isDark
+                        ? 'border-purple-500/50'
+                        : 'border-purple-400'
+                } focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
                 placeholder="@MODJAVI001"
               />
               {(placaValid !== null || validatingPlaca) && (
@@ -1029,46 +1135,40 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
                     <LoadingSpinner size="sm" />
                   ) : placaValid ? (
                     <svg
-                      className="w-5 h-5 text-green-500"
-                      fill="none"
-                      stroke="currentColor"
+                      className="w-5 h-5 text-green-500 animate-pulse"
+                      fill="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
                     </svg>
                   ) : (
                     <svg
-                      className="w-5 h-5 text-red-500"
-                      fill="none"
-                      stroke="currentColor"
+                      className="w-5 h-5 text-red-500 animate-pulse"
+                      fill="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
+                      <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
                     </svg>
                   )}
                 </div>
               )}
             </div>
+
             {errors.referredByPlaca && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              <p className="mt-2 text-sm font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
+                <span className="material-symbols-rounded text-base">
+                  error
+                </span>
                 {errors.referredByPlaca}
               </p>
             )}
+
             <p
-              className={`mt-1 text-xs ${
-                isDark ? 'text-gray-400' : 'text-gray-500'
+              className={`mt-2 text-xs font-medium flex items-center gap-1 ${
+                isDark ? 'text-purple-300' : 'text-purple-700'
               }`}
             >
+              <span className="material-symbols-rounded text-sm">info</span>
               Si alguien te refirió, ingresa su placa (ej: @MODJAVI001)
             </p>
           </div>

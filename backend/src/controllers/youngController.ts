@@ -120,7 +120,8 @@ export class YoungController {
         filters.group = { $in: groupNumbers };
       }
 
-      console.log('🔍 Filtros aplicados:', filters);
+      // Excluir usuarios eliminados con soft delete
+      filters.deletedAt = null;
       console.log('📄 Parámetros recibidos:', {
         search,
         ageRange,
@@ -264,8 +265,8 @@ export class YoungController {
         }
       }
 
-      // Buscar el joven
-      const young = await Young.findById(id);
+      // Buscar el joven (excluir eliminados con soft delete)
+      const young = await Young.findOne({ _id: id, deletedAt: null });
 
       if (!young) {
         logger.error('Joven no encontrado', {
@@ -303,6 +304,7 @@ export class YoungController {
       if (value.email && value.email.trim()) {
         const existingEmail = await Young.findOne({
           email: value.email.trim().toLowerCase(),
+          deletedAt: null,
         });
         if (existingEmail) {
           logger.warn('Intento de crear joven con email duplicado', {
@@ -326,6 +328,7 @@ export class YoungController {
       if (value.phone && value.phone.trim()) {
         const existingPhone = await Young.findOne({
           phone: value.phone.trim(),
+          deletedAt: null,
         });
         if (existingPhone) {
           logger.warn('Intento de crear joven con teléfono duplicado', {
@@ -469,7 +472,7 @@ export class YoungController {
         }
       }
 
-      const existingYoung = await Young.findById(id);
+      const existingYoung = await Young.findOne({ _id: id, deletedAt: null });
       if (!existingYoung) {
         throw new NotFoundError('Joven no encontrado');
       }
@@ -484,6 +487,7 @@ export class YoungController {
         const existingEmail = await Young.findOne({
           email: updateData.email.trim().toLowerCase(),
           _id: { $ne: id }, // Excluir el documento actual
+          deletedAt: null,
         });
         if (existingEmail) {
           logger.warn('Intento de usar email duplicado', {
@@ -511,6 +515,7 @@ export class YoungController {
         const existingPhone = await Young.findOne({
           phone: updateData.phone.trim(),
           _id: { $ne: id }, // Excluir el documento actual
+          deletedAt: null,
         });
         if (existingPhone) {
           logger.warn('Intento de usar teléfono duplicado', {
@@ -600,7 +605,7 @@ export class YoungController {
   static async deleteYoung(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const young = await Young.findById(id);
+      const young = await Young.findOne({ _id: id, deletedAt: null });
 
       if (!young) {
         res.status(404).json({
@@ -610,17 +615,16 @@ export class YoungController {
         return;
       }
 
-      // Eliminar imagen de Cloudinary si existe
-      if (young.profileImage) {
-        try {
-          const publicId = extractPublicId(young.profileImage);
-          await deleteFromCloudinary(publicId);
-        } catch (deleteError) {
-          console.error('Error eliminando imagen:', deleteError);
-        }
-      }
+      // Soft delete: marcar como eliminado con fecha
+      young.deletedAt = new Date();
+      await young.save();
 
-      await Young.findByIdAndDelete(id);
+      logger.info('Joven marcado como eliminado (soft delete)', {
+        context: 'YoungController',
+        method: 'deleteYoung',
+        youngId: id,
+        youngName: young.fullName,
+      });
 
       res.status(200).json({
         success: true,
@@ -657,6 +661,7 @@ export class YoungController {
             $expr: {
               $eq: [{ $month: '$birthday' }, getCurrentMonthColombia()],
             },
+            deletedAt: null,
           })
             .select('fullName birthday')
             .lean(),
@@ -693,7 +698,7 @@ export class YoungController {
       }
 
       // Buscar el joven por ID
-      const young = await Young.findById(id);
+      const young = await Young.findOne({ _id: id, deletedAt: null });
       if (!young) {
         throw new NotFoundError('Joven no encontrado');
       }
@@ -743,6 +748,7 @@ export class YoungController {
       // IMPORTANTE: No usar .limit() para buscar TODAS las placas y encontrar el máximo consecutivo real
       const existingPlaques = await Young.find({
         placa: { $regex: /^@MOD/ },
+        deletedAt: null,
       })
         .select('placa')
         .lean(); // .lean() para mejor rendimiento
@@ -873,7 +879,7 @@ export class YoungController {
       }
 
       // Buscar el joven por ID
-      const young = await Young.findById(id);
+      const young = await Young.findOne({ _id: id, deletedAt: null });
       if (!young) {
         throw new NotFoundError('Joven no encontrado');
       }
@@ -956,6 +962,220 @@ export class YoungController {
           first_login: false,
         },
       });
+    }
+  );
+
+  /**
+   * Obtener usuarios Young registrados recientemente (últimos 30 días)
+   * Solo accesible para Super Admin y Admin
+   */
+  static getRecentYoungUsers = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const authUser = (req as any).user;
+
+      // Solo Super Admin y Admin pueden ver registros recientes
+      if (!['Super Admin', 'Admin role'].includes(authUser.role_name)) {
+        throw new ForbiddenError(
+          'No tienes permisos para ver los registros recientes'
+        );
+      }
+
+      const {
+        page = 1,
+        limit = 10,
+        search = '',
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        days = 30,
+      } = req.query;
+
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const daysNum = parseInt(days as string, 10);
+
+      // Calcular fecha límite (últimos X días)
+      const dateLimit = new Date();
+      dateLimit.setDate(dateLimit.getDate() - daysNum);
+
+      // Construir filtros
+      const filters: any = {
+        createdAt: { $gte: dateLimit },
+        deletedAt: null, // Excluir eliminados
+      };
+
+      if (search && typeof search === 'string' && search.trim() !== '') {
+        filters.$or = [
+          { fullName: { $regex: search.trim(), $options: 'i' } },
+          { email: { $regex: search.trim(), $options: 'i' } },
+          { placa: { $regex: search.trim(), $options: 'i' } },
+        ];
+      }
+
+      // Construir ordenamiento
+      const sort: any = {};
+      sort[sortBy as string] = sortOrder === 'desc' ? -1 : 1;
+
+      const skip = (pageNum - 1) * limitNum;
+
+      const [users, totalItems] = await Promise.all([
+        Young.find(filters)
+          .sort(sort)
+          .skip(skip)
+          .limit(limitNum)
+          .populate('referredBy', 'fullName placa')
+          .lean(),
+        Young.countDocuments(filters),
+      ]);
+
+      const totalPages = Math.ceil(totalItems / limitNum);
+
+      logger.info('Registros recientes obtenidos', {
+        context: 'YoungController',
+        method: 'getRecentYoungUsers',
+        totalItems,
+        page: pageNum,
+        requestedBy: authUser.username,
+      });
+
+      res.json({
+        success: true,
+        message: 'Registros recientes obtenidos exitosamente',
+        data: {
+          data: users.map((user: any) => ({
+            id: user._id.toString(),
+            fullName: user.fullName,
+            email: user.email,
+            placa: user.placa,
+            ageRange: user.ageRange,
+            phone: user.phone,
+            birthday: user.birthday,
+            gender: user.gender,
+            role: user.role,
+            profileImage: user.profileImage,
+            skills: user.skills,
+            group: user.group,
+            referredBy: user.referredBy
+              ? {
+                  id: user.referredBy._id?.toString(),
+                  fullName: user.referredBy.fullName,
+                  placa: user.referredBy.placa,
+                }
+              : null,
+            isSpam: user.isSpam || false,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          })),
+          pagination: {
+            currentPage: pageNum,
+            totalPages,
+            totalItems,
+            hasNextPage: pageNum < totalPages,
+            hasPreviousPage: pageNum > 1,
+          },
+        },
+      } as ApiResponse);
+    }
+  );
+
+  /**
+   * Marcar usuario como spam
+   * Solo accesible para Super Admin y Admin
+   */
+  static markUserAsSpam = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const authUser = (req as any).user;
+      const { id } = req.params;
+      const { isSpam = true } = req.body;
+
+      // Solo Super Admin y Admin pueden marcar como spam
+      if (!['Super Admin', 'Admin role'].includes(authUser.role_name)) {
+        throw new ForbiddenError(
+          'No tienes permisos para marcar usuarios como spam'
+        );
+      }
+
+      const young = await Young.findOne({ _id: id, deletedAt: null });
+      if (!young) {
+        throw new NotFoundError('Usuario no encontrado');
+      }
+
+      // Actualizar campo isSpam
+      young.isSpam = isSpam;
+
+      // Si se marca como spam, también hacer soft delete
+      if (isSpam && !young.deletedAt) {
+        young.deletedAt = new Date();
+      }
+
+      await young.save();
+
+      logger.info('Usuario marcado como spam', {
+        context: 'YoungController',
+        method: 'markUserAsSpam',
+        youngId: id,
+        youngName: young.fullName,
+        isSpam,
+        requestedBy: authUser.username,
+      });
+
+      const youngId = (young as any)._id.toString();
+      res.json({
+        success: true,
+        message: isSpam
+          ? 'Usuario marcado como spam exitosamente'
+          : 'Usuario desmarcado como spam exitosamente',
+        data: {
+          id: youngId,
+          fullName: young.fullName,
+          isSpam: young.isSpam,
+          deletedAt: young.deletedAt,
+        },
+      } as ApiResponse);
+    }
+  );
+
+  /**
+   * Obtener conteo de usuarios registrados recientemente (últimas 48 horas)
+   * Para mostrar badge en UI del admin
+   * Solo accesible para Super Admin y Admin
+   */
+  static getRecentUsersCount = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const authUser = (req as any).user;
+
+      // Solo Super Admin y Admin pueden ver el contador
+      if (!['Super Admin', 'Admin role'].includes(authUser.role_name)) {
+        throw new ForbiddenError('No tienes permisos para ver este contador');
+      }
+
+      const { hours = 48 } = req.query;
+      const hoursNum = parseInt(hours as string, 10);
+
+      // Calcular fecha límite (últimas X horas)
+      const dateLimit = new Date();
+      dateLimit.setHours(dateLimit.getHours() - hoursNum);
+
+      const count = await Young.countDocuments({
+        createdAt: { $gte: dateLimit },
+        deletedAt: null, // Excluir eliminados
+        isSpam: { $ne: true }, // Excluir spam
+      });
+
+      logger.info('Contador de registros recientes', {
+        context: 'YoungController',
+        method: 'getRecentUsersCount',
+        count,
+        hours: hoursNum,
+        requestedBy: authUser.username,
+      });
+
+      res.json({
+        success: true,
+        data: {
+          count,
+          hours: hoursNum,
+        },
+      } as ApiResponse);
     }
   );
 }

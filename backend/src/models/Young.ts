@@ -154,6 +154,18 @@ const youngSchema = new Schema<IYoungDocument>(
       required: false,
       default: null,
     },
+    // Soft delete: fecha de eliminación
+    deletedAt: {
+      type: Date,
+      required: false,
+      default: null,
+    },
+    // Flag para marcar como spam
+    isSpam: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   {
     timestamps: true,

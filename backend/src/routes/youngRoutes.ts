@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { YoungController } from '../controllers/youngController';
 import { upload, handleMulterError } from '../middleware/upload';
-import { authenticateAndAuthorize, authenticateToken } from '../middleware/auth';
+import {
+  authenticateAndAuthorize,
+  authenticateToken,
+} from '../middleware/auth';
 
 const router = Router();
 
@@ -19,15 +22,69 @@ const parseFormData = (req: any, res: any, next: any) => {
 };
 
 // Rutas para jóvenes (todas protegidas con autenticación y autorización)
-router.get('/', ...authenticateAndAuthorize('young:read'), YoungController.getAllYoung);
-router.get('/stats', ...authenticateAndAuthorize('young:stats'), YoungController.getStats);
-router.get('/:id', ...authenticateAndAuthorize('young:read'), YoungController.getYoungById);
-router.post('/', ...authenticateAndAuthorize('young:create'), upload.single('profileImage'), handleMulterError, parseFormData, YoungController.createYoung);
+router.get(
+  '/',
+  ...authenticateAndAuthorize('young:read'),
+  YoungController.getAllYoung
+);
+router.get(
+  '/stats',
+  ...authenticateAndAuthorize('young:stats'),
+  YoungController.getStats
+);
+// Nuevas rutas para registros recientes
+router.get(
+  '/recent',
+  ...authenticateAndAuthorize('young:read'),
+  YoungController.getRecentYoungUsers
+);
+router.get(
+  '/recent/count',
+  ...authenticateAndAuthorize('young:read'),
+  YoungController.getRecentUsersCount
+);
+router.get(
+  '/:id',
+  ...authenticateAndAuthorize('young:read'),
+  YoungController.getYoungById
+);
+router.post(
+  '/',
+  ...authenticateAndAuthorize('young:create'),
+  upload.single('profileImage'),
+  handleMulterError,
+  parseFormData,
+  YoungController.createYoung
+);
 // Rutas específicas antes de la ruta genérica /:id
-router.put('/:id/generate-placa', ...authenticateAndAuthorize('placa:generate'), YoungController.generatePlaca);
-router.put('/:id/reset-password', authenticateToken, YoungController.resetPassword);
+router.put(
+  '/:id/generate-placa',
+  ...authenticateAndAuthorize('placa:generate'),
+  YoungController.generatePlaca
+);
+router.put(
+  '/:id/reset-password',
+  authenticateToken,
+  YoungController.resetPassword
+);
+router.patch(
+  '/:id/mark-spam',
+  ...authenticateAndAuthorize('young:delete'),
+  YoungController.markUserAsSpam
+);
 // Ruta genérica de actualización
-router.put('/:id', ...authenticateAndAuthorize('young:update'), upload.single('profileImage'), handleMulterError, parseFormData, YoungController.updateYoung);
-router.delete('/:id', ...authenticateAndAuthorize('young:delete'), YoungController.deleteYoung);
+router.put(
+  '/:id',
+  ...authenticateAndAuthorize('young:update'),
+  upload.single('profileImage'),
+  handleMulterError,
+  parseFormData,
+  YoungController.updateYoung
+);
+router.delete(
+  '/:id',
+  ...authenticateAndAuthorize('young:delete'),
+  YoungController.deleteYoung
+);
 
 export default router;

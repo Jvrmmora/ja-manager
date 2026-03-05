@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { RegistrationController } from '../controllers/registrationController';
 import { upload, handleMulterError } from '../middleware/upload';
-import { authenticateAndAuthorize, authenticateToken } from '../middleware/auth';
+import {
+  authenticateAndAuthorize,
+  authenticateToken,
+} from '../middleware/auth';
+import { registrationLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -23,8 +27,10 @@ router.get('/check-email', RegistrationController.checkEmailUnique);
 router.get('/check-placa', RegistrationController.checkPlacaExists);
 
 // Ruta pública para crear solicitud de registro (sin autenticación)
+// NOTA: Ahora crea usuario Young directamente con acceso inmediato
 router.post(
   '/',
+  registrationLimiter, // Rate limiting: 3 por hora, 10 por día
   upload.single('profileImage'),
   handleMulterError,
   parseFormData,
@@ -51,4 +57,3 @@ router.put(
 );
 
 export default router;
-

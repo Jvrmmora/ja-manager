@@ -19,6 +19,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import NotFound from './pages/NotFound';
 import AttendanceScanPage from './pages/AttendanceScanPage';
 import BirthdayClaimPage from './pages/BirthdayClaimPage';
+import RegistrationPage from './pages/RegistrationPage';
 
 // Componente para manejar la redirección con query params
 const RedirectToLogin = () => {
@@ -193,6 +194,9 @@ function App() {
 
           {/* Birthday claim page - requires authentication */}
           <Route path="/birthday-claim" element={<BirthdayClaimPage />} />
+
+          {/* Public registration page - supports ?referredBy query param for referral deeplinks */}
+          <Route path="/register" element={<RegistrationPage />} />
 
           {/* Protected admin route */}
           <Route element={<ProtectedRoute redirectTo="/login" />}>

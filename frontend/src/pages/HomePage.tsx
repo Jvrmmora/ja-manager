@@ -30,6 +30,7 @@ import {
   debugAuthState,
   getCurrentUserProfile,
   getAllRegistrationRequests,
+  getRecentUsersCount,
 } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import type {
@@ -155,7 +156,7 @@ function HomePage() {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showQRMenu, setShowQRMenu] = useState(false);
   const [showRankingMenu, setShowRankingMenu] = useState(false);
-  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [recentUsersCount, setRecentUsersCount] = useState(0);
 
   // Refs para cerrar dropdowns al hacer clic fuera
   const addMenuRef = useRef<HTMLDivElement | null>(null);
@@ -470,9 +471,9 @@ function HomePage() {
         const userData = await getCurrentUserProfile();
         setCurrentUser(userData);
 
-        // Si es Super Admin, cargar conteo de solicitudes pendientes
+        // Si es Super Admin, cargar conteo de usuarios recientes
         if (userData?.role_name === 'Super Admin') {
-          loadPendingRequestsCount();
+          loadRecentUsersCount();
         }
       } catch (error) {
         console.error('Error loading current user:', error);
@@ -793,34 +794,30 @@ function HomePage() {
     setCurrentUser(updatedUser);
     showSuccess('Perfil actualizado exitosamente');
 
-    // Si es Super Admin, actualizar conteo de solicitudes pendientes
+    // Si es Super Admin, actualizar conteo de usuarios recientes
     if (updatedUser?.role_name === 'Super Admin') {
-      loadPendingRequestsCount();
+      loadRecentUsersCount();
     }
   };
 
-  // Función para cargar el conteo de solicitudes pendientes
-  const loadPendingRequestsCount = async () => {
+  // Función para cargar el conteo de usuarios recientes (últimas 48 horas)
+  const loadRecentUsersCount = async () => {
     try {
-      const result = await getAllRegistrationRequests({
-        page: 1,
-        limit: 1,
-        status: 'pending',
-      });
-      setPendingRequestsCount(result.pagination?.totalItems || 0);
+      const count = await getRecentUsersCount(48);
+      setRecentUsersCount(count);
     } catch (error) {
-      console.error('Error loading pending requests count:', error);
-      setPendingRequestsCount(0);
+      console.error('Error loading recent users count:', error);
+      setRecentUsersCount(0);
     }
   };
 
   // Verificar si el usuario es Super Admin
   const isSuperAdmin = currentUser?.role_name === 'Super Admin';
 
-  // Cargar conteo de solicitudes pendientes cuando se abre la sección
+  // Cargar conteo de usuarios recientes cuando se abre la sección
   useEffect(() => {
     if (showRegistrationRequestsSection && isSuperAdmin) {
-      loadPendingRequestsCount();
+      loadRecentUsersCount();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showRegistrationRequestsSection, isSuperAdmin]);
@@ -1036,9 +1033,9 @@ function HomePage() {
                     assignment_ind
                   </span>
                   <span>Solicitudes</span>
-                  {pendingRequestsCount > 0 && (
+                  {recentUsersCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full border-2 border-white dark:border-gray-800">
-                      {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
+                      {recentUsersCount > 9 ? '9+' : recentUsersCount}
                     </span>
                   )}
                 </button>
@@ -1470,7 +1467,7 @@ function HomePage() {
                   <RegistrationRequestsManager
                     onShowSuccess={showSuccess}
                     onShowError={showError}
-                    onPendingCountChange={setPendingRequestsCount}
+                    onPendingCountChange={setRecentUsersCount}
                   />
                 </div>
               </div>

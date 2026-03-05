@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { IYoung } from '../types';
 import ImageModal from './ImageModal';
 import Tooltip from './Tooltip';
@@ -8,8 +8,10 @@ import PointsCard from './PointsCard';
 import PointsBreakdownModal from './PointsBreakdownModal';
 import AssignPointsModal from './AssignPointsModal';
 import WelcomeCard from './WelcomeCard';
+import ReferralShareModal from './ReferralShareModal';
 import { generatePlaca } from '../services/api';
 import { authService } from '../services/auth';
+import { seasonService } from '../services/seasonService';
 import { formatBirthdayWithYear, formatDateTime } from '../utils/dateUtils';
 
 // Mapeo de colores por grupo
@@ -56,10 +58,28 @@ const YoungCard: React.FC<YoungCardProps> = ({
   const [showPointsModal, setShowPointsModal] = useState(false);
   const [showAssignPointsModal, setShowAssignPointsModal] = useState(false);
   const [showWelcomeCard, setShowWelcomeCard] = useState(false);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [referralPoints, setReferralPoints] = useState(500);
 
   // Obtener información del usuario actual
   const currentUser = authService.getUserInfo();
   const isAdmin = currentUser?.role_name === 'Super Admin';
+
+  // Obtener puntos de referido de la temporada activa
+  useEffect(() => {
+    const fetchReferralPoints = async () => {
+      try {
+        const activeSeason = await seasonService.getActive();
+        if (activeSeason?.settings?.referralBonusPoints) {
+          setReferralPoints(activeSeason.settings.referralBonusPoints);
+        }
+      } catch (error) {
+        console.error('Error al obtener puntos de referido:', error);
+        // Mantener valor por defecto (500)
+      }
+    };
+    fetchReferralPoints();
+  }, []);
 
   // Función para abrir modal de confirmación de eliminación
   const handleDelete = () => {
@@ -542,6 +562,21 @@ const YoungCard: React.FC<YoungCardProps> = ({
           </div>
         </div>
 
+        {/* Botón de compartir invitación */}
+        {young.placa && !isAdmin && (
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setShowReferralModal(true)}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-4 rounded-xl transition-all active:scale-95 shadow-lg hover:shadow-xl"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+              </svg>
+              Invitar amigos
+            </button>
+          </div>
+        )}
+
         {/* Fecha de registro */}
         {/* Fecha de registro */}
         <div className="pt-2">
@@ -630,6 +665,16 @@ const YoungCard: React.FC<YoungCardProps> = ({
           onClose={() => setShowAssignPointsModal(false)}
           onSuccess={onShowSuccess}
           onError={onShowError}
+        />
+      )}
+
+      {/* Modal para compartir referral */}
+      {young.placa && (
+        <ReferralShareModal
+          isOpen={showReferralModal}
+          onClose={() => setShowReferralModal(false)}
+          userPlaca={young.placa}
+          referralPoints={referralPoints}
         />
       )}
     </div>

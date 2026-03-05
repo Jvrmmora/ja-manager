@@ -190,6 +190,7 @@ export class RegistrationController {
 
   /**
    * Crear solicitud de registro parcial
+   * AHORA: Crea usuario Young directamente con acceso inmediato
    */
   static createRegistrationRequest = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
@@ -258,66 +259,129 @@ export class RegistrationController {
         registrationData.fullName
       );
 
-      // Crear la solicitud
-      const requestData = {
-        ...registrationData,
+      // Obtener rol "Young role"
+      const youngRole = await Role.findOne({ name: 'Young role' });
+      if (!youngRole) {
+        throw new NotFoundError('Rol Young role no encontrado en el sistema');
+      }
+
+      // Crear usuario Young directamente (acceso inmediato)
+      const youngData = {
+        fullName: registrationData.fullName,
+        ageRange: registrationData.ageRange,
+        phone: registrationData.phone,
+        birthday: registrationData.birthday,
+        gender: registrationData.gender,
+        role: registrationData.role,
         email: registrationData.email.trim().toLowerCase(),
-        password: registrationData.password, // Se guardará encriptada por el middleware
-        placa,
+        skills: registrationData.skills || [],
         profileImage: profileImageUrl || undefined,
+        group: registrationData.group,
+        placa: placa,
+        password: registrationData.password, // ✅ Incluir password aquí - será encriptado por pre-save middleware
+        role_id: youngRole._id,
+        role_name: youngRole.name,
         referredBy: referredBy,
-        referredByPlaca: registrationData.referredByPlaca
-          ? registrationData.referredByPlaca.toUpperCase()
-          : undefined,
-        status: 'pending' as const,
+        first_login: false, // No es primer login porque ya eligió su contraseña
       };
 
-      const newRequest = new RegistrationRequest(requestData);
-      const savedRequest = await newRequest.save();
+      const newYoung = new Young(youngData);
+      const savedYoung = await newYoung.save(); // ✅ El middleware pre-save encriptará el password automáticamente
 
-      logger.info('Solicitud de registro creada', {
-        context: 'RegistrationController',
-        method: 'createRegistrationRequest',
-        requestId: (savedRequest._id as mongoose.Types.ObjectId).toString(),
-        email: savedRequest.email,
-        placa: savedRequest.placa,
-      });
-
-      // Notificar al super admin (buscar admin con email)
+      // Crear RegistrationRequest para auditoría (con status 'approved' automático)
       try {
-        const superAdmin = await Young.findOne({ role_name: 'Super Admin' });
-        if (superAdmin && superAdmin.email) {
-          await emailService.sendEmail({
-            toEmail: superAdmin.email,
-            toName: superAdmin.fullName,
-            message: `Nueva solicitud de registro de ${savedRequest.fullName}`,
-            type: 'registration_request',
-            placa: savedRequest.placa,
-            // Información del solicitante
-            applicantName: savedRequest.fullName,
-            applicantEmail: savedRequest.email || '',
-          });
-        }
-      } catch (emailError) {
+        const auditRequest = new RegistrationRequest({
+          ...registrationData,
+          email: registrationData.email.trim().toLowerCase(),
+          password: registrationData.password,
+          placa,
+          profileImage: profileImageUrl || undefined,
+          referredBy: referredBy,
+          referredByPlaca: registrationData.referredByPlaca
+            ? registrationData.referredByPlaca.toUpperCase()
+            : undefined,
+          status: 'approved' as const,
+          reviewedAt: new Date(),
+        });
+        await auditRequest.save();
+      } catch (auditError) {
         // Log error pero no fallar el registro
-        logger.error('Error enviando email de notificación al admin', {
+        logger.warn('Error creando registro de auditoría', {
           context: 'RegistrationController',
           method: 'createRegistrationRequest',
-          error: emailError instanceof Error ? emailError.message : 'Unknown',
+          error: auditError instanceof Error ? auditError.message : 'Unknown',
         });
       }
 
+      logger.info('Usuario Young creado con acceso inmediato', {
+        context: 'RegistrationController',
+        method: 'createRegistrationRequest',
+        youngId: (savedYoung._id as mongoose.Types.ObjectId).toString(),
+        email: savedYoung.email,
+        placa: savedYoung.placa,
+      });
+
+      // 📤 Enviar emails en background (fire-and-forget, no esperar)
+      // Esto permite responder inmediatamente al usuario sin bloquear
+
+      // Email de bienvenida al usuario
+      const dashboardUrl =
+        process.env.FRONTEND_URL ||
+        'https://yellow-river-04315080f.3.azurestaticapps.net';
+      emailService
+        .sendEmail({
+          toEmail: savedYoung.email!,
+          toName: savedYoung.fullName,
+          message: `Tu cuenta ha sido creada exitosamente. Ya puedes iniciar sesión.`,
+          type: 'welcome',
+          placa: savedYoung.placa,
+          dashboardUrl: dashboardUrl,
+        })
+        .catch((emailError: any) => {
+          logger.error('Error enviando email de bienvenida al usuario', {
+            context: 'RegistrationController',
+            method: 'createRegistrationRequest',
+            error: emailError instanceof Error ? emailError.message : 'Unknown',
+          });
+        });
+
+      // Notificación informativa al super admin
+      Young.findOne({ role_name: 'Super Admin' })
+        .then(superAdmin => {
+          if (superAdmin && superAdmin.email) {
+            return emailService.sendEmail({
+              toEmail: superAdmin.email,
+              toName: superAdmin.fullName,
+              message: `Nuevo usuario registrado: ${savedYoung.fullName}`,
+              type: 'new_user_notification',
+              placa: savedYoung.placa,
+              applicantName: savedYoung.fullName,
+              applicantEmail: savedYoung.email || '',
+            });
+          }
+        })
+        .catch((emailError: any) => {
+          logger.error('Error enviando notificación al admin', {
+            context: 'RegistrationController',
+            method: 'createRegistrationRequest',
+            error: emailError instanceof Error ? emailError.message : 'Unknown',
+          });
+        });
+
+      // ✅ Responder inmediatamente sin esperar los emails
       res.status(201).json({
         success: true,
         message:
-          'Solicitud de registro creada exitosamente. Tu placa asignada es: ' +
+          '¡Cuenta creada exitosamente! Ya puedes iniciar sesión. Tu placa asignada es: ' +
           placa,
         data: {
-          id: (savedRequest._id as mongoose.Types.ObjectId).toString(),
-          placa: savedRequest.placa,
-          fullName: savedRequest.fullName,
-          email: savedRequest.email,
-          status: savedRequest.status,
+          id: (savedYoung._id as mongoose.Types.ObjectId).toString(),
+          placa: savedYoung.placa,
+          fullName: savedYoung.fullName,
+          email: savedYoung.email,
+          // Incluir más datos para el auto-login en frontend
+          ageRange: savedYoung.ageRange,
+          role: savedYoung.role,
         },
       } as ApiResponse);
     }
@@ -649,26 +713,27 @@ export class RegistrationController {
           }
         }
 
-        // Enviar email de aprobación
+        // 📤 Enviar email de aprobación en background (fire-and-forget)
         if (request.email) {
-          try {
-            await emailService.sendEmail({
+          emailService
+            .sendEmail({
               toEmail: request.email,
               toName: request.fullName,
               message: 'Tu solicitud de registro ha sido aprobada',
               type: 'approval',
               placa: request.placa,
+            })
+            .catch((emailError: any) => {
+              logger.error('Error enviando email de aprobación', {
+                context: 'RegistrationController',
+                method: 'reviewRegistrationRequest',
+                error:
+                  emailError instanceof Error ? emailError.message : 'Unknown',
+              });
             });
-          } catch (emailError) {
-            logger.error('Error enviando email de aprobación', {
-              context: 'RegistrationController',
-              method: 'reviewRegistrationRequest',
-              error:
-                emailError instanceof Error ? emailError.message : 'Unknown',
-            });
-          }
         }
 
+        // ✅ Responder inmediatamente sin esperar el email
         res.status(200).json({
           success: true,
           message: 'Solicitud aprobada y joven creado exitosamente',
@@ -705,26 +770,27 @@ export class RegistrationController {
           rejectionReason: rejectionReason || 'Sin razón especificada',
         });
 
-        // Enviar email de rechazo
+        // 📤 Enviar email de rechazo en background (fire-and-forget)
         if (request.email) {
-          try {
-            await emailService.sendEmail({
+          emailService
+            .sendEmail({
               toEmail: request.email,
               toName: request.fullName,
               message: 'Tu solicitud de registro ha sido rechazada',
               type: 'rejection',
               rejectionReason,
+            })
+            .catch((emailError: any) => {
+              logger.error('Error enviando email de rechazo', {
+                context: 'RegistrationController',
+                method: 'reviewRegistrationRequest',
+                error:
+                  emailError instanceof Error ? emailError.message : 'Unknown',
+              });
             });
-          } catch (emailError) {
-            logger.error('Error enviando email de rechazo', {
-              context: 'RegistrationController',
-              method: 'reviewRegistrationRequest',
-              error:
-                emailError instanceof Error ? emailError.message : 'Unknown',
-            });
-          }
         }
 
+        // ✅ Responder inmediatamente sin esperar el email
         res.status(200).json({
           success: true,
           message: 'Solicitud rechazada exitosamente',

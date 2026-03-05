@@ -57,6 +57,12 @@ export class AzureProvider implements EmailProvider {
         case 'birthday':
           emailSubject = `¡Feliz Cumpleaños ${params.toName}! 🎂`;
           break;
+        case 'welcome':
+          emailSubject = `¡Bienvenido a JA Manager! - Cuenta creada exitosamente`;
+          break;
+        case 'new_user_notification':
+          emailSubject = `Nuevo Usuario Registrado - ${params.applicantName || params.toName}`;
+          break;
         default:
           emailSubject = params.subject || params.message;
       }
@@ -124,6 +130,10 @@ export class AzureProvider implements EmailProvider {
         return this.generateRejectionTemplate(params);
       case 'birthday':
         return this.generateBirthdayTemplate(params);
+      case 'welcome':
+        return this.generateWelcomeTemplate(params);
+      case 'new_user_notification':
+        return this.generateNewUserNotificationTemplate(params);
       default:
         return `<p>${params.message}</p>`;
     }
@@ -139,6 +149,10 @@ export class AzureProvider implements EmailProvider {
         return `Solicitud Rechazada\n\nHola ${params.toName},\n\nTu solicitud de registro ha sido rechazada.\n\n${params.rejectionReason ? `Razón: ${params.rejectionReason}\n` : ''}\nSi tienes alguna pregunta, contacta con el administrador.`;
       case 'birthday':
         return `¡Feliz Cumpleaños ${params.toName}!\n\nDesde el Ministerio Juvenil Modelia te enviamos un fuerte abrazo y nuestros mejores deseos en este día tan especial.\n\nQue Dios siga guiando tu vida y llenándola de bendiciones.\n\n¡Disfruta tu día al máximo!\n\nTienes ${params.birthdayPoints || 100} puntos de regalo. Reclama tu regalo iniciando sesión en JA Manager.\n\nNota: Los puntos solo pueden reclamarse una vez al año. Válido desde tu cumpleaños hasta 10 días después.`;
+      case 'welcome':
+        return `¡Bienvenido a JA Manager!\n\nHola ${params.toName},\n\nTu cuenta ha sido creada exitosamente.\n\nTus credenciales de acceso:\nPlaca: ${params.placa || 'N/A'}\nEmail: ${params.toEmail}\n\nYa puedes iniciar sesión y comenzar a disfrutar de todas las funcionalidades de la plataforma.\n\n¡Bienvenido a la familia juvenil!`;
+      case 'new_user_notification':
+        return `Nuevo Usuario Registrado\n\nHola Administrador,\n\nUn nuevo usuario se ha registrado en la plataforma:\n\nNombre: ${params.applicantName || params.toName}\nEmail: ${params.applicantEmail || params.toEmail}\n${params.placa ? `Placa: ${params.placa}\n` : ''}\nFecha: ${new Date().toLocaleDateString('es-CO')}\n\nEsta es una notificación informativa. El usuario ya tiene acceso a la plataforma. Puedes revisar los registros recientes en el panel de administración.`;
       default:
         return params.message;
     }
@@ -766,6 +780,407 @@ export class AzureProvider implements EmailProvider {
       <p style="font-size: 16px; color: #4a5568; text-align: center; margin-top: 30px;">
         Con cariño,<br>
         <strong>Ministerio Juvenil Modelia</strong>
+      </p>
+    </div>
+    <div class="footer">
+      <div class="footer-logo">JA Manager</div>
+      <div class="footer-text">Sistema de Gestión de Jóvenes Adventistas</div>
+      <div class="footer-text">© ${new Date().getFullYear()} by Jamomodev</div>
+    </div>
+  </div>
+</body>
+</html>
+    `.trim();
+  }
+
+  private generateWelcomeTemplate(params: EmailParams): string {
+    const dashboardUrl =
+      params.dashboardUrl ||
+      process.env.FRONTEND_URL ||
+      'https://yellow-river-04315080f.3.azurestaticapps.net';
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¡Bienvenido a JA Manager!</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f7fa;
+    }
+    .container {
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    .email-header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      padding: 40px 30px;
+      text-align: center;
+      color: white;
+    }
+    .logo {
+      width: 150px;
+      height: 150px;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+    }
+    .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+    .email-content {
+      padding: 40px;
+    }
+    .success-icon {
+      text-align: center;
+      font-size: 64px;
+      margin: 20px 0;
+    }
+    .credentials-box {
+      background: #f0fdf4;
+      border-left: 4px solid #10b981;
+      padding: 25px;
+      border-radius: 8px;
+      margin: 25px 0;
+    }
+    .credentials-box p {
+      margin: 8px 0;
+      font-size: 15px;
+    }
+    .label {
+      font-weight: bold;
+      color: #059669;
+    }
+    .value {
+      font-family: 'Courier New', monospace;
+      background: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-top: 5px;
+      border: 1px solid #d1fae5;
+    }
+    .cta-button {
+      display: inline-block;
+      background: #10b981;
+      color: #ffffff;
+      padding: 14px 32px;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      margin: 20px 0;
+      text-align: center;
+      transition: background-color 0.2s;
+    }
+    .cta-button:hover {
+      background: #059669;
+    }
+    .features-list {
+      margin: 25px 0;
+      padding-left: 0;
+      list-style: none;
+    }
+    .features-list li {
+      padding: 12px 0;
+      padding-left: 35px;
+      position: relative;
+      color: #4a5568;
+    }
+    .features-list li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #10b981;
+      font-weight: bold;
+      font-size: 20px;
+    }
+    .footer {
+      background: #2d3748;
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .footer-logo {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .footer-text {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="email-header">
+      <div class="logo">
+        <img src="https://yellow-river-04315080f.3.azurestaticapps.net/assets/logo_2-DuTkiqwv.png" alt="JOVENES MODELIA" />
+      </div>
+      <h1 style="margin: 0; font-size: 28px; font-weight: bold;">¡Bienvenido a JA Manager!</h1>
+      <p style="margin: 10px 0 0; font-size: 16px; opacity: 0.95;">Tu cuenta ha sido creada exitosamente</p>
+    </div>
+    <div class="email-content">
+      <div class="success-icon">🎉</div>
+      
+      <h2 style="color: #2d3748; font-size: 24px; margin-bottom: 15px;">¡Hola ${params.toName}!</h2>
+      
+      <p style="font-size: 16px; color: #4a5568; line-height: 1.8;">
+        Estamos emocionados de tenerte en nuestra comunidad. Tu cuenta ha sido creada exitosamente y ya puedes comenzar a disfrutar de todas las funcionalidades de la plataforma.
+      </p>
+
+      <div class="credentials-box">
+        <h3 style="margin-top: 0; color: #059669;">📋 Tus Credenciales de Acceso</h3>
+        <p>
+          <span class="label">Placa:</span><br>
+          <span class="value">${params.placa || 'N/A'}</span>
+        </p>
+        <p>
+          <span class="label">Email:</span><br>
+          <span class="value">${params.toEmail}</span>
+        </p>
+        <p style="margin-top: 15px; font-size: 14px; color: #6b7280;">
+          💡 <strong>Tip:</strong> Puedes iniciar sesión usando tu email o tu placa.
+        </p>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${dashboardUrl}" class="cta-button">
+          🚀 Ir al Dashboard
+        </a>
+      </div>
+
+      <h3 style="color: #2d3748; font-size: 20px; margin-top: 35px;">¿Qué puedes hacer ahora?</h3>
+      <ul class="features-list">
+        <li>Completar tu perfil con información adicional</li>
+        <li>Registrar tu asistencia a eventos con código QR</li>
+        <li>Acumular y canjear puntos por participación</li>
+        <li>Ver el ranking de jóvenes más activos</li>
+        <li>Recibir puntos especiales en tu cumpleaños</li>
+      </ul>
+
+      <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; border-radius: 8px; margin: 25px 0;">
+        <p style="margin: 0; color: #92400e; font-size: 15px;">
+          <strong>🔐 Seguridad:</strong> Por favor, mantén tus credenciales seguras y no las compartas con nadie.
+        </p>
+      </div>
+      
+      <p style="font-size: 16px; color: #4a5568; text-align: center; margin-top: 40px;">
+        ¿Tienes preguntas? Contáctanos respondiendo a este email.<br><br>
+        Con cariño,<br>
+        <strong>Ministerio Juvenil Modelia</strong>
+      </p>
+    </div>
+    <div class="footer">
+      <div class="footer-logo">JA Manager</div>
+      <div class="footer-text">Sistema de Gestión de Jóvenes Adventistas</div>
+      <div class="footer-text">© ${new Date().getFullYear()} by Jamomodev</div>
+    </div>
+  </div>
+</body>
+</html>
+    `.trim();
+  }
+
+  private generateNewUserNotificationTemplate(params: EmailParams): string {
+    const dashboardUrl =
+      process.env.FRONTEND_URL ||
+      'https://yellow-river-04315080f.3.azurestaticapps.net';
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nuevo Usuario Registrado</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f7fa;
+    }
+    .container {
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    .email-header {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      padding: 40px 30px;
+      text-align: center;
+      color: white;
+    }
+    .logo {
+      width: 150px;
+      height: 150px;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+    }
+    .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+    .email-content {
+      padding: 40px;
+    }
+    .icon {
+      text-align: center;
+      font-size: 64px;
+      margin: 20px 0;
+    }
+    .info-box {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 25px;
+      border-radius: 8px;
+      margin: 25px 0;
+    }
+    .info-box p {
+      margin: 8px 0;
+      font-size: 15px;
+    }
+    .label {
+      font-weight: bold;
+      color: #2563eb;
+    }
+    .value {
+      color: #1e40af;
+    }
+    .cta-button {
+      display: inline-block;
+      background: #3b82f6;
+      color: #ffffff;
+      padding: 14px 32px;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      margin: 20px 0;
+      text-align: center;
+      transition: background-color 0.2s;
+    }
+    .cta-button:hover {
+      background: #2563eb;
+    }
+    .notice-box {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 25px 0;
+    }
+    .notice-box p {
+      margin: 0;
+      color: #92400e;
+      font-size: 15px;
+    }
+    .footer {
+      background: #2d3748;
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .footer-logo {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .footer-text {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="email-header">
+      <div class="logo">
+        <img src="https://yellow-river-04315080f.3.azurestaticapps.net/assets/logo_2-DuTkiqwv.png" alt="JOVENES MODELIA" />
+      </div>
+      <h1 style="margin: 0; font-size: 28px; font-weight: bold;">Nuevo Usuario Registrado</h1>
+      <p style="margin: 10px 0 0; font-size: 16px; opacity: 0.95;">Notificación Informativa</p>
+    </div>
+    <div class="email-content">
+      <div class="icon">👤</div>
+      
+      <h2 style="color: #2d3748; font-size: 24px; margin-bottom: 15px;">¡Hola Administrador!</h2>
+      
+      <p style="font-size: 16px; color: #4a5568; line-height: 1.8;">
+        Un nuevo usuario se ha registrado en la plataforma y ya tiene acceso inmediato al sistema.
+      </p>
+
+      <div class="info-box">
+        <h3 style="margin-top: 0; color: #2563eb;">📊 Información del Usuario</h3>
+        <p><span class="label">Nombre:</span> <span class="value">${params.applicantName || params.toName}</span></p>
+        <p><span class="label">Email:</span> <span class="value">${params.applicantEmail || params.toEmail}</span></p>
+        ${params.placa ? `<p><span class="label">Placa:</span> <span class="value">${params.placa}</span></p>` : ''}
+        <p><span class="label">Fecha de registro:</span> <span class="value">${new Date().toLocaleDateString(
+          'es-CO',
+          {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }
+        )}</span></p>
+      </div>
+
+      <div class="notice-box">
+        <p>
+          <strong>ℹ️ Nota:</strong> Esta es una notificación informativa. El usuario ya tiene acceso completo a la plataforma y puede comenzar a usar todas las funcionalidades. Puedes revisar su perfil y actividad en el panel de "Registros Recientes".
+        </p>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${dashboardUrl}/admin/recent-users" class="cta-button">
+          📋 Ver Registros Recientes
+        </a>
+      </div>
+
+      <div style="background: #dcfce7; border-left: 4px solid #10b981; padding: 20px; border-radius: 8px; margin: 25px 0;">
+        <p style="margin: 0; color: #065f46; font-size: 15px;">
+          <strong>✅ Acciones disponibles:</strong> Si detectas actividad sospechosa, puedes marcar el usuario como spam o eliminarlo desde el panel de administración.
+        </p>
+      </div>
+      
+      <p style="font-size: 16px; color: #4a5568; text-align: center; margin-top: 40px;">
+        Sistema automatizado de notificaciones<br>
+        <strong>JA Manager - Admin Panel</strong>
       </p>
     </div>
     <div class="footer">
