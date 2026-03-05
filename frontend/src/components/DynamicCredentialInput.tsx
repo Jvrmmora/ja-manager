@@ -21,21 +21,29 @@ const PLACA_REGEX = /^@MOD[A-Z]{2,4}\d{3}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // HTML5-like simple regex
 
 function sanitizePlacaInput(input: string): string {
-  // Forzar mayúsculas, sin espacios
+  // Si está vacío, permitir
+  if (!input) return '';
+
+  // Convertir a mayúsculas y remover espacios
   const upper = input.toUpperCase().replace(/\s+/g, '');
-  // Quitar caracteres inválidos globalmente
+
+  // Quitar caracteres inválidos (mantener solo @, letras y números)
   let filtered = upper.replace(/[^@A-Z0-9]/g, '');
 
-  // Asegurar un único prefijo y normalizar a @MOD
-  if (filtered.startsWith('@')) {
-    // Quitar prefijo actual y reconstruir con @MOD
-    const rest = filtered.replace(/^@+/, '');
-    // Si ya empieza por MOD mantener, si no, lo añadimos
-    const normalized = rest.startsWith('MOD') ? rest.slice(3) : rest;
-    filtered = `@MOD${normalized}`;
+  // Si NO empieza con @, sugeriríamos @MOD pero sin forzarlo en cada keystroke
+  // Permitir que el usuario escriba libremente
+  if (!filtered.startsWith('@') && filtered.length > 0) {
+    // Solo si tiene estructura de placa (@MOD + letras + números), sugerir
+    return filtered;
   }
 
-  // Limitar longitud total razonable ("@MOD" + 7 => 11 máx)
+  // Si empieza con @, permitir que edite libremente
+  // Solo normalizar @ múltiples a uno
+  if (filtered.startsWith('@@') || filtered.startsWith('@@@')) {
+    filtered = '@' + filtered.replace(/^@+/, '');
+  }
+
+  // Limitar longitud total ("@MOD" + 7 => 11 máx)
   if (filtered.length > 11) {
     filtered = filtered.slice(0, 11);
   }
@@ -45,10 +53,19 @@ function sanitizePlacaInput(input: string): string {
 
 function detectMode(input: string): Exclude<CredentialMode, 'auto'> {
   const v = input.trim();
-  const isPotentialPlaca = /^@?M?O?D?/i.test(v) && v.startsWith('@');
-  if (isPotentialPlaca || /^@MOD/i.test(v)) return 'placa';
-  if (v.includes('@')) return 'email';
-  // por defecto usamos email para evitar bloquear a usuarios que pegan su correo completo luego
+
+  // Si es obviamente un email (tiene @ en la mitad), es email
+  if (v.includes('@') && !v.startsWith('@')) {
+    return 'email';
+  }
+
+  // Si empieza con @, probablemente sea placa
+  if (v.startsWith('@')) {
+    return 'placa';
+  }
+
+  // Si solo tiene letras/números sin símbolos especiales, es ambiguo
+  // Default: email para permitir que el usuario pegue su correo fácilmente
   return 'email';
 }
 
@@ -61,6 +78,16 @@ export default function DynamicCredentialInput({
   className = '',
 }: DynamicCredentialInputProps) {
   const [mode, setMode] = useState<CredentialMode>(defaultMode);
+
+  const handleModeChange = (newMode: CredentialMode) => {
+    setMode(newMode);
+
+    // Si el usuario cambia a modo "Email" y hay @MOD, removerlo
+    if (newMode === 'email' && value.startsWith('@MOD')) {
+      onChange('', { mode: 'email', isValid: false });
+    }
+  };
+
   const effectiveMode = useMemo(
     () =>
       mode === 'auto'
@@ -71,7 +98,11 @@ export default function DynamicCredentialInput({
   const [focused, setFocused] = useState(false);
 
   const isValid = useMemo(() => {
-    if (effectiveMode === 'placa') return PLACA_REGEX.test(value.toUpperCase());
+    if (effectiveMode === 'placa') {
+      // Aceptar placa completa o parcialmente válida durante la edición
+      const upper = value.toUpperCase();
+      return PLACA_REGEX.test(upper);
+    }
     return EMAIL_REGEX.test(value.trim().toLowerCase());
   }, [effectiveMode, value]);
 
@@ -87,18 +118,40 @@ export default function DynamicCredentialInput({
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
-    const next = effectiveMode === 'placa' ? sanitizePlacaInput(raw) : raw;
-    onChange(next, { mode: effectiveMode, isValid });
+
+    // En modo Email, NO aplicar sanitización
+    if (effectiveMode === 'email') {
+      onChange(raw, { mode: effectiveMode, isValid });
+      return;
+    }
+
+    // En modo Placa, aplicar sanitización
+    if (effectiveMode === 'placa') {
+      const sanitized = sanitizePlacaInput(raw);
+      onChange(sanitized, { mode: effectiveMode, isValid });
+      return;
+    }
+
+    // En modo Auto, dejar que el usuario escriba libremente
+    onChange(raw, { mode: effectiveMode, isValid });
   };
 
   const helperText = useMemo(() => {
     if (effectiveMode === 'placa') {
+      if (value === '') {
+        return 'Formato: @MOD + 2-4 letras + 3 números. Ej: @MODJAVI001';
+      }
       return isValid
-        ? 'Placa válida'
-        : 'Formato: @MOD + 2-4 letras + 3 números. Solo mayúsculas y sin puntos.';
+        ? '✓ Placa válida'
+        : 'Formato incorrecto. Necesita: @MOD + 2-4 letras + 3 números';
     }
-    return isValid ? 'Email válido' : 'Debe tener formato correo@dominio.tld';
-  }, [effectiveMode, isValid]);
+    if (value === '') {
+      return 'Ingresa tu correo electrónico completo';
+    }
+    return isValid
+      ? '✓ Email válido'
+      : 'Email inválido. Necesita: usuario@dominio.com';
+  }, [effectiveMode, isValid, value]);
 
   return (
     <div className={`w-full ${className}`}>
@@ -117,7 +170,7 @@ export default function DynamicCredentialInput({
             <button
               key={opt}
               type="button"
-              onClick={() => setMode(opt)}
+              onClick={() => handleModeChange(opt)}
               className={`relative px-3 py-1.5 text-xs sm:text-sm rounded-full transition-all duration-200 ${active ? 'text-blue-600 dark:text-blue-400 scale-[1.02]' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}
               aria-pressed={active}
             >
@@ -213,16 +266,33 @@ export default function DynamicCredentialInput({
       </div>
 
       <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={`${effectiveMode}-${isValid}`}
-          initial={{ opacity: 0, y: -2 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 2 }}
-          transition={{ duration: 0.15 }}
-          className={`mt-1 text-xs ${isValid ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}
-        >
-          {helperText}
-        </motion.div>
+        {value ? (
+          <motion.div
+            key={`validation-${effectiveMode}-${isValid}`}
+            initial={{ opacity: 0, y: -2 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 2 }}
+            transition={{ duration: 0.15 }}
+            className={`mt-1 text-xs ${
+              isValid
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-amber-600 dark:text-amber-400'
+            }`}
+          >
+            {helperText}
+          </motion.div>
+        ) : (
+          <motion.div
+            key={`info-${effectiveMode}`}
+            initial={{ opacity: 0, y: -2 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 2 }}
+            transition={{ duration: 0.15 }}
+            className="mt-1 text-xs text-gray-500 dark:text-gray-400"
+          >
+            {helperText}
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
