@@ -277,7 +277,7 @@ export class AzureProvider implements EmailProvider {
     <div class="footer">
       <div class="footer-logo">JA Manager</div>
       <div class="footer-text">Sistema de Gestión de Jóvenes Adventistas</div>
-      <div class="footer-text">© 2025 by Jamomodev</div>
+      <div class="footer-text">© ${new Date().getFullYear()} by Jamomodev</div>
     </div>
   </div>
 </body>
@@ -456,7 +456,7 @@ export class AzureProvider implements EmailProvider {
     <div class="footer">
       <div class="footer-logo">JA Manager</div>
       <div class="footer-text">Sistema de Gestión de Jóvenes Adventistas</div>
-      <div class="footer-text">© 2025 by Jamomodev</div>
+      <div class="footer-text">© ${new Date().getFullYear()} by Jamomodev</div>
     </div>
   </div>
 </body>
@@ -600,7 +600,7 @@ export class AzureProvider implements EmailProvider {
     <div class="footer">
       <div class="footer-logo">JA Manager</div>
       <div class="footer-text">Sistema de Gestión de Jóvenes Adventistas</div>
-      <div class="footer-text">© 2025 by Jamomodev</div>
+      <div class="footer-text">© ${new Date().getFullYear()} by Jamomodev</div>
     </div>
   </div>
 </body>
@@ -771,7 +771,7 @@ export class AzureProvider implements EmailProvider {
     <div class="footer">
       <div class="footer-logo">JA Manager</div>
       <div class="footer-text">Sistema de Gestión de Jóvenes Adventistas</div>
-      <div class="footer-text">© 2025 by Jamomodev</div>
+      <div class="footer-text">© ${new Date().getFullYear()} by Jamomodev</div>
     </div>
   </div>
 </body>

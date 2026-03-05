@@ -431,7 +431,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, showToast }) => {
           {/* Footer con botón de registro */}
           <div className="text-center text-sm text-gray-500 dark:text-gray-400">
             <p className="mb-4">
-              Sistema de Gestión de Jóvenes © 2025 by Jamomodev
+              Sistema de Gestión de Jóvenes © {new Date().getFullYear()} by
+              Jamomodev
             </p>
             <button
               onClick={() => setShowRegistrationModal(true)}
