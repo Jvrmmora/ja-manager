@@ -18,12 +18,17 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   // const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [expirationInfo, setExpirationInfo] = useState<any>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Obtener información del usuario
     const user = authService.getUserInfo();
     setUserInfo(user);
+
+    // Obtener información de expiración
+    const expInfo = authService.getTokenExpirationInfo();
+    setExpirationInfo(expInfo);
 
     // Escuchar cambios en userInfo (cuando se actualiza el perfil)
     const handleUserInfoUpdate = () => {
@@ -36,8 +41,15 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     // Escuchar el evento personalizado
     window.addEventListener('userInfoUpdated', handleUserInfoUpdate);
 
+    // Actualizar información de expiración cada minuto
+    const expirationInterval = setInterval(() => {
+      const expInfo = authService.getTokenExpirationInfo();
+      setExpirationInfo(expInfo);
+    }, 60000); // 60 segundos
+
     return () => {
       window.removeEventListener('userInfoUpdated', handleUserInfoUpdate);
+      clearInterval(expirationInterval);
     };
   }, []);
 
@@ -253,6 +265,53 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                   <p className="text-xs text-gray-500 dark:text-gray-400 italic">
                     ¿Olvidaste tu contraseña actual? Contacta a un admin.
                   </p>
+                </div>
+              </div>
+            )}
+
+            <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+            {/* Session Expiration Info */}
+            {expirationInfo && expirationInfo.expiresAt && (
+              <div
+                className={`px-4 py-3 mx-2 rounded-lg text-xs ${
+                  expirationInfo.isExpiringSoon
+                    ? 'bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700/50'
+                    : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50'
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  <span
+                    className={`text-lg flex-shrink-0 pt-0.5 ${
+                      expirationInfo.isExpiringSoon
+                        ? 'text-orange-600 dark:text-orange-400'
+                        : 'text-blue-600 dark:text-blue-400'
+                    }`}
+                  >
+                    ⏱️
+                  </span>
+                  <div className="flex-1">
+                    <p
+                      className={`font-semibold mb-1 ${
+                        expirationInfo.isExpiringSoon
+                          ? 'text-orange-800 dark:text-orange-300'
+                          : 'text-blue-800 dark:text-blue-300'
+                      }`}
+                    >
+                      {expirationInfo.isExpiringSoon
+                        ? 'Sesión expira hoy'
+                        : 'Tu sesión expira'}
+                    </p>
+                    <p
+                      className={`font-bold text-sm ${
+                        expirationInfo.isExpiringSoon
+                          ? 'text-orange-700 dark:text-orange-300'
+                          : 'text-blue-700 dark:text-blue-300'
+                      }`}
+                    >
+                      {expirationInfo.expiresAtDate}
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

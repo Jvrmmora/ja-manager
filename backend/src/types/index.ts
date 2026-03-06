@@ -52,12 +52,14 @@ export interface IAuthUser {
   fullName: string;
   role_id: string;
   role_name: string;
-  exp?: number; // Para JWT expiration timestamp
+  exp?: number; // Timestamp Unix de expiración (estándar JWT)
+  expiresAt?: string; // ISO string legible de expiración
 }
 
 export interface IDecodedToken extends IAuthUser {
   exp: number;
   iat: number;
+  expiresAt?: string;
 }
 
 export interface ILoginRequest {

@@ -222,6 +222,84 @@ class AuthService {
       throw error;
     }
   }
+
+  /**
+   * Obtener información de expiración del token
+   */
+  getTokenExpirationInfo(): {
+    expiresAt: Date | null;
+    expiresAtISO: string | null;
+    expiresAtDate: string | null;
+    timeRemaining: number | null;
+    isExpiringSoon: boolean;
+  } {
+    const token = localStorage.getItem('authToken');
+
+    if (!token) {
+      return {
+        expiresAt: null,
+        expiresAtISO: null,
+        expiresAtDate: null,
+        timeRemaining: null,
+        isExpiringSoon: false,
+      };
+    }
+
+    try {
+      // Decodificar el token JWT (sin verificar)
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Token inválido');
+      }
+
+      // Decodificar el payload (segunda parte)
+      const payload = JSON.parse(atob(parts[1]));
+
+      if (!payload.exp) {
+        return {
+          expiresAt: null,
+          expiresAtISO: null,
+          expiresAtDate: null,
+          timeRemaining: null,
+          isExpiringSoon: false,
+        };
+      }
+
+      // exp está en segundos, convertir a milisegundos
+      const expiresAtMs = payload.exp * 1000;
+      const expiresAt = new Date(expiresAtMs);
+      const now = Date.now();
+      const timeRemaining = expiresAtMs - now;
+
+      // Considerar "expiring soon" si falta menos de 5 minutos
+      const isExpiringSoon = timeRemaining < 5 * 60 * 1000;
+
+      // Formatear fecha en formato local (sin hora)
+      const expiresAtDate = expiresAt.toLocaleDateString('es-CO', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+
+      return {
+        expiresAt,
+        expiresAtISO: payload.expiresAt || expiresAt.toISOString(),
+        expiresAtDate,
+        timeRemaining,
+        isExpiringSoon,
+      };
+    } catch (error) {
+      console.error('Error decodificando token:', error);
+      return {
+        expiresAt: null,
+        expiresAtISO: null,
+        expiresAtDate: null,
+        timeRemaining: null,
+        isExpiringSoon: false,
+      };
+    }
+  }
 }
 
 export const authService = new AuthService();

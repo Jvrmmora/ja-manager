@@ -93,8 +93,11 @@ export class AuthController {
       role_name: user.role_name,
     };
 
-    // Generar token
-    const token = JWTService.generateToken(tokenPayload);
+    // Generar token con expiración configurada
+    const token = JWTService.generateToken(
+      tokenPayload,
+      JWTService.getExpirationTime()
+    );
 
     authLogger.login(username, true, {
       userId: user._id,

@@ -407,7 +407,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
 
               {/* Información de la placa - Sección mejorada */}
               {userInfo?.placa && (
-                <div className="mb-6 mx-auto w-fit bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-700/50 rounded-xl p-4 shadow-sm flex items-center gap-4">
+                <div className="mb-6 mx-auto w-fit bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-700/50 rounded-xl p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row items-center gap-4 max-w-full sm:max-w-none">
                   {/* Tu Placa */}
                   <div className="flex items-center gap-2">
                     <div className="p-2 bg-blue-500 text-white rounded-lg flex-shrink-0">
@@ -432,7 +432,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
                   {/* Botón para invitar amigos */}
                   <button
                     onClick={() => setShowReferralModal(true)}
-                    className="px-5 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg transition-all active:scale-95 shadow-lg hover:shadow-xl flex items-center gap-2 whitespace-nowrap text-sm flex-shrink-0"
+                    className="px-4 sm:px-5 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg transition-all active:scale-95 shadow-lg hover:shadow-xl flex items-center gap-2 whitespace-nowrap text-sm flex-shrink-0 w-full sm:w-auto justify-center sm:justify-start"
                   >
                     <svg
                       className="w-4 h-4"
