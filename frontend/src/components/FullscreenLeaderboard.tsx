@@ -38,7 +38,7 @@ const FullscreenLeaderboard: React.FC<FullscreenLeaderboardProps> = ({
 
       const container = tableContainerRef.current;
       let isPaused = true;
-      let pauseTimer: NodeJS.Timeout;
+      let pauseTimer: ReturnType<typeof setTimeout>;
       let animationFrameId: number;
 
       const performScroll = () => {
