@@ -40,7 +40,7 @@ export class JWTService {
    * Obtiene el tiempo de expiración configurado
    */
   static getExpirationTime(): string {
-    return process.env.JWT_EXPIRES_IN || '10d';
+    return process.env.TOKEN_EXP || '10d';
   }
 
   /**

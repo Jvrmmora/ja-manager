@@ -29,7 +29,6 @@ import {
   apiUpload,
   debugAuthState,
   getCurrentUserProfile,
-  getAllRegistrationRequests,
   getRecentUsersCount,
 } from '../services/api';
 import { useToast } from '../hooks/useToast';
