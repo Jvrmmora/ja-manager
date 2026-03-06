@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import './App.css';
 import Login from './components/Login';
-import HomePage from './pages/HomePage';
-import YoungDashboard from './pages/YoungDashboard';
 import { ThemeProvider } from './context/ThemeContext';
 import ToastContainer from './components/ToastContainer';
 import { useToast } from './hooks/useToast';
-// import LoadingSpinner from './components/LoadingSpinner';
+import LoadingSpinner from './components/LoadingSpinner';
 import { authService } from './services/auth';
 import {
   BrowserRouter,
@@ -16,10 +14,14 @@ import {
   useLocation,
 } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
-import NotFound from './pages/NotFound';
-import AttendanceScanPage from './pages/AttendanceScanPage';
-import BirthdayClaimPage from './pages/BirthdayClaimPage';
-import RegistrationPage from './pages/RegistrationPage';
+
+// Lazy loading de páginas para code splitting
+const HomePage = lazy(() => import('./pages/HomePage'));
+const YoungDashboard = lazy(() => import('./pages/YoungDashboard'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const AttendanceScanPage = lazy(() => import('./pages/AttendanceScanPage'));
+const BirthdayClaimPage = lazy(() => import('./pages/BirthdayClaimPage'));
+const RegistrationPage = lazy(() => import('./pages/RegistrationPage'));
 
 // Componente para manejar la redirección con query params
 const RedirectToLogin = () => {
@@ -153,67 +155,71 @@ function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
-        <Routes>
-          {/* Root: decide based on auth and role */}
-          <Route
-            path="/"
-            element={
-              isAuthenticated ? (
-                userRole === 'Young role' ? (
-                  <Navigate to="/dashboard" replace />
-                ) : (
-                  <Navigate to="/admin" replace />
-                )
-              ) : (
-                <RedirectToLogin />
-              )
-            }
-          />
-
-          {/* Login route */}
-          <Route
-            path="/login"
-            element={
-              isAuthenticated ? (
-                userRole === 'Young role' ? (
-                  <Navigate to="/dashboard" replace />
-                ) : (
-                  <Navigate to="/admin" replace />
-                )
-              ) : (
-                <Login
-                  onLoginSuccess={handleLoginSuccess}
-                  showToast={showToast}
-                />
-              )
-            }
-          />
-
-          {/* QR Scan from external camera */}
-          <Route path="/attendance/scan" element={<AttendanceScanPage />} />
-
-          {/* Birthday claim page - requires authentication */}
-          <Route path="/birthday-claim" element={<BirthdayClaimPage />} />
-
-          {/* Public registration page - supports ?referredBy query param for referral deeplinks */}
-          <Route path="/register" element={<RegistrationPage />} />
-
-          {/* Protected admin route */}
-          <Route element={<ProtectedRoute redirectTo="/login" />}>
-            <Route path="/admin" element={<HomePage />} />
-          </Route>
-
-          {/* Protected young dashboard */}
-          <Route element={<ProtectedRoute redirectTo="/login" />}>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            {/* Root: decide based on auth and role */}
             <Route
-              path="/dashboard"
-              element={<YoungDashboard onProfileUpdate={handleProfileUpdate} />}
+              path="/"
+              element={
+                isAuthenticated ? (
+                  userRole === 'Young role' ? (
+                    <Navigate to="/dashboard" replace />
+                  ) : (
+                    <Navigate to="/admin" replace />
+                  )
+                ) : (
+                  <RedirectToLogin />
+                )
+              }
             />
-          </Route>
 
-          {/* 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* Login route */}
+            <Route
+              path="/login"
+              element={
+                isAuthenticated ? (
+                  userRole === 'Young role' ? (
+                    <Navigate to="/dashboard" replace />
+                  ) : (
+                    <Navigate to="/admin" replace />
+                  )
+                ) : (
+                  <Login
+                    onLoginSuccess={handleLoginSuccess}
+                    showToast={showToast}
+                  />
+                )
+              }
+            />
+
+            {/* QR Scan from external camera */}
+            <Route path="/attendance/scan" element={<AttendanceScanPage />} />
+
+            {/* Birthday claim page - requires authentication */}
+            <Route path="/birthday-claim" element={<BirthdayClaimPage />} />
+
+            {/* Public registration page - supports ?referredBy query param for referral deeplinks */}
+            <Route path="/register" element={<RegistrationPage />} />
+
+            {/* Protected admin route */}
+            <Route element={<ProtectedRoute redirectTo="/login" />}>
+              <Route path="/admin" element={<HomePage />} />
+            </Route>
+
+            {/* Protected young dashboard */}
+            <Route element={<ProtectedRoute redirectTo="/login" />}>
+              <Route
+                path="/dashboard"
+                element={
+                  <YoungDashboard onProfileUpdate={handleProfileUpdate} />
+                }
+              />
+            </Route>
+
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </ThemeProvider>

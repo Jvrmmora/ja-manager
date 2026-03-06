@@ -8,11 +8,24 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
+          // Core React
+          'react-vendor': ['react', 'react-dom'],
+          // Router separado (usado en todas las páginas)
+          'react-router': ['react-router-dom'],
+          // HTTP y utilidades
           utils: ['axios', 'luxon'],
+          // Animaciones (framer-motion es pesado ~160kb)
+          animations: ['framer-motion', 'canvas-confetti'],
+          // QR y Scanner
+          'qr-tools': ['qrcode.react', 'qr-scanner'],
+          // HTML to Canvas
+          canvas: ['html2canvas'],
+          // Icons
+          icons: ['@heroicons/react'],
         },
       },
     },

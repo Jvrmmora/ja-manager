@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:prod": "tsc -b && vite build --mode production",
+    "build:azure": "VITE_API_URL=https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api npm run build:prod",
     "preview": "vite preview",
     "preview:prod": "vite preview --port 3002 --host",
     "test:prod": "npm run build:prod && npm run preview:prod",
