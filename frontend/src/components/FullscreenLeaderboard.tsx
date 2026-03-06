@@ -16,113 +16,133 @@ const FullscreenLeaderboard: React.FC<FullscreenLeaderboardProps> = ({
   const [currentView, setCurrentView] = useState<'top3' | 'top10'>('top3');
   const { activeSeason } = useSeason();
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const TIME_INTERVAL = 15000; // 15 segundos
-  // Rotación automática cada 15 segundos
+  const abortRef = useRef(false);
+  const cleanupFnsRef = useRef<Array<() => void>>([]);
+
+  const TOP3_DURATION = 12000; // 12s mostrando Top 3
+  const TOP10_DURATION = 18000; // 18s mostrando Top 10 (más tiempo para scroll)
+  const SCROLL_START_DELAY = 1200; // 1.2s para que framer-motion termine animaciones
+
+  // Rotación automática con duración diferente por vista
   useEffect(() => {
     if (!isFullscreen) return;
 
-    const interval = setInterval(() => {
-      setCurrentView(prev => (prev === 'top3' ? 'top10' : 'top3'));
-    }, TIME_INTERVAL);
+    const timeout = setTimeout(
+      () => {
+        setCurrentView(prev => (prev === 'top3' ? 'top10' : 'top3'));
+      },
+      currentView === 'top3' ? TOP3_DURATION : TOP10_DURATION
+    );
 
-    return () => clearInterval(interval);
-  }, [isFullscreen]);
+    return () => clearTimeout(timeout);
+  }, [isFullscreen, currentView]);
+
+  // Limpieza total de scroll
+  const cleanupScroll = useCallback(() => {
+    abortRef.current = true;
+    cleanupFnsRef.current.forEach(fn => fn());
+    cleanupFnsRef.current = [];
+  }, []);
+
+  // Helper para registrar timeouts/frames que se limpian automáticamente
+  const safeTimeout = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(() => {
+      if (!abortRef.current) fn();
+    }, ms);
+    cleanupFnsRef.current.push(() => clearTimeout(id));
+  }, []);
+
+  const safeAnimationFrame = useCallback((fn: () => void) => {
+    const id = requestAnimationFrame(() => {
+      if (!abortRef.current) fn();
+    });
+    cleanupFnsRef.current.push(() => cancelAnimationFrame(id));
+  }, []);
 
   // Auto-scroll suave en modo Top 10
   useEffect(() => {
-    if (!isFullscreen || currentView !== 'top10') return;
+    // Limpiar siempre al cambiar de vista
+    cleanupScroll();
 
-    // Esperar a que el DOM se renderice completamente
-    const scrollTimer = setTimeout(() => {
-      if (!tableContainerRef.current) return;
+    if (!isFullscreen || currentView !== 'top10') {
+      if (tableContainerRef.current) {
+        tableContainerRef.current.scrollTop = 0;
+      }
+      return;
+    }
 
+    // Activar nuevo ciclo
+    abortRef.current = false;
+
+    safeTimeout(() => {
       const container = tableContainerRef.current;
-      let isPaused = true;
-      let pauseTimer: ReturnType<typeof setTimeout>;
-      let animationFrameId: number;
+      if (!container) return;
 
-      const performScroll = () => {
-        const scrollHeight = container.scrollHeight;
-        const clientHeight = container.clientHeight;
-        const maxScroll = scrollHeight - clientHeight;
+      const maxScroll = container.scrollHeight - container.clientHeight;
+      if (maxScroll <= 0) return;
 
-        console.log('📜 Scroll Info:', {
-          scrollHeight,
-          clientHeight,
-          maxScroll,
-          hasScroll: maxScroll > 0,
-        });
+      // Resetear posición
+      container.scrollTop = 0;
 
-        if (maxScroll <= 0) {
-          console.log('⚠️ No hay suficiente contenido para scroll');
-          return;
-        }
+      // Tiempo disponible para scroll: TOP10_DURATION - delay - margen de seguridad
+      const availableTime = TOP10_DURATION - SCROLL_START_DELAY - 1500;
+      // Dividir: 45% bajar, 10% pausa, 45% subir
+      const scrollDownDuration = availableTime * 0.45;
+      const pauseDuration = availableTime * 0.1;
+      const scrollUpDuration = availableTime * 0.45;
 
-        // Comenzar desde arriba
-        container.scrollTop = 0;
+      const smoothScroll = (
+        from: number,
+        to: number,
+        duration: number,
+        onComplete: () => void
+      ) => {
+        const startTime = performance.now();
 
-        const startScrolling = () => {
-          isPaused = false;
-          const startTime = Date.now();
-          const startScroll = container.scrollTop;
-          const isScrollingDown = startScroll === 0;
-          const targetScroll = isScrollingDown ? maxScroll : 0;
-          const scrollDuration = 10000; // 10 segundos para scroll completo (más lento)
-          const pauseTime = 3000; // 3 segundos de pausa (más tiempo)
+        const step = () => {
+          if (abortRef.current) return;
 
-          console.log(
-            `🎬 Iniciando scroll ${isScrollingDown ? '▼ abajo' : '▲ arriba'}`
-          );
+          const elapsed = performance.now() - startTime;
+          const progress = Math.min(elapsed / duration, 1);
 
-          const animate = () => {
-            if (isPaused) return;
+          // Easing ease-in-out
+          const ease =
+            progress < 0.5
+              ? 2 * progress * progress
+              : 1 - Math.pow(-2 * progress + 2, 2) / 2;
 
-            const currentTime = Date.now();
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / scrollDuration, 1);
+          container.scrollTop = from + (to - from) * ease;
 
-            // Easing ease-in-out suave
-            const easeProgress =
-              progress < 0.5
-                ? 2 * progress * progress
-                : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-
-            container.scrollTop =
-              startScroll + (targetScroll - startScroll) * easeProgress;
-
-            if (progress < 1) {
-              animationFrameId = requestAnimationFrame(animate);
-            } else {
-              // Terminó el scroll, pausar antes de continuar
-              console.log('⏸️ Pausa de', pauseTime / 1000, 'segundos');
-              isPaused = true;
-              pauseTimer = setTimeout(startScrolling, pauseTime);
-            }
-          };
-
-          animationFrameId = requestAnimationFrame(animate);
+          if (progress < 1) {
+            safeAnimationFrame(step);
+          } else {
+            onComplete();
+          }
         };
 
-        // Iniciar después de una pausa inicial
-        console.log('⏸️ Pausa inicial de 2 segundos');
-        pauseTimer = setTimeout(startScrolling, 2000);
+        safeAnimationFrame(step);
       };
 
-      performScroll();
+      // Fase 1: Scroll hacia abajo
+      smoothScroll(0, maxScroll, scrollDownDuration, () => {
+        // Fase 2: Pausa abajo
+        safeTimeout(() => {
+          // Fase 3: Scroll hacia arriba
+          smoothScroll(maxScroll, 0, scrollUpDuration, () => {
+            // Ciclo completo, la vista cambiará pronto
+          });
+        }, pauseDuration);
+      });
+    }, SCROLL_START_DELAY);
 
-      return () => {
-        clearTimeout(pauseTimer);
-        if (animationFrameId) {
-          cancelAnimationFrame(animationFrameId);
-        }
-        isPaused = true;
-      };
-    }, 500); // Esperar 500ms para que las animaciones de framer-motion terminen
-
-    return () => {
-      clearTimeout(scrollTimer);
-    };
-  }, [isFullscreen, currentView]);
+    return cleanupScroll;
+  }, [
+    isFullscreen,
+    currentView,
+    cleanupScroll,
+    safeTimeout,
+    safeAnimationFrame,
+  ]);
 
   // Listener para salir con ESC
   useEffect(() => {
