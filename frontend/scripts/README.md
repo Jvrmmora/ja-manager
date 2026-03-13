@@ -59,7 +59,7 @@ Si prefieres crear la imagen manualmente:
 2. Crea un canvas de **1200x630 píxeles**
 3. Usa el color de fondo: **#3B82F6** (azul de la marca)
 4. Coloca el logo de `frontend/src/assets/logos/logo.png`
-5. Opcional: Agrega texto "Jóvenes Modelia - Plataforma Digital"
+5. Opcional: Agrega texto "Jóvenes Adventistas Modelia - Plataforma Digital"
 6. Guarda como **JPG** con calidad alta (80-90%)
 7. Coloca el archivo en: `frontend/public/og-image.jpg`
 

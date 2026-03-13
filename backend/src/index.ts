@@ -14,6 +14,7 @@ import seasonRoutes from './routes/seasonRoutes';
 import pointsRoutes from './routes/pointsRoutes';
 import registrationRoutes from './routes/registrationRoutes';
 import birthdayRoutes from './routes/birthdayRoutes';
+import landingRoutes from './routes/landingRoutes';
 import { DatabaseSeeder } from './seeders/DatabaseSeeder';
 import { startBirthdayScheduler } from './services/birthdayScheduler';
 import { authenticateToken } from './middleware/auth';
@@ -165,6 +166,9 @@ const setupRoutes = () => {
 
   // Rutas de autenticación (algunas requieren BD pero no autenticación previa)
   app.use('/api/auth', ensureDatabaseConnection, authRoutes);
+
+  // Rutas de landing (públicas para GET, protegidas para admin)
+  app.use('/api/landing', ensureDatabaseConnection, landingRoutes);
 
   // Rutas de registro (públicas para crear solicitud, protegidas para gestión)
   app.use('/api/registration', ensureDatabaseConnection, registrationRoutes);

@@ -4,30 +4,20 @@ import Login from './components/Login';
 import { ThemeProvider } from './context/ThemeContext';
 import ToastContainer from './components/ToastContainer';
 import { useToast } from './hooks/useToast';
-import LoadingSpinner from './components/LoadingSpinner';
+import PageLoader from './components/PageLoader';
 import { authService } from './services/auth';
-import {
-  BrowserRouter,
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-} from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Lazy loading de páginas para code splitting
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const LandingCMS = lazy(() => import('./pages/LandingCMS'));
 const HomePage = lazy(() => import('./pages/HomePage'));
 const YoungDashboard = lazy(() => import('./pages/YoungDashboard'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const AttendanceScanPage = lazy(() => import('./pages/AttendanceScanPage'));
 const BirthdayClaimPage = lazy(() => import('./pages/BirthdayClaimPage'));
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage'));
-
-// Componente para manejar la redirección con query params
-const RedirectToLogin = () => {
-  const location = useLocation();
-  return <Navigate to={`/login${location.search}`} replace />;
-};
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -145,9 +135,7 @@ function App() {
     console.log('⏳ Mostrando loading...');
     return (
       <ThemeProvider>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
+        <PageLoader />
       </ThemeProvider>
     );
   }
@@ -155,23 +143,10 @@ function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
-        <Suspense fallback={<LoadingSpinner />}>
+        <Suspense fallback={<PageLoader />}>
           <Routes>
-            {/* Root: decide based on auth and role */}
-            <Route
-              path="/"
-              element={
-                isAuthenticated ? (
-                  userRole === 'Young role' ? (
-                    <Navigate to="/dashboard" replace />
-                  ) : (
-                    <Navigate to="/admin" replace />
-                  )
-                ) : (
-                  <RedirectToLogin />
-                )
-              }
-            />
+            {/* Root: Landing page (public, no auth required) */}
+            <Route path="/" element={<LandingPage />} />
 
             {/* Login route */}
             <Route
@@ -204,6 +179,7 @@ function App() {
             {/* Protected admin route */}
             <Route element={<ProtectedRoute redirectTo="/login" />}>
               <Route path="/admin" element={<HomePage />} />
+              <Route path="/admin/landing" element={<LandingCMS />} />
             </Route>
 
             {/* Protected young dashboard */}

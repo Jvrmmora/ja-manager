@@ -52,7 +52,7 @@ try {
   console.log('  1. Abre tu editor de imágenes favorito');
   console.log('  2. Crea un canvas de 1200x630 píxeles');
   console.log(
-    '  3. Coloca el logo y texto: "Jóvenes Modelia - Plataforma Digital"'
+    '  3. Coloca el logo y texto: "Jóvenes Adventistas Modelia - Plataforma Digital"'
   );
   console.log('  4. Usa el color de marca: #3B82F6');
   console.log('  5. Guarda como "og-image.jpg" en frontend/public/\n');

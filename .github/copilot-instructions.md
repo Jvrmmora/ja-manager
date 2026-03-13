@@ -5,6 +5,7 @@
 Este es un proyecto de gestión de jóvenes para iglesia con las siguientes características:
 
 ## Stack Tecnológico
+
 - **Backend**: TypeScript + Express + Node.js + MongoDB + Mongoose
 - **Frontend**: React.js + TypeScript + Vite + Tailwind CSS
 - **Base de datos**: MongoDB con Mongoose ODM
@@ -13,11 +14,13 @@ Este es un proyecto de gestión de jóvenes para iglesia con las siguientes cara
 - **Despliegue**: Preparado para clusters gratuitos
 
 ## Estructura del Proyecto
+
 - `backend/`: API REST con Express y TypeScript
 - `frontend/`: Aplicación React con Vite y TypeScript
 - Monorepo con scripts para desarrollo y producción
 
 ## Esquema de Datos de Jóvenes
+
 ```typescript
 interface Young {
   id: string;
@@ -32,6 +35,7 @@ interface Young {
 ```
 
 ## Paleta de Colores (Basada en la imagen de referencia)
+
 - **Primario**: #3B82F6 (Blue 500)
 - **Secundario**: #1E40AF (Blue 700)
 - **Accent**: #60A5FA (Blue 400)
@@ -42,6 +46,7 @@ interface Young {
 - **Card**: #FFFFFF (White)
 
 ## Funcionalidades Principales
+
 1. **CRUD Completo**: Crear, leer, actualizar y eliminar jóvenes
 2. **Subida de imágenes**: Integración con Cloudinary
 3. **Diseño responsive**: Mobile-first con Tailwind CSS
@@ -50,10 +55,22 @@ interface Young {
 6. **Validación**: Tanto frontend como backend
 
 ## Directrices de Código
-- Usar TypeScript estricto en todo el proyecto
-- Implementar manejo de errores robusto
-- Seguir patrones REST para la API
-- Usar hooks de React y context para state management
-- Implementar lazy loading para las imágenes
-- Usar componentes reutilizables
-- Seguir las mejores prácticas de seguridad
+
+## Estándares de UI — Navbar / Top Bar
+
+Todas las vistas públicas y de autenticación deben usar **el mismo ancho y márgenes** que la landing page:
+
+```tsx
+// Estructura estándar para cualquier top bar / navbar pública:
+<div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between py-3">
+    {/* contenido izquierda */}
+    {/* contenido derecha */}
+  </div>
+</div>
+```
+
+- El inner wrapper siempre con `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8`
+- Logo (importado desde `assets/logos/`) + título "Jóvenes Modelia Bogotá" como botón que navega a `/`
+- `ThemeToggle` a la derecha
+- Lazy loading: usar siempre `<PageLoader />` (de `components/PageLoader.tsx`) como fallback en `<Suspense>` y en estados `if (loading)`

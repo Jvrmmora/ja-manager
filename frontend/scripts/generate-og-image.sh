@@ -32,7 +32,7 @@ if ! command -v convert &> /dev/null; then
     echo "Alternativamente, puedes crear la imagen manualmente:"
     echo "  1. Abre tu editor de imágenes favorito (Photoshop, GIMP, Canva, etc.)"
     echo "  2. Crea un canvas de 1200x630 píxeles"
-    echo "  3. Coloca el logo y texto: 'Jóvenes Modelia - Plataforma Digital'"
+    echo "  3. Coloca el logo y texto: 'Jóvenes Adventistas Modelia - Plataforma Digital'"
     echo "  4. Usa el color de marca: #3B82F6"
     echo "  5. Guarda como 'og-image.jpg' en frontend/public/"
     echo ""

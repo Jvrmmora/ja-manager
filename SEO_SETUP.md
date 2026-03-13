@@ -126,7 +126,7 @@ Debe mostrar el XML con las URLs de tu sitio.
 - Formato: JPG
 - Contenido sugerido:
   - Logo de Jóvenes Modelia
-  - Texto: "Jóvenes Modelia - Plataforma Digital"
+  - Texto: "Jóvenes Adventistas Modelia - Plataforma Digital"
   - Colores de la marca (#3B82F6)
 
 **Opciones para generar:**
