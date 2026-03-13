@@ -100,7 +100,10 @@ export default function AboutSection({ content }: AboutSectionProps) {
         </div>
 
         {/* Stats or highlights */}
-        <div ref={statsRef} className="mt-12 grid grid-cols-3 gap-4 text-center">
+        <div
+          ref={statsRef}
+          className="mt-12 grid grid-cols-3 gap-4 text-center"
+        >
           <div>
             <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
               <AnimatedCounter target={3} start={startCounters} />

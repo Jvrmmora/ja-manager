@@ -12,6 +12,7 @@ const ipAttempts = new Map<string, RateLimitEntry>();
 // Map para almacenar intentos de registro por IP
 const registrationHourlyAttempts = new Map<string, RateLimitEntry>();
 const registrationDailyAttempts = new Map<string, RateLimitEntry>();
+const landingVisitHourlyAttempts = new Map<string, RateLimitEntry>();
 
 // Configuración Birthday
 const MAX_ATTEMPTS = 5;
@@ -23,6 +24,10 @@ const REGISTRATION_MAX_HOURLY = 3;
 const REGISTRATION_MAX_DAILY = 10;
 const REGISTRATION_HOUR_MS = 60 * 60 * 1000; // 1 hora
 const REGISTRATION_DAY_MS = 24 * 60 * 60 * 1000; // 24 horas
+
+// Configuración Landing Metrics
+const LANDING_VISIT_MAX_HOURLY = 240;
+const LANDING_VISIT_HOUR_MS = 60 * 60 * 1000; // 1 hora
 
 /**
  * Middleware de rate limiting para reclamación de puntos de cumpleaños
@@ -184,6 +189,55 @@ export const registrationLimiter = (
 };
 
 /**
+ * Middleware de rate limiting para tracking de visitas de landing
+ * Límite: 240 intentos por IP por hora
+ */
+export const landingVisitLimiter = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const clientIp = getClientIp(req);
+  const now = Date.now();
+
+  let hourlyEntry = landingVisitHourlyAttempts.get(clientIp);
+  if (!hourlyEntry || now > hourlyEntry.resetTime) {
+    hourlyEntry = {
+      count: 1,
+      resetTime: now + LANDING_VISIT_HOUR_MS,
+    };
+    landingVisitHourlyAttempts.set(clientIp, hourlyEntry);
+    next();
+    return;
+  }
+
+  hourlyEntry.count++;
+
+  if (hourlyEntry.count > LANDING_VISIT_MAX_HOURLY) {
+    const remainingMinutes = Math.ceil(
+      (hourlyEntry.resetTime - now) / 1000 / 60
+    );
+
+    logger.warn('Rate limiter: Límite de tracking landing excedido', {
+      context: 'RateLimiter',
+      method: 'landingVisitLimiter',
+      ip: clientIp,
+      attemptsHourly: hourlyEntry.count,
+      remainingMinutes,
+    });
+
+    res.status(429).json({
+      success: false,
+      message: `Demasiadas solicitudes de tracking. Intenta de nuevo en ${remainingMinutes} minutos.`,
+      retryAfter: remainingMinutes,
+    });
+    return;
+  }
+
+  next();
+};
+
+/**
  * Obtiene la IP del cliente considerando proxies
  */
 function getClientIp(req: Request): string {
@@ -236,6 +290,14 @@ function cleanupExpiredEntries(): void {
     }
   }
 
+  // Limpiar landing metrics hourly attempts
+  for (const [ip, entry] of landingVisitHourlyAttempts.entries()) {
+    if (now > entry.resetTime) {
+      landingVisitHourlyAttempts.delete(ip);
+      cleanedCount++;
+    }
+  }
+
   if (cleanedCount > 0) {
     logger.info('Rate limiter: Limpieza de entradas expiradas', {
       context: 'RateLimiter',
@@ -244,6 +306,7 @@ function cleanupExpiredEntries(): void {
       remainingBirthday: ipAttempts.size,
       remainingRegistrationHourly: registrationHourlyAttempts.size,
       remainingRegistrationDaily: registrationDailyAttempts.size,
+      remainingLandingVisitsHourly: landingVisitHourlyAttempts.size,
     });
   }
 }

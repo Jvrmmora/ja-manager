@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import LandingContent from '../models/LandingContent';
 import LandingMedia from '../models/LandingMedia';
 import LandingMeeting from '../models/LandingMeetings';
+import LandingVisitMetric from '../models/LandingVisitMetric';
+import LandingVisitSummary from '../models/LandingVisitSummary';
 import { azureBlobStorageService } from '../services/azureBlobStorageService';
 import {
   asyncHandler,
@@ -9,6 +12,79 @@ import {
   ValidationError,
 } from '../utils/errorHandler';
 import logger from '../utils/logger';
+
+const VISITOR_COOKIE_NAME = 'landing_vid';
+
+const parseCookies = (cookieHeader?: string): Record<string, string> => {
+  if (!cookieHeader) {
+    return {};
+  }
+
+  return cookieHeader.split(';').reduce<Record<string, string>>((acc, part) => {
+    const [rawKey, ...rawValue] = part.trim().split('=');
+    if (!rawKey || rawValue.length === 0) {
+      return acc;
+    }
+
+    acc[rawKey] = decodeURIComponent(rawValue.join('='));
+    return acc;
+  }, {});
+};
+
+const getCookieMaxAgeSecondsUntilYearEnd = (now: Date): number => {
+  const endOfYear = new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0, 0);
+  const seconds = Math.floor((endOfYear.getTime() - now.getTime()) / 1000);
+  return Math.max(seconds, 60);
+};
+
+const getOrCreateVisitorId = (req: Request, res: Response): string => {
+  const cookies = parseCookies(req.headers.cookie);
+  const existingVisitorId = cookies[VISITOR_COOKIE_NAME];
+
+  if (existingVisitorId) {
+    return existingVisitorId;
+  }
+
+  const visitorId = crypto.randomUUID();
+  const maxAge = getCookieMaxAgeSecondsUntilYearEnd(new Date());
+  const cookieParts = [
+    `${VISITOR_COOKIE_NAME}=${encodeURIComponent(visitorId)}`,
+    'Path=/',
+    `Max-Age=${maxAge}`,
+    'HttpOnly',
+    'SameSite=Lax',
+  ];
+
+  if (process.env.NODE_ENV === 'production') {
+    cookieParts.push('Secure');
+  }
+
+  res.append('Set-Cookie', cookieParts.join('; '));
+  return visitorId;
+};
+
+const getClientIp = (req: Request): string => {
+  const forwardedFor = req.headers['x-forwarded-for'];
+
+  if (forwardedFor) {
+    const source = Array.isArray(forwardedFor)
+      ? forwardedFor[0]
+      : forwardedFor.split(',')[0];
+    return source.trim();
+  }
+
+  const realIp = req.headers['x-real-ip'];
+  if (realIp) {
+    return Array.isArray(realIp) ? realIp[0] : realIp;
+  }
+
+  return req.ip || req.socket.remoteAddress || 'unknown';
+};
+
+const hashValue = (value: string): string => {
+  const salt = process.env.VISITOR_HASH_SALT || 'landing-visitor-salt';
+  return crypto.createHash('sha256').update(`${value}:${salt}`).digest('hex');
+};
 
 /**
  * GET /api/landing - Obtener contenido público de landing
@@ -70,6 +146,125 @@ export const getLandingContent = asyncHandler(
       });
       throw error;
     }
+  }
+);
+
+/**
+ * POST /api/landing/metrics/visit - Registrar visita única anual
+ */
+export const trackLandingVisit = asyncHandler(
+  async (req: Request, res: Response) => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const visitorId = getOrCreateVisitorId(req, res);
+    const visitorHash = hashValue(`${visitorId}:${year}`);
+    const ipHash = hashValue(getClientIp(req));
+    const userAgent = req.get('user-agent')?.slice(0, 500);
+
+    const upsertResult = await LandingVisitMetric.updateOne(
+      { year, visitorHash },
+      {
+        $set: {
+          lastSeenAt: now,
+          userAgent,
+          ipHash,
+        },
+        $setOnInsert: {
+          year,
+          visitorHash,
+          visitorNumber: 0,
+          firstSeenAt: now,
+        },
+      },
+      {
+        upsert: true,
+      }
+    );
+
+    const isNewVisitor = upsertResult.upsertedCount > 0;
+    let uniqueVisitorsCount = 0;
+    let visitorNumber: number | null = null;
+
+    if (isNewVisitor) {
+      const summary = await LandingVisitSummary.findOneAndUpdate(
+        { year },
+        {
+          $setOnInsert: { year },
+          $inc: { uniqueVisitorsCount: 1 },
+        },
+        {
+          upsert: true,
+          new: true,
+          setDefaultsOnInsert: true,
+        }
+      );
+
+      uniqueVisitorsCount = summary?.uniqueVisitorsCount || 1;
+      visitorNumber = uniqueVisitorsCount;
+
+      await LandingVisitMetric.updateOne(
+        { year, visitorHash, visitorNumber: 0 },
+        { $set: { visitorNumber } }
+      );
+    } else {
+      const [metric, summary] = await Promise.all([
+        LandingVisitMetric.findOne({ year, visitorHash }).select(
+          'visitorNumber'
+        ),
+        LandingVisitSummary.findOne({ year }).select('uniqueVisitorsCount'),
+      ]);
+
+      visitorNumber =
+        typeof metric?.visitorNumber === 'number' && metric.visitorNumber > 0
+          ? metric.visitorNumber
+          : null;
+      uniqueVisitorsCount =
+        summary?.uniqueVisitorsCount ||
+        (await LandingVisitMetric.countDocuments({ year }));
+    }
+
+    logger.info('Metrica de visita landing registrada', {
+      context: 'LandingController',
+      year,
+      isNewVisitor,
+      uniqueVisitorsCount,
+      visitorNumber,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        year,
+        uniqueVisitorsCount,
+        visitorNumber,
+        isNewVisitor,
+      },
+    });
+  }
+);
+
+/**
+ * GET /api/landing/metrics/visit - Obtener métricas anuales de visitas
+ */
+export const getLandingVisitMetrics = asyncHandler(
+  async (_req: Request, res: Response) => {
+    const year = new Date().getFullYear();
+
+    const summary = await LandingVisitSummary.findOne({ year }).select(
+      'uniqueVisitorsCount'
+    );
+
+    const uniqueVisitorsCount =
+      summary?.uniqueVisitorsCount ||
+      (await LandingVisitMetric.countDocuments({ year }));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        year,
+        uniqueVisitorsCount,
+      },
+    });
   }
 );
 

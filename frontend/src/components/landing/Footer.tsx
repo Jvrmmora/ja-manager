@@ -1,3 +1,5 @@
+import { useEffect, useMemo, useState } from 'react';
+
 interface FooterProps {
   addressLabel?: string;
   social?: {
@@ -5,6 +7,9 @@ interface FooterProps {
     facebook?: string;
     youtube?: string;
   };
+  visitorYear?: number;
+  visitorNumber?: number | null;
+  uniqueVisitorsCount?: number;
 }
 
 const quickLinks = [
@@ -20,8 +25,57 @@ const getValidUrl = (url?: string) => {
   return url;
 };
 
-export default function Footer({ addressLabel, social }: FooterProps) {
+const formatVisitorNumber = (value?: number | null): string | null => {
+  if (!value || value < 1) {
+    return null;
+  }
+
+  return new Intl.NumberFormat('es-CO').format(value);
+};
+
+export default function Footer({
+  addressLabel,
+  social,
+  visitorNumber,
+  uniqueVisitorsCount,
+}: FooterProps) {
   const currentYear = new Date().getFullYear();
+  const displayVisitCountValue =
+    (typeof uniqueVisitorsCount === 'number' && uniqueVisitorsCount > 0
+      ? uniqueVisitorsCount
+      : null) ||
+    (typeof visitorNumber === 'number' && visitorNumber > 0
+      ? visitorNumber
+      : 0);
+  const [animatedCount, setAnimatedCount] = useState(0);
+
+  useEffect(() => {
+    if (!displayVisitCountValue) {
+      return;
+    }
+
+    const duration = 900;
+    const start = performance.now();
+
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const nextValue = Math.round(displayVisitCountValue * eased);
+      setAnimatedCount(nextValue);
+
+      if (progress < 1) {
+        requestAnimationFrame(tick);
+      }
+    };
+
+    const rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [displayVisitCountValue]);
+
+  const formattedAnimatedCount = useMemo(
+    () => formatVisitorNumber(animatedCount),
+    [animatedCount]
+  );
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -134,6 +188,32 @@ export default function Footer({ addressLabel, social }: FooterProps) {
 
         {/* Separator */}
         <div className="border-t border-gray-700 my-8"></div>
+
+        {displayVisitCountValue > 0 && (
+          <div className="mb-8 flex justify-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-300/20 bg-white/[0.04] px-4 py-2 text-sm text-blue-100/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-sm">
+              <svg
+                className="h-4 w-4 text-blue-300/80"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.458 12C3.732 7.943 7.522 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.478 0-8.268-2.943-9.542-7z"
+                />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+
+              <p className="tracking-wide">
+                Visitas actuales: {formattedAnimatedCount || '0'}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Copyright */}
         <div className="text-center text-sm text-gray-400">

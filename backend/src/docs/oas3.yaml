@@ -44,6 +44,8 @@ tags:
     description: Sistema de puntos, transacciones y gamificación
   - name: Registration
     description: Solicitudes de registro parcial para nuevos jóvenes (requiere aprobación del administrador)
+  - name: Landing
+    description: Endpoints públicos para contenido y métricas de la landing page
 
 paths:
   /health:
@@ -58,6 +60,76 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthCheck'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /landing/metrics/visit:
+    post:
+      summary: Registrar visita única anual
+      description: |
+        Registra una visita única para la landing en el año en curso usando una cookie técnica anónima.
+        Si el visitante ya fue contado en el mismo año, no incrementa el contador.
+      tags: [Landing]
+      responses:
+        '200':
+          description: Métrica registrada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      year:
+                        type: integer
+                        example: 2026
+                      uniqueVisitorsCount:
+                        type: integer
+                        example: 124
+                      visitorNumber:
+                        type: integer
+                        nullable: true
+                        example: 124
+                      isNewVisitor:
+                        type: boolean
+                        example: true
+        '429':
+          description: Rate limit excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    get:
+      summary: Obtener total anual de visitantes únicos
+      description: Retorna el total de visitantes únicos de la landing para el año actual.
+      tags: [Landing]
+      responses:
+        '200':
+          description: Métricas obtenidas exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      year:
+                        type: integer
+                        example: 2026
+                      uniqueVisitorsCount:
+                        type: integer
+                        example: 124
         '500':
           $ref: '#/components/responses/ServerError'
 

@@ -10,8 +10,11 @@ import {
   updateMedia,
   deleteMedia,
   uploadMediaFile,
+  trackLandingVisit,
+  getLandingVisitMetrics,
 } from '../controllers/landingController';
 import { authenticateToken } from '../middleware/auth';
+import { landingVisitLimiter } from '../middleware/rateLimiter';
 import {
   landingUpload,
   handleLandingMulterError,
@@ -24,6 +27,18 @@ const router = Router();
  * Obtener contenido público de landing
  */
 router.get('/', getLandingContent);
+
+/**
+ * POST /api/landing/metrics/visit
+ * Registrar visita única anual para analítica pública
+ */
+router.post('/metrics/visit', landingVisitLimiter, trackLandingVisit);
+
+/**
+ * GET /api/landing/metrics/visit
+ * Obtener total de visitantes únicos del año en curso
+ */
+router.get('/metrics/visit', getLandingVisitMetrics);
 
 // ==========================================
 // RUTAS ADMIN (requieren autenticación)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { apiRequest } from '../services/api';
+import { apiRequest, buildApiUrl } from '../services/api';
 import PageLoader from '../components/PageLoader';
 import Navbar from '../components/landing/Navbar.tsx';
 import HeroSection from '../components/landing/HeroSection.tsx';
@@ -16,6 +16,7 @@ import LocationSection from '../components/landing/LocationSection.tsx';
 import SocialLinksSection from '../components/landing/SocialLinksSection.tsx';
 import CTASection from '../components/landing/CTASection.tsx';
 import Footer from '../components/landing/Footer.tsx';
+import CookieNoticeBanner from '../components/landing/CookieNoticeBanner';
 
 interface LandingContent {
   _id: string;
@@ -119,14 +120,23 @@ interface LandingData {
   };
 }
 
+interface LandingVisitorMetrics {
+  year: number;
+  uniqueVisitorsCount: number;
+  visitorNumber: number | null;
+}
+
 export default function LandingPage() {
   const { theme } = useTheme();
   const [landingData, setLandingData] = useState<LandingData | null>(null);
+  const [visitorMetrics, setVisitorMetrics] =
+    useState<LandingVisitorMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLandingContent();
+    trackLandingVisit();
   }, []);
 
   // Update document title and meta tags
@@ -228,6 +238,60 @@ export default function LandingPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const trackLandingVisit = async () => {
+    try {
+      const response = await fetch(buildApiUrl('landing/metrics/visit'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        await fetchLandingVisitMetrics();
+        return;
+      }
+
+      const data = await response.json();
+      if (data?.success && data?.data) {
+        setVisitorMetrics({
+          year: data.data.year,
+          uniqueVisitorsCount: data.data.uniqueVisitorsCount,
+          visitorNumber: data.data.visitorNumber,
+        });
+      }
+    } catch (err) {
+      console.warn('No se pudo registrar métrica de visita:', err);
+      await fetchLandingVisitMetrics();
+    }
+  };
+
+  const fetchLandingVisitMetrics = async () => {
+    try {
+      const response = await fetch(buildApiUrl('landing/metrics/visit'), {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+      if (data?.success && data?.data) {
+        setVisitorMetrics(prev => ({
+          year: data.data.year,
+          uniqueVisitorsCount: data.data.uniqueVisitorsCount,
+          visitorNumber: prev?.visitorNumber ?? null,
+        }));
+      }
+    } catch (err) {
+      console.warn('No se pudieron obtener métricas de visita:', err);
     }
   };
 
@@ -394,7 +458,21 @@ export default function LandingPage() {
         <CTASection {...ctaProps} />
 
         {/* Footer */}
-        <Footer addressLabel={content.addressLabel} social={content.social} />
+        <Footer
+          addressLabel={content.addressLabel}
+          social={content.social}
+          {...(visitorMetrics?.year !== undefined
+            ? { visitorYear: visitorMetrics.year }
+            : {})}
+          {...(visitorMetrics?.visitorNumber !== undefined
+            ? { visitorNumber: visitorMetrics.visitorNumber }
+            : {})}
+          {...(visitorMetrics?.uniqueVisitorsCount !== undefined
+            ? { uniqueVisitorsCount: visitorMetrics.uniqueVisitorsCount }
+            : {})}
+        />
+
+        <CookieNoticeBanner />
       </div>
     </div>
   );
