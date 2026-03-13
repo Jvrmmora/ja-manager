@@ -1,3 +1,5 @@
+import { normalizeRichTextHtml } from '../../utils/richText';
+
 interface EventMedia {
   _id: string;
   title: string;
@@ -29,11 +31,12 @@ export default function EventsSection({
           {title || 'Próximos encuentros'}
         </h2>
         <div
-          className="max-w-2xl mx-auto text-center text-gray-600 dark:text-gray-400 mb-12"
+          className="rich-content max-w-2xl mx-auto text-center text-gray-600 dark:text-gray-400 mb-12"
           dangerouslySetInnerHTML={{
-            __html:
+            __html: normalizeRichTextHtml(
               body ||
-              'Muy pronto podrás ver aquí retiros, campamentos y actividades destacadas del ministerio juvenil.',
+                'Muy pronto podrás ver aquí retiros, campamentos y actividades destacadas del ministerio juvenil.'
+            ),
           }}
         />
 

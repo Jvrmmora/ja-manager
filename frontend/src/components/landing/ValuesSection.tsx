@@ -1,3 +1,5 @@
+import { normalizeRichTextHtml } from '../../utils/richText';
+
 interface Value {
   title: string;
   description: string;
@@ -171,8 +173,10 @@ export default function ValuesSection({ values }: ValuesSectionProps) {
                 {value.title}
               </h3>
               <div
-                className="text-gray-700 dark:text-gray-300"
-                dangerouslySetInnerHTML={{ __html: value.description || '' }}
+                className="rich-content text-gray-700 dark:text-gray-300"
+                dangerouslySetInnerHTML={{
+                  __html: normalizeRichTextHtml(value.description),
+                }}
               />
             </div>
           ))}

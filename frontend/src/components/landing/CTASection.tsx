@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { normalizeRichTextHtml } from '../../utils/richText';
 
 interface CTASectionProps {
   title?: string;
@@ -29,11 +30,12 @@ export default function CTASection({
         </h2>
 
         <div
-          className="text-lg text-blue-100 mb-8"
+          className="rich-content text-lg text-blue-100 mb-8"
           dangerouslySetInnerHTML={{
-            __html:
+            __html: normalizeRichTextHtml(
               body ||
-              'Eres joven y tienes un corazón apasionado por Dios. Este es tu lugar. Únete a nosotros y sé parte de un movimiento que está cambiando el mundo.',
+                'Eres joven y tienes un corazón apasionado por Dios. Este es tu lugar. Únete a nosotros y sé parte de un movimiento que está cambiando el mundo.'
+            ),
           }}
         />
 

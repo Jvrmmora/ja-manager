@@ -1,3 +1,5 @@
+import { normalizeRichTextHtml } from '../../utils/richText';
+
 interface TestimonialMedia {
   _id: string;
   title: string;
@@ -29,11 +31,12 @@ export default function TestimonialsSection({
           {title || 'Historias que inspiran'}
         </h2>
         <div
-          className="max-w-2xl mx-auto text-center text-gray-600 dark:text-gray-400 mb-12"
+          className="rich-content max-w-2xl mx-auto text-center text-gray-600 dark:text-gray-400 mb-12"
           dangerouslySetInnerHTML={{
-            __html:
+            __html: normalizeRichTextHtml(
               body ||
-              'Muy pronto compartiremos testimonios de jóvenes que han encontrado amistad, propósito y crecimiento espiritual en Modelia.',
+                'Muy pronto compartiremos testimonios de jóvenes que han encontrado amistad, propósito y crecimiento espiritual en Modelia.'
+            ),
           }}
         />
 

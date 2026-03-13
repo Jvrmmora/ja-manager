@@ -1,3 +1,5 @@
+import { normalizeRichTextHtml } from '../../utils/richText';
+
 interface AboutSectionProps {
   content: {
     aboutTitle?: string;
@@ -18,8 +20,10 @@ export default function AboutSection({ content }: AboutSectionProps) {
 
         <div className="prose dark:prose-invert max-w-none">
           <div
-            className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed text-center"
-            dangerouslySetInnerHTML={{ __html: content.aboutBody || '' }}
+            className="rich-content text-lg text-gray-700 dark:text-gray-300 leading-relaxed text-center"
+            dangerouslySetInnerHTML={{
+              __html: normalizeRichTextHtml(content.aboutBody),
+            }}
           />
         </div>
 

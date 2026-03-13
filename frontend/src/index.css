@@ -29,6 +29,60 @@
     @apply bg-white rounded-lg shadow-md p-6;
   }
 
+  .rich-editor-content {
+    @apply text-gray-800 dark:text-gray-100;
+  }
+
+  .rich-editor-content h2,
+  .rich-content h2 {
+    @apply text-3xl font-bold leading-tight my-4 text-gray-900 dark:text-white;
+  }
+
+  .rich-editor-content h3,
+  .rich-content h3 {
+    @apply text-2xl font-semibold leading-snug my-3 text-gray-900 dark:text-white;
+  }
+
+  .rich-editor-content p,
+  .rich-content p {
+    @apply my-3 leading-relaxed;
+  }
+
+  .rich-editor-content ul,
+  .rich-content ul {
+    @apply list-disc pl-6 my-3;
+  }
+
+  .rich-editor-content ol,
+  .rich-content ol {
+    @apply list-decimal pl-6 my-3;
+  }
+
+  .rich-editor-content li,
+  .rich-content li {
+    @apply my-1;
+  }
+
+  .rich-editor-content blockquote,
+  .rich-content blockquote {
+    @apply border-l-4 border-blue-500 pl-4 italic my-4 text-gray-600 dark:text-gray-300;
+  }
+
+  .rich-editor-content a,
+  .rich-content a {
+    @apply text-blue-600 dark:text-blue-400 underline underline-offset-2;
+  }
+
+  .rich-editor-content strong,
+  .rich-content strong {
+    @apply font-semibold;
+  }
+
+  .rich-editor-content .ProseMirror,
+  .rich-editor-content {
+    min-height: inherit;
+  }
+
   .form-input {
     @apply w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
   }

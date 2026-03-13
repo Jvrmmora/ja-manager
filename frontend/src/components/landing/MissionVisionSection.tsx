@@ -1,3 +1,5 @@
+import { normalizeRichTextHtml } from '../../utils/richText';
+
 interface MissionVisionSectionProps {
   content: {
     missionTitle?: string;
@@ -24,8 +26,10 @@ export default function MissionVisionSection({
               {content.missionTitle || 'Misión'}
             </h3>
             <div
-              className="text-lg text-gray-700 dark:text-gray-300"
-              dangerouslySetInnerHTML={{ __html: content.missionText || '' }}
+              className="rich-content text-lg text-gray-700 dark:text-gray-300"
+              dangerouslySetInnerHTML={{
+                __html: normalizeRichTextHtml(content.missionText),
+              }}
             />
           </div>
 
@@ -35,8 +39,10 @@ export default function MissionVisionSection({
               {content.visionTitle || 'Visión'}
             </h3>
             <div
-              className="text-lg text-gray-700 dark:text-gray-300"
-              dangerouslySetInnerHTML={{ __html: content.visionText || '' }}
+              className="rich-content text-lg text-gray-700 dark:text-gray-300"
+              dangerouslySetInnerHTML={{
+                __html: normalizeRichTextHtml(content.visionText),
+              }}
             />
           </div>
         </div>
