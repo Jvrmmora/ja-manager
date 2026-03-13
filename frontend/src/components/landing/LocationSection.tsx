@@ -6,7 +6,28 @@ interface LocationSectionProps {
   };
 }
 
+const extractIframeSrc = (value: string) => {
+  const match = value.match(/src=["']([^"']+)["']/i);
+  return match?.[1]?.trim() || '';
+};
+
+const getMapEmbedSrc = (value: string) => {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return '';
+  }
+
+  if (trimmedValue.startsWith('<iframe')) {
+    return extractIframeSrc(trimmedValue);
+  }
+
+  return trimmedValue;
+};
+
 export default function LocationSection({ content }: LocationSectionProps) {
+  const mapEmbedSrc = getMapEmbedSrc(content.mapEmbedUrl);
+
   return (
     <section id="location" className="py-20 px-4 bg-white dark:bg-gray-900">
       <div className="max-w-6xl mx-auto">
@@ -17,12 +38,13 @@ export default function LocationSection({ content }: LocationSectionProps) {
         <div className="grid md:grid-cols-2 gap-8">
           {/* Map */}
           <div className="h-96 rounded-lg overflow-hidden shadow-lg">
-            {content.mapEmbedUrl ? (
+            {mapEmbedSrc ? (
               <iframe
                 title="Ubicación Jóvenes Modelia"
                 width="100%"
                 height="100%"
-                src={content.mapEmbedUrl}
+                src={mapEmbedSrc}
+                className="w-full h-full border-0"
                 allowFullScreen={true}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
@@ -76,59 +98,14 @@ export default function LocationSection({ content }: LocationSectionProps) {
               <h4 className="font-semibold text-gray-900 dark:text-white mb-4">
                 Nuestras reuniones:
               </h4>
-              <ul className="space-y-2 text-gray-700 dark:text-gray-300">
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 21s-7-4.35-7-10a7 7 0 1114 0c0 5.65-7 10-7 10z"
-                    />
-                    <circle cx="12" cy="11" r="2.5" strokeWidth={2} />
-                  </svg>
+              <ul className="space-y-2 text-gray-700 dark:text-gray-300 list-disc pl-5 marker:text-blue-600 dark:marker:text-blue-400">
+                <li>
                   <span>Grupo Pequeño - Entre Semana</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 21s-7-4.35-7-10a7 7 0 1114 0c0 5.65-7 10-7 10z"
-                    />
-                    <circle cx="12" cy="11" r="2.5" strokeWidth={2} />
-                  </svg>
+                <li>
                   <span>Escuela Sabática - Sábado Mañana</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 21s-7-4.35-7-10a7 7 0 1114 0c0 5.65-7 10-7 10z"
-                    />
-                    <circle cx="12" cy="11" r="2.5" strokeWidth={2} />
-                  </svg>
+                <li>
                   <span>Culto Joven - Sábado por la noche</span>
                 </li>
               </ul>

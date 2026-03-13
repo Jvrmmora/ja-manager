@@ -814,7 +814,7 @@ export default function LandingCMSPage() {
                 />
                 <input
                   className={fieldClass}
-                  placeholder="URL embed Google Maps (iframe src)"
+                  placeholder="Pega la URL src o el iframe completo de Google Maps"
                   value={content.mapEmbedUrl}
                   onChange={e =>
                     setContent({ ...content, mapEmbedUrl: e.target.value })

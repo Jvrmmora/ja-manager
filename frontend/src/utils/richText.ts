@@ -25,6 +25,8 @@ export const normalizeRichTextHtml = (value?: string | null) => {
 
   return normalizedValue
     .split(/\n{2,}/)
-    .map(paragraph => `<p>${escapeHtml(paragraph).replace(/\n/g, '<br />')}</p>`)
+    .map(
+      paragraph => `<p>${escapeHtml(paragraph).replace(/\n/g, '<br />')}</p>`
+    )
     .join('');
 };
