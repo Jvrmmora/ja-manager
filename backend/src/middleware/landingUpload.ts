@@ -1,7 +1,7 @@
 import multer from 'multer';
 import { Request } from 'express';
 
-const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25MB
+const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
 
 const storage = multer.memoryStorage();
 

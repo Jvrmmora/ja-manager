@@ -70,7 +70,7 @@ interface LandingMeeting {
   isPublished: boolean;
 }
 
-const MAX_MEDIA_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+const MAX_MEDIA_FILE_SIZE_BYTES = 100 * 1024 * 1024;
 const ALLOWED_MEDIA_MIME_TYPES = [
   'image/jpeg',
   'image/jpg',
@@ -411,7 +411,7 @@ export default function LandingCMSPage() {
     }
 
     if (file.size > MAX_MEDIA_FILE_SIZE_BYTES) {
-      showToast('Archivo demasiado grande. Máximo 25MB.', 'error');
+      showToast('Archivo demasiado grande. Máximo 100MB.', 'error');
       return;
     }
 
@@ -1344,7 +1344,7 @@ export default function LandingCMSPage() {
                           Haz clic o arrastra un archivo
                         </p>
                         <p className="text-xs mt-1">
-                          Imagen, video o PDF (máx. 25MB)
+                          Imagen, video o PDF (máx. 100MB)
                         </p>
                       </div>
                     )}
@@ -1396,7 +1396,7 @@ export default function LandingCMSPage() {
                     disabled={uploading || !uploadFile}
                     className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition"
                   >
-                    {uploading ? 'Subiendo…' : 'Subir a Azure'}
+                    {uploading ? 'Subiendo…' : 'Subir Archivo'}
                   </button>
                 </div>
               </div>

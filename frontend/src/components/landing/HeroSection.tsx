@@ -10,6 +10,7 @@ interface HeroSectionProps {
   heroMedia?: {
     mediaUrl: string;
     altText: string;
+    mediaType?: 'image' | 'video' | 'document';
   };
 }
 
@@ -21,15 +22,28 @@ export default function HeroSection({ content, heroMedia }: HeroSectionProps) {
       id="hero"
       className="relative h-screen flex items-center justify-center overflow-hidden"
     >
-      {/* Background Image */}
-      {heroMedia?.mediaUrl && (
+      {/* Background Media */}
+      {heroMedia?.mediaUrl && heroMedia.mediaType === 'video' ? (
+        <video
+          key={heroMedia.mediaUrl}
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+        >
+          <source src={heroMedia.mediaUrl} />
+        </video>
+      ) : heroMedia?.mediaUrl ? (
         <img
           src={heroMedia.mediaUrl}
           alt={heroMedia.altText || content.heroTitle}
           className="absolute inset-0 w-full h-full object-cover"
           loading="lazy"
         />
-      )}
+      ) : null}
 
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black bg-opacity-50"></div>
