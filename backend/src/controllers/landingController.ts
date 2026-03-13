@@ -151,8 +151,15 @@ export const updateLandingContent = asyncHandler(
 export const createMeeting = asyncHandler(
   async (req: Request, res: Response) => {
     try {
-      const { title, subtitle, description, schedule, modality, order } =
-        req.body;
+      const {
+        title,
+        subtitle,
+        description,
+        imageUrl,
+        schedule,
+        modality,
+        order,
+      } = req.body;
 
       if (!title || !subtitle || !description || !schedule || !modality) {
         throw new ValidationError('Faltan campos requeridos');
@@ -162,6 +169,7 @@ export const createMeeting = asyncHandler(
         title,
         subtitle,
         description,
+        imageUrl: imageUrl || null,
         schedule,
         modality,
         order: order || 0,
@@ -359,25 +367,22 @@ export const deleteMedia = asyncHandler(async (req: Request, res: Response) => {
       throw new NotFoundError('Media no encontrado');
     }
 
-    // Hard delete obligatorio en Azure antes de borrar el registro.
+    // Si es un archivo alojado en Azure, lo eliminamos físicamente antes del registro.
+    // Si es un enlace externo (YouTube/Vimeo/etc), solo eliminamos el registro en DB.
     if (media.mediaUrl) {
-      if (!azureBlobStorageService.isServiceConfigured()) {
-        throw new ValidationError(
-          'Azure Blob Storage no está configurado para eliminar el archivo físico'
-        );
-      }
-
       const parsedBlob = azureBlobStorageService.parseBlobUrl(media.mediaUrl);
-      if (!parsedBlob) {
-        throw new ValidationError(
-          'No se pudo determinar el contenedor/blob desde la URL del archivo'
+      if (parsedBlob) {
+        if (!azureBlobStorageService.isServiceConfigured()) {
+          throw new ValidationError(
+            'Azure Blob Storage no está configurado para eliminar el archivo físico'
+          );
+        }
+
+        await azureBlobStorageService.deleteFile(
+          parsedBlob.containerName,
+          parsedBlob.blobName
         );
       }
-
-      await azureBlobStorageService.deleteFile(
-        parsedBlob.containerName,
-        parsedBlob.blobName
-      );
     }
 
     await media.deleteOne();

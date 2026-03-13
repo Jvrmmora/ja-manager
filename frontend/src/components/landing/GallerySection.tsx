@@ -16,12 +16,18 @@ interface GallerySectionProps {
   galleryMedia: GalleryMedia[];
 }
 
+const MAX_VISIBLE_CARDS = 6;
+
 export default function GallerySection({
   title,
   body,
   galleryMedia,
 }: GallerySectionProps) {
   const [selectedImage, setSelectedImage] = useState<GalleryMedia | null>(null);
+  const [showAllGallery, setShowAllGallery] = useState(false);
+  const visibleGallery = showAllGallery
+    ? galleryMedia
+    : galleryMedia.slice(0, MAX_VISIBLE_CARDS);
 
   if (!galleryMedia || galleryMedia.length === 0) {
     return (
@@ -66,7 +72,7 @@ export default function GallerySection({
         )}
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {galleryMedia.map(media => (
+          {visibleGallery.map(media => (
             <button
               key={media._id}
               onClick={() => setSelectedImage(media)}
@@ -140,6 +146,20 @@ export default function GallerySection({
             </button>
           ))}
         </div>
+
+        {galleryMedia.length > MAX_VISIBLE_CARDS && (
+          <div className="mt-8 text-center">
+            <button
+              type="button"
+              onClick={() => setShowAllGallery(prev => !prev)}
+              className="inline-flex items-center px-5 py-2.5 rounded-lg border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-semibold text-sm transition"
+            >
+              {showAllGallery
+                ? 'Ver menos'
+                : `Ver más (${galleryMedia.length - MAX_VISIBLE_CARDS})`}
+            </button>
+          </div>
+        )}
 
         {/* Lightbox Modal */}
         {selectedImage && (

@@ -83,7 +83,16 @@ const ALLOWED_MEDIA_MIME_TYPES = [
   'application/pdf',
 ];
 
+const ALLOWED_IMAGE_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
+
 type MediaCategory = 'hero' | 'gallery' | 'testimonial' | 'event' | 'resource';
+type UploadMode = 'file' | 'link';
 
 interface LandingMedia {
   _id: string;
@@ -101,6 +110,7 @@ interface MeetingForm {
   title: string;
   subtitle: string;
   description: string;
+  imageUrl: string;
   day: string;
   time: string;
   modality: 'virtual' | 'presencial' | 'híbrido';
@@ -112,6 +122,7 @@ const EMPTY_MEETING: MeetingForm = {
   title: '',
   subtitle: '',
   description: '',
+  imageUrl: '',
   day: '',
   time: '',
   modality: 'presencial',
@@ -129,6 +140,40 @@ const MEDIA_CATEGORIES: { value: MediaCategory; label: string }[] = [
 
 const fieldClass =
   'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500';
+
+const isYouTubeUrl = (url: string) =>
+  /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/i.test(url);
+
+const isVimeoUrl = (url: string) => /vimeo\.com\//i.test(url);
+
+const toEmbeddableUrl = (url: string): string => {
+  if (isYouTubeUrl(url)) {
+    const match = url.match(
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{6,})/
+    );
+    return match?.[1] ? `https://www.youtube.com/embed/${match[1]}` : url;
+  }
+
+  if (isVimeoUrl(url)) {
+    const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
+    return match?.[1] ? `https://player.vimeo.com/video/${match[1]}` : url;
+  }
+
+  return url;
+};
+
+const inferMediaTypeFromUrl = (
+  rawUrl: string
+): 'image' | 'video' | 'document' => {
+  const url = rawUrl.toLowerCase().trim();
+
+  if (isYouTubeUrl(url) || isVimeoUrl(url)) return 'video';
+  if (/\.(pdf)(\?|#|$)/i.test(url)) return 'document';
+  if (/\.(jpg|jpeg|png|webp|gif|avif)(\?|#|$)/i.test(url)) return 'image';
+  if (/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url)) return 'video';
+
+  return 'document';
+};
 
 const EMPTY_LANDING_CONTENT: LandingContent = {
   _id: '',
@@ -202,6 +247,7 @@ const normalizeLandingContent = (
 export default function LandingCMSPage() {
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const meetingImageInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<'content' | 'meetings' | 'media'>(
     'content'
   );
@@ -219,6 +265,11 @@ export default function LandingCMSPage() {
   );
   const [meetingForm, setMeetingForm] = useState<MeetingForm>(EMPTY_MEETING);
   const [savingMeeting, setSavingMeeting] = useState(false);
+  const [meetingImageFile, setMeetingImageFile] = useState<File | null>(null);
+  const [meetingImagePreview, setMeetingImagePreview] = useState<string | null>(
+    null
+  );
+  const [uploadingMeetingImage, setUploadingMeetingImage] = useState(false);
 
   // Media state
   const [media, setMedia] = useState<LandingMedia[]>([]);
@@ -230,7 +281,13 @@ export default function LandingCMSPage() {
   const [uploadDescription, setUploadDescription] = useState('');
   const [uploadCategory, setUploadCategory] =
     useState<MediaCategory>('gallery');
+  const [uploadMode, setUploadMode] = useState<UploadMode>('file');
+  const [uploadLinkUrl, setUploadLinkUrl] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [editingMedia, setEditingMedia] = useState<LandingMedia | null>(null);
+  const [editingMediaTitle, setEditingMediaTitle] = useState('');
+  const [editingMediaDescription, setEditingMediaDescription] = useState('');
+  const [savingMediaEdit, setSavingMediaEdit] = useState(false);
 
   useEffect(() => {
     fetchAll();
@@ -311,6 +368,9 @@ export default function LandingCMSPage() {
   const openNewMeeting = () => {
     setEditingMeeting(null);
     setMeetingForm(EMPTY_MEETING);
+    setMeetingImageFile(null);
+    setMeetingImagePreview(null);
+    if (meetingImageInputRef.current) meetingImageInputRef.current.value = '';
     setShowMeetingForm(true);
   };
 
@@ -320,13 +380,81 @@ export default function LandingCMSPage() {
       title: m.title,
       subtitle: m.subtitle,
       description: m.description,
+      imageUrl: m.imageUrl || '',
       day: m.schedule.day,
       time: m.schedule.time,
       modality: m.modality,
       meetingLink: m.meetingLink || '',
       order: m.order,
     });
+    setMeetingImageFile(null);
+    setMeetingImagePreview(null);
+    if (meetingImageInputRef.current) meetingImageInputRef.current.value = '';
     setShowMeetingForm(true);
+  };
+
+  const handleMeetingImageFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!ALLOWED_IMAGE_MIME_TYPES.includes(file.type)) {
+      showToast('Solo se permiten imágenes (JPG, PNG, WEBP, GIF)', 'error');
+      return;
+    }
+
+    if (file.size > MAX_MEDIA_FILE_SIZE_BYTES) {
+      showToast('Imagen demasiado grande. Máximo 100MB.', 'error');
+      return;
+    }
+
+    setMeetingImageFile(file);
+    const reader = new FileReader();
+    reader.onload = ev => setMeetingImagePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadMeetingImage = async () => {
+    if (!meetingImageFile) {
+      showToast('Selecciona una imagen primero', 'error');
+      return;
+    }
+
+    try {
+      setUploadingMeetingImage(true);
+      const formData = new FormData();
+      formData.append('file', meetingImageFile);
+      formData.append('category', 'gallery');
+      formData.append(
+        'title',
+        (meetingForm.title || meetingImageFile.name).replace(/\.[^.]+$/, '')
+      );
+      formData.append('altText', meetingForm.title || 'Imagen de reunión');
+      formData.append(
+        'description',
+        `Imagen para reunión: ${meetingForm.title || 'sin título'}`
+      );
+
+      const res = await apiUpload('landing/admin/media/upload', formData);
+      const data = await res.json();
+
+      if (data.success && data.data) {
+        setMedia(prev => [...prev, data.data]);
+        setMeetingForm(prev => ({ ...prev, imageUrl: data.data.mediaUrl }));
+        setMeetingImageFile(null);
+        setMeetingImagePreview(null);
+        if (meetingImageInputRef.current)
+          meetingImageInputRef.current.value = '';
+        showToast('Imagen subida y vinculada a la reunión', 'success');
+      } else {
+        showToast(data.message || 'Error al subir imagen', 'error');
+      }
+    } catch {
+      showToast('Error al subir imagen', 'error');
+    } finally {
+      setUploadingMeetingImage(false);
+    }
   };
 
   const handleSaveMeeting = async () => {
@@ -340,6 +468,7 @@ export default function LandingCMSPage() {
         title: meetingForm.title,
         subtitle: meetingForm.subtitle,
         description: meetingForm.description,
+        imageUrl: meetingForm.imageUrl || undefined,
         schedule: { day: meetingForm.day, time: meetingForm.time },
         modality: meetingForm.modality,
         meetingLink: meetingForm.meetingLink,
@@ -428,6 +557,54 @@ export default function LandingCMSPage() {
   };
 
   const handleUploadMedia = async () => {
+    if (uploadMode === 'link') {
+      if (!uploadLinkUrl.trim()) {
+        showToast('Pega un enlace primero', 'error');
+        return;
+      }
+      if (!uploadTitle.trim()) {
+        showToast('Escribe un título para el recurso', 'error');
+        return;
+      }
+
+      try {
+        setUploading(true);
+        const normalizedUrl = uploadLinkUrl.trim();
+        const mediaType = inferMediaTypeFromUrl(normalizedUrl);
+
+        const res = await apiRequest('landing/admin/media', {
+          method: 'POST',
+          body: JSON.stringify({
+            title: uploadTitle.trim(),
+            description: uploadDescription.trim(),
+            mediaUrl: normalizedUrl,
+            mediaType,
+            category: uploadCategory,
+            altText: uploadAltText.trim(),
+            order: 0,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success && data.data) {
+          showToast('Enlace guardado exitosamente', 'success');
+          setMedia(prev => [...prev, data.data]);
+          setUploadTitle('');
+          setUploadAltText('');
+          setUploadDescription('');
+          setUploadLinkUrl('');
+        } else {
+          showToast(data.message || 'Error al guardar enlace', 'error');
+        }
+      } catch {
+        showToast('Error al guardar enlace', 'error');
+      } finally {
+        setUploading(false);
+      }
+
+      return;
+    }
+
     if (!uploadFile) {
       showToast('Selecciona un archivo primero', 'error');
       return;
@@ -480,6 +657,46 @@ export default function LandingCMSPage() {
       }
     } catch {
       showToast('Error al eliminar archivo', 'error');
+    }
+  };
+
+  const openEditMediaModal = (item: LandingMedia) => {
+    setEditingMedia(item);
+    setEditingMediaTitle(item.title || '');
+    setEditingMediaDescription(item.description || '');
+  };
+
+  const handleSaveMediaEdit = async () => {
+    if (!editingMedia) return;
+    if (!editingMediaTitle.trim()) {
+      showToast('El título es requerido', 'error');
+      return;
+    }
+
+    try {
+      setSavingMediaEdit(true);
+      const res = await apiRequest(`landing/admin/media/${editingMedia._id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: editingMediaTitle.trim(),
+          description: editingMediaDescription.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.data) {
+        setMedia(prev =>
+          prev.map(item => (item._id === editingMedia._id ? data.data : item))
+        );
+        showToast('Recurso actualizado', 'success');
+        setEditingMedia(null);
+      } else {
+        showToast(data.message || 'Error al actualizar recurso', 'error');
+      }
+    } catch {
+      showToast('Error al actualizar recurso', 'error');
+    } finally {
+      setSavingMediaEdit(false);
     }
   };
 
@@ -1158,6 +1375,74 @@ export default function LandingCMSPage() {
                       })
                     }
                   />
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                      Imagen de la reunión (opcional)
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        ref={meetingImageInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleMeetingImageFileChange}
+                        className="flex-1 text-sm text-gray-600 dark:text-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleUploadMeetingImage}
+                        disabled={!meetingImageFile || uploadingMeetingImage}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition"
+                      >
+                        {uploadingMeetingImage ? 'Subiendo…' : 'Subir imagen'}
+                      </button>
+                    </div>
+
+                    {meetingImagePreview && (
+                      <img
+                        src={meetingImagePreview}
+                        alt="Preview reunión"
+                        className="w-full max-h-40 object-contain rounded-lg border border-gray-200 dark:border-gray-700"
+                      />
+                    )}
+
+                    <select
+                      className={fieldClass}
+                      value={meetingForm.imageUrl}
+                      onChange={e =>
+                        setMeetingForm({
+                          ...meetingForm,
+                          imageUrl: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">Sin imagen</option>
+                      {media
+                        .filter(
+                          item =>
+                            item.mediaType === 'image' &&
+                            (item.category === 'gallery' ||
+                              item.category === 'event')
+                        )
+                        .map(item => (
+                          <option key={item._id} value={item.mediaUrl}>
+                            {item.title} ({item.category})
+                          </option>
+                        ))}
+                    </select>
+
+                    <input
+                      className={fieldClass}
+                      placeholder="O pega URL de imagen manualmente"
+                      value={meetingForm.imageUrl}
+                      onChange={e =>
+                        setMeetingForm({
+                          ...meetingForm,
+                          imageUrl: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
                   <div className="grid md:grid-cols-3 gap-4">
                     <input
                       className={fieldClass}
@@ -1204,18 +1489,22 @@ export default function LandingCMSPage() {
                       }
                     />
                   )}
-                  <input
-                    type="number"
-                    className={fieldClass}
-                    placeholder="Orden de aparición"
-                    value={meetingForm.order}
-                    onChange={e =>
-                      setMeetingForm({
-                        ...meetingForm,
-                        order: Number(e.target.value),
-                      })
-                    }
-                  />
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Orden de aparición
+                    </label>
+                    <input
+                      type="number"
+                      className={fieldClass}
+                      value={meetingForm.order}
+                      onChange={e =>
+                        setMeetingForm({
+                          ...meetingForm,
+                          order: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
                   <div className="flex gap-3">
                     <button
                       onClick={handleSaveMeeting}
@@ -1301,61 +1590,97 @@ export default function LandingCMSPage() {
             {/* Upload Panel */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">
-                Subir archivo
+                Cargar recurso
               </h2>
+              <div className="flex gap-2 mb-5">
+                <button
+                  type="button"
+                  onClick={() => setUploadMode('file')}
+                  className={`px-3 py-1.5 text-sm rounded-full transition ${uploadMode === 'file' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
+                >
+                  Archivo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUploadMode('link')}
+                  className={`px-3 py-1.5 text-sm rounded-full transition ${uploadMode === 'link' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
+                >
+                  Enlace (YouTube/Vimeo/PDF/etc.)
+                </button>
+              </div>
               <div className="grid md:grid-cols-2 gap-6">
                 {/* File drop zone */}
                 <div>
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 transition-colors"
-                  >
-                    {uploadPreview ? (
-                      <img
-                        src={uploadPreview}
-                        alt="preview"
-                        className="max-h-48 mx-auto rounded-lg object-contain"
-                      />
-                    ) : uploadFile ? (
-                      <div className="text-gray-500 dark:text-gray-300">
-                        <p className="text-sm font-medium truncate">
-                          {uploadFile.name}
-                        </p>
-                        <p className="text-xs mt-1">
-                          {(uploadFile.size / (1024 * 1024)).toFixed(1)} MB
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="text-gray-400">
-                        <svg
-                          className="w-12 h-12 mx-auto mb-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  {uploadMode === 'file' ? (
+                    <>
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 transition-colors"
+                      >
+                        {uploadPreview ? (
+                          <img
+                            src={uploadPreview}
+                            alt="preview"
+                            className="max-h-48 mx-auto rounded-lg object-contain"
                           />
-                        </svg>
-                        <p className="text-sm">
-                          Haz clic o arrastra un archivo
-                        </p>
-                        <p className="text-xs mt-1">
-                          Imagen, video o PDF (máx. 100MB)
-                        </p>
+                        ) : uploadFile ? (
+                          <div className="text-gray-500 dark:text-gray-300">
+                            <p className="text-sm font-medium truncate">
+                              {uploadFile.name}
+                            </p>
+                            <p className="text-xs mt-1">
+                              {(uploadFile.size / (1024 * 1024)).toFixed(1)} MB
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="text-gray-400">
+                            <svg
+                              className="w-12 h-12 mx-auto mb-2"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                            <p className="text-sm">
+                              Haz clic o arrastra un archivo
+                            </p>
+                            <p className="text-xs mt-1">
+                              Imagen, video o PDF (máx. 100MB)
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,video/mp4,video/webm,video/quicktime,application/pdf"
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,video/mp4,video/webm,video/quicktime,application/pdf"
+                        className="hidden"
+                        onChange={handleFileChange}
+                      />
+                    </>
+                  ) : (
+                    <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900/30">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        URL del recurso
+                      </label>
+                      <input
+                        className={fieldClass}
+                        placeholder="https://youtube.com/... | https://vimeo.com/... | https://.../archivo.pdf"
+                        value={uploadLinkUrl}
+                        onChange={e => setUploadLinkUrl(e.target.value)}
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        Se detecta automáticamente si es video, documento o
+                        imagen.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Fields */}
@@ -1366,12 +1691,17 @@ export default function LandingCMSPage() {
                     value={uploadTitle}
                     onChange={e => setUploadTitle(e.target.value)}
                   />
-                  <textarea
-                    className={`${fieldClass} h-20`}
-                    placeholder="Descripción (opcional)"
-                    value={uploadDescription}
-                    onChange={e => setUploadDescription(e.target.value)}
-                  />
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Descripción (opcional)
+                    </label>
+                    <RichTextEditor
+                      value={uploadDescription}
+                      onChange={setUploadDescription}
+                      placeholder="Describe el recurso o evento..."
+                      minHeightClassName="min-h-[120px]"
+                    />
+                  </div>
                   <input
                     className={fieldClass}
                     placeholder="Texto alternativo (accesibilidad)"
@@ -1393,10 +1723,21 @@ export default function LandingCMSPage() {
                   </select>
                   <button
                     onClick={handleUploadMedia}
-                    disabled={uploading || !uploadFile}
+                    disabled={
+                      uploading ||
+                      (uploadMode === 'file'
+                        ? !uploadFile
+                        : !uploadLinkUrl.trim())
+                    }
                     className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition"
                   >
-                    {uploading ? 'Subiendo…' : 'Subir Archivo'}
+                    {uploading
+                      ? uploadMode === 'file'
+                        ? 'Subiendo…'
+                        : 'Guardando enlace…'
+                      : uploadMode === 'file'
+                        ? 'Subir Archivo'
+                        : 'Guardar Enlace'}
                   </button>
                 </div>
               </div>
@@ -1449,14 +1790,25 @@ export default function LandingCMSPage() {
                             className="w-full h-32 object-cover"
                           />
                         )}
-                        {img.mediaType === 'video' && (
-                          <video
-                            src={img.mediaUrl}
-                            className="w-full h-32 object-cover"
-                            muted
-                            preload="metadata"
-                          />
-                        )}
+                        {img.mediaType === 'video' &&
+                          (isYouTubeUrl(img.mediaUrl) ||
+                          isVimeoUrl(img.mediaUrl) ? (
+                            <iframe
+                              src={toEmbeddableUrl(img.mediaUrl)}
+                              title={img.title}
+                              className="w-full h-32"
+                              loading="lazy"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <video
+                              src={img.mediaUrl}
+                              className="w-full h-32 object-cover"
+                              muted
+                              preload="metadata"
+                            />
+                          ))}
                         {img.mediaType === 'document' && (
                           <div className="text-center text-red-600 dark:text-red-300">
                             <svg
@@ -1502,6 +1854,13 @@ export default function LandingCMSPage() {
                         >
                           Abrir
                         </a>
+                        <button
+                          type="button"
+                          onClick={() => openEditMediaModal(img)}
+                          className="text-xs text-amber-700 dark:text-amber-300 font-medium hover:underline mt-1 ml-3 inline-flex"
+                        >
+                          Editar
+                        </button>
                       </div>
                       <button
                         onClick={() => handleDeleteMedia(img._id)}
@@ -1527,6 +1886,74 @@ export default function LandingCMSPage() {
                 </div>
               )}
             </div>
+
+            {editingMedia && (
+              <div
+                className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+                onClick={() => setEditingMedia(null)}
+              >
+                <div
+                  className="w-full max-w-2xl rounded-xl bg-white dark:bg-gray-800 shadow-xl"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                      Editar archivo guardado
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setEditingMedia(null)}
+                      className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    <input
+                      className={fieldClass}
+                      placeholder="Título del recurso *"
+                      value={editingMediaTitle}
+                      onChange={e => setEditingMediaTitle(e.target.value)}
+                    />
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        Descripción
+                      </label>
+                      <RichTextEditor
+                        value={editingMediaDescription}
+                        onChange={setEditingMediaDescription}
+                        placeholder="Describe el recurso..."
+                        minHeightClassName="min-h-[140px]"
+                      />
+                    </div>
+
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {editingMedia.category} · {editingMedia.mediaType}
+                    </div>
+                  </div>
+
+                  <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setEditingMedia(null)}
+                      className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveMediaEdit}
+                      disabled={savingMediaEdit}
+                      className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold"
+                    >
+                      {savingMediaEdit ? 'Guardando…' : 'Guardar cambios'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
