@@ -394,7 +394,7 @@ export default function LandingPage() {
         <CTASection {...ctaProps} />
 
         {/* Footer */}
-        <Footer />
+        <Footer addressLabel={content.addressLabel} social={content.social} />
       </div>
     </div>
   );

@@ -106,7 +106,7 @@ export default function LocationSection({ content }: LocationSectionProps) {
                   <span>Escuela Sabática - Sábado Mañana</span>
                 </li>
                 <li>
-                  <span>Culto Joven - Sábado por la noche</span>
+                  <span>Culto Joven - Sábado por la tarde</span>
                 </li>
               </ul>
             </div>

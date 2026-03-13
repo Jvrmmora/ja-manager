@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import logo from '../../assets/logos/logo.png';
@@ -16,15 +16,51 @@ const NAV_ITEMS = [
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('about');
   const navigate = useNavigate();
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
+      setActiveSection(id);
     }
     setIsMenuOpen(false);
   };
+
+  useEffect(() => {
+    const sections = NAV_ITEMS.map(item =>
+      document.getElementById(item.id)
+    ).filter(Boolean) as HTMLElement[];
+
+    if (sections.length === 0) {
+      return;
+    }
+
+    const updateActiveSection = () => {
+      const scrollAnchor = window.scrollY + window.innerHeight * 0.35;
+      let currentSection = sections[0].id;
+
+      for (const section of sections) {
+        if (scrollAnchor >= section.offsetTop - 120) {
+          currentSection = section.id;
+        }
+      }
+
+      setActiveSection(prev =>
+        prev === currentSection ? prev : currentSection
+      );
+    };
+
+    updateActiveSection();
+    window.addEventListener('scroll', updateActiveSection, { passive: true });
+    window.addEventListener('resize', updateActiveSection);
+
+    return () => {
+      window.removeEventListener('scroll', updateActiveSection);
+      window.removeEventListener('resize', updateActiveSection);
+    };
+  }, []);
 
   return (
     <nav className="sticky top-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm shadow-sm border-b border-gray-200/80 dark:border-gray-700/80">
@@ -51,7 +87,11 @@ export default function Navbar() {
               <button
                 key={id}
                 onClick={() => scrollToSection(id)}
-                className="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                className={`px-3.5 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
+                  activeSection === id
+                    ? 'text-blue-700 dark:text-blue-300 bg-gradient-to-b from-blue-50 to-blue-100/70 dark:from-blue-900/35 dark:to-blue-800/30 ring-1 ring-blue-200/80 dark:ring-blue-700/70 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100/80 dark:hover:bg-gray-800/80'
+                }`}
               >
                 {label}
               </button>
@@ -135,7 +175,11 @@ export default function Navbar() {
             <button
               key={id}
               onClick={() => scrollToSection(id)}
-              className="block w-full text-left px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              className={`block w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                activeSection === id
+                  ? 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-200/70 dark:ring-blue-700/60'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
             >
               {label}
             </button>

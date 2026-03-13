@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { normalizeRichTextHtml } from '../../utils/richText';
 
 interface AboutSectionProps {
@@ -7,7 +8,78 @@ interface AboutSectionProps {
   };
 }
 
+interface AnimatedCounterProps {
+  target: number;
+  start: boolean;
+  suffix?: string;
+  durationMs?: number;
+}
+
+function AnimatedCounter({
+  target,
+  start,
+  suffix = '',
+  durationMs = 1100,
+}: AnimatedCounterProps) {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    if (!start) {
+      return;
+    }
+
+    let frame = 0;
+    const startTime = performance.now();
+
+    const tick = (now: number) => {
+      const progress = Math.min((now - startTime) / durationMs, 1);
+      const nextValue = Math.round(target * progress);
+      setValue(nextValue);
+
+      if (progress < 1) {
+        frame = requestAnimationFrame(tick);
+      }
+    };
+
+    frame = requestAnimationFrame(tick);
+
+    return () => cancelAnimationFrame(frame);
+  }, [durationMs, start, target]);
+
+  return (
+    <>
+      {value}
+      {suffix}
+    </>
+  );
+}
+
 export default function AboutSection({ content }: AboutSectionProps) {
+  const statsRef = useRef<HTMLDivElement | null>(null);
+  const [startCounters, setStartCounters] = useState(false);
+
+  useEffect(() => {
+    const element = statsRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0]?.isIntersecting) {
+          setStartCounters(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.35 }
+    );
+
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section
       id="about"
@@ -28,10 +100,10 @@ export default function AboutSection({ content }: AboutSectionProps) {
         </div>
 
         {/* Stats or highlights */}
-        <div className="mt-12 grid grid-cols-3 gap-4 text-center">
+        <div ref={statsRef} className="mt-12 grid grid-cols-3 gap-4 text-center">
           <div>
             <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-              3
+              <AnimatedCounter target={3} start={startCounters} />
             </p>
             <p className="text-gray-600 dark:text-gray-400">
               Reuniones Semanales
@@ -39,14 +111,14 @@ export default function AboutSection({ content }: AboutSectionProps) {
           </div>
           <div>
             <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-              50+
+              <AnimatedCounter target={50} start={startCounters} suffix="+" />
             </p>
             <p className="text-gray-600 dark:text-gray-400">
               Jóvenes Apasionados
             </p>
           </div>
           <div>
-            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 animate-[pulse_3s_ease-in-out_infinite]">
               ∞
             </p>
             <p className="text-gray-600 dark:text-gray-400">

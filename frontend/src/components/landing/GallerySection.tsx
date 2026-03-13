@@ -16,18 +16,15 @@ interface GallerySectionProps {
   galleryMedia: GalleryMedia[];
 }
 
-const MAX_VISIBLE_CARDS = 6;
-
 export default function GallerySection({
   title,
   body,
   galleryMedia,
 }: GallerySectionProps) {
   const [selectedImage, setSelectedImage] = useState<GalleryMedia | null>(null);
-  const [showAllGallery, setShowAllGallery] = useState(false);
-  const visibleGallery = showAllGallery
-    ? galleryMedia
-    : galleryMedia.slice(0, MAX_VISIBLE_CARDS);
+  const loopGallery =
+    galleryMedia.length > 1 ? [...galleryMedia, ...galleryMedia] : galleryMedia;
+  const animationDurationSeconds = Math.max(galleryMedia.length * 6, 26);
 
   if (!galleryMedia || galleryMedia.length === 0) {
     return (
@@ -71,95 +68,104 @@ export default function GallerySection({
           />
         )}
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {visibleGallery.map(media => (
-            <button
-              key={media._id}
-              onClick={() => setSelectedImage(media)}
-              className="relative group overflow-hidden rounded-lg aspect-square cursor-pointer"
-            >
-              {media.mediaType === 'image' && (
-                <img
-                  src={media.mediaUrl}
-                  alt={media.altText || media.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition transform"
-                  loading="lazy"
-                />
-              )}
-              {media.mediaType === 'video' && (
-                <video
-                  src={media.mediaUrl}
-                  className="w-full h-full object-cover"
-                  muted
-                  preload="metadata"
-                />
-              )}
-              {media.mediaType === 'document' && (
-                <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex flex-col items-center justify-center text-red-600 dark:text-red-300">
-                  <svg
-                    className="w-12 h-12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.8}
-                      d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V8l-5-6z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.8}
-                      d="M14 2v6h6"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.8}
-                      d="M9 14h6M9 18h6"
-                    />
-                  </svg>
-                  <p className="mt-2 font-semibold">PDF</p>
-                </div>
-              )}
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition"></div>
-              {media.mediaType === 'video' && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <svg
-                    className="w-12 h-12 text-white opacity-70 group-hover:opacity-100 transition"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M2 10.5a1.5 1.5 0 113 0v-6a1.5 1.5 0 01-3 0v6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 20h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 11H12V5.5a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.256 13.37a2 2 0 01-1.25.632v-.99a.75.75 0 00-.75.75v.5zM4 8.25V8a1 1 0 011-1h1a.75.75 0 00.75-.75V6h1v1.25a.75.75 0 01-.75.75H5a1 1 0 01-1-1v.25z" />
-                  </svg>
-                </div>
-              )}
-              {media.mediaType === 'document' && (
-                <div className="absolute inset-0 flex items-end justify-center pb-4">
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-black/60 text-white">
-                    Ver documento
-                  </span>
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-14 bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-800 z-10" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-gray-50 to-transparent dark:from-gray-800 z-10" />
 
-        {galleryMedia.length > MAX_VISIBLE_CARDS && (
-          <div className="mt-8 text-center">
-            <button
-              type="button"
-              onClick={() => setShowAllGallery(prev => !prev)}
-              className="inline-flex items-center px-5 py-2.5 rounded-lg border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-semibold text-sm transition"
+          <div className="overflow-hidden rounded-2xl">
+            <div
+              className="gallery-loop-track flex items-center gap-5 w-max py-2"
+              style={{
+                animationDuration: `${animationDurationSeconds}s`,
+              }}
             >
-              {showAllGallery
-                ? 'Ver menos'
-                : `Ver más (${galleryMedia.length - MAX_VISIBLE_CARDS})`}
-            </button>
+              {loopGallery.map((media, idx) => (
+                <button
+                  key={`${media._id}-${idx}`}
+                  onClick={() => setSelectedImage(media)}
+                  className="relative group overflow-hidden rounded-2xl w-[260px] sm:w-[280px] md:w-[300px] h-[340px] cursor-pointer border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all bg-white dark:bg-gray-900"
+                >
+                  {media.mediaType === 'image' && (
+                    <img
+                      src={media.mediaUrl}
+                      alt={media.altText || media.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                  )}
+                  {media.mediaType === 'video' && (
+                    <video
+                      src={media.mediaUrl}
+                      className="w-full h-full object-cover"
+                      muted
+                      preload="metadata"
+                    />
+                  )}
+                  {media.mediaType === 'document' && (
+                    <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex flex-col items-center justify-center text-red-600 dark:text-red-300">
+                      <svg
+                        className="w-14 h-14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.8}
+                          d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V8l-5-6z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.8}
+                          d="M14 2v6h6"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.8}
+                          d="M9 14h6M9 18h6"
+                        />
+                      </svg>
+                      <p className="mt-2 font-semibold">PDF</p>
+                    </div>
+                  )}
+
+                  <div className="absolute inset-0 bg-black/15 group-hover:bg-black/30 transition-colors" />
+
+                  <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent text-left">
+                    <p className="text-white font-semibold line-clamp-2 text-sm">
+                      {media.title}
+                    </p>
+                  </div>
+
+                  {media.mediaType === 'video' && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border border-white/40">
+                        <svg
+                          className="w-7 h-7 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M8 5v10l8-5-8-5z" />
+                        </svg>
+                      </span>
+                    </div>
+                  )}
+
+                  {media.mediaType === 'document' && (
+                    <div className="absolute inset-0 flex items-end justify-center pb-5">
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-black/60 text-white">
+                        Ver documento
+                      </span>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
-        )}
+        </div>
 
         {/* Lightbox Modal */}
         {selectedImage && (
@@ -217,6 +223,34 @@ export default function GallerySection({
           </div>
         )}
       </div>
+
+      <style>{`
+        .gallery-loop-track {
+          animation-name: galleryLoop;
+          animation-timing-function: linear;
+          animation-iteration-count: infinite;
+          will-change: transform;
+        }
+
+        .gallery-loop-track:hover {
+          animation-play-state: paused;
+        }
+
+        @keyframes galleryLoop {
+          from {
+            transform: translateX(0);
+          }
+          to {
+            transform: translateX(-50%);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .gallery-loop-track {
+            animation: none;
+          }
+        }
+      `}</style>
     </section>
   );
 }

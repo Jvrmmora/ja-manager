@@ -49,23 +49,27 @@ export default function HeroSection({ content, heroMedia }: HeroSectionProps) {
       <div className="absolute inset-0 bg-black bg-opacity-50"></div>
 
       {/* Content */}
-      <div className="relative z-10 text-center text-white px-4 max-w-3xl mx-auto">
-        <h1 className="text-5xl md:text-6xl font-bold mb-4 leading-tight">
+      <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
+        <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-[1.08] tracking-tight">
           {content.heroTitle}
         </h1>
 
-        <p className="text-2xl md:text-3xl font-semibold mb-6 text-blue-300">
+        <p className="text-2xl md:text-4xl font-light mb-6 text-slate-100/95">
           {content.heroSubtitle}
         </p>
 
-        <p className="text-lg md:text-xl mb-8 text-gray-200">
+        <div className="w-32 h-px bg-white/70 mx-auto mb-6"></div>
+
+        <p className="text-lg md:text-2xl mb-6 text-blue-200 font-semibold tracking-wide leading-snug">
           {content.heroDescription}
         </p>
 
         {content.heroVerse && (
-          <p className="text-md md:text-lg italic mb-12 text-blue-100 font-light">
-            &quot;{content.heroVerse}&quot;
-          </p>
+          <div className="mb-10">
+            <p className="text-base md:text-2xl italic text-white/90 font-light leading-snug">
+              &quot;{content.heroVerse}&quot;
+            </p>
+          </div>
         )}
 
         {/* CTA Buttons */}
