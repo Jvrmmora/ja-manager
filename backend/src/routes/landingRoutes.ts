@@ -12,7 +12,10 @@ import {
   uploadMediaFile,
 } from '../controllers/landingController';
 import { authenticateToken } from '../middleware/auth';
-import { upload } from '../middleware/upload';
+import {
+  landingUpload,
+  handleLandingMulterError,
+} from '../middleware/landingUpload';
 
 const router = Router();
 
@@ -30,21 +33,13 @@ router.get('/', getLandingContent);
  * GET /api/admin/landing
  * Obtener todo el contenido (admin view)
  */
-router.get(
-  '/admin/content',
-  authenticateToken,
-  getAdminLandingContent
-);
+router.get('/admin/content', authenticateToken, getAdminLandingContent);
 
 /**
  * PUT /api/admin/landing/content
  * Actualizar contenido general
  */
-router.put(
-  '/admin/content',
-  authenticateToken,
-  updateLandingContent
-);
+router.put('/admin/content', authenticateToken, updateLandingContent);
 
 // ==========================================
 // REUNIONES SEMANALES
@@ -54,31 +49,19 @@ router.put(
  * POST /api/admin/landing/meetings
  * Crear reunión
  */
-router.post(
-  '/admin/meetings',
-  authenticateToken,
-  createMeeting
-);
+router.post('/admin/meetings', authenticateToken, createMeeting);
 
 /**
  * PUT /api/admin/landing/meetings/:id
  * Actualizar reunión
  */
-router.put(
-  '/admin/meetings/:id',
-  authenticateToken,
-  updateMeeting
-);
+router.put('/admin/meetings/:id', authenticateToken, updateMeeting);
 
 /**
  * DELETE /api/admin/landing/meetings/:id
  * Eliminar reunión
  */
-router.delete(
-  '/admin/meetings/:id',
-  authenticateToken,
-  deleteMeeting
-);
+router.delete('/admin/meetings/:id', authenticateToken, deleteMeeting);
 
 // ==========================================
 // MEDIA / IMÁGENES
@@ -88,31 +71,19 @@ router.delete(
  * POST /api/admin/landing/media
  * Crear referencia de media
  */
-router.post(
-  '/admin/media',
-  authenticateToken,
-  createMedia
-);
+router.post('/admin/media', authenticateToken, createMedia);
 
 /**
  * PUT /api/admin/landing/media/:id
  * Actualizar media
  */
-router.put(
-  '/admin/media/:id',
-  authenticateToken,
-  updateMedia
-);
+router.put('/admin/media/:id', authenticateToken, updateMedia);
 
 /**
  * DELETE /api/admin/landing/media/:id
  * Eliminar media
  */
-router.delete(
-  '/admin/media/:id',
-  authenticateToken,
-  deleteMedia
-);
+router.delete('/admin/media/:id', authenticateToken, deleteMedia);
 
 /**
  * POST /api/admin/landing/media/upload
@@ -121,7 +92,8 @@ router.delete(
 router.post(
   '/admin/media/upload',
   authenticateToken,
-  upload.single('file'),
+  landingUpload.single('file'),
+  handleLandingMulterError,
   uploadMediaFile
 );
 

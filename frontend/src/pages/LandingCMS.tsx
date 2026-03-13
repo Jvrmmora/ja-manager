@@ -45,6 +45,7 @@ interface LandingContent {
   galleryTitle: string;
   galleryBody: string;
   resourcesTitle: string;
+  resourcesBody: string;
   testimonialsTitle: string;
   testimonialsBody: string;
   ctaTitle: string;
@@ -69,13 +70,27 @@ interface LandingMeeting {
   isPublished: boolean;
 }
 
-type MediaCategory = 'hero' | 'gallery' | 'testimonial' | 'event';
+const MAX_MEDIA_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+const ALLOWED_MEDIA_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'application/pdf',
+];
+
+type MediaCategory = 'hero' | 'gallery' | 'testimonial' | 'event' | 'resource';
 
 interface LandingMedia {
   _id: string;
   title: string;
+  description?: string;
   mediaUrl: string;
-  mediaType: 'image' | 'video';
+  mediaType: 'image' | 'video' | 'document';
   category: MediaCategory;
   altText: string;
   order: number;
@@ -106,6 +121,7 @@ const EMPTY_MEETING: MeetingForm = {
 
 const MEDIA_CATEGORIES: { value: MediaCategory; label: string }[] = [
   { value: 'gallery', label: 'Galería' },
+  { value: 'resource', label: 'Recursos' },
   { value: 'hero', label: 'Hero / Banner' },
   { value: 'testimonial', label: 'Testimonios' },
   { value: 'event', label: 'Eventos' },
@@ -155,6 +171,7 @@ const EMPTY_LANDING_CONTENT: LandingContent = {
   galleryTitle: '',
   galleryBody: '',
   resourcesTitle: '',
+  resourcesBody: '',
   testimonialsTitle: '',
   testimonialsBody: '',
   ctaTitle: '',
@@ -210,6 +227,7 @@ export default function LandingCMSPage() {
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadAltText, setUploadAltText] = useState('');
+  const [uploadDescription, setUploadDescription] = useState('');
   const [uploadCategory, setUploadCategory] =
     useState<MediaCategory>('gallery');
   const [uploading, setUploading] = useState(false);
@@ -383,10 +401,29 @@ export default function LandingCMSPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!ALLOWED_MEDIA_MIME_TYPES.includes(file.type)) {
+      showToast(
+        'Archivo no permitido. Usa imagen, video MP4/WebM/MOV o PDF.',
+        'error'
+      );
+      return;
+    }
+
+    if (file.size > MAX_MEDIA_FILE_SIZE_BYTES) {
+      showToast('Archivo demasiado grande. Máximo 25MB.', 'error');
+      return;
+    }
+
     setUploadFile(file);
-    const reader = new FileReader();
-    reader.onload = ev => setUploadPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = ev => setUploadPreview(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setUploadPreview(null);
+    }
+
     if (!uploadTitle) setUploadTitle(file.name.replace(/\.[^.]+$/, ''));
   };
 
@@ -396,7 +433,7 @@ export default function LandingCMSPage() {
       return;
     }
     if (!uploadTitle.trim()) {
-      showToast('Escribe un título para la imagen', 'error');
+      showToast('Escribe un título para el archivo', 'error');
       return;
     }
     try {
@@ -406,41 +443,43 @@ export default function LandingCMSPage() {
       formData.append('category', uploadCategory);
       formData.append('title', uploadTitle.trim());
       formData.append('altText', uploadAltText.trim());
+      formData.append('description', uploadDescription.trim());
       const res = await apiUpload('landing/admin/media/upload', formData);
       const data = await res.json();
       if (data.success && data.data) {
-        showToast('Imagen subida exitosamente', 'success');
+        showToast('Archivo subido exitosamente', 'success');
         setMedia(prev => [...prev, data.data]);
         setUploadFile(null);
         setUploadPreview(null);
         setUploadTitle('');
         setUploadAltText('');
+        setUploadDescription('');
         if (fileInputRef.current) fileInputRef.current.value = '';
       } else {
-        showToast(data.message || 'Error al subir imagen', 'error');
+        showToast(data.message || 'Error al subir archivo', 'error');
       }
     } catch {
-      showToast('Error al subir imagen', 'error');
+      showToast('Error al subir archivo', 'error');
     } finally {
       setUploading(false);
     }
   };
 
   const handleDeleteMedia = async (id: string) => {
-    if (!window.confirm('¿Eliminar esta imagen?')) return;
+    if (!window.confirm('¿Eliminar este archivo?')) return;
     try {
       const res = await apiRequest(`landing/admin/media/${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();
       if (data.success) {
-        showToast('Imagen eliminada', 'success');
+        showToast('Archivo eliminado', 'success');
         setMedia(prev => prev.filter(m => m._id !== id));
       } else {
         showToast('Error al eliminar', 'error');
       }
     } catch {
-      showToast('Error al eliminar imagen', 'error');
+      showToast('Error al eliminar archivo', 'error');
     }
   };
 
@@ -925,14 +964,24 @@ export default function LandingCMSPage() {
               <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
                 Recursos
               </h3>
-              <input
-                className={fieldClass}
-                placeholder="Título recursos"
-                value={content.resourcesTitle}
-                onChange={e =>
-                  setContent({ ...content, resourcesTitle: e.target.value })
-                }
-              />
+              <div className="space-y-3">
+                <input
+                  className={fieldClass}
+                  placeholder="Título recursos"
+                  value={content.resourcesTitle}
+                  onChange={e =>
+                    setContent({ ...content, resourcesTitle: e.target.value })
+                  }
+                />
+                <RichTextEditor
+                  value={content.resourcesBody}
+                  onChange={value =>
+                    setContent({ ...content, resourcesBody: value })
+                  }
+                  placeholder="Descripción de la sección de recursos"
+                  minHeightClassName="min-h-[110px]"
+                />
+              </div>
             </section>
 
             {/* Testimonios */}
@@ -1252,7 +1301,7 @@ export default function LandingCMSPage() {
             {/* Upload Panel */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">
-                Subir imagen
+                Subir archivo
               </h2>
               <div className="grid md:grid-cols-2 gap-6">
                 {/* File drop zone */}
@@ -1267,6 +1316,15 @@ export default function LandingCMSPage() {
                         alt="preview"
                         className="max-h-48 mx-auto rounded-lg object-contain"
                       />
+                    ) : uploadFile ? (
+                      <div className="text-gray-500 dark:text-gray-300">
+                        <p className="text-sm font-medium truncate">
+                          {uploadFile.name}
+                        </p>
+                        <p className="text-xs mt-1">
+                          {(uploadFile.size / (1024 * 1024)).toFixed(1)} MB
+                        </p>
+                      </div>
                     ) : (
                       <div className="text-gray-400">
                         <svg
@@ -1283,7 +1341,10 @@ export default function LandingCMSPage() {
                           />
                         </svg>
                         <p className="text-sm">
-                          Haz clic o arrastra una imagen
+                          Haz clic o arrastra un archivo
+                        </p>
+                        <p className="text-xs mt-1">
+                          Imagen, video o PDF (máx. 25MB)
                         </p>
                       </div>
                     )}
@@ -1291,7 +1352,7 @@ export default function LandingCMSPage() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/*,video/mp4,video/webm,video/quicktime,application/pdf"
                     className="hidden"
                     onChange={handleFileChange}
                   />
@@ -1301,9 +1362,15 @@ export default function LandingCMSPage() {
                 <div className="space-y-3">
                   <input
                     className={fieldClass}
-                    placeholder="Título de la imagen *"
+                    placeholder="Título del archivo *"
                     value={uploadTitle}
                     onChange={e => setUploadTitle(e.target.value)}
+                  />
+                  <textarea
+                    className={`${fieldClass} h-20`}
+                    placeholder="Descripción (opcional)"
+                    value={uploadDescription}
+                    onChange={e => setUploadDescription(e.target.value)}
                   />
                   <input
                     className={fieldClass}
@@ -1339,7 +1406,7 @@ export default function LandingCMSPage() {
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
               <div className="flex flex-wrap items-center gap-3 mb-5">
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white mr-2">
-                  Imágenes guardadas
+                  Archivos guardados
                 </h2>
                 <button
                   onClick={() => setMediaFilter('all')}
@@ -1365,7 +1432,7 @@ export default function LandingCMSPage() {
 
               {filteredMedia.length === 0 ? (
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  No hay imágenes en esta categoría.
+                  No hay archivos en esta categoría.
                 </p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -1374,18 +1441,67 @@ export default function LandingCMSPage() {
                       key={img._id}
                       className="group relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700"
                     >
-                      <img
-                        src={img.mediaUrl}
-                        alt={img.altText || img.title}
-                        className="w-full h-32 object-cover"
-                      />
+                      <div className="w-full h-32 bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                        {img.mediaType === 'image' && (
+                          <img
+                            src={img.mediaUrl}
+                            alt={img.altText || img.title}
+                            className="w-full h-32 object-cover"
+                          />
+                        )}
+                        {img.mediaType === 'video' && (
+                          <video
+                            src={img.mediaUrl}
+                            className="w-full h-32 object-cover"
+                            muted
+                            preload="metadata"
+                          />
+                        )}
+                        {img.mediaType === 'document' && (
+                          <div className="text-center text-red-600 dark:text-red-300">
+                            <svg
+                              className="w-10 h-10 mx-auto"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.8}
+                                d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V8l-5-6z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.8}
+                                d="M14 2v6h6"
+                              />
+                            </svg>
+                            <p className="text-xs font-semibold mt-1">PDF</p>
+                          </div>
+                        )}
+                      </div>
                       <div className="p-2">
                         <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
                           {img.title}
                         </p>
-                        <p className="text-xs text-gray-400 capitalize">
-                          {img.category}
+                        <p className="text-xs text-gray-400 capitalize truncate">
+                          {img.category} · {img.mediaType}
                         </p>
+                        {img.description && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">
+                            {img.description}
+                          </p>
+                        )}
+                        <a
+                          href={img.mediaUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline mt-1 inline-flex"
+                        >
+                          Abrir
+                        </a>
                       </div>
                       <button
                         onClick={() => handleDeleteMedia(img._id)}

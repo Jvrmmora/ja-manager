@@ -62,6 +62,7 @@ export interface ILandingContent extends Document {
 
   // Resources section
   resourcesTitle: string;
+  resourcesBody: string;
 
   // Testimonials section
   testimonialsTitle: string;
@@ -245,6 +246,11 @@ const landingContentSchema = new Schema<ILandingContent>(
     resourcesTitle: {
       type: String,
       default: 'Recursos para crecer',
+    },
+    resourcesBody: {
+      type: String,
+      default:
+        'Explora materiales para profundizar en la fe: estudios, guías, videos y documentos prácticos para tu crecimiento espiritual.',
     },
 
     // Testimonials section

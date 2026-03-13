@@ -4,7 +4,7 @@ interface EventMedia {
   _id: string;
   title: string;
   mediaUrl: string;
-  mediaType: 'image' | 'video';
+  mediaType: 'image' | 'video' | 'document';
   altText: string;
 }
 
@@ -63,22 +63,52 @@ export default function EventsSection({
                       controls
                       className="w-full h-full object-cover"
                     />
-                  ) : (
+                  ) : event.mediaType === 'image' ? (
                     <img
                       src={event.mediaUrl}
                       alt={event.altText || event.title}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
                     />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex flex-col items-center justify-center text-red-600 dark:text-red-300">
+                      <svg
+                        className="w-10 h-10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.8}
+                          d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V8l-5-6z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.8}
+                          d="M14 2v6h6"
+                        />
+                      </svg>
+                      <span className="mt-2 text-sm font-semibold">PDF</span>
+                    </div>
                   )}
                 </div>
                 <div className="p-5">
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                     {event.title}
                   </h3>
-                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                    Encuentro especial para compartir, crecer y servir juntos.
-                  </p>
+                  <a
+                    href={event.mediaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    {event.mediaType === 'document'
+                      ? 'Abrir PDF'
+                      : 'Ver detalle'}
+                  </a>
                 </div>
               </article>
             ))}

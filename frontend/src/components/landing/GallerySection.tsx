@@ -1,18 +1,26 @@
 import { useState } from 'react';
+import { normalizeRichTextHtml } from '../../utils/richText';
 
 interface GalleryMedia {
   _id: string;
   title: string;
+  description?: string;
   mediaUrl: string;
-  mediaType: 'image' | 'video';
+  mediaType: 'image' | 'video' | 'document';
   altText: string;
 }
 
 interface GallerySectionProps {
+  title?: string;
+  body?: string;
   galleryMedia: GalleryMedia[];
 }
 
-export default function GallerySection({ galleryMedia }: GallerySectionProps) {
+export default function GallerySection({
+  title,
+  body,
+  galleryMedia,
+}: GallerySectionProps) {
   const [selectedImage, setSelectedImage] = useState<GalleryMedia | null>(null);
 
   if (!galleryMedia || galleryMedia.length === 0) {
@@ -20,11 +28,17 @@ export default function GallerySection({ galleryMedia }: GallerySectionProps) {
       <section id="gallery" className="py-20 px-4 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
-            Galería
+            {title || 'Galería'}
           </h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-10">
-            Próximamente compartiremos momentos de nuestra comunidad.
-          </p>
+          <div
+            className="rich-content text-gray-500 dark:text-gray-400 mb-10"
+            dangerouslySetInnerHTML={{
+              __html: normalizeRichTextHtml(
+                body ||
+                  'Próximamente compartiremos momentos de nuestra comunidad.'
+              ),
+            }}
+          />
           <div className="grid md:grid-cols-3 gap-4">
             {[1, 2, 3].map(i => (
               <div
@@ -42,8 +56,14 @@ export default function GallerySection({ galleryMedia }: GallerySectionProps) {
     <section id="gallery" className="py-20 px-4 bg-gray-50 dark:bg-gray-800">
       <div className="max-w-6xl mx-auto">
         <h2 className="text-4xl font-bold text-center mb-12 text-gray-900 dark:text-white">
-          Galería
+          {title || 'Galería'}
         </h2>
+        {body && (
+          <div
+            className="rich-content max-w-3xl mx-auto text-center text-gray-600 dark:text-gray-400 mb-10"
+            dangerouslySetInnerHTML={{ __html: normalizeRichTextHtml(body) }}
+          />
+        )}
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {galleryMedia.map(media => (
@@ -52,12 +72,52 @@ export default function GallerySection({ galleryMedia }: GallerySectionProps) {
               onClick={() => setSelectedImage(media)}
               className="relative group overflow-hidden rounded-lg aspect-square cursor-pointer"
             >
-              <img
-                src={media.mediaUrl}
-                alt={media.altText || media.title}
-                className="w-full h-full object-cover group-hover:scale-110 transition transform"
-                loading="lazy"
-              />
+              {media.mediaType === 'image' && (
+                <img
+                  src={media.mediaUrl}
+                  alt={media.altText || media.title}
+                  className="w-full h-full object-cover group-hover:scale-110 transition transform"
+                  loading="lazy"
+                />
+              )}
+              {media.mediaType === 'video' && (
+                <video
+                  src={media.mediaUrl}
+                  className="w-full h-full object-cover"
+                  muted
+                  preload="metadata"
+                />
+              )}
+              {media.mediaType === 'document' && (
+                <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex flex-col items-center justify-center text-red-600 dark:text-red-300">
+                  <svg
+                    className="w-12 h-12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.8}
+                      d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V8l-5-6z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.8}
+                      d="M14 2v6h6"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.8}
+                      d="M9 14h6M9 18h6"
+                    />
+                  </svg>
+                  <p className="mt-2 font-semibold">PDF</p>
+                </div>
+              )}
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition"></div>
               {media.mediaType === 'video' && (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -68,6 +128,13 @@ export default function GallerySection({ galleryMedia }: GallerySectionProps) {
                   >
                     <path d="M2 10.5a1.5 1.5 0 113 0v-6a1.5 1.5 0 01-3 0v6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 20h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 11H12V5.5a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.256 13.37a2 2 0 01-1.25.632v-.99a.75.75 0 00-.75.75v.5zM4 8.25V8a1 1 0 011-1h1a.75.75 0 00.75-.75V6h1v1.25a.75.75 0 01-.75.75H5a1 1 0 01-1-1v.25z" />
                   </svg>
+                </div>
+              )}
+              {media.mediaType === 'document' && (
+                <div className="absolute inset-0 flex items-end justify-center pb-4">
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-black/60 text-white">
+                    Ver documento
+                  </span>
                 </div>
               )}
             </button>
@@ -108,11 +175,17 @@ export default function GallerySection({ galleryMedia }: GallerySectionProps) {
                   className="w-full rounded-lg"
                   loading="lazy"
                 />
-              ) : (
+              ) : selectedImage.mediaType === 'video' ? (
                 <video
                   src={selectedImage.mediaUrl}
                   controls
                   className="w-full rounded-lg"
+                />
+              ) : (
+                <iframe
+                  src={selectedImage.mediaUrl}
+                  title={selectedImage.title}
+                  className="w-full h-[70vh] rounded-lg border border-gray-700"
                 />
               )}
 

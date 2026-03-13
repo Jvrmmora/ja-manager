@@ -4,8 +4,8 @@ export interface ILandingMedia extends Document {
   title: string;
   description?: string;
   mediaUrl: string;
-  mediaType: 'image' | 'video';
-  category: 'hero' | 'gallery' | 'testimonial' | 'event' | 'other';
+  mediaType: 'image' | 'video' | 'document';
+  category: 'hero' | 'gallery' | 'testimonial' | 'event' | 'resource' | 'other';
   altText?: string;
   order: number;
   isPublished: boolean;
@@ -45,15 +45,22 @@ const landingMediaSchema = new Schema<ILandingMedia>(
     mediaType: {
       type: String,
       enum: {
-        values: ['image', 'video'],
-        message: 'Tipo de media debe ser image o video',
+        values: ['image', 'video', 'document'],
+        message: 'Tipo de media debe ser image, video o document',
       },
       required: [true, 'Tipo de media es requerido'],
     },
     category: {
       type: String,
       enum: {
-        values: ['hero', 'gallery', 'testimonial', 'event', 'other'],
+        values: [
+          'hero',
+          'gallery',
+          'testimonial',
+          'event',
+          'resource',
+          'other',
+        ],
         message: 'Categoría no válida',
       },
       required: [true, 'Categoría es requerida'],

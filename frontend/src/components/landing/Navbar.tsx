@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { id: 'meetings', label: 'Reuniones' },
   { id: 'events', label: 'Eventos' },
   { id: 'gallery', label: 'Galería' },
+  { id: 'resources', label: 'Recursos' },
   { id: 'testimonials', label: 'Testimonios' },
   { id: 'location', label: 'Ubicación' },
 ];

@@ -10,6 +10,7 @@ import ValuesSection from '../components/landing/ValuesSection.tsx';
 import MeetingsSection from '../components/landing/MeetingsSection.tsx';
 import EventsSection from '../components/landing/EventsSection';
 import GallerySection from '../components/landing/GallerySection.tsx';
+import ResourcesSection from '../components/landing/ResourcesSection';
 import TestimonialsSection from '../components/landing/TestimonialsSection';
 import LocationSection from '../components/landing/LocationSection.tsx';
 import SocialLinksSection from '../components/landing/SocialLinksSection.tsx';
@@ -47,6 +48,7 @@ interface LandingContent {
     meetings: boolean;
     events: boolean;
     gallery: boolean;
+    resources: boolean;
     testimonials: boolean;
     location: boolean;
     social: boolean;
@@ -62,6 +64,10 @@ interface LandingContent {
   mapsDirectionsUrl: string;
   eventsTitle?: string;
   eventsBody?: string;
+  galleryTitle?: string;
+  galleryBody?: string;
+  resourcesTitle?: string;
+  resourcesBody?: string;
   testimonialsTitle?: string;
   testimonialsBody?: string;
   ctaTitle?: string;
@@ -92,9 +98,10 @@ interface LandingMeeting {
 interface LandingMedia {
   _id: string;
   title: string;
+  description?: string;
   mediaUrl: string;
-  mediaType: 'image' | 'video';
-  category: 'hero' | 'gallery' | 'testimonial' | 'event';
+  mediaType: 'image' | 'video' | 'document';
+  category: 'hero' | 'gallery' | 'testimonial' | 'event' | 'resource';
   altText: string;
   order: number;
   isPublished: boolean;
@@ -108,6 +115,7 @@ interface LandingData {
     gallery: LandingMedia[];
     testimonial: LandingMedia[];
     event: LandingMedia[];
+    resource: LandingMedia[];
   };
 }
 
@@ -179,7 +187,10 @@ export default function LandingPage() {
             mission: true,
             values: true,
             meetings: true,
+            events: true,
             gallery: true,
+            resources: true,
+            testimonials: true,
             location: true,
             social: true,
           },
@@ -192,6 +203,14 @@ export default function LandingPage() {
           addressLabel: 'Cra. 72C #23d-44, Bogotá',
           mapEmbedUrl: '',
           mapsDirectionsUrl: '',
+          eventsTitle: 'Próximos encuentros',
+          eventsBody: '',
+          galleryTitle: 'Galería',
+          galleryBody: '',
+          resourcesTitle: 'Recursos para crecer',
+          resourcesBody: '',
+          testimonialsTitle: 'Testimonios',
+          testimonialsBody: '',
           seoTitle:
             'Jóvenes Adventistas Modelia Bogotá | Encendidos por Cristo',
           seoDescription:
@@ -204,6 +223,7 @@ export default function LandingPage() {
           gallery: [],
           testimonial: [],
           event: [],
+          resource: [],
         },
       });
     } finally {
@@ -245,6 +265,7 @@ export default function LandingPage() {
       | 'meetings'
       | 'events'
       | 'gallery'
+      | 'resources'
       | 'testimonials'
       | 'location'
       | 'social'
@@ -330,7 +351,22 @@ export default function LandingPage() {
 
         {/* Gallery Section */}
         {isSectionVisible('gallery') && (
-          <GallerySection galleryMedia={media.gallery} />
+          <GallerySection
+            {...(content.galleryTitle ? { title: content.galleryTitle } : {})}
+            {...(content.galleryBody ? { body: content.galleryBody } : {})}
+            galleryMedia={media.gallery}
+          />
+        )}
+
+        {/* Resources Section */}
+        {isSectionVisible('resources') && (
+          <ResourcesSection
+            {...(content.resourcesTitle
+              ? { title: content.resourcesTitle }
+              : {})}
+            {...(content.resourcesBody ? { body: content.resourcesBody } : {})}
+            resourcesMedia={media.resource}
+          />
         )}
 
         {/* Testimonials Section */}

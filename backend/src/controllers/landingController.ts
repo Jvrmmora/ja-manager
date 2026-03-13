@@ -52,6 +52,7 @@ export const getLandingContent = asyncHandler(
         gallery: mediaByCategory.filter(m => m.category === 'gallery'),
         testimonial: mediaByCategory.filter(m => m.category === 'testimonial'),
         event: mediaByCategory.filter(m => m.category === 'event'),
+        resource: mediaByCategory.filter(m => m.category === 'resource'),
       };
 
       res.status(200).json({
@@ -418,6 +419,7 @@ export const uploadMediaFile = asyncHandler(
         category = 'gallery',
         altText = '',
         title = '',
+        description = '',
         order = 0,
       } = req.body;
 
@@ -438,11 +440,14 @@ export const uploadMediaFile = asyncHandler(
       // Determinar mediaType desde mimetype
       const mediaType = req.file.mimetype.startsWith('video/')
         ? 'video'
-        : 'image';
+        : req.file.mimetype === 'application/pdf'
+          ? 'document'
+          : 'image';
 
       // Crear registro en MongoDB
       const newMedia = new LandingMedia({
         title: title || req.file.originalname,
+        description,
         mediaUrl,
         mediaType,
         category,
@@ -461,7 +466,7 @@ export const uploadMediaFile = asyncHandler(
 
       res.status(201).json({
         success: true,
-        message: 'Imagen subida exitosamente',
+        message: 'Archivo subido exitosamente',
         data: newMedia,
       });
     } catch (error) {

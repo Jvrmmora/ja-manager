@@ -4,7 +4,7 @@ interface TestimonialMedia {
   _id: string;
   title: string;
   mediaUrl: string;
-  mediaType: 'image' | 'video';
+  mediaType: 'image' | 'video' | 'document';
   altText: string;
 }
 
@@ -60,13 +60,36 @@ export default function TestimonialsSection({
                       controls
                       className="w-full h-full object-cover"
                     />
-                  ) : (
+                  ) : item.mediaType === 'image' ? (
                     <img
                       src={item.mediaUrl}
                       alt={item.altText || item.title}
                       className="w-full h-full object-cover"
                       loading="lazy"
                     />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex flex-col items-center justify-center text-red-600 dark:text-red-300">
+                      <svg
+                        className="w-10 h-10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.8}
+                          d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V8l-5-6z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.8}
+                          d="M14 2v6h6"
+                        />
+                      </svg>
+                      <span className="mt-2 text-sm font-semibold">PDF</span>
+                    </div>
                   )}
                 </div>
                 <div className="p-5">
