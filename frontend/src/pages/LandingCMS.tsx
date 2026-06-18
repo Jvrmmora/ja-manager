@@ -287,6 +287,7 @@ export default function LandingCMSPage() {
   const [editingMedia, setEditingMedia] = useState<LandingMedia | null>(null);
   const [editingMediaTitle, setEditingMediaTitle] = useState('');
   const [editingMediaDescription, setEditingMediaDescription] = useState('');
+  const [editingMediaCategory, setEditingMediaCategory] = useState<MediaCategory>('gallery');
   const [savingMediaEdit, setSavingMediaEdit] = useState(false);
 
   useEffect(() => {
@@ -664,6 +665,7 @@ export default function LandingCMSPage() {
     setEditingMedia(item);
     setEditingMediaTitle(item.title || '');
     setEditingMediaDescription(item.description || '');
+    setEditingMediaCategory(item.category || 'gallery');
   };
 
   const handleSaveMediaEdit = async () => {
@@ -679,7 +681,8 @@ export default function LandingCMSPage() {
         method: 'PUT',
         body: JSON.stringify({
           title: editingMediaTitle.trim(),
-          description: editingMediaDescription.trim(),
+            description: editingMediaDescription.trim(),
+            category: editingMediaCategory,
         }),
       });
 
@@ -1929,8 +1932,26 @@ export default function LandingCMSPage() {
                       />
                     </div>
 
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {editingMedia.category} · {editingMedia.mediaType}
+                    <div className="grid grid-cols-2 gap-3 items-center">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                          Sección
+                        </label>
+                        <select
+                          className={fieldClass}
+                          value={editingMediaCategory}
+                          onChange={e => setEditingMediaCategory(e.target.value as MediaCategory)}
+                        >
+                          {MEDIA_CATEGORIES.map(c => (
+                            <option key={c.value} value={c.value}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {editingMedia?.mediaType}
+                      </div>
                     </div>
                   </div>
 

@@ -5,7 +5,7 @@ import LandingMedia from '../models/LandingMedia';
 import LandingMeeting from '../models/LandingMeetings';
 import LandingVisitMetric from '../models/LandingVisitMetric';
 import LandingVisitSummary from '../models/LandingVisitSummary';
-import { azureBlobStorageService } from '../services/azureBlobStorageService';
+import { uploadLandingMediaToCloudinary, deleteLandingMediaFromCloudinary, extractPublicId } from '../config/cloudinary';
 import {
   asyncHandler,
   NotFoundError,
@@ -115,20 +115,26 @@ export const getLandingContent = asyncHandler(
         .sort({ order: 1 })
         .lean();
 
-      // Obtener media publicada por categoría
-      const mediaByCategory = await LandingMedia.find({
-        isPublished: true,
-      })
-        .sort({ category: 1, order: 1 })
+      // Obtener media publicada y agrupar por categoría.
+      // Ordenamos cada categoría por fecha de creación descendente (más recientes primero)
+      const allMedia = await LandingMedia.find({ isPublished: true })
         .lean();
 
-      // Organizar media por categoría
+      const groupAndSort = (cat: string) =>
+        allMedia
+          .filter(m => m.category === cat)
+          .sort((a, b) => {
+            const ta = new Date(a.createdAt).getTime();
+            const tb = new Date(b.createdAt).getTime();
+            return tb - ta;
+          });
+
       const media = {
-        hero: mediaByCategory.filter(m => m.category === 'hero'),
-        gallery: mediaByCategory.filter(m => m.category === 'gallery'),
-        testimonial: mediaByCategory.filter(m => m.category === 'testimonial'),
-        event: mediaByCategory.filter(m => m.category === 'event'),
-        resource: mediaByCategory.filter(m => m.category === 'resource'),
+        hero: groupAndSort('hero'),
+        gallery: groupAndSort('gallery'),
+        testimonial: groupAndSort('testimonial'),
+        event: groupAndSort('event'),
+        resource: groupAndSort('resource'),
       };
 
       res.status(200).json({
@@ -495,6 +501,18 @@ export const createMedia = asyncHandler(async (req: Request, res: Response) => {
 
     await newMedia.save();
 
+    // If this media is a hero, update the landing content heroImage to point to it
+    if (category === 'hero') {
+      try {
+        await LandingContent.findOneAndUpdate({}, { heroImage: newMedia.mediaUrl }, { new: true });
+      } catch (err) {
+        logger.warn('No se pudo actualizar heroImage en LandingContent', {
+          context: 'LandingController',
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      }
+    }
+
     logger.info('Media creado', {
       context: 'LandingController',
       mediaId: newMedia._id,
@@ -521,6 +539,12 @@ export const updateMedia = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
+    // Load current media to detect category changes
+    const currentMedia = await LandingMedia.findById(id);
+    if (!currentMedia) {
+      throw new NotFoundError('Media no encontrado');
+    }
+
     const media = await LandingMedia.findByIdAndUpdate(id, req.body, {
       new: true,
       runValidators: true,
@@ -528,6 +552,26 @@ export const updateMedia = asyncHandler(async (req: Request, res: Response) => {
 
     if (!media) {
       throw new NotFoundError('Media no encontrado');
+    }
+
+    // If updated media is now hero, set landing heroImage to this mediaUrl
+    try {
+      const newCategory = (req.body && req.body.category) || media.category;
+      if (newCategory === 'hero') {
+        await LandingContent.findOneAndUpdate({}, { heroImage: media.mediaUrl }, { new: true });
+      } else if (currentMedia.category === 'hero' && newCategory !== 'hero') {
+        // If it was hero before but not anymore and it was set as heroImage, clear it
+        const landing = await LandingContent.findOne({});
+        if (landing && landing.heroImage === currentMedia.mediaUrl) {
+          landing.heroImage = null as any;
+          await landing.save();
+        }
+      }
+    } catch (err) {
+      logger.warn('No se pudo sincronizar heroImage en LandingContent tras update', {
+        context: 'LandingController',
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
     }
 
     logger.info('Media actualizado', {
@@ -562,27 +606,41 @@ export const deleteMedia = asyncHandler(async (req: Request, res: Response) => {
       throw new NotFoundError('Media no encontrado');
     }
 
-    // Si es un archivo alojado en Azure, lo eliminamos físicamente antes del registro.
-    // Si es un enlace externo (YouTube/Vimeo/etc), solo eliminamos el registro en DB.
-    if (media.mediaUrl) {
-      const parsedBlob = azureBlobStorageService.parseBlobUrl(media.mediaUrl);
-      if (parsedBlob) {
-        if (!azureBlobStorageService.isServiceConfigured()) {
-          throw new ValidationError(
-            'Azure Blob Storage no está configurado para eliminar el archivo físico'
-          );
+    // Borrado en Cloudinary (en vez de Azure)
+    if (media.mediaUrl && media.mediaUrl.includes('cloudinary')) {
+      try {
+        const publicId = extractPublicId(media.mediaUrl);
+        if (publicId) {
+          // Extraemos la ruta completa antes de la extensión para evitar errores
+          const fullPublicId = media.mediaUrl.split('/upload/')[1]?.split('.')[0]?.split('/').slice(1).join('/') || publicId;
+          await deleteLandingMediaFromCloudinary(fullPublicId);
         }
-
-        await azureBlobStorageService.deleteFile(
-          parsedBlob.containerName,
-          parsedBlob.blobName
-        );
+      } catch (error) {
+        logger.warn('No se pudo eliminar de Cloudinary, continuando...', {
+          context: 'LandingController',
+          mediaId: id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
       }
     }
 
     await media.deleteOne();
 
-    logger.info('Media eliminado de Azure y DB', {
+    // If this media was set as the hero image, clear the heroImage field
+    try {
+      const landing = await LandingContent.findOne({});
+      if (landing && landing.heroImage && landing.heroImage === media.mediaUrl) {
+        landing.heroImage = null as any;
+        await landing.save();
+      }
+    } catch (err) {
+      logger.warn('No se pudo limpiar heroImage en LandingContent tras delete', {
+        context: 'LandingController',
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+    }
+
+    logger.info('Media eliminado de Cloudinary y DB', {
       context: 'LandingController',
       mediaId: id,
       mediaUrl: media.mediaUrl,
@@ -602,17 +660,13 @@ export const deleteMedia = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * POST /api/admin/landing/media/upload - Subir archivo a Azure y crear registro en DB
+ * POST /api/admin/landing/media/upload - Subir archivo a Cloudinary y crear registro en DB
  */
 export const uploadMediaFile = asyncHandler(
   async (req: Request, res: Response) => {
     try {
       if (!req.file) {
         throw new ValidationError('No hay archivo para subir');
-      }
-
-      if (!azureBlobStorageService.isServiceConfigured()) {
-        throw new Error('Azure Blob Storage no está configurado');
       }
 
       const {
@@ -623,26 +677,19 @@ export const uploadMediaFile = asyncHandler(
         order = 0,
       } = req.body;
 
-      // Generar nombre único
-      const blobName = azureBlobStorageService.generateUniqueFileName(
-        req.file.originalname,
-        category
-      );
-
-      // Subir a Azure
-      const mediaUrl = await azureBlobStorageService.uploadFile(
-        'ja-fotos',
-        blobName,
-        req.file.buffer,
-        req.file.mimetype
-      );
-
-      // Determinar mediaType desde mimetype
+      // Determinar el mediaType basado en mimetype
       const mediaType = req.file.mimetype.startsWith('video/')
         ? 'video'
         : req.file.mimetype === 'application/pdf'
           ? 'document'
           : 'image';
+
+      // Subir a Cloudinary con nuestra nueva función y tamaño original
+      const mediaUrl = await uploadLandingMediaToCloudinary(
+        req.file.buffer,
+        mediaType as 'image' | 'video' | 'document',
+        category
+      );
 
       // Crear registro en MongoDB
       const newMedia = new LandingMedia({
@@ -657,9 +704,20 @@ export const uploadMediaFile = asyncHandler(
       });
       await newMedia.save();
 
-      logger.info('Archivo subido a Azure y guardado en DB', {
+      // If uploaded media is hero, set landing heroImage to this mediaUrl
+      if (category === 'hero') {
+        try {
+          await LandingContent.findOneAndUpdate({}, { heroImage: mediaUrl }, { new: true });
+        } catch (err) {
+          logger.warn('No se pudo actualizar heroImage en LandingContent tras upload', {
+            context: 'LandingController',
+            error: err instanceof Error ? err.message : 'Unknown error',
+          });
+        }
+      }
+
+      logger.info('Archivo subido a Cloudinary y guardado en DB', {
         context: 'LandingController',
-        blobName,
         mediaUrl,
         mediaId: newMedia._id,
       });
