@@ -77,7 +77,13 @@ echo "--------------------------------"
 cd frontend
 if [ ! -d "node_modules" ]; then
     echo "⚠️  Instalando dependencias del frontend..."
-    npm install
+    npm ci
+else
+    if ! node -e "require('rollup/dist/native')" >/dev/null 2>&1; then
+        echo "⚠️  Dependencia opcional de Rollup faltante. Reinstalando dependencias del frontend..."
+        rm -rf node_modules
+        npm ci
+    fi
 fi
 
 echo "🔍 Ejecutando linting del frontend..."
