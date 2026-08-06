@@ -19,15 +19,34 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Node.js version
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '22.x'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
 
-      - name: npm install, build, and test
+      - name: Install backend dependencies
         run: |
           cd backend
-          npm install
-          npm run build --if-present
+          npm ci
+
+      - name: Lint backend
+        run: |
+          cd backend
+          npm run lint
+
+      - name: Build backend
+        run: |
+          cd backend
+          npm run build
+
+      - name: Validate Docker compose config
+        run: |
+          docker compose config > /tmp/ja-manager-compose.yml
+
+      - name: Build Docker images
+        run: |
+          docker compose build backend frontend
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4

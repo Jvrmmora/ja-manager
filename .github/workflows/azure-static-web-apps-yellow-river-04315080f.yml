@@ -48,9 +48,17 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Lint Frontend
+        working-directory: frontend
+        run: npm run lint
+
       - name: Build Frontend (Vite)
         working-directory: frontend
         run: npm run build
+
+      - name: Validate Docker frontend image
+        run: |
+          docker compose build frontend
         env:
           VITE_API_URL: https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api
 

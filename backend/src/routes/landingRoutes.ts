@@ -102,7 +102,7 @@ router.delete('/admin/media/:id', authenticateToken, deleteMedia);
 
 /**
  * POST /api/admin/landing/media/upload
- * Subir archivo a Azure Blob Storage
+ * Subir archivo de media para la landing
  */
 router.post(
   '/admin/media/upload',
