@@ -15,6 +15,7 @@ import pointsRoutes from './routes/pointsRoutes';
 import registrationRoutes from './routes/registrationRoutes';
 import birthdayRoutes from './routes/birthdayRoutes';
 import landingRoutes from './routes/landingRoutes';
+import contactRoutes from './routes/contactRoutes';
 import { DatabaseSeeder } from './seeders/DatabaseSeeder';
 import { startBirthdayScheduler } from './services/birthdayScheduler';
 import { authenticateToken } from './middleware/auth';
@@ -200,6 +201,9 @@ const setupRoutes = () => {
 
   // Rutas de cumpleaños
   app.use('/api/birthday', ensureDatabaseConnection, birthdayRoutes);
+
+  // Ruta publica de contacto + listado admin protegido
+  app.use('/api/contact', ensureDatabaseConnection, contactRoutes);
 
   // Ruta por defecto
   app.get('/', (_req, res) => {

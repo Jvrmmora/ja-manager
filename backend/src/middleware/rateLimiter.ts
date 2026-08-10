@@ -13,6 +13,8 @@ const ipAttempts = new Map<string, RateLimitEntry>();
 const registrationHourlyAttempts = new Map<string, RateLimitEntry>();
 const registrationDailyAttempts = new Map<string, RateLimitEntry>();
 const landingVisitHourlyAttempts = new Map<string, RateLimitEntry>();
+const contactHourlyAttempts = new Map<string, RateLimitEntry>();
+const contactDailyAttempts = new Map<string, RateLimitEntry>();
 
 // Configuración Birthday
 const MAX_ATTEMPTS = 5;
@@ -28,6 +30,12 @@ const REGISTRATION_DAY_MS = 24 * 60 * 60 * 1000; // 24 horas
 // Configuración Landing Metrics
 const LANDING_VISIT_MAX_HOURLY = 240;
 const LANDING_VISIT_HOUR_MS = 60 * 60 * 1000; // 1 hora
+
+// Configuracion Contact Form
+const CONTACT_MAX_HOURLY = 4;
+const CONTACT_MAX_DAILY = 12;
+const CONTACT_HOUR_MS = 60 * 60 * 1000; // 1 hora
+const CONTACT_DAY_MS = 24 * 60 * 60 * 1000; // 24 horas
 
 /**
  * Middleware de rate limiting para reclamación de puntos de cumpleaños
@@ -230,6 +238,65 @@ export const landingVisitLimiter = (
       success: false,
       message: `Demasiadas solicitudes de tracking. Intenta de nuevo en ${remainingMinutes} minutos.`,
       retryAfter: remainingMinutes,
+    });
+    return;
+  }
+
+  next();
+};
+
+/**
+ * Middleware de rate limiting para formulario de contacto
+ * Limite: 4 intentos por hora y 12 por dia por IP
+ */
+export const contactFormLimiter = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const clientIp = getClientIp(req);
+  const now = Date.now();
+
+  let hourlyEntry = contactHourlyAttempts.get(clientIp);
+  if (!hourlyEntry || now > hourlyEntry.resetTime) {
+    hourlyEntry = {
+      count: 1,
+      resetTime: now + CONTACT_HOUR_MS,
+    };
+    contactHourlyAttempts.set(clientIp, hourlyEntry);
+  } else {
+    hourlyEntry.count++;
+  }
+
+  let dailyEntry = contactDailyAttempts.get(clientIp);
+  if (!dailyEntry || now > dailyEntry.resetTime) {
+    dailyEntry = {
+      count: 1,
+      resetTime: now + CONTACT_DAY_MS,
+    };
+    contactDailyAttempts.set(clientIp, dailyEntry);
+  } else {
+    dailyEntry.count++;
+  }
+
+  if (hourlyEntry.count > CONTACT_MAX_HOURLY) {
+    const remainingMinutes = Math.ceil((hourlyEntry.resetTime - now) / 1000 / 60);
+
+    res.status(429).json({
+      success: false,
+      message: `Demasiados intentos de contacto. Intenta de nuevo en ${remainingMinutes} minutos.`,
+      retryAfter: remainingMinutes,
+    });
+    return;
+  }
+
+  if (dailyEntry.count > CONTACT_MAX_DAILY) {
+    const remainingHours = Math.ceil((dailyEntry.resetTime - now) / 1000 / 60 / 60);
+
+    res.status(429).json({
+      success: false,
+      message: `Has alcanzado el limite diario de mensajes. Intenta de nuevo en ${remainingHours} horas.`,
+      retryAfter: remainingHours * 60,
     });
     return;
   }

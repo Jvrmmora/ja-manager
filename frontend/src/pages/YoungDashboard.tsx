@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { EyeIcon } from '@heroicons/react/24/outline';
 import ProfileDropdown from '../components/ProfileDropdown';
 import ThemeToggle from '../components/ThemeToggle';
@@ -48,6 +49,7 @@ const SeasonDataUpdater: React.FC<{ activeSeason: ISeason | null }> = ({
 };
 
 const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
+  const navigate = useNavigate();
   const [userInfo, setUserInfo] = useState<any>(null);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -297,7 +299,12 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               {/* Logo y título */}
-              <div className="flex items-center space-x-4">
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="flex items-center space-x-4 text-left rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Ir a la landing"
+              >
                 <div className="w-8 h-8">
                   <img
                     src={logo}
@@ -313,7 +320,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
                     Tu espacio personal en JA Manager
                   </p>
                 </div>
-              </div>
+              </button>
 
               {/* Theme Toggle y Profile Dropdown */}
               <div className="flex items-center space-x-4">

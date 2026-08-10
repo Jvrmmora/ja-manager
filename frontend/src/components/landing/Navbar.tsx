@@ -13,7 +13,11 @@ const NAV_ITEMS = [
   { id: 'location', label: 'Ubicación' },
 ];
 
-export default function Navbar() {
+interface NavbarProps {
+  onOpenContact?: () => void;
+}
+
+export default function Navbar({ onOpenContact }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('about');
@@ -63,34 +67,34 @@ export default function Navbar() {
   }, []);
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm shadow-sm border-b border-gray-200/80 dark:border-gray-700/80">
+    <nav className="sticky top-0 z-50 bg-white/98 dark:bg-gray-900/98 backdrop-blur-md border-b border-gray-200/60 dark:border-gray-700/60 shadow-[0_2px_15px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.3)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo + Brand */}
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 hover:opacity-90 transition-opacity duration-200 flex-shrink-0"
           >
             <img
               src={logo}
               alt="JA Modelia Bogotá"
-              className="h-9 w-9 object-contain flex-shrink-0"
+              className="h-10 w-10 object-contain flex-shrink-0"
             />
-            <span className="font-bold text-gray-900 dark:text-white text-sm sm:text-base leading-snug">
+            <span className="font-bold text-gray-900 dark:text-white text-base hidden sm:inline leading-tight">
               Jóvenes Modelia Bogotá
             </span>
           </button>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-0.5">
             {NAV_ITEMS.map(({ id, label }) => (
               <button
                 key={id}
                 onClick={() => scrollToSection(id)}
-                className={`px-3.5 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   activeSection === id
-                    ? 'text-blue-700 dark:text-blue-300 bg-gradient-to-b from-blue-50 to-blue-100/70 dark:from-blue-900/35 dark:to-blue-800/30 ring-1 ring-blue-200/80 dark:ring-blue-700/70 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100/80 dark:hover:bg-gray-800/80'
+                    ? 'text-blue-700 dark:text-blue-300 bg-gradient-to-b from-blue-50 to-blue-100/50 dark:from-blue-900/40 dark:to-blue-800/20 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-800/50'
                 }`}
               >
                 {label}
@@ -99,10 +103,32 @@ export default function Navbar() {
           </div>
 
           {/* Right actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
+            {onOpenContact && (
+              <button
+                onClick={onOpenContact}
+                className="hidden md:inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-lg transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+                Contacto
+              </button>
+            )}
+
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
               aria-label="Cambiar tema"
             >
               {theme === 'dark' ? (
@@ -130,7 +156,7 @@ export default function Navbar() {
 
             <button
               onClick={() => navigate('/login')}
-              className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
+              className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               Ingresar
             </button>
@@ -138,7 +164,7 @@ export default function Navbar() {
             {/* Mobile hamburger */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="md:hidden p-2.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
               aria-label="Abrir menú"
             >
               <svg
@@ -170,12 +196,12 @@ export default function Navbar() {
 
       {/* Mobile dropdown */}
       {isMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 space-y-1">
+        <div className="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-3 space-y-1">
           {NAV_ITEMS.map(({ id, label }) => (
             <button
               key={id}
               onClick={() => scrollToSection(id)}
-              className={`block w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+              className={`block w-full text-left px-3.5 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ${
                 activeSection === id
                   ? 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-200/70 dark:ring-blue-700/60'
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -185,9 +211,33 @@ export default function Navbar() {
             </button>
           ))}
           <div className="pt-2 pb-1 border-t border-gray-100 dark:border-gray-800">
+            {onOpenContact && (
+              <button
+                onClick={() => {
+                  onOpenContact();
+                  setIsMenuOpen(false);
+                }}
+                className="w-full mb-2 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+                Contacto
+              </button>
+            )}
             <button
               onClick={() => navigate('/login')}
-              className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              className="w-full px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               Ingresar
             </button>

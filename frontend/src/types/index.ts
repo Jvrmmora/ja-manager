@@ -313,3 +313,14 @@ export interface RegistrationRequestsPaginationQuery {
   sortBy?: 'createdAt' | 'fullName' | 'email' | 'status';
   sortOrder?: 'asc' | 'desc';
 }
+
+// ===== Mensajes de Contacto =====
+export interface IContactMessage {
+  _id?: string;
+  id?: string;
+  fullName: string;
+  email: string;
+  message: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}

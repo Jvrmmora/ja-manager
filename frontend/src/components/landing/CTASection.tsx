@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { normalizeRichTextHtml } from '../../utils/richText';
+import { normalizeWhatsAppUrl } from '../../utils/whatsapp';
 
 interface CTASectionProps {
   title?: string;
@@ -7,10 +8,8 @@ interface CTASectionProps {
   primaryLabel?: string;
   secondaryLabel?: string;
   whatsappUrl?: string;
+  onOpenContact?: () => void;
 }
-
-const DEFAULT_WHATSAPP_URL =
-  'https://wa.me/?text=Hola%20Jóvenes%20Modelia,%20quisiera%20conocer%20más%20de%20su%20grupo';
 
 export default function CTASection({
   title,
@@ -18,9 +17,10 @@ export default function CTASection({
   primaryLabel,
   secondaryLabel,
   whatsappUrl,
+  onOpenContact,
 }: CTASectionProps) {
   const navigate = useNavigate();
-  const finalWhatsAppUrl = whatsappUrl?.trim() || DEFAULT_WHATSAPP_URL;
+  const finalWhatsAppUrl = normalizeWhatsAppUrl(whatsappUrl);
 
   return (
     <section className="py-20 px-4 bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-800 dark:to-blue-900">
@@ -77,6 +77,19 @@ export default function CTASection({
             </svg>
             {primaryLabel || 'Contactar por WhatsApp'}
           </a>
+
+          {onOpenContact && (
+            <button
+              onClick={onOpenContact}
+              className="px-8 py-4 bg-blue-900/40 border border-blue-200/40 text-white font-bold rounded-lg hover:bg-blue-900/55 transition transform hover:scale-105 text-lg inline-flex items-center justify-center gap-2 group"
+            >
+              <svg className="w-5 h-5 group-hover:animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+              </svg>
+              Contáctanos
+            </button>
+          )}
         </div>
       </div>
     </section>

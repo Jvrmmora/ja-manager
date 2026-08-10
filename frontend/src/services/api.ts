@@ -46,7 +46,7 @@ export const apiRequest = async (
     ...(options.headers as Record<string, string>),
   };
 
-  // Agregar token de autorización si existe
+  // Agregar token de autorización si existe (siempre va al final para no ser sobrescrito)
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
     console.log(`🔐 Authorization header agregado`);
@@ -55,8 +55,8 @@ export const apiRequest = async (
   }
 
   return fetch(url, {
-    headers,
     ...options,
+    headers,
   });
 };
 

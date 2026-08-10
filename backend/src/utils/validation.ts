@@ -393,3 +393,30 @@ export const reviewRequestSchema = Joi.object({
       'string.max': 'La razón de rechazo no puede exceder 500 caracteres',
     }),
 });
+
+export const contactMessageSchema = Joi.object({
+  fullName: Joi.string().trim().min(2).max(100).required().messages({
+    'string.empty': 'El nombre es obligatorio',
+    'string.min': 'El nombre debe tener al menos 2 caracteres',
+    'string.max': 'El nombre no puede exceder 100 caracteres',
+    'any.required': 'El nombre es obligatorio',
+  }),
+
+  email: Joi.string().email().trim().lowercase().required().messages({
+    'string.empty': 'El correo es obligatorio',
+    'string.email': 'Formato de correo no valido',
+    'any.required': 'El correo es obligatorio',
+  }),
+
+  message: Joi.string().trim().min(10).max(2000).required().messages({
+    'string.empty': 'El mensaje es obligatorio',
+    'string.min': 'El mensaje debe tener al menos 10 caracteres',
+    'string.max': 'El mensaje no puede exceder 2000 caracteres',
+    'any.required': 'El mensaje es obligatorio',
+  }),
+});
+
+export const contactMessagesQuerySchema = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(50).default(10),
+});

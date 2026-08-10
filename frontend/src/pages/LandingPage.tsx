@@ -17,6 +17,7 @@ import SocialLinksSection from '../components/landing/SocialLinksSection.tsx';
 import CTASection from '../components/landing/CTASection.tsx';
 import Footer from '../components/landing/Footer.tsx';
 import CookieNoticeBanner from '../components/landing/CookieNoticeBanner';
+import ContactModal from '../components/landing/ContactModal';
 
 interface LandingContent {
   _id: string;
@@ -133,6 +134,7 @@ export default function LandingPage() {
     useState<LandingVisitorMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   useEffect(() => {
     fetchLandingContent();
@@ -381,11 +383,15 @@ export default function LandingPage() {
     <div className={`${theme === 'dark' ? 'dark' : ''}`}>
       <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
         {/* Navbar */}
-        <Navbar />
+        <Navbar onOpenContact={() => setShowContactModal(true)} />
 
         {/* Hero Section */}
         {isSectionVisible('hero') && (
-          <HeroSection content={normalizedContent} heroMedia={heroMedia} />
+          <HeroSection
+            content={normalizedContent}
+            heroMedia={heroMedia}
+            whatsappUrl={content.social?.whatsapp}
+          />
         )}
 
         {/* About Section */}
@@ -455,12 +461,16 @@ export default function LandingPage() {
         )}
 
         {/* CTA Section */}
-        <CTASection {...ctaProps} />
+        <CTASection
+          {...ctaProps}
+          onOpenContact={() => setShowContactModal(true)}
+        />
 
         {/* Footer */}
         <Footer
           addressLabel={content.addressLabel}
           social={content.social}
+          onOpenContact={() => setShowContactModal(true)}
           {...(visitorMetrics?.year !== undefined
             ? { visitorYear: visitorMetrics.year }
             : {})}
@@ -473,6 +483,10 @@ export default function LandingPage() {
         />
 
         <CookieNoticeBanner />
+        <ContactModal
+          isOpen={showContactModal}
+          onClose={() => setShowContactModal(false)}
+        />
       </div>
     </div>
   );

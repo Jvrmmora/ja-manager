@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { normalizeWhatsAppUrl } from '../../utils/whatsapp';
 
 interface HeroSectionProps {
   content: {
@@ -12,10 +13,16 @@ interface HeroSectionProps {
     altText: string;
     mediaType?: 'image' | 'video' | 'document';
   };
+  whatsappUrl?: string;
 }
 
-export default function HeroSection({ content, heroMedia }: HeroSectionProps) {
+export default function HeroSection({
+  content,
+  heroMedia,
+  whatsappUrl,
+}: HeroSectionProps) {
   const navigate = useNavigate();
+  const finalWhatsAppUrl = normalizeWhatsAppUrl(whatsappUrl);
 
   return (
     <section
@@ -96,7 +103,7 @@ export default function HeroSection({ content, heroMedia }: HeroSectionProps) {
           </button>
 
           <a
-            href="https://wa.me/?text=Hola%20Jóvenes%20Modelia,%20quisiera%20conocer%20más%20de%20su%20grupo"
+            href={finalWhatsAppUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition transform hover:scale-105 flex items-center justify-center gap-2"

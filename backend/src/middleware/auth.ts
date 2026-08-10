@@ -46,6 +46,9 @@ export const SCOPES = {
   'registration:create': 'Crear solicitud de registro',
   'registration:read': 'Ver solicitudes de registro',
   'registration:review': 'Revisar solicitudes de registro',
+
+  // Contact endpoints
+  'contact:read': 'Ver mensajes de contacto',
 } as const;
 
 /**
