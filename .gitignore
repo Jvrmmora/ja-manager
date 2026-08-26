@@ -114,3 +114,7 @@ uploads/
 
 # MongoDB data
 data/
+
+#graphify
+graphify-out
+.graphifyignore
