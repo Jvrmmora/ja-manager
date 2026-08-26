@@ -8,6 +8,7 @@ import PageLoader from './components/PageLoader';
 import { authService } from './services/auth';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import GoogleAnalytics from './components/GoogleAnalytics';
 
 // Lazy loading de páginas para code splitting
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -143,6 +144,7 @@ function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
+        <GoogleAnalytics />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Root: Landing page (public, no auth required) */}

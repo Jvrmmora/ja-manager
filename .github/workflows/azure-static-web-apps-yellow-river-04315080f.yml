@@ -56,6 +56,8 @@ jobs:
       - name: Build Frontend (Vite)
         working-directory: frontend
         run: npm run build
+        env:
+          VITE_GA_MEASUREMENT_ID: ${{ secrets.VITE_GA_MEASUREMENT_ID }}
 
       - name: Validate Docker frontend image
         run: |

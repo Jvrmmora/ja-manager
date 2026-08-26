@@ -162,17 +162,25 @@ Debe mostrar el XML con las URLs de tu sitio.
 
 Cuando agregues nuevas páginas, actualiza `sitemap.xml` o implementa generación dinámica.
 
-### 3. Google Analytics (Opcional)
+### 3. Google Analytics 4
 
-Agrega Google Analytics para tracking:
+La aplicación ya incluye integración para una propiedad GA4 y registra las vistas
+de las páginas públicas cuando existe `VITE_GA_MEASUREMENT_ID`. No agregues otra
+etiqueta de Google Analytics en `index.html`, porque produciría mediciones duplicadas.
 
-```html
-<!-- Google tag (gtag.js) -->
-<script
-  async
-  src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"
-></script>
-```
+1. Entra a [Google Analytics](https://analytics.google.com/), crea una cuenta o
+   selecciona la existente y crea una propiedad GA4.
+2. En **Administrador → Flujos de datos → Web**, crea un flujo con
+   `https://jovenesmodelia.com`.
+3. Copia el **ID de medición**, con formato `G-XXXXXXXXXX`.
+4. Configura `VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX` en las variables de entorno
+   del frontend de cada entorno. En local puedes usar un archivo `.env.local`.
+5. Vuelve a construir y desplegar el frontend. En Analytics abre **Informes →
+   Tiempo real** y visita la web en una ventana de incógnito para comprobarlo.
+
+La integración respeta la navegación SPA y excluye las rutas `/admin` y
+`/dashboard`. No envíes nombres, teléfonos, correos ni otros datos personales a
+Analytics.
 
 ### 4. Google Tag Manager (Opcional)
 
