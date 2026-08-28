@@ -164,7 +164,24 @@ const isVimeoUrl = (url: string) => /vimeo\.com\//i.test(url);
 const toEmbeddableUrl = (url: string): string => {
   const videoId = getYouTubeVideoId(url);
   if (videoId) {
-    return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+    try {
+      const parsed = new URL(url.trim());
+      const params = new URLSearchParams();
+
+      ['si', 'start', 't', 'end', 'list', 'index', 'autoplay', 'mute', 'loop', 'playsinline', 'rel', 'origin']
+        .forEach(key => {
+          const value = parsed.searchParams.get(key);
+          if (value) params.set(key, value);
+        });
+
+      if (!params.has('rel')) params.set('rel', '0');
+      if (!params.has('modestbranding')) params.set('modestbranding', '1');
+
+      const query = params.toString();
+      return `https://www.youtube.com/embed/${videoId}${query ? `?${query}` : ''}`;
+    } catch {
+      return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+    }
   }
 
   if (isVimeoUrl(url)) {
@@ -239,6 +256,19 @@ const EMPTY_LANDING_CONTENT: LandingContent = {
   seoTitle: '',
   seoDescription: '',
   isPublished: true,
+};
+
+const MAX_MEDIA_DESCRIPTION_LENGTH = 700;
+
+const getPlainTextLength = (htmlValue: string) => {
+  const plainText = htmlValue
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return plainText.length;
 };
 
 const normalizeLandingContent = (
@@ -571,6 +601,15 @@ export default function LandingCMSPage() {
   };
 
   const handleUploadMedia = async () => {
+    const descriptionLength = getPlainTextLength(uploadDescription);
+    if (descriptionLength > MAX_MEDIA_DESCRIPTION_LENGTH) {
+      showToast(
+        `La descripción no puede exceder ${MAX_MEDIA_DESCRIPTION_LENGTH} caracteres`,
+        'error'
+      );
+      return;
+    }
+
     if (uploadMode === 'link') {
       if (!uploadLinkUrl.trim()) {
         showToast('Pega un enlace primero', 'error');
@@ -685,6 +724,15 @@ export default function LandingCMSPage() {
     if (!editingMedia) return;
     if (!editingMediaTitle.trim()) {
       showToast('El título es requerido', 'error');
+      return;
+    }
+
+    const descriptionLength = getPlainTextLength(editingMediaDescription);
+    if (descriptionLength > MAX_MEDIA_DESCRIPTION_LENGTH) {
+      showToast(
+        `La descripción no puede exceder ${MAX_MEDIA_DESCRIPTION_LENGTH} caracteres`,
+        'error'
+      );
       return;
     }
 
@@ -1717,6 +1765,17 @@ export default function LandingCMSPage() {
                       placeholder="Describe el recurso o evento..."
                       minHeightClassName="min-h-[120px]"
                     />
+                    <div className="flex justify-end mt-2 text-xs">
+                      <span
+                        className={
+                          getPlainTextLength(uploadDescription) > MAX_MEDIA_DESCRIPTION_LENGTH
+                            ? 'text-red-600 dark:text-red-400'
+                            : 'text-gray-500 dark:text-gray-400'
+                        }
+                      >
+                        {getPlainTextLength(uploadDescription)}/{MAX_MEDIA_DESCRIPTION_LENGTH}
+                      </span>
+                    </div>
                   </div>
                   <input
                     className={fieldClass}
@@ -1943,6 +2002,17 @@ export default function LandingCMSPage() {
                         placeholder="Describe el recurso..."
                         minHeightClassName="min-h-[140px]"
                       />
+                      <div className="flex justify-end mt-2 text-xs">
+                        <span
+                          className={
+                            getPlainTextLength(editingMediaDescription) > MAX_MEDIA_DESCRIPTION_LENGTH
+                              ? 'text-red-600 dark:text-red-400'
+                              : 'text-gray-500 dark:text-gray-400'
+                          }
+                        >
+                          {getPlainTextLength(editingMediaDescription)}/{MAX_MEDIA_DESCRIPTION_LENGTH}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 items-center">

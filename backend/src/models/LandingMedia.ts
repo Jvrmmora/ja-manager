@@ -30,7 +30,7 @@ const landingMediaSchema = new Schema<ILandingMedia>(
     description: {
       type: String,
       trim: true,
-      maxlength: [500, 'La descripción no puede exceder 500 caracteres'],
+      maxlength: [700, 'La descripción no puede exceder 700 caracteres'],
     },
     mediaUrl: {
       type: String,

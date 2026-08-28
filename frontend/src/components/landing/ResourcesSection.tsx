@@ -43,7 +43,24 @@ const isPdfUrl = (url: string) => /\.pdf(\?|#|$)/i.test(url);
 const toEmbeddableUrl = (url: string): string => {
   const videoId = getYouTubeVideoId(url);
   if (videoId) {
-    return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+    try {
+      const parsed = new URL(url.trim());
+      const params = new URLSearchParams();
+
+      ['si', 'start', 't', 'end', 'list', 'index', 'autoplay', 'mute', 'loop', 'playsinline', 'rel', 'origin']
+        .forEach(key => {
+          const value = parsed.searchParams.get(key);
+          if (value) params.set(key, value);
+        });
+
+      if (!params.has('rel')) params.set('rel', '0');
+      if (!params.has('modestbranding')) params.set('modestbranding', '1');
+
+      const query = params.toString();
+      return `https://www.youtube.com/embed/${videoId}${query ? `?${query}` : ''}`;
+    } catch {
+      return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+    }
   }
 
   if (isVimeoUrl(url)) {
