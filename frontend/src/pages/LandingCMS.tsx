@@ -142,16 +142,33 @@ const fieldClass =
   'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500';
 
 const getYouTubeVideoId = (url: string): string | null => {
-  const patterns = [
-    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?.*?[?&]v=([A-Za-z0-9_-]{11})/i,
-    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{11})/i,
-    /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([A-Za-z0-9_-]{11})/i,
-    /(?:https?:\/\/)?(?:www\.)?youtube-nocookie\.com\/embed\/([A-Za-z0-9_-]{11})/i,
-  ];
+  try {
+    const parsed = new URL(url.trim());
+    const hostname = parsed.hostname.toLowerCase();
 
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match?.[1]) return match[1];
+    if (hostname.includes('youtu.be')) {
+      return parsed.pathname.replace(/^\/+/, '').split('/')[0] || null;
+    }
+
+    if (hostname.includes('youtube.com')) {
+      const videoId = parsed.searchParams.get('v');
+      if (videoId) return videoId;
+
+      const pathParts = parsed.pathname.split('/').filter(Boolean);
+      const segment = pathParts[0];
+      if ((segment === 'shorts' || segment === 'live' || segment === 'embed') && pathParts[1]) {
+        return pathParts[1];
+      }
+    }
+
+    if (hostname.includes('youtube-nocookie.com')) {
+      const pathParts = parsed.pathname.split('/').filter(Boolean);
+      if (pathParts[0] === 'embed' && pathParts[1]) {
+        return pathParts[1];
+      }
+    }
+  } catch {
+    // ignore invalid URL format
   }
 
   return null;
@@ -168,14 +185,14 @@ const toEmbeddableUrl = (url: string): string => {
       const parsed = new URL(url.trim());
       const params = new URLSearchParams();
 
-      ['si', 'start', 't', 'end', 'list', 'index', 'autoplay', 'mute', 'loop', 'playsinline', 'rel', 'origin']
+      ['si', 'start', 't', 'end', 'list', 'index', 'autoplay', 'mute', 'loop', 'playsinline', 'origin']
         .forEach(key => {
           const value = parsed.searchParams.get(key);
           if (value) params.set(key, value);
         });
 
-      if (!params.has('rel')) params.set('rel', '0');
-      if (!params.has('modestbranding')) params.set('modestbranding', '1');
+      params.set('rel', '0');
+      params.set('modestbranding', '1');
 
       const query = params.toString();
       return `https://www.youtube.com/embed/${videoId}${query ? `?${query}` : ''}`;
@@ -317,6 +334,7 @@ export default function LandingCMSPage() {
   // Media state
   const [media, setMedia] = useState<LandingMedia[]>([]);
   const [mediaFilter, setMediaFilter] = useState<MediaCategory | 'all'>('all');
+  const [blockedVideos, setBlockedVideos] = useState<Record<string, boolean>>({});
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [uploadTitle, setUploadTitle] = useState('');
@@ -1868,14 +1886,34 @@ export default function LandingCMSPage() {
                         {img.mediaType === 'video' &&
                           (isYouTubeUrl(img.mediaUrl) ||
                           isVimeoUrl(img.mediaUrl) ? (
-                            <iframe
-                              src={toEmbeddableUrl(img.mediaUrl)}
-                              title={img.title}
-                              className="w-full h-32"
-                              loading="lazy"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
-                            />
+                            blockedVideos[img._id] ? (
+                              <div className="w-full h-32 bg-black/90 flex items-center justify-center text-center px-2">
+                                <div>
+                                  <p className="text-white text-xs font-semibold">Video bloqueado</p>
+                                  <a
+                                    href={img.mediaUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-block mt-2 text-[11px] font-medium text-blue-300 underline"
+                                  >
+                                    Abrir enlace
+                                  </a>
+                                </div>
+                              </div>
+                            ) : (
+                              <iframe
+                                src={toEmbeddableUrl(img.mediaUrl)}
+                                title={img.title}
+                                className="w-full h-32"
+                                loading="lazy"
+                                referrerPolicy="strict-origin-when-cross-origin"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowFullScreen
+                                onError={() =>
+                                  setBlockedVideos(prev => ({ ...prev, [img._id]: true }))
+                                }
+                              />
+                            )
                           ) : (
                             <video
                               src={img.mediaUrl}

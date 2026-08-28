@@ -19,16 +19,33 @@ interface ResourcesSectionProps {
 const MAX_VISIBLE_CARDS = 6;
 
 const getYouTubeVideoId = (url: string): string | null => {
-  const patterns = [
-    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?.*?[?&]v=([A-Za-z0-9_-]{11})/i,
-    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{11})/i,
-    /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([A-Za-z0-9_-]{11})/i,
-    /(?:https?:\/\/)?(?:www\.)?youtube-nocookie\.com\/embed\/([A-Za-z0-9_-]{11})/i,
-  ];
+  try {
+    const parsed = new URL(url.trim());
+    const hostname = parsed.hostname.toLowerCase();
 
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match?.[1]) return match[1];
+    if (hostname.includes('youtu.be')) {
+      return parsed.pathname.replace(/^\/+/, '').split('/')[0] || null;
+    }
+
+    if (hostname.includes('youtube.com')) {
+      const videoId = parsed.searchParams.get('v');
+      if (videoId) return videoId;
+
+      const pathParts = parsed.pathname.split('/').filter(Boolean);
+      const segment = pathParts[0];
+      if ((segment === 'shorts' || segment === 'live' || segment === 'embed') && pathParts[1]) {
+        return pathParts[1];
+      }
+    }
+
+    if (hostname.includes('youtube-nocookie.com')) {
+      const pathParts = parsed.pathname.split('/').filter(Boolean);
+      if (pathParts[0] === 'embed' && pathParts[1]) {
+        return pathParts[1];
+      }
+    }
+  } catch {
+    // ignore invalid URL format
   }
 
   return null;
@@ -47,14 +64,14 @@ const toEmbeddableUrl = (url: string): string => {
       const parsed = new URL(url.trim());
       const params = new URLSearchParams();
 
-      ['si', 'start', 't', 'end', 'list', 'index', 'autoplay', 'mute', 'loop', 'playsinline', 'rel', 'origin']
+      ['si', 'start', 't', 'end', 'list', 'index', 'autoplay', 'mute', 'loop', 'playsinline', 'origin']
         .forEach(key => {
           const value = parsed.searchParams.get(key);
           if (value) params.set(key, value);
         });
 
-      if (!params.has('rel')) params.set('rel', '0');
-      if (!params.has('modestbranding')) params.set('modestbranding', '1');
+      params.set('rel', '0');
+      params.set('modestbranding', '1');
 
       const query = params.toString();
       return `https://www.youtube.com/embed/${videoId}${query ? `?${query}` : ''}`;
@@ -89,6 +106,7 @@ export default function ResourcesSection({
   const [selectedResource, setSelectedResource] =
     useState<ResourceMedia | null>(null);
   const [showAllResources, setShowAllResources] = useState(false);
+  const [blockedVideos, setBlockedVideos] = useState<Record<string, boolean>>({});
   const visibleResources = showAllResources
     ? resourcesMedia
     : resourcesMedia.slice(0, MAX_VISIBLE_CARDS);
@@ -140,14 +158,34 @@ export default function ResourcesSection({
                       {item.mediaType === 'video' &&
                         (isYouTubeUrl(item.mediaUrl) ||
                         isVimeoUrl(item.mediaUrl) ? (
-                          <iframe
-                            src={toEmbeddableUrl(item.mediaUrl)}
-                            title={item.title}
-                            className="w-full h-full"
-                            loading="lazy"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          />
+                          blockedVideos[item._id] ? (
+                            <div className="w-full h-full bg-black/90 flex items-center justify-center text-center px-4">
+                              <div>
+                                <p className="text-white text-sm font-semibold">No se pudo reproducir este video</p>
+                                <a
+                                  href={item.mediaUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-block mt-3 text-sm font-medium text-blue-300 hover:text-blue-200 underline"
+                                >
+                                  Abrir en YouTube
+                                </a>
+                              </div>
+                            </div>
+                          ) : (
+                            <iframe
+                              src={toEmbeddableUrl(item.mediaUrl)}
+                              title={item.title}
+                              className="w-full h-full"
+                              loading="lazy"
+                              referrerPolicy="strict-origin-when-cross-origin"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                              allowFullScreen
+                              onError={() =>
+                                setBlockedVideos(prev => ({ ...prev, [item._id]: true }))
+                              }
+                            />
+                          )
                         ) : (
                           <video
                             src={item.mediaUrl}
