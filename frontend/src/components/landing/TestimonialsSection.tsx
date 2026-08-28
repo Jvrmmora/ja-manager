@@ -16,17 +16,30 @@ interface TestimonialsSectionProps {
 }
 
 
-const isYouTubeUrl = (url: string) =>
-  /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/i.test(url);
+const getYouTubeVideoId = (url: string): string | null => {
+  const patterns = [
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?.*?[?&]v=([A-Za-z0-9_-]{11})/i,
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{11})/i,
+    /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([A-Za-z0-9_-]{11})/i,
+    /(?:https?:\/\/)?(?:www\.)?youtube-nocookie\.com\/embed\/([A-Za-z0-9_-]{11})/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match?.[1]) return match[1];
+  }
+
+  return null;
+};
+
+const isYouTubeUrl = (url: string) => !!getYouTubeVideoId(url);
 
 const isVimeoUrl = (url: string) => /vimeo\.com\//i.test(url);
 
 const toEmbeddableUrl = (url: string): string => {
-  if (isYouTubeUrl(url)) {
-    const match = url.match(
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{6,})/
-    );
-    return match?.[1] ? `https://www.youtube.com/embed/${match[1]}` : url;
+  const videoId = getYouTubeVideoId(url);
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
   }
 
   if (isVimeoUrl(url)) {
