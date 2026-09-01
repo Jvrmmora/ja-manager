@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { JWTService } from '../services/jwtService';
 import Role from '../models/Role';
 import { IAuthUser } from '../types';
+import logger from '../utils/logger';
 
 // Extender el Request para incluir información del usuario autenticado
 declare global {
@@ -103,7 +104,7 @@ export const authenticateToken = async (
     req.userRole = role;
     next();
   } catch (error) {
-    console.error('Error en autenticación:', error);
+    logger.error('Error en autenticación', { error });
     return res.status(500).json({
       success: false,
       error: 'Error interno del servidor',
@@ -138,7 +139,7 @@ export const requireScope = (requiredScope: keyof typeof SCOPES) => {
 
       next();
     } catch (error) {
-      console.error('Error verificando scopes:', error);
+      logger.error('Error verificando scopes', { error });
       return res.status(500).json({
         success: false,
         error: 'Error interno del servidor',

@@ -169,7 +169,7 @@ export class AuthController {
         },
       });
     } catch (error) {
-      console.error('Error obteniendo perfil:', error);
+      logger.error('Error obteniendo perfil', { error });
       res.status(500).json({
         success: false,
         error: 'Error interno del servidor',

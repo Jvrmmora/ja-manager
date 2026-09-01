@@ -1,7 +1,7 @@
-import mongoose from 'mongoose';
 import Young from '../models/Young';
 import Role from '../models/Role';
 import { SCOPES } from '../middleware/auth';
+import { env } from '../config/env';
 import logger from '../utils/logger';
 
 export class DatabaseSeeder {
@@ -105,20 +105,35 @@ export class DatabaseSeeder {
   }
 
   /**
-   * Crear usuario Super Admin semilla
+   * Crear usuario Super Admin semilla.
+   *
+   * Las credenciales NUNCA se hardcodean: se toman de las variables de entorno
+   * SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD y sólo se ejecuta si
+   * SEED_ADMIN_ENABLED=true. Si no están configuradas, se omite con un aviso.
    */
   static async createSuperAdminUser(): Promise<any> {
     try {
+      if (!env.seedAdmin.enabled) {
+        return null;
+      }
+
+      const { email, password } = env.seedAdmin;
+      if (!email || !password) {
+        logger.warn(
+          '⚠️  SEED_ADMIN_ENABLED=true pero faltan SEED_ADMIN_EMAIL o SEED_ADMIN_PASSWORD. Se omite la creación del Super Admin.',
+          { context: 'DatabaseSeeder', type: 'seed_admin_skipped' }
+        );
+        return null;
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+
       // Verificar si el usuario ya existe
-      const existingUser = await Young.findOne({ 
-        email: 'jvrm.mora@gmail.com' 
-      });
-      
+      const existingUser = await Young.findOne({ email: normalizedEmail });
       if (existingUser) {
         logger.info('✅ Usuario Super Admin ya existe', {
           context: 'DatabaseSeeder',
           type: 'user_exists',
-          email: existingUser.email
         });
         return existingUser;
       }
@@ -126,35 +141,40 @@ export class DatabaseSeeder {
       // Obtener el rol Super Admin
       const superAdminRole = await Role.findOne({ name: 'Super Admin' });
       if (!superAdminRole) {
-        throw new Error('Rol Super Admin no encontrado. Ejecute createSuperAdminRole() primero.');
+        throw new Error(
+          'Rol Super Admin no encontrado. Ejecute createSuperAdminRole() primero.'
+        );
       }
+
+      const consecutive = await this.generateUniqueConsecutive();
 
       // Crear el usuario Super Admin
       const superAdminUser = new Young({
-        fullName: 'Javier',
-        email: 'jvrm.mora@gmail.com',
-        password: 'Pinzon280615*', // Se encriptará automáticamente por el middleware
+        fullName: 'Super Admin',
+        email: normalizedEmail,
+        password, // Se encriptará automáticamente por el middleware pre-save
         role_id: superAdminRole._id,
         role_name: 'Super Admin',
-        placa: '@MODJAVI001', // Placa específica para Javier
+        placa: `@MODADMN${consecutive}`,
         ageRange: '22-25',
-        phone: '+573000000000',
-        birthday: new Date('1995-06-28'),
-        gender: 'masculino',
-        role: 'director', // Rol tradicional del sistema
-        skills: ['administración', 'liderazgo', 'desarrollo'],
-        group: 1
+        birthday: new Date('1995-01-01'),
+        role: 'director',
+        group: 1,
+        first_login: true,
       });
 
       await superAdminUser.save();
-    
-      
-      return superAdminUser;
 
+      logger.info('✅ Usuario Super Admin creado desde SEED_ADMIN_*', {
+        context: 'DatabaseSeeder',
+        type: 'user_created',
+      });
+
+      return superAdminUser;
     } catch (error) {
       logger.error('❌ Error creando usuario Super Admin:', error, {
         context: 'DatabaseSeeder',
-        type: 'user_creation_error'
+        type: 'user_creation_error',
       });
       throw error;
     }
@@ -209,10 +229,10 @@ export class DatabaseSeeder {
       
       // Crear rol Young
       await this.createYoungRole();
-      
-      // Crear usuario Super Admin
-      // await this.createSuperAdminUser();
-      
+
+      // Crear usuario Super Admin sólo si SEED_ADMIN_ENABLED=true
+      await this.createSuperAdminUser();
+
       logger.info('🎉 Proceso de seeding completado exitosamente', {
         context: 'DatabaseSeeder',
         type: 'completed'

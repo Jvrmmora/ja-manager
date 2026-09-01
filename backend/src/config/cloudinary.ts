@@ -1,13 +1,12 @@
 import { v2 as cloudinary } from 'cloudinary';
-import dotenv from 'dotenv';
+import { env } from './env';
+import logger from '../utils/logger';
 
-dotenv.config();
-
-// Configuración de Cloudinary
+// Configuración de Cloudinary (las credenciales se validan en config/env.ts)
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'default-cloud',
-  api_key: process.env.CLOUDINARY_API_KEY || 'default-api-key',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'default-api-secret',
+  cloud_name: env.cloudinary.cloudName,
+  api_key: env.cloudinary.apiKey,
+  api_secret: env.cloudinary.apiSecret,
 });
 
 export const uploadToCloudinary = async (
@@ -39,7 +38,7 @@ export const deleteFromCloudinary = async (publicId: string): Promise<void> => {
   try {
     await cloudinary.uploader.destroy(publicId);
   } catch (error) {
-    console.error('Error eliminando imagen de Cloudinary:', error);
+    logger.error('Error eliminando imagen de Cloudinary', { error });
     throw error;
   }
 };
@@ -93,7 +92,7 @@ export const deleteLandingMediaFromCloudinary = async (publicId: string): Promis
     
     await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
   } catch (error) {
-    console.error('Error eliminando media de Cloudinary:', error);
+    logger.error('Error eliminando media de Cloudinary', { error });
     throw error;
   }
 };
