@@ -1,25 +1,38 @@
-# Backend Dockerfile
-FROM node:20.18-alpine3.20
+# ---------- Build stage ----------
+FROM node:20.18-alpine3.20 AS builder
 
 WORKDIR /app
 
-# Copiar package.json y package-lock.json
 COPY package*.json ./
-
-# Instalar todas las dependencias (necesarias para compilar TypeScript)
 RUN npm ci
 
-# Copiar código fuente
 COPY . .
-
-# Compilar TypeScript
 RUN npm run build
 
-# Exponer puerto (Render usa PORT del environment)
+# ---------- Runtime stage ----------
+FROM node:20.18-alpine3.20 AS runtime
+
+ENV NODE_ENV=production
+WORKDIR /app
+
+# curl para el HEALTHCHECK
+RUN apk add --no-cache curl
+
+# Solo dependencias de producción
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+# Artefactos compilados
+COPY --from=builder /app/dist ./dist
+
+# Carpeta de logs escribible por el usuario sin privilegios
+RUN mkdir -p /app/logs && chown -R node:node /app
+
+USER node
+
 EXPOSE 5000
 
-# Variables de entorno por defecto
-ENV NODE_ENV=production
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD curl -fsS "http://localhost:${PORT:-5000}/api/health" || exit 1
 
-# Comando para ejecutar la aplicación
 CMD ["node", "dist/index.js"]
