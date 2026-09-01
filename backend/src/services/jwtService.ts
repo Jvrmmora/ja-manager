@@ -1,16 +1,18 @@
 import jwt from 'jsonwebtoken';
 import { IAuthUser } from '../types';
+import { env } from '../config/env';
+import logger from '../utils/logger';
 
 export class JWTService {
-  private static readonly secretKey =
-    process.env.JWT_SECRET || 'your-super-secret-key';
+  private static readonly secretKey = env.jwtSecret;
+  private static readonly algorithm: jwt.Algorithm = env.tokenAlgorithm;
 
   /**
    * Convierte una cadena de duración (ej: "10d", "24h") a milisegundos
    */
   private static parseDuration(duration: string): number {
     const match = duration.match(/^(\d+)([smhd])$/);
-    if (!match) return 10 * 24 * 60 * 60 * 1000; // Default 10 días
+    if (!match) return 7 * 24 * 60 * 60 * 1000; // Default 7 días
 
     const value = parseInt(match[1], 10);
     const unit = match[2];
@@ -25,7 +27,7 @@ export class JWTService {
       case 'd':
         return value * 24 * 60 * 60 * 1000;
       default:
-        return 10 * 24 * 60 * 60 * 1000;
+        return 7 * 24 * 60 * 60 * 1000;
     }
   }
 
@@ -45,7 +47,9 @@ export class JWTService {
       expiresAt: new Date(expirationTime * 1000).toISOString(), // ISO string legible
     };
 
-    return jwt.sign(tokenPayload, this.secretKey);
+    return jwt.sign(tokenPayload, this.secretKey, {
+      algorithm: this.algorithm,
+    });
   }
 
   /**
@@ -53,9 +57,11 @@ export class JWTService {
    */
   static verifyToken(token: string): IAuthUser | null {
     try {
-      const decoded = jwt.verify(token, this.secretKey) as IAuthUser;
+      const decoded = jwt.verify(token, this.secretKey, {
+        algorithms: [this.algorithm],
+      }) as IAuthUser;
       return decoded;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -67,7 +73,7 @@ export class JWTService {
     try {
       return jwt.decode(token);
     } catch (error) {
-      console.error('Error decodificando token:', error);
+      logger.error('Error decodificando token', { error });
       return null;
     }
   }
@@ -76,7 +82,7 @@ export class JWTService {
    * Obtiene el tiempo de expiración configurado
    */
   static getExpirationTime(): string {
-    return process.env.TOKEN_EXP || '90d';
+    return env.tokenExp;
   }
 
   /**
@@ -93,7 +99,10 @@ export class JWTService {
       email: youngEmail,
     };
 
-    return jwt.sign(payload, this.secretKey, { expiresIn } as jwt.SignOptions);
+    return jwt.sign(payload, this.secretKey, {
+      algorithm: this.algorithm,
+      expiresIn,
+    } as jwt.SignOptions);
   }
 
   /**
@@ -103,7 +112,9 @@ export class JWTService {
     token: string
   ): { youngId: string; email: string } | null {
     try {
-      const decoded = jwt.verify(token, this.secretKey) as any;
+      const decoded = jwt.verify(token, this.secretKey, {
+        algorithms: [this.algorithm],
+      }) as any;
 
       // Validar que sea un token de cumpleaños
       if (decoded.type !== 'birthday') {
@@ -114,7 +125,7 @@ export class JWTService {
         youngId: decoded.youngId,
         email: decoded.email,
       };
-    } catch (error) {
+    } catch {
       // Token expirado o inválido
       return null;
     }

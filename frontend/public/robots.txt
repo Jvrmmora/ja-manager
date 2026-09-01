@@ -1,13 +1,13 @@
 User-agent: *
 Allow: /
 
-# Sitemap
-Sitemap: https://jovenesmodelia.com/sitemap.xml
-
-# Disallow private/admin routes
+# Rutas privadas / sin valor para búsqueda
 Disallow: /api/
+Disallow: /admin
 Disallow: /admin/
-Disallow: /_next/
+Disallow: /dashboard
+Disallow: /login
+Disallow: /birthday-claim
+Disallow: /attendance/
 
-# Allow all other routes
-Allow: /
+Sitemap: https://jovenesmodelia.com/sitemap.xml

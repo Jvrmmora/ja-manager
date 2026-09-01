@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { YoungController } from '../controllers/youngController';
-import { upload, handleMulterError } from '../middleware/upload';
+import {
+  upload,
+  handleMulterError,
+  verifyImageContent,
+} from '../middleware/upload';
 import {
   authenticateAndAuthorize,
   authenticateToken,
@@ -13,8 +17,7 @@ const parseFormData = (req: any, res: any, next: any) => {
   if (req.body.skills && typeof req.body.skills === 'string') {
     try {
       req.body.skills = JSON.parse(req.body.skills);
-    } catch (error) {
-      console.error('Error parsing skills JSON:', error);
+    } catch {
       req.body.skills = [];
     }
   }
@@ -53,6 +56,7 @@ router.post(
   ...authenticateAndAuthorize('young:create'),
   upload.single('profileImage'),
   handleMulterError,
+  verifyImageContent,
   parseFormData,
   YoungController.createYoung
 );
@@ -78,6 +82,7 @@ router.put(
   ...authenticateAndAuthorize('young:update'),
   upload.single('profileImage'),
   handleMulterError,
+  verifyImageContent,
   parseFormData,
   YoungController.updateYoung
 );

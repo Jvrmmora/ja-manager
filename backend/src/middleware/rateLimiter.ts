@@ -9,6 +9,10 @@ interface RateLimitEntry {
 // Map para almacenar intentos por IP - Birthday
 const ipAttempts = new Map<string, RateLimitEntry>();
 
+// Maps para intentos de login (protección contra fuerza bruta / credential stuffing)
+const loginIpAttempts = new Map<string, RateLimitEntry>();
+const loginUserAttempts = new Map<string, RateLimitEntry>();
+
 // Map para almacenar intentos de registro por IP
 const registrationHourlyAttempts = new Map<string, RateLimitEntry>();
 const registrationDailyAttempts = new Map<string, RateLimitEntry>();
@@ -20,6 +24,11 @@ const contactDailyAttempts = new Map<string, RateLimitEntry>();
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 60 * 60 * 1000; // 1 hora
 const CLEANUP_INTERVAL_MS = 10 * 60 * 1000; // Limpiar cada 10 minutos
+
+// Configuración Login
+const LOGIN_MAX_PER_IP = 10; // por ventana
+const LOGIN_MAX_PER_USER = 5; // por ventana
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
 
 // Configuración Registration
 const REGISTRATION_MAX_HOURLY = 3;
@@ -36,6 +45,86 @@ const CONTACT_MAX_HOURLY = 4;
 const CONTACT_MAX_DAILY = 12;
 const CONTACT_HOUR_MS = 60 * 60 * 1000; // 1 hora
 const CONTACT_DAY_MS = 24 * 60 * 60 * 1000; // 24 horas
+
+/**
+ * Incrementa el contador de una clave en un mapa con ventana deslizante simple.
+ * Devuelve la entrada actualizada y si superó el límite.
+ */
+function hitLimit(
+  store: Map<string, RateLimitEntry>,
+  key: string,
+  max: number,
+  windowMs: number
+): { blocked: boolean; retryAfterMinutes: number } {
+  const now = Date.now();
+  let entry = store.get(key);
+
+  if (!entry || now > entry.resetTime) {
+    entry = { count: 1, resetTime: now + windowMs };
+    store.set(key, entry);
+    return { blocked: false, retryAfterMinutes: 0 };
+  }
+
+  entry.count++;
+  const blocked = entry.count > max;
+  return {
+    blocked,
+    retryAfterMinutes: Math.ceil((entry.resetTime - now) / 1000 / 60),
+  };
+}
+
+/**
+ * Middleware de rate limiting para el login.
+ * Límite: 10 intentos por IP y 5 por usuario cada 15 minutos.
+ * Protege contra fuerza bruta y credential stuffing.
+ */
+export const loginLimiter = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const clientIp = getClientIp(req);
+  const rawUser =
+    typeof req.body?.username === 'string' ? req.body.username : '';
+  const userKey = rawUser.trim().toLowerCase().slice(0, 120) || 'unknown';
+
+  const ipResult = hitLimit(
+    loginIpAttempts,
+    clientIp,
+    LOGIN_MAX_PER_IP,
+    LOGIN_WINDOW_MS
+  );
+  const userResult = hitLimit(
+    loginUserAttempts,
+    userKey,
+    LOGIN_MAX_PER_USER,
+    LOGIN_WINDOW_MS
+  );
+
+  if (ipResult.blocked || userResult.blocked) {
+    const retryAfter = Math.max(
+      ipResult.retryAfterMinutes,
+      userResult.retryAfterMinutes
+    );
+
+    logger.warn('Rate limiter: Límite de intentos de login excedido', {
+      context: 'RateLimiter',
+      method: 'loginLimiter',
+      ip: clientIp,
+      by: ipResult.blocked ? 'ip' : 'user',
+      remainingMinutes: retryAfter,
+    });
+
+    res.status(429).json({
+      success: false,
+      message: `Demasiados intentos de inicio de sesión. Intenta de nuevo en ${retryAfter} minutos.`,
+      retryAfter,
+    });
+    return;
+  }
+
+  next();
+};
 
 /**
  * Middleware de rate limiting para reclamación de puntos de cumpleaños
@@ -365,6 +454,20 @@ function cleanupExpiredEntries(): void {
     }
   }
 
+  // Limpiar login attempts (por IP y por usuario)
+  for (const [key, entry] of loginIpAttempts.entries()) {
+    if (now > entry.resetTime) {
+      loginIpAttempts.delete(key);
+      cleanedCount++;
+    }
+  }
+  for (const [key, entry] of loginUserAttempts.entries()) {
+    if (now > entry.resetTime) {
+      loginUserAttempts.delete(key);
+      cleanedCount++;
+    }
+  }
+
   if (cleanedCount > 0) {
     logger.info('Rate limiter: Limpieza de entradas expiradas', {
       context: 'RateLimiter',
@@ -378,8 +481,8 @@ function cleanupExpiredEntries(): void {
   }
 }
 
-// Iniciar limpieza automática
-setInterval(cleanupExpiredEntries, CLEANUP_INTERVAL_MS);
+// Iniciar limpieza automática (unref para no impedir el apagado del proceso)
+setInterval(cleanupExpiredEntries, CLEANUP_INTERVAL_MS).unref();
 
 logger.info('Rate limiter inicializado', {
   context: 'RateLimiter',

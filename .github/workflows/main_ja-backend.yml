@@ -21,7 +21,7 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: '20.x'
           cache: 'npm'
           cache-dependency-path: 'backend/package-lock.json'
 
@@ -34,6 +34,11 @@ jobs:
         run: |
           cd backend
           npm run lint
+
+      - name: Test backend
+        run: |
+          cd backend
+          npm run test:ci
 
       - name: Build backend
         run: |

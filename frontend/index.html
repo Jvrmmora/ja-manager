@@ -2,24 +2,21 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Primary Meta Tags -->
     <title>Jóvenes Adventistas Modelia - Bogotá</title>
-    <meta name="title" content="Jóvenes Adventistas Modelia - Bogotá" />
     <meta
       name="description"
-      content="Plataforma digital oficial de Jóvenes Modelia. Registra tu asistencia con QR, gana puntos, compite en rankings y conecta con otros jóvenes adventistas. Únete gratis a la comunidad más activa."
-    />
-    <meta
-      name="keywords"
-      content="jóvenes adventistas, Modelia, iglesia adventista, registro asistencia, jóvenes cristianos, plataforma digital iglesia, gamificación jóvenes, ranking puntos"
+      content="Plataforma digital oficial de Jóvenes Modelia. Registra tu asistencia con QR, gana puntos, compite en rankings y conecta con otros jóvenes adventistas en Bogotá."
     />
     <meta name="author" content="Jóvenes Modelia" />
     <meta name="robots" content="index, follow" />
-    <meta name="language" content="Spanish" />
-    <meta name="revisit-after" content="7 days" />
 
-    <!-- Open Graph / Facebook -->
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://jovenesmodelia.com/" />
+
+    <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://jovenesmodelia.com/" />
     <meta property="og:title" content="Jóvenes Adventistas Modelia - Bogotá" />
@@ -43,7 +40,6 @@
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://jovenesmodelia.com/" />
     <meta name="twitter:title" content="Jóvenes Adventistas Modelia - Bogotá" />
     <meta
       name="twitter:description"
@@ -53,82 +49,95 @@
       name="twitter:image"
       content="https://jovenesmodelia.com/og-image.jpg"
     />
-    <meta
-      name="twitter:image:alt"
-      content="Jóvenes Adventistas Modelia - Bogotá"
-    />
 
-    <!-- Viewport & Mobile -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Mobile / PWA -->
     <meta name="theme-color" content="#3B82F6" />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#0f172a"
+    />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Jóvenes Modelia" />
 
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://jovenesmodelia.com/" />
-
-    <!-- Favicon -->
+    <!-- Icons -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" href="/favicon-32x32.png" />
-    <link rel="apple-touch-icon" href="/favicon-32x32.png" />
-
-    <!-- Manifest -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- Material Design Icons -->
+    <!-- Fonts: preconnect + display=swap para no bloquear el render -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
     />
 
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
+        "@type": "Organization",
         "name": "Jóvenes Modelia",
-        "alternateName": "JA Manager",
+        "alternateName": "Jóvenes Adventistas Modelia",
         "url": "https://jovenesmodelia.com",
-        "description": "Plataforma digital oficial de Jóvenes Modelia. Registra tu asistencia con QR, gana puntos, compite en rankings y conecta con otros jóvenes adventistas.",
-        "applicationCategory": "SocialNetworkApplication",
-        "operatingSystem": "Web, iOS, Android",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
+        "logo": "https://jovenesmodelia.com/icon-512.png",
+        "description": "Ministerio de jóvenes de la Iglesia Adventista de Modelia, Bogotá, Colombia.",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Bogotá",
+          "addressRegion": "Cundinamarca",
+          "addressCountry": "CO"
         },
-        "creator": {
-          "@type": "Organization",
-          "name": "Jóvenes Modelia",
-          "url": "https://jovenesmodelia.com"
-        },
-        "featureList": [
-          "Registro de asistencia con código QR",
-          "Sistema de puntos y gamificación",
-          "Ranking competitivo",
-          "Gestión de perfiles",
-          "Sistema de referidos",
-          "Temporadas con premios"
-        ]
+        "sameAs": []
       }
     </script>
-
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Organization",
+        "@type": "WebApplication",
         "name": "Jóvenes Modelia",
         "url": "https://jovenesmodelia.com",
-        "logo": "https://jovenesmodelia.com/logo.png",
-        "description": "Plataforma digital para jóvenes adventistas en Modelia",
-        "sameAs": []
+        "applicationCategory": "LifestyleApplication",
+        "operatingSystem": "Web, iOS, Android",
+        "browserRequirements": "Requires JavaScript",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "COP" },
+        "featureList": [
+          "Registro de asistencia con código QR",
+          "Sistema de puntos y gamificación",
+          "Ranking competitivo por temporadas",
+          "Gestión de perfiles",
+          "Sistema de referidos"
+        ]
       }
     </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="max-width: 40rem; margin: 3rem auto; padding: 0 1.25rem; font-family: system-ui, sans-serif; line-height: 1.6;">
+        <h1>Jóvenes Adventistas Modelia — Bogotá</h1>
+        <p>
+          Somos la comunidad de jóvenes de la Iglesia Adventista de Modelia, en
+          Bogotá. Nuestra plataforma te permite registrar tu asistencia con
+          código QR, ganar puntos, competir en rankings por temporadas y
+          mantenerte al día con las actividades del grupo.
+        </p>
+        <p>
+          Esta aplicación necesita JavaScript para funcionar. Activa JavaScript
+          en tu navegador o escríbenos para unirte a la comunidad.
+        </p>
+        <p><a href="/register">Regístrate gratis</a></p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

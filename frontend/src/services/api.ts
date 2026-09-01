@@ -2,8 +2,7 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:4500/api';
 
-// Debug: Verificar qué URL está usando
-console.log('🔧 API_BASE_URL:', API_BASE_URL);
+const isDev = import.meta.env.DEV;
 
 // Función para obtener el token del localStorage
 export const getAuthToken = (): string | null => {
@@ -38,8 +37,7 @@ export const apiRequest = async (
   const url = buildApiUrl(endpoint);
   const token = getAuthToken();
 
-  console.log(`📡 API Request to: ${url}`);
-  console.log(`🔑 Token presente:`, token ? 'SÍ' : 'NO');
+  if (isDev) console.debug(`[api] ${options.method || 'GET'} ${endpoint}`);
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -49,9 +47,6 @@ export const apiRequest = async (
   // Agregar token de autorización si existe (siempre va al final para no ser sobrescrito)
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    console.log(`🔐 Authorization header agregado`);
-  } else {
-    console.warn(`⚠️ No hay token disponible para la petición a ${endpoint}`);
   }
 
   return fetch(url, {
@@ -69,8 +64,7 @@ export const apiUpload = async (
   const url = buildApiUrl(endpoint);
   const token = getAuthToken();
 
-  console.log(`📡 API Upload to: ${url}`);
-  console.log(`🔑 Token presente:`, token ? 'SÍ' : 'NO');
+  if (isDev) console.debug(`[api] upload ${endpoint}`);
 
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
@@ -79,9 +73,6 @@ export const apiUpload = async (
   // Agregar token de autorización si existe
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    console.log(`🔐 Authorization header agregado para upload`);
-  } else {
-    console.warn(`⚠️ No hay token disponible para el upload a ${endpoint}`);
   }
 
   return fetch(url, {
@@ -94,19 +85,14 @@ export const apiUpload = async (
 
 export default API_BASE_URL;
 
-// Función para debug - verificar estado de autenticación
+// Función para debug - verificar estado de autenticación (solo en desarrollo,
+// nunca imprime el token).
 export const debugAuthState = (): void => {
-  const token = getAuthToken();
-  const userRole = localStorage.getItem('userRole');
-  const userInfo = localStorage.getItem('userInfo');
-
-  console.log('🔍 Estado de autenticación:');
-  console.log('- Token presente:', token ? 'SÍ' : 'NO');
-  if (token) {
-    console.log('- Token (primeros 20 chars):', token.substring(0, 20) + '...');
-  }
-  console.log('- Rol de usuario:', userRole);
-  console.log('- Info de usuario:', userInfo ? 'Presente' : 'No presente');
+  if (!isDev) return;
+  console.debug('[auth] token:', getAuthToken() ? 'present' : 'absent', {
+    role: localStorage.getItem('userRole'),
+    hasUserInfo: Boolean(localStorage.getItem('userInfo')),
+  });
 };
 
 // Función específica para generar placa
@@ -272,36 +258,18 @@ export const getQRStats = async (): Promise<any> => {
 export const scanQRAndRegisterAttendance = async (
   code: string
 ): Promise<any> => {
-  console.log(
-    '🚀 [API] Iniciando scanQRAndRegisterAttendance con código:',
-    code
-  );
+  const response = await apiRequest('attendance/scan', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  });
 
-  try {
-    const response = await apiRequest('attendance/scan', {
-      method: 'POST',
-      body: JSON.stringify({ code }),
-    });
-
-    console.log('📡 [API] Respuesta recibida:', {
-      ok: response.ok,
-      status: response.status,
-      statusText: response.statusText,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('❌ [API] Error en respuesta:', errorData);
-      throw new Error(errorData.message || 'Error al registrar asistencia');
-    }
-
-    const result = await response.json();
-    console.log('✅ [API] Resultado exitoso:', result);
-    return result.data;
-  } catch (error) {
-    console.error('💥 [API] Error en scanQRAndRegisterAttendance:', error);
-    throw error;
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Error al registrar asistencia');
   }
+
+  const result = await response.json();
+  return result.data;
 };
 export const manualRegisterAttendance = async (
   youngId: string

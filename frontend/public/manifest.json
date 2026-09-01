@@ -1,33 +1,40 @@
 {
+  "id": "/",
   "name": "Jóvenes Adventistas Modelia - Plataforma Digital",
   "short_name": "Jóvenes Modelia",
   "description": "Plataforma digital oficial de Jóvenes Modelia. Registra tu asistencia, gana puntos, compite en rankings y conecta con otros jóvenes adventistas.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3B82F6",
   "orientation": "portrait-primary",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": ["social", "lifestyle", "education"],
   "icons": [
     {
       "src": "/favicon-32x32.png",
       "sizes": "32x32",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "/favicon-32x32.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/favicon-32x32.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ],
-  "categories": ["social", "lifestyle", "education"],
-  "lang": "es",
-  "dir": "ltr"
+  ]
 }
