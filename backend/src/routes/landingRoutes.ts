@@ -6,6 +6,7 @@ import {
   createMeeting,
   updateMeeting,
   deleteMeeting,
+  uploadMeetingImage,
   createMedia,
   updateMedia,
   deleteMedia,
@@ -64,6 +65,18 @@ router.put('/admin/content', requireLandingManage, updateLandingContent);
 // ==========================================
 // REUNIONES SEMANALES
 // ==========================================
+
+/**
+ * POST /api/admin/landing/meetings/upload-image
+ * Subir la imagen de una reunión (carpeta propia, sin registro en la galería)
+ */
+router.post(
+  '/admin/meetings/upload-image',
+  ...requireLandingManage,
+  landingUpload.single('file'),
+  handleLandingMulterError,
+  uploadMeetingImage
+);
 
 /**
  * POST /api/admin/landing/meetings
