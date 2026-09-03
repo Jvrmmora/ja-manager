@@ -262,6 +262,8 @@ function HomePage() {
         }
       }
 
+      // Guardar el listado completo para las estadísticas (total, cumpleaños, nuevos del mes)
+      setAllYoungList(allYoung);
     } catch (err) {
       console.error('❌ Error en fetchAllYoung:', err);
     }
