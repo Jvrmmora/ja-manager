@@ -1,11 +1,26 @@
 # 📈 Guía de SEO para Jóvenes Modelia
 
-## ✅ Archivos SEO Creados
+## ✅ Estado actual
 
-1. ✅ **index.html** - Meta tags completos (Open Graph, Twitter Cards, JSON-LD)
-2. ✅ **robots.txt** - Instrucciones para buscadores
-3. ✅ **sitemap.xml** - Mapa del sitio
-4. ✅ **manifest.json** - PWA manifest
+1. ✅ **index.html** - Meta tags (Open Graph, Twitter, JSON-LD Organization + WebApplication),
+   `preconnect` a Google Fonts, `<noscript>` con contenido rastreable.
+2. ✅ **Metadatos por ruta** - `frontend/src/seo/config.ts` es la fuente de verdad.
+   `<RouteSeo>` los aplica en runtime (react-helmet-async).
+3. ✅ **Prerender** - El plugin `prerenderMeta` en `vite.config.ts` genera
+   `dist/register/index.html` y `dist/login/index.html` con su `<head>` propio en
+   cada build, para que WhatsApp / Facebook / LinkedIn (que no ejecutan JS) muestren
+   el título y la descripción correctos por página.
+4. ✅ **sitemap.xml** - Se **regenera en cada build** desde las rutas indexables con
+   `lastmod` actual. No editar a mano (`frontend/public/sitemap.xml` ya no existe).
+5. ✅ **robots.txt** - Bloquea `/api`, `/admin`, `/dashboard`, `/login`, `/birthday-claim`, `/attendance/`.
+6. ✅ **manifest.json + iconos** - Iconos PWA reales 192/512 + maskable + apple-touch-icon (180)
+   - favicon.svg/.ico. Regenerar con `cd frontend && npm run gen:icons`.
+
+### Para añadir una ruta pública nueva al SEO
+
+Edita `frontend/src/seo/config.ts` → añade una entrada a `ROUTES`
+(`prerender: true` si quieres HTML estático por ruta). El sitemap y el prerender
+se actualizan solos en el siguiente `npm run build`.
 
 ---
 

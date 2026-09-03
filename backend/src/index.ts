@@ -1,10 +1,13 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import helmet from 'helmet';
+import compression from 'compression';
 import mongoose from 'mongoose';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
+import type { Server } from 'http';
+import { env } from './config/env';
 import youngRoutes from './routes/youngRoutes';
 import importRoutes from './routes/importRoutes';
 import authRoutes from './routes/authRoutes';
@@ -35,22 +38,40 @@ import {
   timeoutHandler,
 } from './middleware/errorMiddleware';
 
-dotenv.config();
-
 const app = express();
-const PORT = parseInt(process.env.PORT || '5000', 10);
+const PORT = env.port;
+
+// Detrás de Azure Web App / Static Web Apps / nginx: confiar en el primer proxy
+// para que req.ip y los rate-limiters basados en X-Forwarded-For sean fiables.
+app.set('trust proxy', 1);
 
 // Configurar CORS con variables de entorno
-const corsOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+const corsOrigins = env.corsOrigin
+  ? env.corsOrigin.split(',').map(origin => origin.trim())
   : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4173'];
+
+// Cabeceras de seguridad. La API sólo devuelve JSON, así que no necesita CSP
+// propia, pero sí HSTS, anti-sniffing y anti-clickjacking.
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    hsts: {
+      maxAge: 63072000,
+      includeSubDomains: true,
+      preload: true,
+    },
+  })
+);
+
+app.use(compression());
 
 // Middleware
 app.use(
   cors({
     origin: corsOrigins,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
@@ -61,20 +82,24 @@ app.use(timeoutHandler(30000)); // 30 segundos
 // Middleware de logging HTTP
 app.use(httpLoggingMiddleware);
 
-// Middleware de parsing
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Middleware de parsing. Los archivos se suben vía multipart/form-data (multer),
+// así que el body JSON no necesita ser grande.
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Middleware de validación de Content-Type
 app.use(contentTypeValidator);
 
 // Middleware de logging detallado (solo en desarrollo)
-if (process.env.NODE_ENV !== 'production') {
+if (!env.isProduction) {
   app.use(requestLoggingMiddleware);
 }
 
 // Middleware de manejo de errores JSON
 app.use(jsonErrorHandler);
+
+let server: Server | undefined;
+let shuttingDown = false;
 
 // Conectar a MongoDB y ejecutar seeders
 const initializeApp = async () => {
@@ -97,20 +122,18 @@ const initializeApp = async () => {
     setupRoutes();
 
     // Iniciar servidor solo después de que la BD esté lista
-    app.listen(PORT, '0.0.0.0', () => {
+    server = app.listen(PORT, '0.0.0.0', () => {
       logger.info(`🚀 Servidor corriendo en puerto ${PORT}`, {
         port: PORT,
-        env: process.env.NODE_ENV || 'development',
+        env: env.nodeEnv,
         nodeVersion: process.version,
         mongoState: mongoose.connection.readyState,
       });
-      logger.info(`📱 API disponible en: http://localhost:${PORT}`);
-      logger.info(`🌐 API disponible en red: http://192.168.1.9:${PORT}`);
       logger.info(`💚 Health check: http://localhost:${PORT}/api/health`);
       logger.info(`📚 Documentación: http://localhost:${PORT}/api/docs`);
     });
   } catch (error) {
-    logger.error('Error fatal al inicializar la aplicación:', error);
+    logger.error('Error fatal al inicializar la aplicación', { error });
     process.exit(1);
   }
 };
@@ -119,19 +142,17 @@ const initializeApp = async () => {
 const setupRoutes = () => {
   // Cargar documentación OpenAPI desde archivo YAML
   // Detectar automáticamente si estamos en desarrollo o producción
-  const isDevelopment = process.env.NODE_ENV !== 'production';
-  const yamlPath = isDevelopment
-    ? path.join(process.cwd(), 'src/docs/oas3.yaml') // Desarrollo: usar archivo fuente
-    : path.join(process.cwd(), 'dist/docs/oas3.yaml'); // Producción: usar archivo compilado
+  const yamlPath = env.isProduction
+    ? path.join(process.cwd(), 'dist/docs/oas3.yaml') // Producción: usar archivo compilado
+    : path.join(process.cwd(), 'src/docs/oas3.yaml'); // Desarrollo: usar archivo fuente
 
   let swaggerDocument;
   try {
     swaggerDocument = YAML.load(yamlPath);
   } catch (error) {
-    logger.warn(
-      `No se pudo cargar la documentación OpenAPI desde ${yamlPath}:`,
-      error
-    );
+    logger.warn(`No se pudo cargar la documentación OpenAPI desde ${yamlPath}`, {
+      error,
+    });
     // Crear documentación básica como fallback
     swaggerDocument = {
       openapi: '3.0.0',
@@ -146,11 +167,12 @@ const setupRoutes = () => {
 
   // Health check - debe ir ANTES de las rutas de young
   app.get('/api/health', (_req, res) => {
-    res.json({
-      status: 'OK',
-      message: 'Youth Management API funcionando correctamente',
+    const dbState = mongoose.connection.readyState;
+    res.status(dbState === 1 ? 200 : 503).json({
+      status: dbState === 1 ? 'OK' : 'DEGRADED',
+      message: 'Youth Management API',
       timestamp: new Date().toISOString(),
-      dbState: mongoose.connection.readyState,
+      dbState,
     });
   });
 
@@ -175,12 +197,7 @@ const setupRoutes = () => {
   app.use('/api/registration', ensureDatabaseConnection, registrationRoutes);
 
   // Rutas protegidas que requieren autenticación y conexión a BD
-  app.use(
-    '/api/young',
-    ensureDatabaseConnection,
-    authenticateToken,
-    youngRoutes
-  );
+  app.use('/api/young', ensureDatabaseConnection, authenticateToken, youngRoutes);
   app.use(
     '/api/import',
     ensureDatabaseConnection,
@@ -211,31 +228,7 @@ const setupRoutes = () => {
       message: 'Youth Management Platform API',
       version: '1.0.0',
       documentation: '/api/docs',
-      dbState: mongoose.connection.readyState,
-      endpoints: [
-        'GET /api/health - Verificar estado',
-        'GET /api/docs - Documentación Swagger',
-        'POST /api/auth/login - Iniciar sesión',
-        'GET /api/auth/profile - Perfil usuario (autenticado)',
-        'POST /api/auth/logout - Cerrar sesión (autenticado)',
-        'POST /api/auth/test-email - Enviar email de prueba (admin)',
-        'GET /api/young - Obtener jóvenes (autenticado)',
-        'POST /api/young - Crear joven (autenticado)',
-        'GET /api/young/stats - Estadísticas (autenticado)',
-        'GET /api/young/:id - Obtener joven por ID (autenticado)',
-        'PUT /api/young/:id - Actualizar joven (autenticado)',
-        'DELETE /api/young/:id - Eliminar joven (autenticado)',
-        'POST /api/import/import - Importar desde Excel (autenticado)',
-        'GET /api/import/template - Descargar plantilla (autenticado)',
-        'GET /api/import/export - Exportar a Excel (autenticado)',
-        'POST /api/qr/generate - Generar QR del día (admin)',
-        'GET /api/qr/current - Obtener QR activo (autenticado)',
-        'GET /api/qr/stats - Estadísticas QR (autenticado)',
-        'POST /api/attendance/scan - Escanear QR y registrar (joven)',
-        'GET /api/attendance/my-history - Mi historial (joven)',
-        'GET /api/attendance/today - Lista del día (admin)',
-        'GET /api/attendance/stats - Estadísticas asistencia (admin)',
-      ],
+      health: '/api/health',
     });
   });
 
@@ -248,6 +241,54 @@ const setupRoutes = () => {
   // Middleware global de manejo de errores (debe ir al final)
   app.use(globalErrorHandler);
 };
+
+/**
+ * Apagado controlado: deja de aceptar conexiones nuevas, espera a que terminen
+ * las en curso y cierra la conexión a Mongo. Docker y Azure envían SIGTERM.
+ */
+const gracefulShutdown = (signal: string) => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info(`🛑 Recibida señal ${signal}, cerrando de forma controlada...`);
+
+  const forceExit = setTimeout(() => {
+    logger.error('⏱️  Apagado forzado tras timeout');
+    process.exit(1);
+  }, 15000);
+  forceExit.unref();
+
+  const closeDb = () => {
+    mongoose.connection
+      .close(false)
+      .then(() => {
+        logger.info('✅ Conexión a MongoDB cerrada. Adiós.');
+        clearTimeout(forceExit);
+        process.exit(0);
+      })
+      .catch(error => {
+        logger.error('Error cerrando MongoDB', { error });
+        process.exit(1);
+      });
+  };
+
+  if (server) {
+    server.close(() => closeDb());
+  } else {
+    closeDb();
+  }
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+process.on('unhandledRejection', reason => {
+  logger.error('unhandledRejection', { reason });
+});
+
+process.on('uncaughtException', error => {
+  logger.error('uncaughtException', { error });
+  gracefulShutdown('uncaughtException');
+});
 
 // Inicializar la aplicación
 initializeApp();
