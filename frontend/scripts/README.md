@@ -1,83 +1,35 @@
-# Scripts para Generar Imagen Open Graph
+# Scripts de assets
 
-Para que WhatsApp y otras redes sociales muestren el logo de tu sitio al compartir el enlace, necesitas una imagen Open Graph.
+## `gen:og` — imagen Open Graph (WhatsApp / Facebook / LinkedIn)
 
-## 📋 Requisitos
-
-La imagen debe ser:
-
-- **Tamaño:** 1200x630 píxeles (ratio 1.91:1)
-- **Formato:** JPG o PNG
-- **Tamaño del archivo:** Menos de 1MB (recomendado)
-- **Ubicación:** `frontend/public/og-image.jpg`
-
-## 🚀 Opción 1: Script Bash (ImageMagick)
-
-Si tienes ImageMagick instalado:
+Genera `frontend/public/og-image.jpg` (1200×630): fondo de marca + logo en panel
+claro + titular + dominio. El texto se rasteriza como paths con `opentype.js`,
+así que no depende de que sharp tenga fuentes del sistema.
 
 ```bash
 cd frontend
-./scripts/generate-og-image.sh
+npm run gen:og
 ```
 
-### Instalar ImageMagick
+- Fuente del logo: `src/assets/logos/logo_3.png`.
+- Fuentes de texto: Arial Black / Arial Bold del sistema (solo en generación; el
+  JPG resultante se commitea).
+- Para cambiar titular, colores o layout: editar `scripts/generate-og-image.js`.
 
-**macOS:**
+Tras regenerarla:
 
-```bash
-brew install imagemagick
-```
+1. Commit + deploy.
+2. https://developers.facebook.com/tools/debug/ → pega `https://jovenesmodelia.com`
+   → **Scrape Again** (WhatsApp cachea el preview viejo ~1-4 semanas).
+3. Comparte el enlace en WhatsApp para verificar.
 
-**Ubuntu/Debian:**
-
-```bash
-sudo apt-get install imagemagick
-```
-
-## 🚀 Opción 2: Script Node.js (Sharp)
-
-Si prefieres usar Node.js:
-
-1. Instalar Sharp:
+## `gen:icons` — favicons e iconos PWA
 
 ```bash
 cd frontend
-npm install --save-dev sharp
+npm run gen:icons
 ```
 
-2. Ejecutar el script:
-
-```bash
-node scripts/generate-og-image.js
-```
-
-## ✏️ Opción 3: Crear Manualmente
-
-Si prefieres crear la imagen manualmente:
-
-1. Abre tu editor de imágenes favorito (Photoshop, GIMP, Canva, Figma, etc.)
-2. Crea un canvas de **1200x630 píxeles**
-3. Usa el color de fondo: **#3B82F6** (azul de la marca)
-4. Coloca el logo de `frontend/src/assets/logos/logo.png`
-5. Opcional: Agrega texto "Jóvenes Adventistas Modelia - Plataforma Digital"
-6. Guarda como **JPG** con calidad alta (80-90%)
-7. Coloca el archivo en: `frontend/public/og-image.jpg`
-
-## ✅ Verificar
-
-Después de generar la imagen:
-
-1. **Localmente:** Abre `http://localhost:5173/og-image.jpg` en tu navegador
-2. **Verificar en WhatsApp:**
-   - Publica los cambios
-   - Ve a: https://developers.facebook.com/tools/debug/
-   - Ingresa tu URL: `https://jovenesmodelia.com`
-   - Haz clic en "Scrape Again" para limpiar la caché
-3. **Probar compartiendo:** Comparte el enlace en WhatsApp y verifica que se vea el logo
-
-## 📝 Notas Importantes
-
-- WhatsApp cachea las imágenes de Open Graph
-- Si cambias la imagen, usa el Facebook Debugger para limpiar la caché
-- La imagen debe ser accesible públicamente (no protegida por autenticación)
-- Usa URLs absolutas (https://jovenesmodelia.com/og-image.jpg) en los meta tags
+Genera `favicon.svg/.ico`, `favicon-32x32.png`, `apple-touch-icon.png`,
+`icon-192.png`, `icon-512.png`, `icon-maskable-512.png` a partir de
+`src/assets/logos/logo.png`.
