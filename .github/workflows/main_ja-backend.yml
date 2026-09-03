@@ -7,7 +7,17 @@ on:
   push:
     branches:
       - main
+    # Un cambio que solo toca el frontend no tiene por qué redesplegar la API.
+    paths:
+      - 'backend/**'
+      - '.github/workflows/main_ja-backend.yml'
   workflow_dispatch:
+
+# Un despliegue a la vez. No se cancela a medias: interrumpir un deploy en
+# vuelo puede dejar la Web App en un estado inconsistente.
+concurrency:
+  group: deploy-backend-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -25,39 +35,53 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'backend/package-lock.json'
 
+      # setup-node solo cachea ~/.npm, y reinstalar los 647 paquetes desde
+      # ahí ha llegado a tardar 6 minutos. Cacheando node_modules entero,
+      # cuando el lockfile no cambia el `npm ci` se salta por completo.
+      - name: Restaurar node_modules del backend
+        id: cache-backend-modules
+        uses: actions/cache@v4
+        with:
+          path: backend/node_modules
+          key: node-modules-backend-${{ runner.os }}-${{ runner.arch }}-node20-${{ hashFiles('backend/package-lock.json') }}
+
       - name: Install backend dependencies
-        run: |
-          cd backend
-          npm ci
+        if: steps.cache-backend-modules.outputs.cache-hit != 'true'
+        working-directory: backend
+        run: npm ci --prefer-offline --no-audit --fund=false
 
       - name: Lint backend
-        run: |
-          cd backend
-          npm run lint
+        working-directory: backend
+        run: npm run lint
 
       - name: Test backend
-        run: |
-          cd backend
-          npm run test:ci
+        working-directory: backend
+        run: npm run test:ci
 
       - name: Build backend
-        run: |
-          cd backend
-          npm run build
+        working-directory: backend
+        run: npm run build
 
-      - name: Validate Docker compose config
+      # El paquete se arma en ./deploy y no en ./backend a propósito: hacer
+      # el prune sobre backend/node_modules envenenaría el cache, que
+      # actions/cache guarda al terminar el job.
+      # Azure solo necesita dist/ (incluido dist/docs/oas3.yaml), el
+      # package.json y las dependencias de producción; las de desarrollo
+      # eran ~90 MB de peso muerto en cada despliegue.
+      - name: Preparar paquete de despliegue
         run: |
-          docker compose config > /tmp/ja-manager-compose.yml
-
-      - name: Build Docker images
-        run: |
-          docker compose build backend frontend
+          mkdir -p deploy
+          cp -r backend/dist deploy/dist
+          cp backend/package.json backend/package-lock.json deploy/
+          cp -r backend/node_modules deploy/node_modules
+          (cd deploy && npm prune --omit=dev --no-audit --fund=false)
+          echo "Tamaño del paquete: $(du -sh deploy | cut -f1)"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: backend
+          path: deploy
 
   deploy:
     runs-on: ubuntu-latest
