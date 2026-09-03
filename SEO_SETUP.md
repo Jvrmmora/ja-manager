@@ -129,49 +129,24 @@ Debe mostrar el XML con las URLs de tu sitio.
 
 ## 📝 Próximos Pasos Recomendados
 
-### 1. ✅ Crear Imagen OG (Open Graph) - CRÍTICO PARA WHATSAPP
+### 1. ✅ Imagen OG (Open Graph) para WhatsApp — HECHA
 
-**IMPORTANTE:** Para que WhatsApp muestre el logo al compartir, necesitas crear la imagen OG.
+`frontend/public/og-image.jpg` (1200×630) es una tarjeta de marca: fondo oscuro
+degradado + logo en panel claro + "Jóvenes Modelia" + dominio.
 
-**Ubicación:** `frontend/public/og-image.jpg`
+Regenerar / retocar:
 
-**Especificaciones:**
+```bash
+cd frontend
+npm run gen:og      # edita scripts/generate-og-image.js para cambiar textos/colores
+```
 
-- Tamaño: 1200x630 píxeles (ratio 1.91:1)
-- Formato: JPG
-- Contenido sugerido:
-  - Logo de Jóvenes Modelia
-  - Texto: "Jóvenes Adventistas Modelia - Plataforma Digital"
-  - Colores de la marca (#3B82F6)
+**Después de cambiarla:**
 
-**Opciones para generar:**
-
-1. **Script automático (bash):**
-
-   ```bash
-   cd frontend
-   ./scripts/generate-og-image.sh
-   ```
-
-   Requiere: `brew install imagemagick` (macOS) o `sudo apt-get install imagemagick` (Linux)
-
-2. **Script automático (Node.js):**
-
-   ```bash
-   cd frontend
-   npm install --save-dev sharp
-   node scripts/generate-og-image.js
-   ```
-
-3. **Manualmente:**
-   - Ver instrucciones detalladas en: `frontend/scripts/README.md`
-
-**Después de crear la imagen:**
-
-1. Publica los cambios
-2. Limpia la caché de WhatsApp en: https://developers.facebook.com/tools/debug/
-3. Ingresa tu URL y haz clic en "Scrape Again"
-4. Comparte el enlace en WhatsApp para verificar
+1. Commit + deploy
+2. https://developers.facebook.com/tools/debug/ → pega `https://jovenesmodelia.com`
+   → "Scrape Again" (WhatsApp cachea el preview viejo ~1-4 semanas)
+3. Comparte el enlace en WhatsApp para verificar
 
 ### 2. Actualizar Sitemap dinámicamente
 
