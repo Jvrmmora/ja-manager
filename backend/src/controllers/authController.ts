@@ -11,6 +11,8 @@ import {
   NotFoundError,
 } from '../utils/errorHandler';
 import { emailService } from '../services/emailService';
+import { CURRENT_POLICY_VERSION } from '../config/privacyPolicy';
+import { needsConsent } from '../services/consentService';
 
 export class AuthController {
   /**
@@ -116,6 +118,11 @@ export class AuthController {
         token,
         expiresIn: JWTService.getExpirationTime(),
         first_login: user.first_login || false,
+        // Consentimiento de tratamiento de datos personales (Ley 1581/2012):
+        // el login es válido, pero el cliente debe mostrar la pantalla de
+        // aceptación si esto es true.
+        requiresConsent: needsConsent(user),
+        policyVersion: CURRENT_POLICY_VERSION,
       },
     });
   });
@@ -166,6 +173,15 @@ export class AuthController {
           profileImage: user.profileImage,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
+          requiresConsent: needsConsent(user),
+          policyVersion: CURRENT_POLICY_VERSION,
+          dataConsent: user.dataConsent
+            ? {
+                status: user.dataConsent.status,
+                version: user.dataConsent.version,
+                acceptedAt: user.dataConsent.acceptedAt,
+              }
+            : { status: 'none', version: null, acceptedAt: null },
         },
       });
     } catch (error) {

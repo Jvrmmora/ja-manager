@@ -7,7 +7,20 @@ import { useToast } from '../hooks/useToast';
 import PhoneInput from '../components/PhoneInput';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ThemeToggle from '../components/ThemeToggle';
+import PrivacyPolicyModal from '../components/privacy/PrivacyPolicyModal';
+import { fetchPrivacyPolicy } from '../services/consentService';
 import logo from '../assets/logos/logo.png';
+
+function calculateAge(birthday: string): number | null {
+  if (!birthday) return null;
+  const today = new Date();
+  const birthDate = new Date(birthday);
+  if (Number.isNaN(birthDate.getTime())) return null;
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+  return age;
+}
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -49,6 +62,11 @@ function RegistrationPage() {
   const [passwordsMatch, setPasswordsMatch] = useState<boolean | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
+  const [showPolicy, setShowPolicy] = useState(false);
+  const [policyVersion, setPolicyVersion] = useState<string | null>(null);
+  const [guardianName, setGuardianName] = useState('');
+  const [guardianRel, setGuardianRel] = useState('');
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -61,6 +79,13 @@ function RegistrationPage() {
     referredByPlaca: '',
     profileImage: null as File | null,
   });
+
+  // Cargar la versión vigente de la política de privacidad
+  useEffect(() => {
+    fetchPrivacyPolicy()
+      .then(p => setPolicyVersion(p.currentVersion))
+      .catch(() => setPolicyVersion(null));
+  }, []);
 
   // Read referredBy from URL
   useEffect(() => {
@@ -235,6 +260,14 @@ function RegistrationPage() {
       newErrors.passwordConfirmation = 'Las contraseñas no coinciden';
     if (formData.referredByPlaca && placaValid === false)
       newErrors.referredByPlaca = 'Placa inválida';
+    if (!acceptPrivacy)
+      newErrors.acceptPrivacy =
+        'Debes aceptar la Política de Privacidad para registrarte';
+    const age = calculateAge(formData.birthday);
+    const isMinor = age !== null && age < 18;
+    if (isMinor && !guardianName.trim())
+      newErrors.guardianName =
+        'Ingresa el nombre del padre, madre o representante legal';
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -258,6 +291,16 @@ function RegistrationPage() {
         fd.append('referredByPlaca', formData.referredByPlaca.trim());
       if (formData.profileImage)
         fd.append('profileImage', formData.profileImage);
+
+      // Consentimiento de tratamiento de datos personales (Ley 1581/2012)
+      fd.append('acceptPrivacyPolicy', 'true');
+      fd.append('policyVersion', policyVersion || '');
+      if (isMinor) {
+        if (guardianName.trim())
+          fd.append('guardianFullName', guardianName.trim());
+        if (guardianRel.trim())
+          fd.append('guardianRelationship', guardianRel.trim());
+      }
 
       const response = await createRegistrationRequest(fd);
       const registeredPlaca = response.data?.placa;
@@ -845,6 +888,82 @@ function RegistrationPage() {
                   </p>
                 </div>
 
+                {/* Consentimiento de datos personales */}
+                <div>
+                  {calculateAge(formData.birthday) !== null &&
+                    (calculateAge(formData.birthday) as number) < 18 && (
+                      <div className="mb-3 space-y-2 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 p-3">
+                        <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                          Eres menor de edad: se requiere la autorización de tu
+                          padre, madre o representante legal.
+                        </p>
+                        <input
+                          type="text"
+                          value={guardianName}
+                          onChange={e => {
+                            setGuardianName(e.target.value);
+                            setErrors(prev => {
+                              const x = { ...prev };
+                              delete x.guardianName;
+                              return x;
+                            });
+                          }}
+                          disabled={loading}
+                          placeholder="Nombre del padre, madre o representante legal"
+                          className={inputCls('guardianName')}
+                        />
+                        {errors.guardianName && (
+                          <p className="text-xs text-red-500">
+                            {errors.guardianName}
+                          </p>
+                        )}
+                        <input
+                          type="text"
+                          value={guardianRel}
+                          onChange={e => setGuardianRel(e.target.value)}
+                          disabled={loading}
+                          placeholder="Parentesco (padre, madre, representante legal)"
+                          className={inputCls('guardianRel')}
+                        />
+                      </div>
+                    )}
+
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={acceptPrivacy}
+                      onChange={e => {
+                        setAcceptPrivacy(e.target.checked);
+                        setErrors(prev => {
+                          const x = { ...prev };
+                          delete x.acceptPrivacy;
+                          return x;
+                        });
+                      }}
+                      disabled={loading}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span
+                      className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                    >
+                      He leído y acepto la{' '}
+                      <button
+                        type="button"
+                        onClick={() => setShowPolicy(true)}
+                        className="text-blue-600 dark:text-blue-400 underline font-medium"
+                      >
+                        Política de Privacidad
+                      </button>{' '}
+                      y <strong>autorizo el tratamiento de mis datos personales</strong>.
+                    </span>
+                  </label>
+                  {errors.acceptPrivacy && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.acceptPrivacy}
+                    </p>
+                  )}
+                </div>
+
                 {/* Submit */}
                 <button
                   type="submit"
@@ -878,6 +997,11 @@ function RegistrationPage() {
           </div>
         </div>
       </div>
+
+      <PrivacyPolicyModal
+        open={showPolicy}
+        onClose={() => setShowPolicy(false)}
+      />
     </div>
   );
 }
