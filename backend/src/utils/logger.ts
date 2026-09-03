@@ -62,12 +62,14 @@ const logger = winston.createLogger({
       maxsize: 5242880, // 5MB
       maxFiles: 5,
     }),
-    // Consola solo en desarrollo
-    ...(process.env.NODE_ENV !== 'production' ? [
-      new winston.transports.Console({
-        format: consoleFormat
-      })
-    ] : [])
+    // Consola solo en desarrollo (nunca en producción ni durante los tests)
+    ...(process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test'
+      ? [
+          new winston.transports.Console({
+            format: consoleFormat,
+          }),
+        ]
+      : [])
   ],
   exceptionHandlers: [
     new winston.transports.File({ 

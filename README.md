@@ -15,6 +15,7 @@ Una plataforma completa para la gestión de jóvenes de iglesia, desarrollada co
 ## 🛠️ Stack Tecnológico
 
 ### Backend
+
 - **Node.js** con **TypeScript**
 - **Express.js** para la API REST
 - **MongoDB** con **Mongoose** ODM
@@ -23,6 +24,7 @@ Una plataforma completa para la gestión de jóvenes de iglesia, desarrollada co
 - **Helmet** y **CORS** para seguridad
 
 ### Frontend
+
 - **React 18** con **TypeScript**
 - **Vite** como bundler
 - **Tailwind CSS** para estilos
@@ -32,6 +34,7 @@ Una plataforma completa para la gestión de jóvenes de iglesia, desarrollada co
 - **Lucide React** para iconos
 
 ### DevOps
+
 - **Docker** y **Docker Compose**
 - **Nginx** como servidor web
 - **MongoDB** como base de datos
@@ -39,17 +42,20 @@ Una plataforma completa para la gestión de jóvenes de iglesia, desarrollada co
 ## 🚀 Instalación y Configuración
 
 ### Prerrequisitos
+
 - Node.js 18+
 - Docker y Docker Compose
 - Cuenta en Cloudinary (gratuita)
 
 ### 1. Clonar el repositorio
+
 ```bash
 git clone <tu-repositorio>
 cd ja-manager
 ```
 
 ### 2. Configurar variables de entorno
+
 ```bash
 # Copiar archivo de ejemplo
 cp .env.example .env
@@ -59,6 +65,7 @@ cp .env.example .env
 ```
 
 ### 3. Instalación con Docker (Recomendado)
+
 ```bash
 # Construir y ejecutar todos los servicios
 docker-compose up -d
@@ -70,6 +77,7 @@ docker-compose up -d
 ```
 
 ### 4. Instalación Manual (Desarrollo)
+
 ```bash
 # Instalar dependencias del monorepo
 npm install
@@ -90,12 +98,14 @@ npm run dev
 ## 📝 Uso de la Aplicación
 
 ### Gestión de Jóvenes
+
 1. **Agregar Joven**: Clic en "Agregar Joven" y llenar el formulario
 2. **Editar**: Clic en cualquier tarjeta de joven para editar
 3. **Buscar**: Usar la barra de búsqueda para encontrar por nombre o teléfono
 4. **Filtrar**: Seleccionar rango de edad y opciones de ordenamiento
 
 ### Datos Requeridos
+
 - **Nombre Completo**: Nombre y apellidos del joven
 - **Rango de Edad**: Seleccionar entre 13-15, 16-18, 19-21, 22-25, 26-30, 30+
 - **Teléfono**: Número de contacto
@@ -105,6 +115,7 @@ npm run dev
 ## 🎨 Paleta de Colores
 
 Basada en la imagen de referencia azul:
+
 - **Primario**: #3B82F6 (Blue 500)
 - **Secundario**: #1E40AF (Blue 700)
 - **Accent**: #60A5FA (Blue 400)
@@ -145,6 +156,7 @@ ja-manager/
 ## 🌐 API Endpoints
 
 ### Jóvenes
+
 - `GET /api/young` - Obtener todos los jóvenes (con paginación y filtros)
 - `GET /api/young/:id` - Obtener un joven por ID
 - `POST /api/young` - Crear un nuevo joven
@@ -153,6 +165,7 @@ ja-manager/
 - `GET /api/young/stats` - Obtener estadísticas
 
 ### Parámetros de Consulta
+
 - `page` - Número de página (default: 1)
 - `limit` - Elementos por página (default: 10, max: 100)
 - `search` - Búsqueda por nombre o teléfono
@@ -163,11 +176,13 @@ ja-manager/
 ## 🚀 Despliegue en Producción
 
 ### Opción 1: Servicios de Contenedores Gratuitos
+
 - **Railway**: Soporta Docker Compose
 - **Render**: Servicios web gratuitos
 - **Heroku**: Con add-ons para MongoDB
 
 ### Opción 2: VPS con Docker
+
 ```bash
 # En el servidor
 git clone <tu-repositorio>
@@ -182,14 +197,34 @@ docker-compose up -d
 ```
 
 ### Variables de Entorno de Producción
+
+El backend **valida estas variables al arrancar** (`backend/src/config/env.ts`) y
+aborta con un mensaje claro si falta alguna o si `JWT_SECRET` es débil.
+
 ```env
 NODE_ENV=production
 MONGODB_URI=mongodb://usuario:password@host:puerto/database
 CLOUDINARY_CLOUD_NAME=tu_cloud_name
 CLOUDINARY_API_KEY=tu_api_key
 CLOUDINARY_API_SECRET=tu_api_secret
+# Mínimo 32 caracteres aleatorios:
+#   node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 JWT_SECRET=un_secreto_muy_seguro_y_largo
+TOKEN_EXP=7d
 CORS_ORIGIN=https://tu-dominio.com
+```
+
+Lista completa y opcionales en `backend/.env.example`.
+
+> ⚠️ **Seguridad**: una versión anterior del seeder incluía credenciales reales
+> en el código. Si desplegaste antes de este cambio, **rota** ese usuario/contraseña.
+> El usuario Super Admin semilla ahora solo se crea con
+> `SEED_ADMIN_ENABLED=true` + `SEED_ADMIN_EMAIL` + `SEED_ADMIN_PASSWORD`.
+
+### Tests
+
+```bash
+cd backend && npm test        # Jest (jwt, fechas, rate-limit, manejo de errores)
 ```
 
 ## 🤝 Contribución
@@ -207,7 +242,9 @@ CORS_ORIGIN=https://tu-dominio.com
 Este proyecto está configurado para desplegarse fácilmente en Render usando Docker:
 
 #### Preparación:
+
 1. **Subir código a GitHub**:
+
    ```bash
    git add .
    git commit -m "Configuración para despliegue en Render"
@@ -220,9 +257,11 @@ Este proyecto está configurado para desplegarse fácilmente en Render usando Do
    - Los servicios se crearán automáticamente
 
 #### Variables de entorno en Render:
+
 Configura estas variables en el panel de Render:
 
 **Backend:**
+
 ```
 CLOUDINARY_CLOUD_NAME=tu_cloud_name
 CLOUDINARY_API_KEY=tu_api_key
@@ -231,11 +270,13 @@ JWT_SECRET=tu_jwt_secret_super_seguro_cambiar_en_produccion
 ```
 
 **Frontend:**
+
 ```
 VITE_API_URL=https://ja-manager-backend.onrender.com
 ```
 
 #### URLs de servicios:
+
 - **Backend**: `https://ja-manager-backend.onrender.com`
 - **Frontend**: `https://ja-manager-frontend.onrender.com`
 - **Database**: MongoDB proporcionado por Render
@@ -243,9 +284,11 @@ VITE_API_URL=https://ja-manager-backend.onrender.com
 ### Opción 2: Vercel + Render (Híbrida)
 
 #### Backend en Render:
+
 - Sigue los pasos anteriores solo para el backend
 
 #### Frontend en Vercel:
+
 1. **Conecta el repositorio** en Vercel
 2. **Configuración**:
    - Root Directory: `frontend`
@@ -259,6 +302,7 @@ VITE_API_URL=https://ja-manager-backend.onrender.com
    ```
 
 ### Estructura de archivos para despliegue:
+
 ```
 ├── render.yaml                 # Configuración de Render
 ├── backend/
@@ -272,13 +316,15 @@ VITE_API_URL=https://ja-manager-backend.onrender.com
 ```
 
 ### Verificación del despliegue:
+
 1. **Backend Health Check**: `GET /api/health`
 2. **Frontend**: Acceso a la aplicación web
 3. **Base de datos**: Conexión automática desde backend
 
 ### Solución de problemas comunes:
+
 - **CORS Error**: Verificar `CORS_ORIGIN` en variables del backend
-- **API 404**: Verificar `VITE_API_URL` en variables del frontend  
+- **API 404**: Verificar `VITE_API_URL` en variables del frontend
 - **Build Error**: Verificar logs en Render/Vercel dashboard
 
 ## 📄 Licencia

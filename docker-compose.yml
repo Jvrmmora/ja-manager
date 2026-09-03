@@ -11,17 +11,24 @@ services:
       PORT: 5000
       TZ: America/Bogota
       MONGODB_URI: ${MONGODB_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      TOKEN_EXP: ${TOKEN_EXP:-7d}
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
-      JWT_SECRET: ${JWT_SECRET}
-      CORS_ORIGIN: http://localhost:3000,http://localhost:80
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost,http://localhost:3000}
     ports:
-      - "5001:5000"
+      - '5001:5000'
     networks:
       - ja-manager-network
     volumes:
-      - ./backend/uploads:/app/uploads
+      - backend-logs:/app/logs
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:5000/api/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
 
   # Frontend
   frontend:
@@ -33,12 +40,16 @@ services:
     environment:
       TZ: America/Bogota
     ports:
-      - "80:80"
+      - '80:80'
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - ja-manager-network
 
 networks:
   ja-manager-network:
     driver: bridge
+
+volumes:
+  backend-logs:

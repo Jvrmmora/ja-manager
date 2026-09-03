@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/authController';
 import { authenticateToken } from '../middleware/auth';
+import { loginLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
-// Rutas públicas (sin autenticación)
-router.post('/login', AuthController.login);
+// Rutas públicas (sin autenticación). El login lleva rate-limiting para
+// mitigar fuerza bruta / credential stuffing.
+router.post('/login', loginLimiter, AuthController.login);
 
 // Rutas protegidas (requieren autenticación)
 router.get('/profile', authenticateToken, AuthController.getProfile);
