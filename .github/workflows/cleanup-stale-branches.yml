@@ -1,0 +1,108 @@
+name: Limpieza de ramas obsoletas
+
+# Borra ramas del repositorio sin actividad en más de 1 mes.
+# Nunca toca `main` ni `dev`, ni ramas con un Pull Request abierto.
+# Corre cada lunes a las 08:00 (hora Colombia = 13:00 UTC) y se puede
+# lanzar a mano con "Run workflow" (usa dry_run=true para solo listar).
+
+on:
+  schedule:
+    - cron: '0 13 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Solo listar las ramas que se borrarían, sin borrarlas'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Borrar ramas obsoletas
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const PROTECTED = ['main', 'dev'];
+            const MAX_AGE_DAYS = 30;
+            const dryRun = context.eventName === 'workflow_dispatch'
+              ? context.payload.inputs?.dry_run !== 'false'
+              : false;
+
+            const now = Date.now();
+            const maxAgeMs = MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+
+            // Ramas con PR abierto -> no se tocan
+            const openPRs = await github.paginate(github.rest.pulls.list, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const branchesWithOpenPR = new Set(
+              openPRs
+                .filter(pr => pr.head.repo && pr.head.repo.full_name ===
+                  `${context.repo.owner}/${context.repo.repo}`)
+                .map(pr => pr.head.ref)
+            );
+
+            const branches = await github.paginate(github.rest.repos.listBranches, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+
+            const deleted = [];
+            const kept = [];
+
+            for (const branch of branches) {
+              if (PROTECTED.includes(branch.name) || branch.protected) {
+                continue;
+              }
+              if (branchesWithOpenPR.has(branch.name)) {
+                kept.push(`${branch.name} (PR abierto)`);
+                continue;
+              }
+
+              const commit = await github.rest.repos.getCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: branch.commit.sha,
+              });
+              const dateStr = commit.data.commit.committer?.date
+                || commit.data.commit.author?.date;
+              const ageMs = now - new Date(dateStr).getTime();
+
+              if (ageMs < maxAgeMs) {
+                continue;
+              }
+
+              const ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+              if (dryRun) {
+                deleted.push(`${branch.name} (${ageDays} días — DRY RUN)`);
+                continue;
+              }
+
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `heads/${branch.name}`,
+              });
+              deleted.push(`${branch.name} (${ageDays} días)`);
+            }
+
+            const summary = [
+              `### Limpieza de ramas obsoletas (${dryRun ? 'DRY RUN' : 'ejecutado'})`,
+              '',
+              deleted.length
+                ? `**Borradas (${deleted.length}):**\n` + deleted.map(b => `- ${b}`).join('\n')
+                : '_No había ramas obsoletas que borrar._',
+            ];
+            if (kept.length) {
+              summary.push('', `**Conservadas por PR abierto:**\n` + kept.map(b => `- ${b}`).join('\n'));
+            }
+            await core.summary.addRaw(summary.join('\n')).write();
