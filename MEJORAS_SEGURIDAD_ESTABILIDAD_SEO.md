@@ -40,8 +40,10 @@ Resumen de los cambios aplicados y de las **acciones manuales pendientes** (tuya
 6. **Caché de scrapers sociales.** Tras el primer deploy, pasa `/`, `/register` y `/login`
    por el [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) → "Scrape Again".
 
-7. **`og-image.jpg`.** Sigue siendo el logo redimensionado. Si quieres una imagen de
-   compartición con texto, edítala (1200×630) o ajusta `frontend/scripts/generate-og-image.js`.
+7. **`og-image.jpg`.** Ahora es una tarjeta de marca real (logo + titular + dominio),
+   generada con `cd frontend && npm run gen:og`. Para retocarla, edita
+   `frontend/scripts/generate-og-image.js`. Tras cambiarla: deploy + "Scrape Again"
+   en el Facebook Debugger.
 
 8. **Follow-up de dependencias.** `react-router-dom` tiene un aviso de seguridad
    (open redirect / hydration) cuyo arreglo está en **React Router 7** (cambio mayor).
