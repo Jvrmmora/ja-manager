@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../../services/auth';
 import logo from '../../assets/logos/logo.png';
 
 const NAV_ITEMS = [
@@ -17,20 +18,72 @@ interface NavbarProps {
   onOpenContact?: () => void;
 }
 
+const getFirstName = (fullName?: string) => {
+  if (!fullName) {
+    return 'Mi cuenta';
+  }
+  return fullName.trim().split(/\s+/)[0];
+};
+
+const getInitials = (fullName?: string) => {
+  if (!fullName) {
+    return 'U';
+  }
+  return fullName
+    .trim()
+    .split(/\s+/)
+    .map(part => part.charAt(0))
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+};
+
 export default function Navbar({ onOpenContact }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('about');
+  const [userInfo, setUserInfo] = useState(() => authService.getUserInfo());
   const navigate = useNavigate();
+
+  const isAuthenticated = authService.isAuthenticated() && !!userInfo;
+  const homePath =
+    userInfo?.role_name === 'Young role' ? '/dashboard' : '/admin';
+
+  useEffect(() => {
+    const refreshUser = () => setUserInfo(authService.getUserInfo());
+    window.addEventListener('userInfoUpdated', refreshUser);
+    window.addEventListener('storage', refreshUser);
+    return () => {
+      window.removeEventListener('userInfoUpdated', refreshUser);
+      window.removeEventListener('storage', refreshUser);
+    };
+  }, []);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
       setActiveSection(id);
+      window.history.replaceState(null, '', `#${id}`);
     }
     setIsMenuOpen(false);
   };
+
+  // Deep-link: si la URL trae un hash al cargar, ir a esa sección.
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (!hash || !NAV_ITEMS.some(item => item.id === hash)) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const element = document.getElementById(hash);
+      if (element) {
+        element.scrollIntoView({ behavior: 'auto' });
+        setActiveSection(hash);
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const sections = NAV_ITEMS.map(item =>
@@ -51,9 +104,23 @@ export default function Navbar({ onOpenContact }: NavbarProps) {
         }
       }
 
-      setActiveSection(prev =>
-        prev === currentSection ? prev : currentSection
-      );
+      setActiveSection(prev => {
+        if (prev === currentSection) {
+          return prev;
+        }
+        // Reflejar la sección visible en la URL para poder compartir el enlace.
+        // Evitamos ensuciar la URL con la primera sección cuando aún estamos arriba.
+        if (window.scrollY > 4 || currentSection !== sections[0].id) {
+          window.history.replaceState(null, '', `#${currentSection}`);
+        } else {
+          window.history.replaceState(
+            null,
+            '',
+            window.location.pathname + window.location.search
+          );
+        }
+        return currentSection;
+      });
     };
 
     updateActiveSection();
@@ -66,32 +133,62 @@ export default function Navbar({ onOpenContact }: NavbarProps) {
     };
   }, []);
 
+  const profileButton = (fullWidth = false) => (
+    <button
+      onClick={() => {
+        navigate(homePath);
+        setIsMenuOpen(false);
+      }}
+      className={`inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+        fullWidth ? 'w-full justify-center px-4 py-2.5' : 'pl-1.5 pr-3 py-1.5'
+      }`}
+      aria-label="Ir a mi panel"
+    >
+      <span className="h-8 w-8 flex-shrink-0 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+        {userInfo?.profileImage ? (
+          <img
+            src={userInfo.profileImage}
+            alt={userInfo.fullName || 'Perfil'}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-white font-semibold text-xs">
+            {getInitials(userInfo?.fullName)}
+          </span>
+        )}
+      </span>
+      <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate max-w-[120px]">
+        {getFirstName(userInfo?.fullName)}
+      </span>
+    </button>
+  );
+
   return (
     <nav className="sticky top-0 z-50 bg-white/98 dark:bg-gray-900/98 backdrop-blur-md border-b border-gray-200/60 dark:border-gray-700/60 shadow-[0_2px_15px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.3)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-16 gap-2">
           {/* Logo + Brand */}
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-center gap-2 hover:opacity-90 transition-opacity duration-200 flex-shrink-0"
+            className="flex items-center gap-2 hover:opacity-90 transition-opacity duration-200 flex-shrink-0 min-w-0"
           >
             <img
               src={logo}
               alt="JA Modelia Bogotá"
               className="h-10 w-10 object-contain flex-shrink-0"
             />
-            <span className="font-bold text-gray-900 dark:text-white text-base hidden sm:inline leading-tight">
+            <span className="font-bold text-gray-900 dark:text-white text-base hidden sm:inline lg:hidden xl:inline leading-tight truncate">
               Jóvenes Modelia Bogotá
             </span>
           </button>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-0.5">
+          <div className="hidden lg:flex items-center gap-0.5">
             {NAV_ITEMS.map(({ id, label }) => (
               <button
                 key={id}
                 onClick={() => scrollToSection(id)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   activeSection === id
                     ? 'text-blue-700 dark:text-blue-300 bg-gradient-to-b from-blue-50 to-blue-100/50 dark:from-blue-900/40 dark:to-blue-800/20 shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-800/50'
@@ -103,11 +200,11 @@ export default function Navbar({ onOpenContact }: NavbarProps) {
           </div>
 
           {/* Right actions */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {onOpenContact && (
               <button
                 onClick={onOpenContact}
-                className="hidden md:inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-lg transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
+                className="hidden lg:inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-lg transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
               >
                 <svg
                   className="w-4 h-4"
@@ -154,17 +251,21 @@ export default function Navbar({ onOpenContact }: NavbarProps) {
               )}
             </button>
 
-            <button
-              onClick={() => navigate('/login')}
-              className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              Ingresar
-            </button>
+            {isAuthenticated ? (
+              <div className="hidden sm:block">{profileButton()}</div>
+            ) : (
+              <button
+                onClick={() => navigate('/login')}
+                className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Ingresar
+              </button>
+            )}
 
             {/* Mobile hamburger */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+              className="lg:hidden p-2.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
               aria-label="Abrir menú"
             >
               <svg
@@ -196,7 +297,7 @@ export default function Navbar({ onOpenContact }: NavbarProps) {
 
       {/* Mobile dropdown */}
       {isMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-3 space-y-1">
+        <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-3 space-y-1">
           {NAV_ITEMS.map(({ id, label }) => (
             <button
               key={id}
@@ -210,14 +311,14 @@ export default function Navbar({ onOpenContact }: NavbarProps) {
               {label}
             </button>
           ))}
-          <div className="pt-2 pb-1 border-t border-gray-100 dark:border-gray-800">
+          <div className="pt-2 pb-1 border-t border-gray-100 dark:border-gray-800 space-y-2">
             {onOpenContact && (
               <button
                 onClick={() => {
                   onOpenContact();
                   setIsMenuOpen(false);
                 }}
-                className="w-full mb-2 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md"
+                className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md"
               >
                 <svg
                   className="w-4 h-4"
@@ -235,12 +336,19 @@ export default function Navbar({ onOpenContact }: NavbarProps) {
                 Contacto
               </button>
             )}
-            <button
-              onClick={() => navigate('/login')}
-              className="w-full px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              Ingresar
-            </button>
+            {isAuthenticated ? (
+              profileButton(true)
+            ) : (
+              <button
+                onClick={() => {
+                  navigate('/login');
+                  setIsMenuOpen(false);
+                }}
+                className="w-full px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Ingresar
+              </button>
+            )}
           </div>
         </div>
       )}
