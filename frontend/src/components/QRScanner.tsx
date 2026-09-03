@@ -202,12 +202,9 @@ const QRScanner: React.FC<QRScannerProps> = ({
             );
           }
           // Si es 'prompt', continuar con la solicitud normal
-        } catch (permError) {
+        } catch {
           // La API de permissions puede no estar disponible en algunos navegadores
           // Continuar con el método tradicional
-          console.log(
-            'Permissions API no disponible, usando método tradicional'
-          );
         }
       }
 

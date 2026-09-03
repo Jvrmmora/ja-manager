@@ -87,7 +87,6 @@ const useInfiniteScroll = (
         const isNearBottom = scrollTop + clientHeight >= scrollHeight - 1000; // 1000px antes del final
 
         if (isNearBottom && hasMore && !loading) {
-          console.log('🔄 Scroll infinito activado - cargando más elementos');
           callback();
         }
       }, 200);
@@ -229,8 +228,6 @@ function HomePage() {
   // Función para obtener todos los jóvenes para estadísticas (sin filtros)
   const fetchAllYoung = async () => {
     try {
-      console.log('🔍 Obteniendo todos los jóvenes para estadísticas...');
-
       let allYoung: IYoung[] = [];
       let currentPage = 1;
       let hasMorePages = true;
@@ -242,8 +239,6 @@ function HomePage() {
         // NO aplicar filtros a las estadísticas - queremos el total real
 
         const url = `young?${params.toString()}`;
-        console.log(`📡 URL para estadísticas página ${currentPage}:`, url);
-
         const response = await apiRequest(url);
 
         if (!response.ok) {
@@ -251,8 +246,6 @@ function HomePage() {
         }
 
         const result = await response.json();
-        console.log(`📊 Resultado página ${currentPage}:`, result);
-
         const youngArray =
           result.success && result.data && Array.isArray(result.data.data)
             ? result.data.data
@@ -267,20 +260,8 @@ function HomePage() {
         } else {
           hasMorePages = false;
         }
-
-        console.log(
-          `📄 Página ${currentPage - 1}: ${youngArray.length} jóvenes. Total acumulado: ${allYoung.length}`
-        );
       }
 
-      console.log('👥 Total jóvenes para estadísticas:', allYoung.length);
-      console.log('📋 Primeros 3 jóvenes:', allYoung.slice(0, 3));
-      setAllYoungList(allYoung);
-      console.log(
-        '✅ allYoungList actualizado con',
-        allYoung.length,
-        'elementos'
-      );
     } catch (err) {
       console.error('❌ Error en fetchAllYoung:', err);
     }
@@ -299,14 +280,6 @@ function HomePage() {
         if (append) {
           // Usar ref para verificar sin causar re-renders
           if (page <= currentPageRef.current || isLoadingPageRef.current) {
-            console.log(
-              '🚫 Evitando carga duplicada de página:',
-              page,
-              'currentPageRef:',
-              currentPageRef.current,
-              'isLoading:',
-              isLoadingPageRef.current
-            );
             return;
           }
           isLoadingPageRef.current = true;
@@ -352,8 +325,6 @@ function HomePage() {
         }
 
         const url = `young?${params.toString()}`;
-        console.log('📡 Llamando API con URL:', url);
-
         const response = await apiRequest(url);
 
         if (!response.ok) {
@@ -361,8 +332,6 @@ function HomePage() {
         }
 
         const result = await response.json();
-        console.log('📊 Respuesta del servidor:', result);
-
         const youngArray =
           result.success && result.data && Array.isArray(result.data.data)
             ? result.data.data
@@ -370,21 +339,10 @@ function HomePage() {
 
         const pagination = result.data?.pagination;
 
-        console.log('📊 Datos recibidos:', {
-          youngArray: youngArray.length,
-          pagination,
-          append,
-        });
-
         if (append) {
           // Scroll infinito: agregar nuevos elementos
           setYoungList(prevList => {
             const newList = [...prevList, ...youngArray];
-            console.log(
-              '📝 Lista actualizada (append):',
-              newList.length,
-              'elementos'
-            );
             return newList;
           });
           const newCurrentPage = page;
@@ -398,19 +356,11 @@ function HomePage() {
           currentPageRef.current = newCurrentPage;
           setNextPageToLoad(newCurrentPage + 1);
           isLoadingPageRef.current = false; // Reset flag de carga
-          console.log('📝 Lista reemplazada:', youngArray.length, 'elementos');
         }
 
         // Actualizar información de paginación
         setHasMore(pagination ? pagination.hasNextPage : false);
         setFilteredTotal(pagination?.totalItems || null);
-
-        console.log('📄 Estado de paginación:', {
-          currentPage: pagination?.currentPage || 1,
-          totalPages: pagination?.totalPages || 1,
-          hasNextPage: pagination?.hasNextPage || false,
-          totalItems: pagination?.totalItems || 0,
-        });
       } catch (err) {
         console.error('❌ Error al obtener jóvenes:', err);
         setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -436,24 +386,9 @@ function HomePage() {
       hasMore &&
       nextPageToLoad > currentPageRef.current
     ) {
-      console.log(
-        '🔄 Activando carga de más elementos. Página a cargar:',
-        nextPageToLoad,
-        'currentPageRef:',
-        currentPageRef.current
-      );
       setIsLoadingMore(true);
       fetchYoung(nextPageToLoad, true).finally(() => {
         setIsLoadingMore(false);
-      });
-    } else {
-      console.log('🚫 No se puede cargar más:', {
-        isLoadingMore,
-        loadingMore,
-        isLoadingPageRef: isLoadingPageRef.current,
-        hasMore,
-        nextPageToLoad,
-        currentPageRef: currentPageRef.current,
       });
     }
   }, [isLoadingMore, loadingMore, hasMore, nextPageToLoad, fetchYoung]);
@@ -524,7 +459,6 @@ function HomePage() {
 
   // Función para aplicar filtros
   const handleFilterChange = (newFilters: PaginationQuery) => {
-    console.log('🔍 Aplicando filtros:', newFilters);
     setFilters(newFilters);
     currentPageRef.current = 1; // Reset ref
     setNextPageToLoad(2);
@@ -536,7 +470,6 @@ function HomePage() {
 
   const handleSubmit = async (data: YoungFormData) => {
     try {
-      console.log('✨ Iniciando creación de joven');
       debugAuthState(); // Debug del estado de autenticación
 
       const formData = new FormData();
@@ -602,9 +535,7 @@ function HomePage() {
         );
       }
 
-      const result = await response.json();
-      console.log('✅ Joven creado exitosamente:', result);
-
+      await response.json();
       // Recargar los datos
       fetchYoung();
       fetchAllYoung(); // Actualizar estadísticas también
@@ -626,7 +557,6 @@ function HomePage() {
     if (!editingYoung) return;
 
     try {
-      console.log('🔄 Iniciando actualización de joven:', id);
       debugAuthState(); // Debug del estado de autenticación
 
       const formData = new FormData();
@@ -694,9 +624,7 @@ function HomePage() {
         );
       }
 
-      const result = await response.json();
-      console.log('✅ Joven actualizado exitosamente:', result);
-
+      await response.json();
       // Recargar los datos
       fetchYoung(1); // Volver a página 1 después de actualizar
       fetchAllYoung(); // Actualizar estadísticas también
@@ -722,7 +650,6 @@ function HomePage() {
 
   const handleDelete = async (id: string) => {
     try {
-      console.log('🗑️ Iniciando eliminación de joven:', id);
       debugAuthState(); // Debug del estado de autenticación
 
       const response = await apiRequest(`young/${id}`, {
@@ -733,8 +660,6 @@ function HomePage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Error al eliminar el joven');
       }
-
-      console.log('✅ Joven eliminado exitosamente');
 
       // Recargar los datos
       fetchYoung();
@@ -753,7 +678,6 @@ function HomePage() {
   };
 
   const handleImportSuccess = () => {
-    console.log('📥 Importación exitosa, recargando datos...');
     fetchYoung();
     fetchAllYoung(); // Actualizar estadísticas también
     setShowImportModal(false);
@@ -779,9 +703,7 @@ function HomePage() {
   // Funciones para manejar el perfil del usuario admin
   const handleOpenProfile = async () => {
     try {
-      console.log('👤 Abriendo perfil de admin...');
       const userData = await getCurrentUserProfile();
-      console.log('👤 Datos del usuario admin obtenidos:', userData);
       setCurrentUser(userData);
       setShowProfileModal(true);
     } catch (error) {

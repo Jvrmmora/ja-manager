@@ -140,9 +140,8 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
       const data = await getCurrentQR();
       setQrData(data);
       await loadStats();
-    } catch (error: any) {
+    } catch {
       // No hay QR activo, no es un error crítico
-      console.log('No hay QR activo:', error.message);
     } finally {
       setIsLoading(false);
     }
