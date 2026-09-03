@@ -1,5 +1,26 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+// La descripción puede llegar como HTML enriquecido (editor TipTap del CMS).
+// Se valida por longitud de texto visible, no de markup, y se acota el tamaño
+// crudo para evitar payloads desproporcionados.
+const MAX_PLAIN_TEXT = 700;
+const MAX_RAW_LENGTH = 20000;
+
+const getPlainTextLength = (value?: string) => {
+  if (!value) return 0;
+
+  return value
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&#39;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/\s+/g, ' ')
+    .trim().length;
+};
+
 export interface ILandingMedia extends Document {
   title: string;
   description?: string;
@@ -30,7 +51,17 @@ const landingMediaSchema = new Schema<ILandingMedia>(
     description: {
       type: String,
       trim: true,
-      maxlength: [700, 'La descripción no puede exceder 700 caracteres'],
+      validate: [
+        {
+          validator: (value?: string) => !value || value.length <= MAX_RAW_LENGTH,
+          message: 'La descripción es demasiado extensa',
+        },
+        {
+          validator: (value?: string) =>
+            !value || getPlainTextLength(value) <= MAX_PLAIN_TEXT,
+          message: `La descripción no puede exceder ${MAX_PLAIN_TEXT} caracteres`,
+        },
+      ],
     },
     mediaUrl: {
       type: String,

@@ -57,7 +57,10 @@ export default function RichTextEditor({
   });
 
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || editor.isFocused) return;
+    // Solo re-sincronizamos desde el prop cuando el usuario no está escribiendo;
+    // el saneo puede reescribir el markup (p. ej. rel/target en enlaces) y no
+    // debe hacer saltar el cursor.
     const currentHtml = editor.getHTML();
     if (normalizedValue !== currentHtml) {
       editor.commands.setContent(normalizedValue, { emitUpdate: false });
