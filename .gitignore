@@ -118,3 +118,5 @@ data/
 #graphify
 graphify-out
 .graphifyignore
+# Claude Code local workspace
+.claude/
