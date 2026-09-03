@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ImageWithFallback from './ImageWithFallback';
 
 interface Meeting {
   _id: string;
@@ -71,9 +72,10 @@ export default function MeetingsSection({ meetings }: MeetingsSectionProps) {
                   {/* Image */}
                   {meeting.imageUrl && (
                     <div className="h-56 overflow-hidden">
-                      <img
+                      <ImageWithFallback
                         src={meeting.imageUrl}
                         alt={meeting.title}
+                        fallbackLabel={meeting.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
                       />
