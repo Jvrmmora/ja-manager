@@ -3,7 +3,20 @@ import { createRegistrationRequest } from '../services/api';
 import { authService } from '../services/auth';
 import PhoneInput from './PhoneInput';
 import LoadingSpinner from './LoadingSpinner';
+import PrivacyPolicyModal from './privacy/PrivacyPolicyModal';
+import { fetchPrivacyPolicy } from '../services/consentService';
 import { useTheme } from '../context/ThemeContext';
+
+function calculateAgeYears(birthday: string): number | null {
+  if (!birthday) return null;
+  const today = new Date();
+  const birthDate = new Date(birthday);
+  if (Number.isNaN(birthDate.getTime())) return null;
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+  return age;
+}
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -31,6 +44,11 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [passwordsMatch, setPasswordsMatch] = useState<boolean | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
+  const [showPolicy, setShowPolicy] = useState(false);
+  const [policyVersion, setPolicyVersion] = useState<string | null>(null);
+  const [guardianName, setGuardianName] = useState('');
+  const [guardianRel, setGuardianRel] = useState('');
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -65,6 +83,14 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
     if (age >= 26 && age <= 30) return '26-30';
     return '30+';
   };
+
+  // Cargar la versión vigente de la política de privacidad
+  useEffect(() => {
+    if (!isOpen) return;
+    fetchPrivacyPolicy()
+      .then(p => setPolicyVersion(p.currentVersion))
+      .catch(() => setPolicyVersion(null));
+  }, [isOpen]);
 
   // Detectar query parameter de referido al abrir el modal
   useEffect(() => {
@@ -429,6 +455,28 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         return;
       }
 
+      if (!acceptPrivacy) {
+        setErrors(prev => ({
+          ...prev,
+          acceptPrivacy:
+            'Debes aceptar la Política de Privacidad para registrarte',
+        }));
+        setLoading(false);
+        return;
+      }
+
+      const ageYears = calculateAgeYears(formData.birthday);
+      const isMinor = ageYears !== null && ageYears < 18;
+      if (isMinor && !guardianName.trim()) {
+        setErrors(prev => ({
+          ...prev,
+          guardianName:
+            'Ingresa el nombre del padre, madre o representante legal',
+        }));
+        setLoading(false);
+        return;
+      }
+
       // Crear FormData
       const formDataToSend = new FormData();
       formDataToSend.append('fullName', formData.fullName.trim());
@@ -444,6 +492,16 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       );
       formDataToSend.append('role', 'joven adventista');
       formDataToSend.append('group', '1');
+
+      // Consentimiento de tratamiento de datos personales (Ley 1581/2012)
+      formDataToSend.append('acceptPrivacyPolicy', 'true');
+      formDataToSend.append('policyVersion', policyVersion || '');
+      if (isMinor) {
+        if (guardianName.trim())
+          formDataToSend.append('guardianFullName', guardianName.trim());
+        if (guardianRel.trim())
+          formDataToSend.append('guardianRelationship', guardianRel.trim());
+      }
 
       if (formData.referredByPlaca.trim()) {
         formDataToSend.append(
@@ -572,6 +630,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       setEmailExists(false);
       setPlacaValid(null);
       setPasswordsMatch(null);
+      setAcceptPrivacy(false);
+      setGuardianName('');
+      setGuardianRel('');
       setErrors({});
       onClose();
     }
@@ -1173,6 +1234,95 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             </p>
           </div>
 
+          {/* Consentimiento de datos personales (Ley 1581/2012) */}
+          <div>
+            {calculateAgeYears(formData.birthday) !== null &&
+              (calculateAgeYears(formData.birthday) as number) < 18 && (
+                <div
+                  className={`mb-3 space-y-2 rounded-lg p-3 border ${
+                    isDark
+                      ? 'bg-amber-900/10 border-amber-800'
+                      : 'bg-amber-50 border-amber-200'
+                  }`}
+                >
+                  <p
+                    className={`text-xs font-medium ${isDark ? 'text-amber-300' : 'text-amber-800'}`}
+                  >
+                    Eres menor de edad: se requiere la autorización de tu padre,
+                    madre o representante legal.
+                  </p>
+                  <input
+                    type="text"
+                    value={guardianName}
+                    onChange={e => {
+                      setGuardianName(e.target.value);
+                      setErrors(prev => {
+                        const x = { ...prev };
+                        delete x.guardianName;
+                        return x;
+                      });
+                    }}
+                    disabled={loading}
+                    placeholder="Nombre del padre, madre o representante legal"
+                    className={`w-full px-3 py-2 text-sm rounded-lg border ${
+                      isDark
+                        ? 'bg-gray-800 border-gray-600 text-white'
+                        : 'bg-white border-gray-300 text-gray-900'
+                    }`}
+                  />
+                  {errors.guardianName && (
+                    <p className="text-xs text-red-500">{errors.guardianName}</p>
+                  )}
+                  <input
+                    type="text"
+                    value={guardianRel}
+                    onChange={e => setGuardianRel(e.target.value)}
+                    disabled={loading}
+                    placeholder="Parentesco (padre, madre, representante legal)"
+                    className={`w-full px-3 py-2 text-sm rounded-lg border ${
+                      isDark
+                        ? 'bg-gray-800 border-gray-600 text-white'
+                        : 'bg-white border-gray-300 text-gray-900'
+                    }`}
+                  />
+                </div>
+              )}
+
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptPrivacy}
+                onChange={e => {
+                  setAcceptPrivacy(e.target.checked);
+                  setErrors(prev => {
+                    const x = { ...prev };
+                    delete x.acceptPrivacy;
+                    return x;
+                  });
+                }}
+                disabled={loading}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span
+                className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+              >
+                He leído y acepto la{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowPolicy(true)}
+                  className="text-blue-600 dark:text-blue-400 underline font-medium"
+                >
+                  Política de Privacidad
+                </button>{' '}
+                y{' '}
+                <strong>autorizo el tratamiento de mis datos personales</strong>.
+              </span>
+            </label>
+            {errors.acceptPrivacy && (
+              <p className="mt-1 text-xs text-red-500">{errors.acceptPrivacy}</p>
+            )}
+          </div>
+
           {/* Botones */}
           <div className="flex gap-4 pt-4">
             <button
@@ -1204,6 +1354,11 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           </div>
         </form>
       </div>
+
+      <PrivacyPolicyModal
+        open={showPolicy}
+        onClose={() => setShowPolicy(false)}
+      />
     </div>
   );
 };

@@ -394,9 +394,10 @@ export const contactFormLimiter = (
 };
 
 /**
- * Obtiene la IP del cliente considerando proxies
+ * Obtiene la IP del cliente considerando proxies.
+ * Exportado para reutilizarlo al registrar evidencia de consentimiento.
  */
-function getClientIp(req: Request): string {
+export function getClientIp(req: Request): string {
   // Intentar obtener IP real considerando proxies
   const forwardedFor = req.headers['x-forwarded-for'];
 
