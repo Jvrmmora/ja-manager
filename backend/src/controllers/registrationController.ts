@@ -19,6 +19,8 @@ import { ApiResponse, PaginatedResponse } from '../types';
 import logger from '../utils/logger';
 import { uploadToCloudinary } from '../config/cloudinary';
 import { emailService } from '../services/emailService';
+import { CURRENT_POLICY_VERSION } from '../config/privacyPolicy';
+import { recordConsent } from '../services/consentService';
 
 // Helper para generar placa (similar a generatePlaca en youngController)
 async function generatePlacaForRegistration(fullName: string): Promise<string> {
@@ -200,9 +202,38 @@ export class RegistrationController {
         throw new ValidationError(error.details[0].message);
       }
 
-      // Remover passwordConfirmation del objeto (no se guarda)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { passwordConfirmation, ...registrationData } = value;
+      // Separar los campos de consentimiento: no pertenecen al modelo Young ni
+      // a RegistrationRequest, se usan solo para registrar la evidencia.
+      const {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        passwordConfirmation,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        acceptPrivacyPolicy,
+        policyVersion,
+        guardianFullName,
+        guardianRelationship,
+        ...registrationData
+      } = value;
+
+      // Verificar que se aceptó la versión vigente de la política
+      if (policyVersion !== CURRENT_POLICY_VERSION) {
+        throw new ValidationError(
+          'La versión de la política de privacidad no es la vigente. Recarga la página e inténtalo de nuevo.'
+        );
+      }
+
+      // Determinar si el titular es menor de edad (según fecha de nacimiento)
+      const birthDate = new Date(registrationData.birthday);
+      const now = new Date();
+      let ageYears = now.getFullYear() - birthDate.getFullYear();
+      const monthDiff = now.getMonth() - birthDate.getMonth();
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && now.getDate() < birthDate.getDate())
+      ) {
+        ageYears--;
+      }
+      const isMinor = ageYears < 18;
 
       // Validar unicidad de email
       const existingEmail = await Young.findOne({
@@ -287,6 +318,32 @@ export class RegistrationController {
 
       const newYoung = new Young(youngData);
       const savedYoung = await newYoung.save(); // ✅ El middleware pre-save encriptará el password automáticamente
+
+      // Registrar evidencia del consentimiento de tratamiento de datos personales
+      // (Ley 1581/2012). Si algo falla aquí, no revertimos el registro pero sí
+      // lo dejamos trazado para corregirlo.
+      try {
+        await recordConsent({
+          youngId: savedYoung._id as mongoose.Types.ObjectId,
+          channel: 'registration',
+          req,
+          isMinor,
+          guardian: isMinor
+            ? {
+                fullName: guardianFullName || undefined,
+                relationship: guardianRelationship || undefined,
+              }
+            : undefined,
+        });
+      } catch (consentError) {
+        logger.error('Error registrando evidencia de consentimiento', {
+          context: 'RegistrationController',
+          method: 'createRegistrationRequest',
+          youngId: (savedYoung._id as mongoose.Types.ObjectId).toString(),
+          error:
+            consentError instanceof Error ? consentError.message : 'Unknown',
+        });
+      }
 
       // Crear RegistrationRequest para auditoría (con status 'approved' automático)
       try {

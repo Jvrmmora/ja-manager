@@ -19,6 +19,8 @@ import registrationRoutes from './routes/registrationRoutes';
 import birthdayRoutes from './routes/birthdayRoutes';
 import landingRoutes from './routes/landingRoutes';
 import contactRoutes from './routes/contactRoutes';
+import legalRoutes from './routes/legalRoutes';
+import consentRoutes from './routes/consentRoutes';
 import { DatabaseSeeder } from './seeders/DatabaseSeeder';
 import { startBirthdayScheduler } from './services/birthdayScheduler';
 import { authenticateToken } from './middleware/auth';
@@ -195,6 +197,10 @@ const setupRoutes = () => {
 
   // Rutas de registro (públicas para crear solicitud, protegidas para gestión)
   app.use('/api/registration', ensureDatabaseConnection, registrationRoutes);
+
+  // Política de privacidad (pública) y consentimiento del titular (autenticado)
+  app.use('/api/legal', legalRoutes);
+  app.use('/api/consent', ensureDatabaseConnection, consentRoutes);
 
   // Rutas protegidas que requieren autenticación y conexión a BD
   app.use('/api/young', ensureDatabaseConnection, authenticateToken, youngRoutes);

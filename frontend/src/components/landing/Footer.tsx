@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { normalizeWhatsAppUrl } from '../../utils/whatsapp';
+import PrivacyPolicyModal from '../privacy/PrivacyPolicyModal';
 
 interface FooterProps {
   addressLabel?: string;
@@ -44,6 +45,7 @@ export default function Footer({
   onOpenContact,
 }: FooterProps) {
   const currentYear = new Date().getFullYear();
+  const [showPolicy, setShowPolicy] = useState(false);
   const displayVisitCountValue =
     (typeof uniqueVisitorsCount === 'number' && uniqueVisitorsCount > 0
       ? uniqueVisitorsCount
@@ -246,9 +248,23 @@ export default function Footer({
             &copy; {currentYear} Jóvenes Adventistas Modelia Bogotá. Todos los
             derechos reservados.
           </p>
+          <p className="mt-2">
+            <button
+              type="button"
+              onClick={() => setShowPolicy(true)}
+              className="hover:text-blue-400 transition underline-offset-2 hover:underline"
+            >
+              Política de Privacidad
+            </button>
+          </p>
           <p className="mt-2">"Encendidos por Cristo"</p>
         </div>
       </div>
+
+      <PrivacyPolicyModal
+        open={showPolicy}
+        onClose={() => setShowPolicy(false)}
+      />
     </footer>
   );
 }

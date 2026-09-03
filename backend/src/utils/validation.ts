@@ -368,6 +368,38 @@ export const partialRegistrationSchema = Joi.object({
     .messages({
       'string.pattern.base': 'Formato de placa de referido no válido',
     }),
+
+  // Consentimiento de tratamiento de datos personales (Ley 1581/2012).
+  // Llega como string desde FormData; Joi lo convierte a boolean.
+  acceptPrivacyPolicy: Joi.boolean().valid(true).required().messages({
+    'any.only': 'Debe aceptar la Política de Privacidad para registrarse',
+    'any.required': 'Debe aceptar la Política de Privacidad para registrarse',
+    'boolean.base': 'Debe aceptar la Política de Privacidad para registrarse',
+  }),
+
+  policyVersion: Joi.string().trim().max(20).required().messages({
+    'any.required': 'Falta la versión de la política aceptada',
+    'string.empty': 'Falta la versión de la política aceptada',
+  }),
+
+  guardianFullName: Joi.string().trim().max(100).optional().allow('', null),
+
+  guardianRelationship: Joi.string().trim().max(60).optional().allow('', null),
+});
+
+// Aceptación de la política vigente por un usuario ya autenticado
+export const consentAcceptSchema = Joi.object({
+  acceptPrivacyPolicy: Joi.boolean().valid(true).required().messages({
+    'any.only': 'Debe aceptar la Política de Privacidad',
+    'any.required': 'Debe aceptar la Política de Privacidad',
+    'boolean.base': 'Debe aceptar la Política de Privacidad',
+  }),
+  policyVersion: Joi.string().trim().max(20).required().messages({
+    'any.required': 'Falta la versión de la política aceptada',
+    'string.empty': 'Falta la versión de la política aceptada',
+  }),
+  guardianFullName: Joi.string().trim().max(100).optional().allow('', null),
+  guardianRelationship: Joi.string().trim().max(60).optional().allow('', null),
 });
 
 // Esquema para aprobar/rechazar solicitud

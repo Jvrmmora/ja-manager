@@ -31,6 +31,13 @@ export interface IYoung {
   totalPoints?: number; // ✅ Puntos totales (calculado, no persistido)
   deletedAt?: Date | null; // Soft delete: fecha de eliminación
   isSpam?: boolean; // Flag para marcar como spam
+  // Resumen del consentimiento de tratamiento de datos personales (Ley 1581/2012)
+  dataConsent?: {
+    status: 'none' | 'current' | 'pending_reconsent';
+    version: string | null;
+    acceptedAt: Date | null;
+    lastRecordId?: string | null;
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }
