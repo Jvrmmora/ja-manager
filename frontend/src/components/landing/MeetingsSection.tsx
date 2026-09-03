@@ -67,7 +67,7 @@ export default function MeetingsSection({ meetings }: MeetingsSectionProps) {
               {visibleMeetings.map(meeting => (
                 <article
                   key={meeting._id}
-                  className="group overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm hover:shadow-xl transition-all"
+                  className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm hover:shadow-xl transition-all"
                 >
                   {/* Image */}
                   {meeting.imageUrl && (
@@ -83,58 +83,62 @@ export default function MeetingsSection({ meetings }: MeetingsSectionProps) {
                   )}
 
                   {/* Content */}
-                  <div className="p-5">
+                  <div className="flex flex-grow flex-col p-5">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                       {meeting.title}
                     </h3>
 
-                    {meeting.subtitle && (
-                      <p className="text-sm text-blue-600 dark:text-blue-400 font-semibold mt-1">
-                        {meeting.subtitle}
-                      </p>
-                    )}
+                    <p className="min-h-[1.25rem] text-sm text-blue-600 dark:text-blue-400 font-semibold mt-1">
+                      {meeting.subtitle}
+                    </p>
 
-                    {meeting.description && (
-                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {meeting.description}
-                      </p>
-                    )}
+                    <p className="mt-2 min-h-[2.5rem] text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                      {meeting.description}
+                    </p>
 
-                    {/* Schedule */}
-                    <div className="mt-3 flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
-                      <svg
-                        className="w-4 h-4 shrink-0"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00-.293.707l-2.828 2.829a1 1 0 101.415 1.415L9 10.414V6z" />
-                      </svg>
-                      <span>
-                        {meeting.schedule.day} • {meeting.schedule.time}
-                      </span>
+                    {/* Footer pinned to the bottom so it lines up across cards */}
+                    <div className="mt-auto space-y-3 pt-4">
+                      {/* Schedule */}
+                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
+                        <svg
+                          className="w-4 h-4 shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                          aria-hidden="true"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            clipRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                          />
+                        </svg>
+                        <span>
+                          {meeting.schedule.day} • {meeting.schedule.time}
+                        </span>
+                      </div>
+
+                      {/* Modality badge */}
+                      <div>
+                        <span
+                          className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${modalityBadge(meeting.modality)}`}
+                        >
+                          {meeting.modality.charAt(0).toUpperCase() +
+                            meeting.modality.slice(1)}
+                        </span>
+                      </div>
+
+                      {/* Join link */}
+                      {meeting.meetingLink && (
+                        <a
+                          href={meeting.meetingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          Unirse
+                        </a>
+                      )}
                     </div>
-
-                    {/* Modality badge */}
-                    <div className="mt-3">
-                      <span
-                        className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${modalityBadge(meeting.modality)}`}
-                      >
-                        {meeting.modality.charAt(0).toUpperCase() +
-                          meeting.modality.slice(1)}
-                      </span>
-                    </div>
-
-                    {/* Join link */}
-                    {meeting.meetingLink && (
-                      <a
-                        href={meeting.meetingLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-3 inline-flex text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        Unirse
-                      </a>
-                    )}
                   </div>
                 </article>
               ))}
