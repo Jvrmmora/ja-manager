@@ -50,6 +50,9 @@ export const SCOPES = {
 
   // Contact endpoints
   'contact:read': 'Ver mensajes de contacto',
+
+  // Landing CMS endpoints
+  'landing:manage': 'Gestionar el contenido de la landing (textos, media, reuniones)',
 } as const;
 
 /**
