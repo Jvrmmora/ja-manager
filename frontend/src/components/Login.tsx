@@ -60,9 +60,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, showToast }) => {
       const response = await authService.login(formData);
 
       if (response.success) {
-        // const userRole = authService.getUserRole();
-        const isFirstLogin = authService.isFirstLogin();
-
         // Limpiar query params de la URL (ej: ?placa=XYZ) después de login exitoso
         if (window.location.search) {
           const cleanUrl = window.location.origin + window.location.pathname;
@@ -72,11 +69,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, showToast }) => {
         // Llamar callback de éxito
         if (onLoginSuccess) {
           onLoginSuccess();
-        }
-
-        // Si es primer login, podrías mostrar un modal o redirigir a cambio de contraseña
-        if (isFirstLogin) {
-          console.log('Es el primer login del usuario');
         }
       }
     } catch (error: any) {

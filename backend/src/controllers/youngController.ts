@@ -122,17 +122,6 @@ export class YoungController {
 
       // Excluir usuarios eliminados con soft delete
       filters.deletedAt = null;
-      console.log('📄 Parámetros recibidos:', {
-        search,
-        ageRange,
-        gender,
-        role,
-        groups,
-        sortBy,
-        sortOrder,
-        page,
-        limit,
-      });
 
       // Configurar ordenamiento
       const sort: any = {};

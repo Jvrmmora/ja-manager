@@ -53,7 +53,6 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
     try {
       setLoading(true);
       setError(null);
-      console.log('🔍 PointsBreakdownModal - Cargando datos para:', young.id);
 
       const [breakdownData, historyData, positionData, leaderboard] =
         await Promise.all([
@@ -64,12 +63,6 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
             .getLeaderboard({})
             .catch(() => [] as ILeaderboardEntry[]),
         ]);
-
-      console.log('✅ PointsBreakdownModal - Datos cargados:', {
-        breakdown: breakdownData,
-        transactions: historyData.transactions.length,
-        position: positionData,
-      });
 
       setBreakdown(breakdownData as BreakdownWithStreak);
       setTransactions(historyData.transactions);
@@ -83,10 +76,7 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
           null
       );
     } catch (err: unknown) {
-      console.error(
-        '❌ PointsBreakdownModal - Error loading points data:',
-        err
-      );
+      console.error('Error loading points data:', err);
       const message =
         err instanceof Error
           ? err.message
@@ -177,14 +167,6 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
   };
 
   if (!isOpen) return null;
-
-  console.log('🎨 PointsBreakdownModal - Renderizando:', {
-    isOpen,
-    loading,
-    hasBreakdown: !!breakdown,
-    hasError: !!error,
-    youngId: young.id,
-  });
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
