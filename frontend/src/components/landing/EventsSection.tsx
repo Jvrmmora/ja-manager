@@ -154,53 +154,56 @@ export default function EventsSection({
           onClick={() => setSelectedEvent(null)}
         >
           <div
-            className="relative bg-white dark:bg-gray-900 rounded-xl max-w-5xl w-full p-4"
+            className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-900"
             onClick={e => e.stopPropagation()}
           >
-            <button
-              type="button"
-              onClick={() => setSelectedEvent(null)}
-              className="absolute top-2 right-2 p-2 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
-            >
-              Cerrar
-            </button>
+            <div className="flex items-start justify-between gap-4 border-b border-gray-200 dark:border-gray-700 p-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                {selectedEvent.title}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSelectedEvent(null)}
+                className="shrink-0 p-2 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+              >
+                Cerrar
+              </button>
+            </div>
 
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 pr-16">
-              {selectedEvent.title}
-            </h3>
+            <div className="overflow-y-auto p-4">
+              {selectedEvent.mediaType === 'image' && (
+                <img
+                  src={selectedEvent.mediaUrl}
+                  alt={selectedEvent.altText || selectedEvent.title}
+                  className="mx-auto w-full max-h-[60vh] object-contain rounded-lg"
+                />
+              )}
 
-            {selectedEvent.mediaType === 'image' && (
-              <img
-                src={selectedEvent.mediaUrl}
-                alt={selectedEvent.altText || selectedEvent.title}
-                className="w-full max-h-[65vh] object-contain rounded-lg"
-              />
-            )}
+              {selectedEvent.mediaType === 'video' && (
+                <video
+                  src={selectedEvent.mediaUrl}
+                  controls
+                  className="w-full max-h-[60vh] rounded-lg"
+                />
+              )}
 
-            {selectedEvent.mediaType === 'video' && (
-              <video
-                src={selectedEvent.mediaUrl}
-                controls
-                className="w-full max-h-[65vh] rounded-lg"
-              />
-            )}
+              {selectedEvent.mediaType === 'document' && (
+                <iframe
+                  src={selectedEvent.mediaUrl}
+                  title={selectedEvent.title}
+                  className="w-full h-[60vh] rounded-lg border border-gray-200 dark:border-gray-700"
+                />
+              )}
 
-            {selectedEvent.mediaType === 'document' && (
-              <iframe
-                src={selectedEvent.mediaUrl}
-                title={selectedEvent.title}
-                className="w-full h-[65vh] rounded-lg border border-gray-200 dark:border-gray-700"
-              />
-            )}
-
-            {selectedEvent.description && (
-              <div
-                className="rich-content mt-5 text-sm text-gray-700 dark:text-gray-300"
-                dangerouslySetInnerHTML={{
-                  __html: normalizeRichTextHtml(selectedEvent.description),
-                }}
-              />
-            )}
+              {selectedEvent.description && (
+                <div
+                  className="rich-content mt-5 text-sm text-gray-700 dark:text-gray-300"
+                  dangerouslySetInnerHTML={{
+                    __html: normalizeRichTextHtml(selectedEvent.description),
+                  }}
+                />
+              )}
+            </div>
           </div>
         </div>
       )}
