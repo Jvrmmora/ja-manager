@@ -85,8 +85,6 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
       );
       const data = await response.json();
 
-      console.log('🔍 Search response:', data); // Debug
-
       if (data.success && data.data) {
         // El backend puede devolver:
         // 1) data.data como array directamente
@@ -99,7 +97,6 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
         setYoungsList(results);
         setShowDropdown(true); // Asegurar que el dropdown se muestre
       } else {
-        console.log('❌ No data in response'); // Debug
         setYoungsList([]);
         setShowDropdown(true); // Mostrar dropdown incluso sin resultados
       }

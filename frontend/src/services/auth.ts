@@ -77,7 +77,6 @@ class AuthService {
           localStorage.setItem('userRole', profile.data.role_name);
           localStorage.setItem('userInfo', JSON.stringify(profile.data));
           localStorage.setItem('firstLogin', data.data.first_login.toString());
-          console.log('✅ Perfil guardado correctamente:', profile.data);
         } catch (profileError) {
           console.error(
             'Error obteniendo perfil después del login:',
@@ -174,15 +173,10 @@ class AuthService {
       // También actualizar userRole si está presente en los datos actualizados
       if (mergedUserInfo.role_name) {
         localStorage.setItem('userRole', mergedUserInfo.role_name);
-        console.log('🔄 UserRole actualizado a:', mergedUserInfo.role_name);
       }
 
       // Disparar evento personalizado para notificar el cambio
       window.dispatchEvent(new CustomEvent('userInfoUpdated'));
-      console.log(
-        '📝 Evento userInfoUpdated disparado con datos:',
-        mergedUserInfo
-      );
     } catch (error) {
       console.error('Error actualizando información del usuario:', error);
     }

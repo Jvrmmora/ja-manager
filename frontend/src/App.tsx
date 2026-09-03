@@ -11,9 +11,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import GoogleAnalytics from './components/GoogleAnalytics';
 import RouteSeo from './components/RouteSeo';
 
-// Log solo en desarrollo para no ensuciar la consola del navegador en producción.
-const devLog = import.meta.env.DEV ? console.log : () => {};
-
 // Lazy loading de páginas para code splitting
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const LandingCMS = lazy(() => import('./pages/LandingCMS'));
@@ -36,14 +33,9 @@ function App() {
     // Escuchar cambios en el localStorage
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'userInfo' && event.newValue) {
-        devLog('📝 Detectado cambio en userInfo, actualizando rol...');
         try {
           const updatedUserInfo = JSON.parse(event.newValue);
           setUserRole(updatedUserInfo.role_name);
-          devLog(
-            '🔄 Rol actualizado por storage event:',
-            updatedUserInfo.role_name
-          );
         } catch (error) {
           console.error('Error parsing updated user info:', error);
         }
@@ -52,16 +44,9 @@ function App() {
 
     // Escuchar eventos personalizados para actualizaciones internas
     const handleUserInfoUpdate = () => {
-      devLog(
-        '📝 Evento personalizado de actualización de perfil detectado'
-      );
       const userInfo = authService.getUserInfo();
       if (userInfo) {
         setUserRole(userInfo.role_name);
-        devLog(
-          '🔄 Rol actualizado por evento personalizado:',
-          userInfo.role_name
-        );
       }
     };
 
@@ -76,30 +61,21 @@ function App() {
 
   const checkAuthStatus = async () => {
     try {
-      devLog('🔍 Verificando estado de autenticación...');
       const authenticated = authService.isAuthenticated();
-      devLog('🔍 ¿Está autenticado?', authenticated);
 
       if (authenticated) {
         // Obtener información del usuario
         const userInfo = authService.getUserInfo();
-        devLog('👤 Información del usuario:', userInfo);
 
         if (userInfo) {
           setIsAuthenticated(true);
           setUserRole(userInfo.role_name);
-          devLog('✅ Usuario autenticado con rol:', userInfo.role_name);
         } else {
           // Token inválido o expirado
-          devLog(
-            '❌ No se pudo obtener información del usuario, haciendo logout'
-          );
           authService.logout();
           setIsAuthenticated(false);
           setUserRole(null);
         }
-      } else {
-        devLog('❌ Usuario no autenticado');
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
@@ -112,32 +88,17 @@ function App() {
   };
 
   const handleLoginSuccess = () => {
-    devLog('🎉 Login exitoso, actualizando estado...');
     setIsAuthenticated(true);
     const userInfo = authService.getUserInfo();
-    devLog('👤 Información del usuario después del login:', userInfo);
     setUserRole(userInfo?.role_name || null);
-    devLog('🔄 Rol establecido:', userInfo?.role_name || null);
   };
 
   const handleProfileUpdate = () => {
-    devLog(
-      '📝 Perfil actualizado, refrescando información del usuario...'
-    );
     const userInfo = authService.getUserInfo();
-    devLog('👤 Nueva información del usuario:', userInfo);
     setUserRole(userInfo?.role_name || null);
-    devLog('🔄 Nuevo rol establecido:', userInfo?.role_name || null);
   };
 
-  devLog('🎯 Renderizando App - Estado actual:', {
-    loading,
-    isAuthenticated,
-    userRole,
-  });
-
   if (loading) {
-    devLog('⏳ Mostrando loading...');
     return (
       <ThemeProvider>
         <PageLoader />

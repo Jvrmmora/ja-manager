@@ -90,10 +90,8 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
 
     // Escuchar cambios en userInfo (cuando se actualiza el perfil)
     const handleUserInfoUpdate = () => {
-      console.log('📝 YoungDashboard - detectado cambio en userInfo');
       const updatedUser = authService.getUserInfo();
       setUserInfo(updatedUser);
-      console.log('🔄 YoungDashboard - userInfo actualizado:', updatedUser);
     };
 
     // Escuchar el evento personalizado
@@ -215,7 +213,6 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   const handleOpenProfile = async () => {
     try {
       const userData = await getCurrentUserProfile();
-      console.log('👤 Datos del usuario obtenidos:', userData);
       setCurrentUser(userData);
       setShowProfileModal(true);
     } catch (error) {
@@ -285,8 +282,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   }, []);
 
   // QRScanner maneja todo internamente
-  const handleQRScanSuccess = (data: any) => {
-    console.log('✅ Asistencia registrada exitosamente:', data);
+  const handleQRScanSuccess = (_data: any) => {
     setAttendanceRefresh(prev => prev + 1);
   };
 

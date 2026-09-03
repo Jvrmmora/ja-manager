@@ -46,7 +46,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('🔍 ProfileModal - young changed:', young);
     if (young) {
       let birthdayValue = '';
       if (young.birthday) {
@@ -76,13 +75,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       setError(null);
       setEmailError('');
       setPhoneError('');
-      console.log('✅ ProfileModal - formData set:', {
-        fullName: young.fullName,
-        phone: young.phone,
-        birthday: birthdayValue,
-        email: young.email,
-        profileImage: young.profileImage,
-      });
     }
   }, [young]);
 
@@ -158,14 +150,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         }
       } else {
         const errorData = await response.json();
-        console.error('❌ Error response from backend:', {
-          status: response.status,
-          errorData,
-          hasErrorObject: !!errorData.error,
-          hasDetails: !!errorData.error?.details,
-          field: errorData.error?.details?.field,
-          existingOwner: errorData.error?.details?.existingOwner,
-        });
 
         // Manejo específico para errores de duplicación con información detallada
         if (
@@ -237,11 +221,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   };
 
   if (!isOpen || !young) {
-    console.log('🚫 ProfileModal - not rendering:', { isOpen, young: !!young });
     return null;
   }
-
-  console.log('✅ ProfileModal - rendering modal for user:', young.fullName);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 flex items-center justify-center z-50 p-4">

@@ -27,7 +27,6 @@ export const pointsService = {
       }
     );
     const result = await response.json();
-    console.log('📊 pointsService.getBreakdown - Response:', result);
 
     // El backend devuelve { success: true, data: breakdown }
     if (!result.data) {
