@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { normalizeRichTextHtml } from '../../utils/richText';
+import ImageWithFallback from './ImageWithFallback';
 
 interface EventMedia {
   _id: string;
@@ -74,9 +75,10 @@ export default function EventsSection({
                         className="w-full h-full object-cover"
                       />
                     ) : event.mediaType === 'image' ? (
-                      <img
+                      <ImageWithFallback
                         src={event.mediaUrl}
                         alt={event.altText || event.title}
+                        fallbackLabel={event.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
                       />
