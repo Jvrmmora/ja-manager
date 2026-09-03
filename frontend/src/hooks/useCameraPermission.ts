@@ -161,9 +161,8 @@ export const useCameraPermission = () => {
             }));
           }
         }
-      } catch (error) {
+      } catch {
         // Ignorar errores al verificar permisos existentes
-        console.log('No se pueden verificar permisos existentes:', error);
       }
     };
 

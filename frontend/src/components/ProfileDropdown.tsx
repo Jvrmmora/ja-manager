@@ -33,10 +33,8 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
 
     // Escuchar cambios en userInfo (cuando se actualiza el perfil)
     const handleUserInfoUpdate = () => {
-      console.log('📝 ProfileDropdown - detectado cambio en userInfo');
       const updatedUser = authService.getUserInfo();
       setUserInfo(updatedUser);
-      console.log('🔄 ProfileDropdown - userInfo actualizado:', updatedUser);
     };
 
     // Escuchar el evento personalizado
