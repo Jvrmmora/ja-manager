@@ -715,7 +715,7 @@ export default function LandingCMSPage() {
       });
       const data = await res.json();
       if (data.success) {
-        showToast('Archivo eliminado', 'success');
+        showToast(data.message || 'Archivo eliminado', 'success');
         setMedia(prev => prev.filter(m => m._id !== id));
       } else {
         showToast('Error al eliminar', 'error');
