@@ -166,6 +166,23 @@ const youngSchema = new Schema<IYoungDocument>(
       required: false,
       default: false,
     },
+    // Resumen del consentimiento de tratamiento de datos personales
+    // (Ley 1581/2012). La evidencia completa vive en la colección ConsentRecord;
+    // esto es solo un resumen para poder verificar rápido si falta aceptación.
+    dataConsent: {
+      status: {
+        type: String,
+        enum: ['none', 'current', 'pending_reconsent'],
+        default: 'none',
+      },
+      version: { type: String, default: null },
+      acceptedAt: { type: Date, default: null },
+      lastRecordId: {
+        type: Schema.Types.ObjectId,
+        ref: 'ConsentRecord',
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,

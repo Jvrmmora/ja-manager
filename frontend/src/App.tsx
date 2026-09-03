@@ -10,6 +10,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import GoogleAnalytics from './components/GoogleAnalytics';
 import RouteSeo from './components/RouteSeo';
+import ConsentGate from './components/privacy/ConsentGate';
 
 // Lazy loading de páginas para code splitting
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -164,6 +165,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        {isAuthenticated && <ConsentGate />}
       </BrowserRouter>
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </ThemeProvider>
