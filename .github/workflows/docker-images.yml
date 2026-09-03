@@ -1,0 +1,77 @@
+name: Validación de imágenes Docker
+
+# Ninguna de estas imágenes se publica en un registro: el backend se
+# despliega como zip a Azure Web App y el frontend como estáticos a Static
+# Web Apps. Construirlas es solo una comprobación de que el stack de
+# Compose (la ruta de despliegue local y alternativa) sigue en pie, así que
+# basta con correrla cuando cambian los Dockerfiles, la configuración de
+# Compose/nginx o las dependencias.
+#
+# Antes esto vivía dentro de los workflows de despliegue y les añadía entre
+# 1 y 5 minutos a cada push, además de reinstalar por tercera vez las
+# dependencias del frontend dentro del workflow del backend.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/Dockerfile'
+      - 'docker-compose.yml'
+      - 'frontend/nginx.conf'
+      - 'backend/package-lock.json'
+      - 'frontend/package-lock.json'
+      - '.github/workflows/docker-images.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '**/Dockerfile'
+      - 'docker-compose.yml'
+      - 'frontend/nginx.conf'
+      - 'backend/package-lock.json'
+      - 'frontend/package-lock.json'
+      - '.github/workflows/docker-images.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: docker-images-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-images:
+    runs-on: ubuntu-latest
+    name: Construir imágenes
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validar la configuración de Compose
+        run: docker compose config > /dev/null
+
+      # cache-from/to type=gha reutiliza las capas entre runs, así que el
+      # `npm ci` de dentro de la imagen solo se repite cuando cambia el
+      # package-lock.json.
+      - name: Construir imagen del backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          load: false
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Construir imagen del frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          load: false
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
