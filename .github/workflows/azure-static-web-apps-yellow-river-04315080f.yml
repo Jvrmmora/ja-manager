@@ -4,15 +4,28 @@ on:
   push:
     branches:
       - main
+    # Un cambio que solo toca el backend no tiene por qué reconstruir la SPA.
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/azure-static-web-apps-yellow-river-04315080f.yml'
   workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches:
       - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/azure-static-web-apps-yellow-river-04315080f.yml'
+
+# En PRs, un push nuevo cancela el build anterior. En main no se cancela:
+# interrumpir el upload a SWA dejaría el sitio a medio publicar.
+concurrency:
+  group: swa-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build_and_deploy_job:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     permissions:
@@ -32,18 +45,21 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'frontend/package-lock.json'
 
-      - name: Get Id Token
-        uses: actions/github-script@v8
-        id: idtoken
+      # setup-node solo cachea ~/.npm; reinstalar desde ahí ha oscilado
+      # entre 1 y 3.5 minutos. Cacheando node_modules entero, cuando el
+      # lockfile no cambia el `npm ci` se salta por completo.
+      - name: Restaurar node_modules del frontend
+        id: cache-frontend-modules
+        uses: actions/cache@v4
         with:
-          script: |
-            return await core.getIDToken()
-          result-encoding: string
+          path: frontend/node_modules
+          key: node-modules-frontend-${{ runner.os }}-${{ runner.arch }}-node20-${{ hashFiles('frontend/package-lock.json') }}
 
       # Instalar dependencias y construir el frontend explícitamente
       - name: Install Dependencies
+        if: steps.cache-frontend-modules.outputs.cache-hit != 'true'
         working-directory: frontend
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --fund=false
 
       - name: Lint Frontend
         working-directory: frontend
@@ -55,11 +71,22 @@ jobs:
         env:
           VITE_GA_MEASUREMENT_ID: ${{ secrets.VITE_GA_MEASUREMENT_ID }}
 
-      - name: Validate Docker frontend image
-        run: |
-          docker compose build frontend
-        env:
-          VITE_API_URL: https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api
+      # La construcción de la imagen Docker del frontend vive ahora en
+      # `docker-images.yml`: esa imagen no se publica en ningún registro
+      # (SWA despliega `frontend/dist`), así que solo hace falta validarla
+      # cuando cambian el Dockerfile, nginx.conf o las dependencias.
+
+      # El ID token de OIDC caduca a los ~10 minutos, así que se pide
+      # justo antes de desplegar. Si se pide al inicio del job, los pasos
+      # de build y de validación de Docker pueden agotarlo y Azure responde
+      # "No matching Static Web App was found or the api key was invalid".
+      - name: Get Id Token
+        uses: actions/github-script@v8
+        id: idtoken
+        with:
+          script: |
+            return await core.getIDToken()
+          result-encoding: string
 
       - name: Build And Deploy (Upload Dist)
         id: builddeploy
