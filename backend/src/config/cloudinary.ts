@@ -49,6 +49,29 @@ export const extractPublicId = (url: string): string => {
   return filename.split('.')[0];
 };
 
+/**
+ * Deriva el public_id completo (carpeta incluida, sin versión ni extensión) a
+ * partir de una URL de entrega de Cloudinary. Devuelve null si la URL no tiene
+ * el formato esperado.
+ *
+ * Ej: https://res.cloudinary.com/x/image/upload/v123/ja-manager/landing/meetings/abc.jpg
+ *  -> ja-manager/landing/meetings/abc
+ */
+export const landingPublicIdFromUrl = (url: string): string | null => {
+  const afterUpload = url.split('/upload/')[1];
+  if (!afterUpload) return null;
+
+  const path = afterUpload.split('?')[0].replace(/\.[^./]+$/, '');
+  const segments = path.split('/').filter(Boolean);
+
+  // El primer segmento suele ser la versión (v1234567890); si lo es, se descarta.
+  if (segments.length > 1 && /^v\d+$/.test(segments[0])) {
+    segments.shift();
+  }
+
+  return segments.join('/') || null;
+};
+
 // --- NUEVO: Funciones para la Landing Page (Tamaños grandes, Videos, Documentos) ---
 
 export const uploadLandingMediaToCloudinary = async (

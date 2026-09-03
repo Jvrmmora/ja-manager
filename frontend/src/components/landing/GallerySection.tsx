@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { normalizeRichTextHtml } from '../../utils/richText';
+import ImageWithFallback from './ImageWithFallback';
 
 interface GalleryMedia {
   _id: string;
@@ -86,9 +87,10 @@ export default function GallerySection({
                   className="relative group overflow-hidden rounded-2xl w-[260px] sm:w-[280px] md:w-[300px] h-[340px] cursor-pointer border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all bg-white dark:bg-gray-900"
                 >
                   {media.mediaType === 'image' && (
-                    <img
+                    <ImageWithFallback
                       src={media.mediaUrl}
                       alt={media.altText || media.title}
+                      fallbackLabel={media.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
                     />

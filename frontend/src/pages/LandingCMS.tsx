@@ -487,23 +487,17 @@ export default function LandingCMSPage() {
       setUploadingMeetingImage(true);
       const formData = new FormData();
       formData.append('file', meetingImageFile);
-      formData.append('category', 'gallery');
-      formData.append(
-        'title',
-        (meetingForm.title || meetingImageFile.name).replace(/\.[^.]+$/, '')
-      );
-      formData.append('altText', meetingForm.title || 'Imagen de reunión');
-      formData.append(
-        'description',
-        `Imagen para reunión: ${meetingForm.title || 'sin título'}`
-      );
 
-      const res = await apiUpload('landing/admin/media/upload', formData);
+      // Endpoint propio de reuniones: sube a su carpeta y NO crea entrada en la
+      // galería, así la imagen no se puede borrar por error desde "Media".
+      const res = await apiUpload(
+        'landing/admin/meetings/upload-image',
+        formData
+      );
       const data = await res.json();
 
-      if (data.success && data.data) {
-        setMedia(prev => [...prev, data.data]);
-        setMeetingForm(prev => ({ ...prev, imageUrl: data.data.mediaUrl }));
+      if (data.success && data.data?.imageUrl) {
+        setMeetingForm(prev => ({ ...prev, imageUrl: data.data.imageUrl }));
         setMeetingImageFile(null);
         setMeetingImagePreview(null);
         if (meetingImageInputRef.current)
@@ -721,7 +715,7 @@ export default function LandingCMSPage() {
       });
       const data = await res.json();
       if (data.success) {
-        showToast('Archivo eliminado', 'success');
+        showToast(data.message || 'Archivo eliminado', 'success');
         setMedia(prev => prev.filter(m => m._id !== id));
       } else {
         showToast('Error al eliminar', 'error');
