@@ -23,14 +23,14 @@ export default function CTASection({
   const finalWhatsAppUrl = normalizeWhatsAppUrl(whatsappUrl);
 
   return (
-    <section className="py-20 px-4 bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-800 dark:to-blue-900">
+    <section className="py-20 px-4 bg-gradient-to-b from-blue-700 to-blue-800 dark:from-blue-950 dark:to-gray-900">
       <div className="max-w-4xl mx-auto text-center">
         <h2 className="text-4xl font-bold mb-6 text-white">
           {title || 'Únete a Nuestro Movimiento'}
         </h2>
 
         <div
-          className="rich-content text-lg text-blue-100 mb-8"
+          className="rich-content text-lg text-blue-100 dark:text-blue-200/90 mb-8"
           dangerouslySetInnerHTML={{
             __html: normalizeRichTextHtml(
               body ||
