@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { normalizeRichTextHtml } from '../../utils/richText';
 
 interface ResourceMedia {
@@ -252,16 +253,23 @@ export default function ResourcesSection({
                       {item.title}
                     </h3>
                     {item.description && (
-                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-3">
-                        {item.description}
-                      </p>
+                      <div
+                        className="mt-2 rich-content text-sm text-gray-600 dark:text-gray-300 line-clamp-3 break-words [&_a]:break-words [&_p]:my-0"
+                        dangerouslySetInnerHTML={{
+                          __html: normalizeRichTextHtml(item.description),
+                        }}
+                      />
                     )}
                     <a
                       href={item.mediaUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex mt-4 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                      className="mt-4 inline-flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 hover:text-blue-800 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/60"
                     >
+                      <ArrowTopRightOnSquareIcon
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      />
                       Abrir recurso
                     </a>
                   </div>
@@ -303,9 +311,18 @@ export default function ResourcesSection({
               Cerrar
             </button>
 
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 pr-16">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 pr-16">
               {selectedResource.title}
             </h3>
+
+            {selectedResource.description && (
+              <div
+                className="rich-content mb-4 text-sm text-gray-600 dark:text-gray-300 break-words"
+                dangerouslySetInnerHTML={{
+                  __html: normalizeRichTextHtml(selectedResource.description),
+                }}
+              />
+            )}
 
             {selectedResource.mediaType === 'image' && (
               <img
