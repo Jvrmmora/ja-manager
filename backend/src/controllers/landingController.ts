@@ -5,7 +5,12 @@ import LandingMedia from '../models/LandingMedia';
 import LandingMeeting from '../models/LandingMeetings';
 import LandingVisitMetric from '../models/LandingVisitMetric';
 import LandingVisitSummary from '../models/LandingVisitSummary';
-import { uploadLandingMediaToCloudinary, deleteLandingMediaFromCloudinary, extractPublicId } from '../config/cloudinary';
+import {
+  uploadLandingMediaToCloudinary,
+  deleteLandingMediaFromCloudinary,
+  extractPublicId,
+  landingPublicIdFromUrl,
+} from '../config/cloudinary';
 import {
   asyncHandler,
   NotFoundError,
@@ -84,6 +89,44 @@ const getClientIp = (req: Request): string => {
 const hashValue = (value: string): string => {
   const salt = process.env.VISITOR_HASH_SALT || 'landing-visitor-salt';
   return crypto.createHash('sha256').update(`${value}:${salt}`).digest('hex');
+};
+
+// Categoría (y carpeta en Cloudinary) propia de las imágenes de reuniones.
+// Se mantienen separadas de la galería para que no aparezcan en la landing
+// pública ni se puedan borrar por error desde la gestión de media.
+const MEETINGS_CATEGORY = 'meetings';
+const MEETINGS_FOLDER_SEGMENT = '/ja-manager/landing/meetings/';
+
+/**
+ * Borra de Cloudinary la imagen de una reunión, sólo si la URL apunta a la
+ * carpeta propia de reuniones (nunca toca imágenes de la galería). Es
+ * best-effort: si Cloudinary falla, se registra y se continúa.
+ */
+const destroyMeetingImage = async (url?: string | null): Promise<void> => {
+  if (
+    !url ||
+    !url.includes('cloudinary') ||
+    !url.includes(MEETINGS_FOLDER_SEGMENT)
+  ) {
+    return;
+  }
+
+  const publicId = landingPublicIdFromUrl(url);
+  if (!publicId) return;
+
+  try {
+    await deleteLandingMediaFromCloudinary(publicId);
+    logger.info('Imagen de reunión eliminada de Cloudinary', {
+      context: 'LandingController',
+      publicId,
+    });
+  } catch (error) {
+    logger.warn('No se pudo eliminar la imagen de reunión de Cloudinary', {
+      context: 'LandingController',
+      url,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 };
 
 /**
@@ -407,6 +450,8 @@ export const updateMeeting = asyncHandler(
     try {
       const { id } = req.params;
 
+      const previous = await LandingMeeting.findById(id).lean();
+
       const meeting = await LandingMeeting.findByIdAndUpdate(id, req.body, {
         new: true,
         runValidators: true,
@@ -414,6 +459,11 @@ export const updateMeeting = asyncHandler(
 
       if (!meeting) {
         throw new NotFoundError('Reunión no encontrada');
+      }
+
+      // Si la reunión cambió de imagen, limpiamos la anterior en Cloudinary.
+      if (previous?.imageUrl && previous.imageUrl !== meeting.imageUrl) {
+        await destroyMeetingImage(previous.imageUrl);
       }
 
       logger.info('Reunión actualizada', {
@@ -450,6 +500,8 @@ export const deleteMeeting = asyncHandler(
         throw new NotFoundError('Reunión no encontrada');
       }
 
+      await destroyMeetingImage(meeting.imageUrl);
+
       logger.info('Reunión eliminada', {
         context: 'LandingController',
         meetingId: id,
@@ -466,6 +518,43 @@ export const deleteMeeting = asyncHandler(
       });
       throw error;
     }
+  }
+);
+
+/**
+ * POST /api/admin/landing/meetings/upload-image - Subir la imagen de una reunión
+ *
+ * Sube el archivo a la carpeta propia de reuniones en Cloudinary y devuelve la
+ * URL. A diferencia de /media/upload, NO crea un registro LandingMedia: la
+ * imagen pertenece a la reunión, no aparece en la galería pública ni en la
+ * gestión de media, y por tanto no se puede borrar por accidente desde allí.
+ */
+export const uploadMeetingImage = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.file) {
+      throw new ValidationError('No hay archivo para subir');
+    }
+
+    if (!req.file.mimetype.startsWith('image/')) {
+      throw new ValidationError('El archivo debe ser una imagen');
+    }
+
+    const imageUrl = await uploadLandingMediaToCloudinary(
+      req.file.buffer,
+      'image',
+      MEETINGS_CATEGORY
+    );
+
+    logger.info('Imagen de reunión subida a Cloudinary', {
+      context: 'LandingController',
+      imageUrl,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Imagen subida exitosamente',
+      data: { imageUrl },
+    });
   }
 );
 
@@ -606,8 +695,39 @@ export const deleteMedia = asyncHandler(async (req: Request, res: Response) => {
       throw new NotFoundError('Media no encontrado');
     }
 
+    // ¿Otra parte de la landing sigue usando este mismo archivo? Si una reunión,
+    // el hero u otro registro de media apuntan a la misma URL, borrar el archivo
+    // en Cloudinary dejaría esa parte de la landing con una imagen rota. En ese
+    // caso se elimina sólo el registro de galería y se conserva el archivo.
+    const [meetingUsing, contentUsing, otherMediaUsing] = await Promise.all([
+      LandingMeeting.exists({ imageUrl: media.mediaUrl }),
+      LandingContent.exists({ heroImage: media.mediaUrl }),
+      LandingMedia.exists({
+        _id: { $ne: media._id },
+        mediaUrl: media.mediaUrl,
+      }),
+    ]);
+    const stillReferenced = Boolean(
+      meetingUsing || contentUsing || otherMediaUsing
+    );
+
+    if (stillReferenced) {
+      logger.info('Archivo conservado en Cloudinary: sigue en uso', {
+        context: 'LandingController',
+        mediaId: id,
+        mediaUrl: media.mediaUrl,
+        usedByMeeting: Boolean(meetingUsing),
+        usedByHero: Boolean(contentUsing),
+        usedByOtherMedia: Boolean(otherMediaUsing),
+      });
+    }
+
     // Borrado en Cloudinary (en vez de Azure)
-    if (media.mediaUrl && media.mediaUrl.includes('cloudinary')) {
+    if (
+      !stillReferenced &&
+      media.mediaUrl &&
+      media.mediaUrl.includes('cloudinary')
+    ) {
       try {
         const publicId = extractPublicId(media.mediaUrl);
         if (publicId) {
@@ -640,15 +760,18 @@ export const deleteMedia = asyncHandler(async (req: Request, res: Response) => {
       });
     }
 
-    logger.info('Media eliminado de Cloudinary y DB', {
+    logger.info('Media eliminado de DB', {
       context: 'LandingController',
       mediaId: id,
       mediaUrl: media.mediaUrl,
+      cloudinaryFilePreserved: stillReferenced,
     });
 
     res.status(200).json({
       success: true,
-      message: 'Media eliminado exitosamente',
+      message: stillReferenced
+        ? 'Se quitó de la galería. El archivo se conservó porque sigue en uso en otra sección.'
+        : 'Media eliminado exitosamente',
     });
   } catch (error) {
     logger.error('Error eliminando media', {
