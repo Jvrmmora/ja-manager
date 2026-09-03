@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react';
 import type { ImgHTMLAttributes } from 'react';
 
-interface ImageWithFallbackProps extends ImgHTMLAttributes<HTMLImageElement> {
-  /** URL de la imagen. Si falla la carga se muestra el placeholder. */
+interface ImageWithFallbackProps
+  extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> {
+  /** URL de la imagen. Si falla la carga se reintenta una vez y luego se muestra el placeholder. */
   src?: string;
   /** Texto opcional que se muestra dentro del placeholder (p. ej. el título). */
   fallbackLabel?: string;
 }
 
 /**
- * Imagen resiliente para la landing: si la URL responde 404 (por ejemplo un
- * recurso de Cloudinary que fue borrado) muestra un placeholder con icono en
- * vez del icono de "imagen rota" del navegador.
+ * Imagen resiliente para la landing.
+ *
+ * Cloudinary sirve los assets a través de varios CDN y ocasionalmente un edge
+ * responde (y cachea) un 404 espurio para una imagen que sí existe. Sin esto el
+ * navegador deja el icono de "imagen rota" hasta que se limpia la caché.
+ *
+ * Estrategia: al fallar la carga se reintenta una vez con un parámetro
+ * anti-caché (normalmente pega en otro edge y resuelve). Si vuelve a fallar se
+ * muestra un placeholder con icono en vez del glyph roto del navegador.
  */
 export default function ImageWithFallback({
   src,
@@ -20,14 +27,14 @@ export default function ImageWithFallback({
   className,
   ...imgProps
 }: ImageWithFallbackProps) {
-  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0); // 0 = original, 1 = reintento, 2 = placeholder
 
-  // Si cambia el src (nuevo upload desde el CMS) reintentamos.
+  // Si cambia el src (nuevo upload desde el CMS) reiniciamos el ciclo.
   useEffect(() => {
-    setFailed(false);
+    setAttempt(0);
   }, [src]);
 
-  if (!src || failed) {
+  if (!src || attempt >= 2) {
     return (
       <div
         className={`flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 text-gray-400 dark:text-gray-500 ${className ?? ''}`}
@@ -63,12 +70,18 @@ export default function ImageWithFallback({
     );
   }
 
+  const resolvedSrc =
+    attempt === 0
+      ? src
+      : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`;
+
   return (
     <img
-      src={src}
+      key={resolvedSrc}
+      src={resolvedSrc}
       alt={alt}
       className={className}
-      onError={() => setFailed(true)}
+      onError={() => setAttempt(prev => prev + 1)}
       {...imgProps}
     />
   );

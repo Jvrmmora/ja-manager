@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { normalizeRichTextHtml } from '../../utils/richText';
+import ImageWithFallback from './ImageWithFallback';
 
 interface TestimonialMedia {
   _id: string;
@@ -268,7 +269,7 @@ export default function TestimonialsSection({
                           <video src={item.mediaUrl} controls className="w-full h-full object-cover" />
                         )
                       ) : item.mediaType === 'image' ? (
-                        <img src={item.mediaUrl} alt={item.altText || item.title} className="w-full h-full object-cover" loading="lazy" />
+                        <ImageWithFallback src={item.mediaUrl} alt={item.altText || item.title} fallbackLabel={item.title} className="w-full h-full object-cover" loading="lazy" />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex flex-col items-center justify-center text-red-600 dark:text-red-300">
                           <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor">
