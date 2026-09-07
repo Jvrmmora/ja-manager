@@ -1,0 +1,27 @@
+name: Mantener despierto el backend (Azure F1)
+
+# El plan F1 (Free) de Azure Web Apps no tiene "Always On" (eso requiere
+# Basic o superior): si la app no recibe requests por ~20 min, Azure la
+# descarga de memoria y el siguiente request paga un cold start completo
+# (arrancar Node, reconectar Mongo, etc.), lo que se ve como un loading
+# largo en la landing. Este ping evita que llegue a ese umbral.
+#
+# Corre solo en horario de uso típico (6am-11pm hora Bogotá = UTC-5, sin
+# horario de verano) para no gastar cuota de CPU de madrugada sin
+# necesidad; fuera de esa ventana el backend puede dormirse sin problema.
+
+on:
+  schedule:
+    - cron: '*/10 11-23,0-3 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping /api/health
+        run: |
+          curl -fsS --max-time 15 --retry 2 --retry-delay 5 \
+            https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api/health \
+            || echo "::warning::Ping de keep-alive falló (posible cold start en curso o backend caído)"
