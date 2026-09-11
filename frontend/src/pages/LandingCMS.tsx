@@ -1366,14 +1366,18 @@ export default function LandingCMSPage() {
                     setContent({ ...content, seoTitle: e.target.value })
                   }
                 />
-                <RichTextEditor
+                <textarea
+                  className={`${fieldClass} h-24`}
+                  placeholder="Descripción SEO (texto plano, ~150-160 caracteres — esto es lo que Google muestra bajo el título)"
                   value={content.seoDescription}
-                  onChange={value =>
-                    setContent({ ...content, seoDescription: value })
+                  onChange={e =>
+                    setContent({ ...content, seoDescription: e.target.value })
                   }
-                  placeholder="Descripción SEO"
-                  minHeightClassName="min-h-[100px]"
+                  maxLength={200}
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
+                  {content.seoDescription.length}/160 caracteres recomendados
+                </p>
               </div>
             </section>
 
