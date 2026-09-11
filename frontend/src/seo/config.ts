@@ -30,9 +30,9 @@ export interface RouteSeo {
 export const ROUTES: RouteSeo[] = [
   {
     path: '/',
-    title: 'Jóvenes Adventistas Modelia - Bogotá',
+    title: 'Jóvenes Modelia Bogotá — Comunidad de Jóvenes Adventistas',
     description:
-      'Plataforma digital oficial de Jóvenes Modelia. Registra tu asistencia con QR, gana puntos, compite en rankings y conecta con otros jóvenes adventistas en Bogotá.',
+      'Somos Jóvenes Modelia: más de 50 jóvenes adventistas en Bogotá unidos por la fe en Cristo. Regístrate y participa en nuestras actividades semanales.',
     prerender: true,
   },
   {
