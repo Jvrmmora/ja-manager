@@ -109,7 +109,7 @@ interface LandingMedia {
   isPublished: boolean;
 }
 
-interface LandingData {
+export interface LandingData {
   content: LandingContent;
   meetings: LandingMeeting[];
   media: {
@@ -127,12 +127,37 @@ interface LandingVisitorMetrics {
   visitorNumber: number | null;
 }
 
-export default function LandingPage() {
+declare global {
+  interface Window {
+    // Inyectado en dist/index.html por scripts/prerender-landing.mjs en build,
+    // con el contenido que ya quedó "horneado" en el HTML estático. Si existe,
+    // arrancamos pintados de inmediato en vez de mostrar el PageLoader.
+    __LANDING_DATA__?: LandingData;
+  }
+}
+
+const readInjectedLandingData = (): LandingData | null => {
+  if (typeof window === 'undefined') return null;
+  return window.__LANDING_DATA__ ?? null;
+};
+
+interface LandingPageProps {
+  /** Datos iniciales: pasados explícitamente por entry-server.tsx durante el
+   *  bake de build, o leídos de window.__LANDING_DATA__ en el navegador real
+   *  cuando esa misma build ya los dejó inyectados. */
+  initialData?: LandingData | null;
+}
+
+export default function LandingPage({
+  initialData = readInjectedLandingData(),
+}: LandingPageProps) {
   const { theme } = useTheme();
-  const [landingData, setLandingData] = useState<LandingData | null>(null);
+  const [landingData, setLandingData] = useState<LandingData | null>(
+    initialData ?? null
+  );
   const [visitorMetrics, setVisitorMetrics] =
     useState<LandingVisitorMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [showContactModal, setShowContactModal] = useState(false);
 
@@ -158,8 +183,13 @@ export default function LandingPage() {
   }, [landingData?.content]);
 
   const fetchLandingContent = async () => {
+    // Si ya arrancamos con datos (horneados en build o inyectados en
+    // window.__LANDING_DATA__), esto es solo una revalidación en segundo
+    // plano: no mostramos el loader ni pisamos el contenido si falla.
+    const hasExistingData = landingData !== null;
+
     try {
-      setLoading(true);
+      if (!hasExistingData) setLoading(true);
       const response = await apiRequest('landing', {
         method: 'GET',
       });
@@ -177,6 +207,11 @@ export default function LandingPage() {
       }
     } catch (err) {
       console.error('Error fetching landing content:', err);
+      if (hasExistingData) {
+        // Ya había contenido visible (del bake) — lo conservamos en vez de
+        // reemplazarlo por el fallback genérico.
+        return;
+      }
       setError('Error cargando contenido de la página');
       // Set default/empty data to allow rendering
       setLandingData({
@@ -239,7 +274,7 @@ export default function LandingPage() {
         },
       });
     } finally {
-      setLoading(false);
+      if (!hasExistingData) setLoading(false);
     }
   };
 

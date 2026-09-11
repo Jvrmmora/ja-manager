@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender-landing.mjs",
     "build:prod": "tsc -b && vite build --mode production",
     "build:azure": "VITE_API_URL=https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api npm run build:prod",
     "preview": "vite preview",
