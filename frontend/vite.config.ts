@@ -14,11 +14,17 @@ import { ROUTES, SITE_URL, DEFAULT_IMAGE } from './src/seo/config';
  * que no ejecutan JS) vean los metadatos correctos de /register y /login, no
  * los genéricos de la home.
  */
-function prerenderMeta(): Plugin {
+function prerenderMeta(isSsrBuild: boolean): Plugin {
   return {
     name: 'prerender-meta',
     apply: 'build',
     closeBundle() {
+      // El build SSR (`vite build --ssr src/entry-server.tsx`, ver
+      // scripts/prerender-landing.mjs) reutiliza este mismo vite.config.ts —
+      // no tiene su propio dist/index.html que parchear, así que este plugin
+      // no hace nada en esa pasada.
+      if (isSsrBuild) return;
+
       const outDir = join(process.cwd(), 'dist');
       let template: string;
       try {
@@ -32,7 +38,12 @@ function prerenderMeta(): Plugin {
         s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
       for (const route of ROUTES) {
-        if (!route.prerender || route.path === '/') continue;
+        if (!route.prerender) continue;
+        // route.path === '/' escribe sobre el propio dist/index.html (mismo
+        // template, join() ignora el segmento vacío) — así "/" queda con sus
+        // metatags de verdad en vez de los genéricos, igual que /register y
+        // /login. El contenido del <body> lo hornea después
+        // scripts/prerender-landing.mjs; este bloque solo toca el <head>.
 
         const canonical = `${SITE_URL}${route.path}`;
         const title = esc(route.title);
@@ -104,33 +115,42 @@ function prerenderMeta(): Plugin {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), prerenderMeta()],
+export default defineConfig(({ isSsrBuild }) => ({
+  plugins: [react(), prerenderMeta(!!isSsrBuild)],
   clearScreen: false,
   build: {
     outDir: 'dist',
     sourcemap: false,
     chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          // Core React
-          'react-vendor': ['react', 'react-dom'],
-          // Router separado (usado en todas las páginas)
-          'react-router': ['react-router-dom'],
-          // HTTP y utilidades
-          utils: ['axios', 'luxon'],
-          // Animaciones (framer-motion es pesado ~160kb)
-          animations: ['framer-motion', 'canvas-confetti'],
-          // QR y Scanner
-          'qr-tools': ['qrcode.react', 'qr-scanner'],
-          // HTML to Canvas
-          canvas: ['html2canvas'],
-          // Icons
-          icons: ['@heroicons/react'],
-        },
-      },
-    },
+    // manualChunks agrupa deps del bundle de NAVEGADOR para cachear mejor.
+    // En el build SSR (vite build --ssr, ver scripts/prerender-landing.mjs)
+    // esas mismas libs se externalizan (Node las importa vía node_modules),
+    // así que rollup no las puede "chunkear" — de ahí que la key completa se
+    // omita (no basta con undefined: exactOptionalPropertyTypes lo rechaza).
+    ...(isSsrBuild
+      ? {}
+      : {
+          rollupOptions: {
+            output: {
+              manualChunks: {
+                // Core React
+                'react-vendor': ['react', 'react-dom'],
+                // Router separado (usado en todas las páginas)
+                'react-router': ['react-router-dom'],
+                // HTTP y utilidades
+                utils: ['axios', 'luxon'],
+                // Animaciones (framer-motion es pesado ~160kb)
+                animations: ['framer-motion', 'canvas-confetti'],
+                // QR y Scanner
+                'qr-tools': ['qrcode.react', 'qr-scanner'],
+                // HTML to Canvas
+                canvas: ['html2canvas'],
+                // Icons
+                icons: ['@heroicons/react'],
+              },
+            },
+          },
+        }),
   },
   server: {
     host: '0.0.0.0', // Escuchar en todas las interfaces
@@ -159,4 +179,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));
