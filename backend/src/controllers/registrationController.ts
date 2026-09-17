@@ -1,84 +1,13 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import RegistrationRequest from '../models/RegistrationRequest';
-import Young from '../models/Young';
-import Role from '../models/Role';
+import * as registrationService from '../services/registrationService';
 import {
   partialRegistrationSchema,
   reviewRequestSchema,
   querySchema,
 } from '../utils/validation';
-import {
-  asyncHandler,
-  ValidationError,
-  NotFoundError,
-  ConflictError,
-  ForbiddenError,
-} from '../utils/errorHandler';
+import { asyncHandler, ValidationError } from '../utils/errorHandler';
 import { ApiResponse, PaginatedResponse } from '../types';
-import logger from '../utils/logger';
-import { uploadToCloudinary } from '../config/cloudinary';
-import { emailService } from '../services/emailService';
-import { CURRENT_POLICY_VERSION } from '../config/privacyPolicy';
-import { recordConsent } from '../services/consentService';
-
-// Helper para generar placa (similar a generatePlaca en youngController)
-async function generatePlacaForRegistration(fullName: string): Promise<string> {
-  const nameWords = fullName.trim().split(' ');
-  const firstName = nameWords[0];
-  let initials = '';
-
-  if (firstName.length >= 4) {
-    initials = firstName.substring(0, 4).toUpperCase();
-  } else if (firstName.length >= 2) {
-    initials = firstName.toUpperCase();
-    if (nameWords.length > 1 && initials.length < 4) {
-      const secondName = nameWords[1];
-      const remainingLength = Math.min(4 - initials.length, secondName.length);
-      initials += secondName.substring(0, remainingLength).toUpperCase();
-    }
-  } else {
-    initials = firstName.toUpperCase().padEnd(2, 'X');
-  }
-
-  // Generar el siguiente consecutivo
-  // Buscar placas en Young (aprobados) y RegistrationRequest (pendientes) para evitar duplicados
-  // IMPORTANTE: No usar .limit() para obtener TODAS las placas y calcular el consecutivo correcto
-  const existingYoungPlaques = await Young.find({
-    placa: { $regex: /^@MOD/ },
-  })
-    .select('placa')
-    .lean();
-
-  const existingRequestPlaques = await RegistrationRequest.find({
-    placa: { $regex: /^@MOD/ },
-  })
-    .select('placa')
-    .lean();
-
-  // Combinar todas las placas existentes
-  const allExistingPlaques = [
-    ...existingYoungPlaques.map(y => y.placa).filter(Boolean),
-    ...existingRequestPlaques.map(r => r.placa).filter(Boolean),
-  ];
-
-  let nextConsecutive = 1;
-  if (allExistingPlaques.length > 0) {
-    const consecutives = allExistingPlaques
-      .map(placa => {
-        const match = placa?.match(/(\d{3})$/);
-        return match ? parseInt(match[1], 10) : 0;
-      })
-      .filter(num => num > 0);
-
-    if (consecutives.length > 0) {
-      nextConsecutive = Math.max(...consecutives) + 1;
-    }
-  }
-
-  const consecutiveFormatted = nextConsecutive.toString().padStart(3, '0');
-  return `@MOD${initials}${consecutiveFormatted}`;
-}
 
 export class RegistrationController {
   /**
@@ -97,42 +26,11 @@ export class RegistrationController {
         return;
       }
 
-      const normalizedEmail = email.trim().toLowerCase();
+      const result = await registrationService.checkEmailUnique(
+        email.trim().toLowerCase()
+      );
 
-      // Verificar en Young
-      const existingYoung = await Young.findOne({
-        email: normalizedEmail,
-      });
-
-      if (existingYoung) {
-        res.status(200).json({
-          success: true,
-          exists: true,
-          message: 'Este email ya está registrado',
-        });
-        return;
-      }
-
-      // Verificar en RegistrationRequest pendiente
-      const existingRequest = await RegistrationRequest.findOne({
-        email: normalizedEmail,
-        status: 'pending',
-      });
-
-      if (existingRequest) {
-        res.status(200).json({
-          success: true,
-          exists: true,
-          message: 'Ya existe una solicitud pendiente con este email',
-        });
-        return;
-      }
-
-      res.status(200).json({
-        success: true,
-        exists: false,
-        message: 'Email disponible',
-      });
+      res.status(200).json({ success: true, ...result });
     }
   );
 
@@ -153,8 +51,6 @@ export class RegistrationController {
       }
 
       const normalizedPlaca = placa.trim().toUpperCase();
-
-      // Validar formato
       const placaRegex = /^@MOD[A-Z]{2,4}\d{3}$/;
       if (!placaRegex.test(normalizedPlaca)) {
         res.status(400).json({
@@ -165,267 +61,30 @@ export class RegistrationController {
         return;
       }
 
-      // Verificar si existe en Young
-      const existingYoung = await Young.findOne({
-        placa: normalizedPlaca,
-      });
+      const result = await registrationService.checkPlacaExists(normalizedPlaca);
 
-      if (existingYoung) {
-        res.status(200).json({
-          success: true,
-          exists: true,
-          message: 'Placa encontrada',
-          data: {
-            fullName: existingYoung.fullName,
-          },
-        });
-        return;
-      }
-
-      res.status(200).json({
-        success: true,
-        exists: false,
-        message: 'Placa no encontrada',
-      });
+      res.status(200).json({ success: true, ...result });
     }
   );
 
   /**
    * Crear solicitud de registro parcial
-   * AHORA: Crea usuario Young directamente con acceso inmediato
+   * Crea usuario Young directamente con acceso inmediato
    */
   static createRegistrationRequest = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
-      // Validar datos
       const { error, value } = partialRegistrationSchema.validate(req.body);
       if (error) {
         throw new ValidationError(error.details[0].message);
       }
 
-      // Separar los campos de consentimiento: no pertenecen al modelo Young ni
-      // a RegistrationRequest, se usan solo para registrar la evidencia.
-      const {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        passwordConfirmation,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        acceptPrivacyPolicy,
-        policyVersion,
-        guardianFullName,
-        guardianRelationship,
-        ...registrationData
-      } = value;
-
-      // Verificar que se aceptó la versión vigente de la política
-      if (policyVersion !== CURRENT_POLICY_VERSION) {
-        throw new ValidationError(
-          'La versión de la política de privacidad no es la vigente. Recarga la página e inténtalo de nuevo.'
+      const { placa, savedYoung } =
+        await registrationService.createRegistrationRequest(
+          value,
+          req.file,
+          req
         );
-      }
 
-      // Determinar si el titular es menor de edad (según fecha de nacimiento)
-      const birthDate = new Date(registrationData.birthday);
-      const now = new Date();
-      let ageYears = now.getFullYear() - birthDate.getFullYear();
-      const monthDiff = now.getMonth() - birthDate.getMonth();
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && now.getDate() < birthDate.getDate())
-      ) {
-        ageYears--;
-      }
-      const isMinor = ageYears < 18;
-
-      // Validar unicidad de email
-      const existingEmail = await Young.findOne({
-        email: registrationData.email.trim().toLowerCase(),
-      });
-      if (existingEmail) {
-        throw new ConflictError(
-          'Este email ya está registrado por otro usuario',
-          {
-            field: 'email',
-            value: registrationData.email,
-            existingOwner: existingEmail.fullName,
-          }
-        );
-      }
-
-      // Verificar si ya existe una solicitud pendiente con este email
-      const existingRequest = await RegistrationRequest.findOne({
-        email: registrationData.email.trim().toLowerCase(),
-        status: 'pending',
-      });
-      if (existingRequest) {
-        throw new ConflictError(
-          'Ya existe una solicitud pendiente con este email',
-          {
-            field: 'email',
-            value: registrationData.email,
-          }
-        );
-      }
-
-      // Validar referido si se proporciona
-      let referredBy: mongoose.Types.ObjectId | undefined;
-      if (registrationData.referredByPlaca) {
-        const referrer = await Young.findOne({
-          placa: registrationData.referredByPlaca.toUpperCase(),
-        });
-        if (!referrer) {
-          throw new NotFoundError(
-            `No se encontró un usuario con la placa ${registrationData.referredByPlaca}`
-          );
-        }
-        referredBy = referrer._id as mongoose.Types.ObjectId;
-      }
-
-      // Subir imagen si se proporciona
-      let profileImageUrl = '';
-      if (req.file) {
-        profileImageUrl = await uploadToCloudinary(req.file.buffer);
-      }
-
-      // Generar placa
-      const placa = await generatePlacaForRegistration(
-        registrationData.fullName
-      );
-
-      // Obtener rol "Young role"
-      const youngRole = await Role.findOne({ name: 'Young role' });
-      if (!youngRole) {
-        throw new NotFoundError('Rol Young role no encontrado en el sistema');
-      }
-
-      // Crear usuario Young directamente (acceso inmediato)
-      const youngData = {
-        fullName: registrationData.fullName,
-        ageRange: registrationData.ageRange,
-        phone: registrationData.phone,
-        birthday: registrationData.birthday,
-        gender: registrationData.gender,
-        role: registrationData.role,
-        email: registrationData.email.trim().toLowerCase(),
-        skills: registrationData.skills || [],
-        profileImage: profileImageUrl || undefined,
-        group: registrationData.group,
-        placa: placa,
-        password: registrationData.password, // ✅ Incluir password aquí - será encriptado por pre-save middleware
-        role_id: youngRole._id,
-        role_name: youngRole.name,
-        referredBy: referredBy,
-        first_login: false, // No es primer login porque ya eligió su contraseña
-      };
-
-      const newYoung = new Young(youngData);
-      const savedYoung = await newYoung.save(); // ✅ El middleware pre-save encriptará el password automáticamente
-
-      // Registrar evidencia del consentimiento de tratamiento de datos personales
-      // (Ley 1581/2012). Si algo falla aquí, no revertimos el registro pero sí
-      // lo dejamos trazado para corregirlo.
-      try {
-        await recordConsent({
-          youngId: savedYoung._id as mongoose.Types.ObjectId,
-          channel: 'registration',
-          req,
-          isMinor,
-          guardian: isMinor
-            ? {
-                fullName: guardianFullName || undefined,
-                relationship: guardianRelationship || undefined,
-              }
-            : undefined,
-        });
-      } catch (consentError) {
-        logger.error('Error registrando evidencia de consentimiento', {
-          context: 'RegistrationController',
-          method: 'createRegistrationRequest',
-          youngId: (savedYoung._id as mongoose.Types.ObjectId).toString(),
-          error:
-            consentError instanceof Error ? consentError.message : 'Unknown',
-        });
-      }
-
-      // Crear RegistrationRequest para auditoría (con status 'approved' automático)
-      try {
-        const auditRequest = new RegistrationRequest({
-          ...registrationData,
-          email: registrationData.email.trim().toLowerCase(),
-          password: registrationData.password,
-          placa,
-          profileImage: profileImageUrl || undefined,
-          referredBy: referredBy,
-          referredByPlaca: registrationData.referredByPlaca
-            ? registrationData.referredByPlaca.toUpperCase()
-            : undefined,
-          status: 'approved' as const,
-          reviewedAt: new Date(),
-        });
-        await auditRequest.save();
-      } catch (auditError) {
-        // Log error pero no fallar el registro
-        logger.warn('Error creando registro de auditoría', {
-          context: 'RegistrationController',
-          method: 'createRegistrationRequest',
-          error: auditError instanceof Error ? auditError.message : 'Unknown',
-        });
-      }
-
-      logger.info('Usuario Young creado con acceso inmediato', {
-        context: 'RegistrationController',
-        method: 'createRegistrationRequest',
-        youngId: (savedYoung._id as mongoose.Types.ObjectId).toString(),
-        email: savedYoung.email,
-        placa: savedYoung.placa,
-      });
-
-      // 📤 Enviar emails en background (fire-and-forget, no esperar)
-      // Esto permite responder inmediatamente al usuario sin bloquear
-
-      // Email de bienvenida al usuario
-      const dashboardUrl =
-        process.env.FRONTEND_URL ||
-        'https://yellow-river-04315080f.3.azurestaticapps.net';
-      emailService
-        .sendEmail({
-          toEmail: savedYoung.email!,
-          toName: savedYoung.fullName,
-          message: `Tu cuenta ha sido creada exitosamente. Ya puedes iniciar sesión.`,
-          type: 'welcome',
-          placa: savedYoung.placa,
-          dashboardUrl: dashboardUrl,
-        })
-        .catch((emailError: any) => {
-          logger.error('Error enviando email de bienvenida al usuario', {
-            context: 'RegistrationController',
-            method: 'createRegistrationRequest',
-            error: emailError instanceof Error ? emailError.message : 'Unknown',
-          });
-        });
-
-      // Notificación informativa al super admin
-      Young.findOne({ role_name: 'Super Admin' })
-        .then(superAdmin => {
-          if (superAdmin && superAdmin.email) {
-            return emailService.sendEmail({
-              toEmail: superAdmin.email,
-              toName: superAdmin.fullName,
-              message: `Nuevo usuario registrado: ${savedYoung.fullName}`,
-              type: 'new_user_notification',
-              placa: savedYoung.placa,
-              applicantName: savedYoung.fullName,
-              applicantEmail: savedYoung.email || '',
-            });
-          }
-        })
-        .catch((emailError: any) => {
-          logger.error('Error enviando notificación al admin', {
-            context: 'RegistrationController',
-            method: 'createRegistrationRequest',
-            error: emailError instanceof Error ? emailError.message : 'Unknown',
-          });
-        });
-
-      // ✅ Responder inmediatamente sin esperar los emails
       res.status(201).json({
         success: true,
         message:
@@ -436,7 +95,6 @@ export class RegistrationController {
           placa: savedYoung.placa,
           fullName: savedYoung.fullName,
           email: savedYoung.email,
-          // Incluir más datos para el auto-login en frontend
           ageRange: savedYoung.ageRange,
           role: savedYoung.role,
         },
@@ -451,118 +109,20 @@ export class RegistrationController {
     async (req: Request, res: Response): Promise<void> => {
       const authUser = (req as any).user;
 
-      // Solo Super Admin puede ver solicitudes
-      if (authUser.role_name !== 'Super Admin') {
-        throw new ForbiddenError(
-          'Solo los administradores pueden ver las solicitudes de registro'
-        );
-      }
-
       const { error, value } = querySchema.validate(req.query);
       if (error) {
         throw new ValidationError(error.details[0].message);
       }
 
-      const {
-        page,
-        limit,
-        search,
-        sortBy,
-        sortOrder,
-        status,
-      }: {
-        page?: number;
-        limit?: number;
-        search?: string;
-        sortBy?: string;
-        sortOrder?: string;
-        status?: string;
-      } = value;
-
-      const filters: any = {};
-
-      // Filtrar por estado si se proporciona
-      if (status && ['pending', 'approved', 'rejected'].includes(status)) {
-        filters.status = status;
-      }
-
-      if (search && search.trim() !== '') {
-        filters.$or = [
-          { fullName: { $regex: search.trim(), $options: 'i' } },
-          { email: { $regex: search.trim(), $options: 'i' } },
-          { placa: { $regex: search.trim(), $options: 'i' } },
-        ];
-      }
-
-      const sort: any = {};
-      sort[sortBy || 'createdAt'] = sortOrder === 'desc' ? -1 : 1;
-
-      const skip = ((page || 1) - 1) * (limit || 10);
-
-      const [requests, totalItems] = await Promise.all([
-        RegistrationRequest.find(filters)
-          .sort(sort)
-          .skip(skip)
-          .limit(limit || 10)
-          .populate('referredBy', 'fullName placa')
-          .populate('reviewedBy', 'fullName email')
-          .lean(),
-        RegistrationRequest.countDocuments(filters),
-      ]);
-
-      const totalPages = Math.ceil(totalItems / (limit || 10));
-      const currentPage = page || 1;
+      const result = await registrationService.getAllRegistrationRequests(
+        authUser,
+        value
+      );
 
       res.status(200).json({
         success: true,
         message: 'Solicitudes obtenidas exitosamente',
-        data: {
-          data: requests.map((req: any) => ({
-            id: (req._id as mongoose.Types.ObjectId).toString(),
-            fullName: req.fullName,
-            email: req.email,
-            placa: req.placa,
-            ageRange: req.ageRange,
-            phone: req.phone,
-            birthday: req.birthday,
-            gender: req.gender,
-            role: req.role,
-            skills: req.skills,
-            profileImage: req.profileImage,
-            group: req.group,
-            referredBy: req.referredBy
-              ? {
-                  id: (
-                    req.referredBy._id as mongoose.Types.ObjectId
-                  ).toString(),
-                  fullName: req.referredBy.fullName,
-                  placa: req.referredBy.placa,
-                }
-              : null,
-            referredByPlaca: req.referredByPlaca,
-            status: req.status,
-            reviewedBy: req.reviewedBy
-              ? {
-                  id: (
-                    req.reviewedBy._id as mongoose.Types.ObjectId
-                  ).toString(),
-                  fullName: req.reviewedBy.fullName,
-                  email: req.reviewedBy.email,
-                }
-              : null,
-            reviewedAt: req.reviewedAt,
-            rejectionReason: req.rejectionReason,
-            createdAt: req.createdAt,
-            updatedAt: req.updatedAt,
-          })),
-          pagination: {
-            currentPage,
-            totalPages,
-            totalItems,
-            hasNextPage: currentPage < totalPages,
-            hasPreviousPage: currentPage > 1,
-          },
-        },
+        data: result,
       } as ApiResponse<PaginatedResponse<any>>);
     }
   );
@@ -575,67 +135,15 @@ export class RegistrationController {
       const authUser = (req as any).user;
       const { id } = req.params;
 
-      if (authUser.role_name !== 'Super Admin') {
-        throw new ForbiddenError(
-          'Solo los administradores pueden ver las solicitudes de registro'
-        );
-      }
-
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        throw new ValidationError('Formato de ID no válido');
-      }
-
-      const request = await RegistrationRequest.findById(id)
-        .populate('referredBy', 'fullName placa email')
-        .populate('reviewedBy', 'fullName email')
-        .lean();
-
-      if (!request) {
-        throw new NotFoundError('Solicitud de registro no encontrada');
-      }
+      const data = await registrationService.getRegistrationRequestById(
+        id,
+        authUser
+      );
 
       res.status(200).json({
         success: true,
         message: 'Solicitud obtenida exitosamente',
-        data: {
-          id: (request._id as mongoose.Types.ObjectId).toString(),
-          fullName: request.fullName,
-          email: request.email,
-          placa: request.placa,
-          ageRange: request.ageRange,
-          phone: request.phone,
-          birthday: request.birthday,
-          gender: request.gender,
-          role: request.role,
-          skills: request.skills,
-          profileImage: request.profileImage,
-          group: request.group,
-          referredBy: (request.referredBy as any)
-            ? {
-                id: (
-                  (request.referredBy as any)._id as mongoose.Types.ObjectId
-                ).toString(),
-                fullName: (request.referredBy as any).fullName,
-                placa: (request.referredBy as any).placa,
-                email: (request.referredBy as any).email,
-              }
-            : null,
-          referredByPlaca: request.referredByPlaca,
-          status: request.status,
-          reviewedBy: (request.reviewedBy as any)
-            ? {
-                id: (
-                  (request.reviewedBy as any)._id as mongoose.Types.ObjectId
-                ).toString(),
-                fullName: (request.reviewedBy as any).fullName,
-                email: (request.reviewedBy as any).email,
-              }
-            : null,
-          reviewedAt: request.reviewedAt,
-          rejectionReason: request.rejectionReason,
-          createdAt: request.createdAt,
-          updatedAt: request.updatedAt,
-        },
+        data,
       } as ApiResponse);
     }
   );
@@ -653,211 +161,26 @@ export class RegistrationController {
         throw new ValidationError(error.details[0].message);
       }
 
-      if (authUser.role_name !== 'Super Admin') {
-        throw new ForbiddenError(
-          'Solo los administradores pueden revisar solicitudes de registro'
-        );
-      }
+      const result = await registrationService.reviewRegistrationRequest(
+        id,
+        value,
+        authUser
+      );
 
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        throw new ValidationError('Formato de ID no válido');
-      }
-
-      const request = await RegistrationRequest.findById(id);
-      if (!request) {
-        throw new NotFoundError('Solicitud de registro no encontrada');
-      }
-
-      if (request.status !== 'pending') {
-        throw new ConflictError(
-          `Esta solicitud ya ha sido ${request.status === 'approved' ? 'aprobada' : 'rechazada'}`
-        );
-      }
-
-      const { status, rejectionReason } = value;
-
-      if (status === 'approved') {
-        // Obtener rol Young role
-        const youngRole = await Role.findOne({ name: 'Young role' });
-        if (!youngRole) {
-          throw new NotFoundError('Rol Young role no encontrado en el sistema');
-        }
-
-        // Crear el joven desde la solicitud
-        // El password ya está encriptado en la solicitud
-        // Creamos el documento sin password primero y luego lo actualizamos directamente
-        // para evitar que el middleware pre('save') lo encripte de nuevo
-        const newYoung = new Young({
-          fullName: request.fullName,
-          ageRange: request.ageRange,
-          phone: request.phone,
-          birthday: request.birthday,
-          gender: request.gender,
-          role: request.role,
-          email: request.email,
-          skills: request.skills,
-          profileImage: request.profileImage,
-          group: request.group,
-          placa: request.placa,
-          role_id: youngRole._id,
-          role_name: youngRole.name,
-          referredBy: request.referredBy,
-          first_login: false, // No es primer login porque ya eligió su contraseña
-        });
-
-        const savedYoung = await newYoung.save();
-
-        // Actualizar el password directamente en la base de datos (sin middleware)
-        // para usar el password ya encriptado de la solicitud
-        await Young.findByIdAndUpdate(
-          savedYoung._id,
-          { $set: { password: request.password } },
-          { runValidators: false }
-        );
-
-        // Recargar el documento para obtener el password actualizado
-        const finalYoung = await Young.findById(savedYoung._id);
-
-        // Actualizar solicitud
-        request.status = 'approved';
-        request.reviewedBy = authUser.userId;
-        request.reviewedAt = new Date();
-        await request.save();
-
-        logger.info('Solicitud de registro aprobada', {
-          context: 'RegistrationController',
-          method: 'reviewRegistrationRequest',
-          requestId: id,
-          youngId: finalYoung?._id
-            ? (finalYoung._id as mongoose.Types.ObjectId).toString()
-            : 'unknown',
-          reviewedBy: authUser.userId,
-        });
-
-        // Asignar puntos de referidos si aplica
-        if (request.referredBy) {
-          try {
-            const { pointsService } = await import('../services/pointsService');
-            await pointsService.assignReferralPoints(
-              (request.referredBy as mongoose.Types.ObjectId).toString(),
-              (finalYoung?._id as mongoose.Types.ObjectId).toString()
-            );
-
-            logger.info('Puntos de referidos asignados', {
-              context: 'RegistrationController',
-              method: 'reviewRegistrationRequest',
-              referrerId: (
-                request.referredBy as mongoose.Types.ObjectId
-              ).toString(),
-              newYoungId: (
-                finalYoung?._id as mongoose.Types.ObjectId
-              ).toString(),
-            });
-          } catch (pointsError) {
-            // Log error pero no fallar la aprobación
-            logger.error('Error asignando puntos de referidos', {
-              context: 'RegistrationController',
-              method: 'reviewRegistrationRequest',
-              error:
-                pointsError instanceof Error ? pointsError.message : 'Unknown',
-              referrerId: (
-                request.referredBy as mongoose.Types.ObjectId
-              ).toString(),
-              newYoungId: (
-                finalYoung?._id as mongoose.Types.ObjectId
-              ).toString(),
-            });
-          }
-        }
-
-        // 📤 Enviar email de aprobación en background (fire-and-forget)
-        if (request.email) {
-          emailService
-            .sendEmail({
-              toEmail: request.email,
-              toName: request.fullName,
-              message: 'Tu solicitud de registro ha sido aprobada',
-              type: 'approval',
-              placa: request.placa,
-            })
-            .catch((emailError: any) => {
-              logger.error('Error enviando email de aprobación', {
-                context: 'RegistrationController',
-                method: 'reviewRegistrationRequest',
-                error:
-                  emailError instanceof Error ? emailError.message : 'Unknown',
-              });
-            });
-        }
-
-        // ✅ Responder inmediatamente sin esperar el email
+      if (result.approved) {
         res.status(200).json({
           success: true,
           message: 'Solicitud aprobada y joven creado exitosamente',
-          data: {
-            request: {
-              id: (request._id as mongoose.Types.ObjectId).toString(),
-              status: request.status,
-            },
-            young: {
-              id: finalYoung?._id
-                ? (finalYoung._id as mongoose.Types.ObjectId).toString()
-                : 'unknown',
-              fullName: finalYoung?.fullName,
-              placa: finalYoung?.placa,
-              email: finalYoung?.email,
-            },
-          },
+          data: { request: result.request, young: result.young },
         } as ApiResponse);
-      } else {
-        // Rechazar solicitud
-        request.status = 'rejected';
-        request.reviewedBy = authUser.userId;
-        request.reviewedAt = new Date();
-        if (rejectionReason) {
-          request.rejectionReason = rejectionReason;
-        }
-        await request.save();
-
-        logger.info('Solicitud de registro rechazada', {
-          context: 'RegistrationController',
-          method: 'reviewRegistrationRequest',
-          requestId: id,
-          reviewedBy: authUser.userId,
-          rejectionReason: rejectionReason || 'Sin razón especificada',
-        });
-
-        // 📤 Enviar email de rechazo en background (fire-and-forget)
-        if (request.email) {
-          emailService
-            .sendEmail({
-              toEmail: request.email,
-              toName: request.fullName,
-              message: 'Tu solicitud de registro ha sido rechazada',
-              type: 'rejection',
-              rejectionReason,
-            })
-            .catch((emailError: any) => {
-              logger.error('Error enviando email de rechazo', {
-                context: 'RegistrationController',
-                method: 'reviewRegistrationRequest',
-                error:
-                  emailError instanceof Error ? emailError.message : 'Unknown',
-              });
-            });
-        }
-
-        // ✅ Responder inmediatamente sin esperar el email
-        res.status(200).json({
-          success: true,
-          message: 'Solicitud rechazada exitosamente',
-          data: {
-            id: (request._id as mongoose.Types.ObjectId).toString(),
-            status: request.status,
-            rejectionReason: request.rejectionReason,
-          },
-        } as ApiResponse);
+        return;
       }
+
+      res.status(200).json({
+        success: true,
+        message: 'Solicitud rechazada exitosamente',
+        data: result.request,
+      } as ApiResponse);
     }
   );
 }
