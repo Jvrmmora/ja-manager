@@ -54,10 +54,6 @@ export default function ConsentGate() {
       setError('Debes marcar la casilla para continuar.');
       return;
     }
-    if (isMinor && !guardianName.trim()) {
-      setError('Ingresa el nombre del padre, madre o representante legal.');
-      return;
-    }
     setSubmitting(true);
     try {
       await acceptConsent({
@@ -76,7 +72,6 @@ export default function ConsentGate() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'No se pudo registrar el consentimiento';
       setError(msg);
-      if (/menor de edad/i.test(msg)) setIsMinor(true);
       setSubmitting(false);
     }
   };

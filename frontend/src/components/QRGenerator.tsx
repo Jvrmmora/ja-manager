@@ -39,6 +39,7 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
   const [speedBonusEnabled, setSpeedBonusEnabled] = useState(true); // Bonus de velocidad habilitado
   const [bonusDecayMinutes, setBonusDecayMinutes] = useState(30); // Duración del bonus en minutos
   const [isRegenerate, setIsRegenerate] = useState(false); // Si es regeneración
+  const [urlCopied, setUrlCopied] = useState(false); // Feedback al copiar el enlace de asistencia
 
   useEffect(() => {
     // Cargar QR existente al montar el componente
@@ -208,6 +209,22 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
     return isExpired(qrData.qrCode.expiresAt);
   };
 
+  const handleCopyUrl = async () => {
+    if (!qrData?.qrUrl) return;
+    try {
+      await navigator.clipboard.writeText(qrData.qrUrl);
+      setUrlCopied(true);
+      setTimeout(() => setUrlCopied(false), 2000);
+    } catch {
+      onError?.('No se pudo copiar el enlace. Cópialo manualmente.');
+    }
+  };
+
+  const buildWhatsappShareUrl = () => {
+    const message = `¡Hola! 👋 Registra tu asistencia de hoy tocando este enlace (no necesitas escanear el QR):\n\n${qrData?.qrUrl}`;
+    return `https://wa.me/?text=${encodeURIComponent(message)}`;
+  };
+
   if (isLoading) {
     return (
       <div className="py-10 text-center">
@@ -317,6 +334,37 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
                 </>
               )}
             </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleCopyUrl}
+                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full border-[1.5px] border-sand-300 bg-white text-[13px] font-semibold text-cocoa-600 transition-colors hover:border-cocoa-400 dark:border-white/15 dark:bg-transparent dark:text-white/80"
+              >
+                {urlCopied ? (
+                  <>
+                    <CheckIcon className="h-4 w-4 text-emerald-500" />
+                    ¡Copiado!
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon className="h-4 w-4" />
+                    Copiar enlace
+                  </>
+                )}
+              </button>
+              <a
+                href={buildWhatsappShareUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#25D366] text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                <WhatsappIcon className="h-4 w-4" />
+                WhatsApp
+              </a>
+            </div>
+            <p className="m-0 text-center text-[11px] text-cocoa-400 dark:text-white/40">
+              Para quien no pueda escanear el QR: comparte el enlace y podrá registrar su asistencia igual.
+            </p>
           </div>
 
           {/* Información */}
@@ -731,6 +779,25 @@ const RefreshIcon: React.FC<{ className?: string }> = ({ className }) => (
 const ExpandIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
+  </svg>
+);
+
+const LinkIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07l-1.5 1.5" />
+    <path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.5-1.5" />
+  </svg>
+);
+
+const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+);
+
+const WhatsappIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.44 1.32 4.94L2.05 22l5.29-1.38a9.87 9.87 0 0 0 4.7 1.2h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm0 18.06h-.01a8.16 8.16 0 0 1-4.16-1.14l-.3-.18-3.13.82.84-3.05-.2-.31a8.15 8.15 0 0 1-1.25-4.31c0-4.5 3.66-8.16 8.17-8.16 2.18 0 4.23.85 5.77 2.39a8.1 8.1 0 0 1 2.39 5.78c0 4.5-3.67 8.16-8.12 8.16Zm4.47-6.12c-.24-.12-1.45-.72-1.68-.8-.22-.08-.39-.12-.55.12-.16.24-.63.8-.78.97-.14.16-.29.18-.53.06-.24-.12-1.02-.38-1.95-1.21-.72-.64-1.2-1.44-1.35-1.68-.14-.24-.01-.37.11-.49.11-.11.24-.29.36-.43.12-.14.16-.24.24-.4.08-.16.04-.31-.02-.43-.06-.12-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42h-.47c-.16 0-.43.06-.65.31-.22.24-.86.84-.86 2.05s.88 2.38 1 2.54c.12.16 1.73 2.64 4.2 3.7.59.25 1.05.4 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.45-.59 1.66-1.17.2-.57.2-1.06.14-1.17-.06-.1-.22-.16-.46-.28Z" />
   </svg>
 );
 

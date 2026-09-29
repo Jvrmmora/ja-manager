@@ -102,12 +102,11 @@ export class ConsentController {
       const age = calculateAge(young.birthday as Date | undefined);
       const isMinor = age !== null && age < 18;
 
-      // Si es menor, exigimos al menos el nombre del representante legal.
-      if (isMinor && !value.guardianFullName) {
-        throw new ValidationError(
-          'Para usuarios menores de edad se requiere la autorización del padre, madre o representante legal.'
-        );
-      }
+      // No bloqueamos la aceptación por edad: la fecha de nacimiento no
+      // siempre es confiable (typos, datos históricos) y bloquear a alguien
+      // que en realidad es adulto lo deja sin poder usar la plataforma hasta
+      // que un admin le corrija la fecha manualmente. El dato del
+      // representante legal queda como opcional (se guarda si lo diligencian).
 
       const hadPreviousVersion = Boolean(young.dataConsent?.version);
 
