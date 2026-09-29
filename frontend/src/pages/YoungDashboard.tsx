@@ -80,12 +80,24 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   });
 
   useEffect(() => {
-    // Obtener información del usuario
+    // Obtener información del usuario (valor cacheado, para no esperar red)
     const user = authService.getUserInfo();
     setUserInfo(user);
 
     // Cargar estado de asistencia del día
     loadAttendanceStatus();
+
+    // Refrescar el perfil contra el backend: userInfo vive en localStorage y
+    // no se actualiza solo, así que birthdayPointsClaimed puede quedar
+    // desactualizado si el backend asignó puntos de cumpleaños de forma
+    // automática (cron de grupo 1) mientras la sesión ya estaba abierta.
+    getCurrentUserProfile()
+      .then(freshProfile => {
+        authService.updateUserInfo(freshProfile);
+      })
+      .catch(error => {
+        console.error('Error refrescando el perfil del usuario:', error);
+      });
 
     // Escuchar cambios en userInfo (cuando se actualiza el perfil)
     const handleUserInfoUpdate = () => {

@@ -171,6 +171,7 @@ export class AuthController {
           group: user.group,
           skills: user.skills,
           profileImage: user.profileImage,
+          birthdayPointsClaimed: user.birthdayPointsClaimed,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
           requiresConsent: needsConsent(user),

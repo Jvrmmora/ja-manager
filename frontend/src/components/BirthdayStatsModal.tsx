@@ -7,7 +7,7 @@ import { initialsOf } from './young/useYoungActions';
 const MONTHS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
 
 interface BirthdayStats {
-  emailsSentToday: number;
+  birthdayPointsAssignedToday: number;
   totalPointsClaimedThisMonth: number;
   transactionsCount: number;
   upcomingBirthdays: Array<{
@@ -128,9 +128,9 @@ const BirthdayStatsModal: React.FC<BirthdayStatsModalProps> = ({
                     </svg>
                   </span>
                   <span className="font-display text-[40px] font-bold leading-none text-cocoa-900 dark:text-white">
-                    {stats.emailsSentToday}
+                    {stats.birthdayPointsAssignedToday}
                   </span>
-                  <span className="text-[13px] text-cocoa-500 dark:text-white/60">Correos enviados hoy</span>
+                  <span className="text-[13px] text-cocoa-500 dark:text-white/60">Puntos de cumpleaños asignados hoy</span>
                 </div>
                 <div className={`${tile} border-ink-950 bg-ink-950 text-white`}>
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-amber/15 text-brand-amber">
