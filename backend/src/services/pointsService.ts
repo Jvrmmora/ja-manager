@@ -5,7 +5,11 @@ import Season from '../models/Season';
 import Attendance from '../models/Attendance';
 import Streak from '../models/Streak';
 import LeaderboardSnapshot from '../models/LeaderboardSnapshot';
-import { formatDateColombia, getStartOfWeekColombia } from '../utils/dateUtils';
+import {
+  formatDateColombia,
+  getStartOfWeekColombia,
+  getCurrentDateTimeColombia,
+} from '../utils/dateUtils';
 import mongoose from 'mongoose';
 import { updateStreakOnAttendance } from './streakService';
 
@@ -850,6 +854,107 @@ class PointsService {
       points: birthdayPoints,
       youngName: young.fullName,
       message: `¡Feliz cumpleaños ${young.fullName}! Has recibido ${birthdayPoints} puntos`,
+    };
+  }
+
+  /**
+   * Asigna automáticamente puntos de cumpleaños a los jóvenes de grupo 1
+   * que cumplen años hoy. Disparado por un cron externo (GitHub Actions),
+   * sin correo ni reclamo manual de por medio.
+   *
+   * Usa un findOneAndUpdate atómico (en vez del patrón find+save de
+   * claimBirthdayPoints) para que un reintento del workflow ante un fallo
+   * de red nunca pueda asignar puntos dos veces al mismo joven.
+   */
+  async assignBirthdayPointsForGroupOne(): Promise<{
+    processed: number;
+    assigned: number;
+    skipped: number;
+    errors: Array<{ youngId: string; message: string }>;
+    results: Array<{ youngId: string; youngName: string; points: number }>;
+  }> {
+    const Young = (await import('../models/Young')).default;
+
+    const activeSeason = await Season.findOne({ status: 'ACTIVE' });
+    if (!activeSeason) {
+      throw new Error('No hay temporada activa');
+    }
+    const birthdayPoints = activeSeason.settings.birthdayBonusPoints || 100;
+
+    const now = getCurrentDateTimeColombia();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+    const candidates = await Young.find({
+      group: 1,
+      birthday: { $exists: true, $ne: null },
+    });
+    const todaysBirthdays = candidates.filter(young =>
+      young.isBirthdayToday()
+    );
+
+    const results: Array<{
+      youngId: string;
+      youngName: string;
+      points: number;
+    }> = [];
+    const errors: Array<{ youngId: string; message: string }> = [];
+    let assigned = 0;
+    let skipped = 0;
+
+    for (const young of todaysBirthdays) {
+      try {
+        // Atómico: solo hace match (y por lo tanto solo un intento puede
+        // ganar) si aún no se ha reclamado este año. Si otro intento
+        // (p. ej. un reintento del workflow) ya lo marcó, no hace match
+        // y se salta sin duplicar la transacción de puntos.
+        const updated = await Young.findOneAndUpdate(
+          {
+            _id: young._id,
+            $or: [
+              { birthdayPointsClaimed: null },
+              { birthdayPointsClaimed: { $lt: startOfYear } },
+            ],
+          },
+          { $set: { birthdayPointsClaimed: new Date() } }
+        );
+
+        if (!updated) {
+          skipped++;
+          continue;
+        }
+
+        // Nota: si esta creación falla justo después del findOneAndUpdate
+        // de arriba, el joven queda marcado como reclamado sin transacción
+        // creada (mismo riesgo no-atómico entre colecciones que ya existe
+        // hoy en claimBirthdayPoints; fuera de alcance de este cambio).
+        await PointsTransaction.create({
+          youngId: young._id,
+          seasonId: activeSeason._id,
+          points: birthdayPoints,
+          type: 'BIRTHDAY',
+          description: 'Puntos de cumpleaños (asignación automática grupo 1)',
+        });
+
+        assigned++;
+        results.push({
+          youngId: (young._id as any).toString(),
+          youngName: young.fullName,
+          points: birthdayPoints,
+        });
+      } catch (err) {
+        errors.push({
+          youngId: (young._id as any).toString(),
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    return {
+      processed: todaysBirthdays.length,
+      assigned,
+      skipped,
+      errors,
+      results,
     };
   }
 }

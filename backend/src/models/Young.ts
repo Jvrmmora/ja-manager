@@ -6,6 +6,8 @@ import { getCurrentDateTimeColombia } from '../utils/dateUtils';
 interface IYoungDocument extends Omit<IYoung, 'id' | '_id'>, Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
   generatePlaca(): string;
+  getCurrentAge(): number;
+  isBirthdayToday(): boolean;
 }
 
 const youngSchema = new Schema<IYoungDocument>(
