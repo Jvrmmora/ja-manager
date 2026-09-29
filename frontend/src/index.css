@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -236,4 +236,238 @@
   .animate-shimmer-bronze {
     animation: shimmer-bronze-subtle 5s ease-in-out infinite;
   }
+
+  /* ── Marca (logo): degradado fuego ─────────────────────────────── */
+  .text-fire {
+    background-image: linear-gradient(100deg, #f9a23b 0%, #f26a2e 38%, #dc3340 72%, #b0245a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Nombre destacado: degradado más claro (legible sobre ink) y sin recortar la última letra */
+  .text-fire-name {
+    display: inline-block;
+    padding-right: 0.08em;
+    background-image: linear-gradient(100deg, #fbbf5b 0%, #f9873a 45%, #f0555a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Degradado para superficies con texto blanco (contraste AA) */
+  .bg-fire {
+    background-image: linear-gradient(120deg, #c2410f 0%, #b3243b 60%, #8a1c45 100%);
+  }
+
+  .bg-fire-bright {
+    background-image: linear-gradient(135deg, #f26a2e 0%, #c2410f 35%, #b3243b 68%, #6e1640 100%);
+  }
+
+  .bg-gold {
+    background-image: linear-gradient(120deg, #fde68a 0%, #f9a23b 45%, #f26a2e 100%);
+  }
+
+  .border-fire {
+    border: 1.5px solid transparent;
+    background:
+      linear-gradient(var(--border-fire-fill, #fff), var(--border-fire-fill, #fff)) padding-box,
+      linear-gradient(135deg, #f9a23b, #dc3340 55%, #4e0f3a) border-box;
+  }
+
+  .dark .border-fire {
+    --border-fire-fill: #1e1218;
+  }
+
+  .btn-fire {
+    @apply bg-fire inline-flex items-center justify-center gap-2 rounded-full font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-orange/40 disabled:opacity-60 disabled:hover:translate-y-0;
+  }
+
+  .btn-fire:hover {
+    box-shadow: 0 14px 40px -10px rgba(242, 106, 46, 0.8);
+  }
+
+  .btn-outline-light {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/30 font-semibold text-white transition-colors duration-300 hover:border-white/60 hover:bg-white/10 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/30;
+  }
+
+  .eyebrow {
+    @apply font-display text-sm font-medium uppercase tracking-[0.24em];
+  }
+
+  .field-brand {
+    @apply w-full rounded-2xl border-[1.5px] border-sand-300 bg-white px-4 text-base text-cocoa-900 placeholder-cocoa-400 transition focus:border-brand-orange focus:outline-none focus:ring-4 focus:ring-brand-orange/20 dark:border-white/15 dark:bg-ink-800 dark:text-white dark:placeholder-white/40;
+  }
+
+  .rich-content-invert {
+    @apply text-white/75;
+  }
+
+  .rich-content-invert h2,
+  .rich-content-invert h3,
+  .rich-content-invert strong {
+    @apply text-white;
+  }
+
+  .rich-content-invert a {
+    @apply text-brand-amber;
+  }
+
+  .rich-content-invert blockquote {
+    @apply border-brand-amber text-white/70;
+  }
+}
+
+/* Complementos de src/brand-skin.css (colores que el generador no cubre). */
+.brand-skin .dark .from-blue-500.via-emerald-500 {
+  --tw-gradient-stops: #f9a23b, #dc3340, #8a1c45;
+}
+.brand-skin .dark .dark\:bg-amber-900\/20 {
+  background-image: linear-gradient(90deg, rgba(249, 162, 59, 0.18), rgba(220, 51, 64, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(249, 162, 59, 0.55);
+}
+
+/* Formularios y color primario dentro del admin/dashboard con marca */
+.brand-skin .form-input {
+  border-radius: 1rem;
+  border-width: 1.5px;
+  border-color: #e6d3c4;
+  min-height: 3rem;
+  padding: 0.625rem 1rem;
+  font-size: 15px;
+  color: #1f1418;
+}
+.brand-skin .form-input:focus {
+  border-color: #f26a2e;
+  box-shadow: 0 0 0 4px rgba(242, 106, 46, 0.2);
+  --tw-ring-shadow: 0 0 #0000;
+}
+.dark .brand-skin .form-input,
+.brand-skin .dark .form-input {
+  border-color: rgba(255, 255, 255, 0.15);
+  background-color: #2a1a22;
+  color: #fff;
+}
+.brand-skin .form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a3840;
+}
+.dark .brand-skin .form-label,
+.brand-skin .dark .form-label {
+  color: rgba(255, 255, 255, 0.75);
+}
+.brand-skin .bg-primary {
+  background-color: transparent;
+  background-image: linear-gradient(120deg, #c2410f 0%, #b3243b 60%, #8a1c45 100%);
+}
+.brand-skin .hover\:bg-primary-dark:hover {
+  background-color: transparent;
+  filter: brightness(1.08);
+}
+.brand-skin .text-primary {
+  color: #b23a14;
+}
+.dark .brand-skin .text-primary,
+.brand-skin .dark .text-primary {
+  color: #f9a23b;
+}
+.brand-skin .border-primary {
+  border-color: #c2410f;
+}
+.brand-skin .focus\:ring-primary:focus {
+  --tw-ring-color: rgba(242, 106, 46, 0.4);
+}
+.brand-skin input[type='radio'],
+.brand-skin input[type='checkbox'] {
+  accent-color: #c2410f;
+}
+
+/* ---------------------------------------------------------------------------
+   Llama de la portada (HeroFlame): capas difuminadas que titilan + brasas.
+   Se oculta el movimiento con prefers-reduced-motion (queda la llama quieta).
+--------------------------------------------------------------------------- */
+.hero-flame {
+  position: absolute;
+  width: 300px;
+  height: 400px;
+  mix-blend-mode: screen;
+}
+.hero-flame__glow {
+  position: absolute;
+  left: 50%;
+  bottom: -18%;
+  width: 150%;
+  height: 70%;
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  background: radial-gradient(ellipse at center, rgba(242, 106, 46, 0.45) 0%, rgba(220, 51, 64, 0.18) 45%, rgba(20, 11, 16, 0) 72%);
+  animation: hero-flame-glow 3.2s ease-in-out infinite;
+}
+.hero-flame__layer {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform-origin: 50% 100%;
+}
+.hero-flame__outer {
+  width: 100%;
+  height: 100%;
+  margin-left: -50%;
+  filter: blur(12px);
+  opacity: 0.5;
+  animation: hero-flame-flicker 3.6s ease-in-out infinite;
+}
+.hero-flame__mid {
+  width: 72%;
+  height: 76%;
+  margin-left: -36%;
+  filter: blur(6px);
+  opacity: 0.62;
+  animation: hero-flame-flicker 2.7s ease-in-out -0.8s infinite;
+}
+.hero-flame__core {
+  width: 42%;
+  height: 48%;
+  margin-left: -21%;
+  filter: blur(3px);
+  opacity: 0.75;
+  animation: hero-flame-flicker 2.1s ease-in-out -0.3s infinite;
+}
+.hero-flame__ember {
+  position: absolute;
+  bottom: 18%;
+  border-radius: 9999px;
+  background: #fbbf5b;
+  box-shadow: 0 0 6px 1px rgba(249, 162, 59, 0.85);
+  opacity: 0;
+  animation: hero-flame-ember var(--ember-d, 7s) ease-out var(--ember-delay, 0s) infinite;
+}
+
+@keyframes hero-flame-flicker {
+  0%, 100% { transform: scale(1, 1) skewX(0deg); }
+  25% { transform: scale(0.97, 1.05) skewX(1.5deg); }
+  50% { transform: scale(1.03, 0.96) skewX(-1deg); }
+  75% { transform: scale(0.98, 1.07) skewX(-2deg); }
+}
+@keyframes hero-flame-glow {
+  0%, 100% { opacity: 0.85; }
+  45% { opacity: 1; }
+  70% { opacity: 0.75; }
+}
+@keyframes hero-flame-ember {
+  0% { transform: translate(0, 0) scale(1); opacity: 0; }
+  12% { opacity: 0.95; }
+  70% { opacity: 0.6; }
+  100% { transform: translate(var(--ember-drift, 0px), -360px) scale(0.3); opacity: 0; }
+}
+
+@media (max-width: 767px) {
+  .hero-flame { width: 220px; height: 300px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-flame__glow,
+  .hero-flame__layer { animation: none; }
+  .hero-flame__ember { display: none; }
 }

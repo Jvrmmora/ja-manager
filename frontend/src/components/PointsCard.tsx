@@ -47,7 +47,7 @@ const PointsCard: React.FC<PointsCardProps> = ({
 
   if (loading) {
     return (
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-700 animate-pulse">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sand-100 dark:bg-white/10 animate-pulse">
         <span className="material-symbols-rounded text-sm text-gray-400">
           star
         </span>
@@ -72,29 +72,21 @@ const PointsCard: React.FC<PointsCardProps> = ({
         onClick={onClick}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        className={`
-          inline-flex items-center gap-2 
-          px-3 py-1.5 rounded-full
-          bg-gradient-to-r from-amber-400 to-yellow-500
-          text-white font-semibold
-          hover:from-amber-500 hover:to-yellow-600
-          transition-all duration-200
-          transform hover:scale-105
-          shadow-md hover:shadow-lg
-          ${onClick ? 'cursor-pointer' : 'cursor-default'}
-        `}
+        className={`inline-flex h-[30px] items-center gap-1.5 rounded-full bg-sand-100 px-2.5 font-display text-[15px] font-semibold text-brand-ember transition-transform duration-200 hover:scale-105 dark:bg-brand-orange/15 dark:text-brand-amber ${
+          onClick ? 'cursor-pointer' : 'cursor-default'
+        }`}
       >
         {/* Icono de estrella */}
-        <span className="material-symbols-rounded text-lg">star</span>
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
 
         {/* Puntos totales */}
-        <span className="text-sm">{displayPoints} pts</span>
+        <span>{displayPoints}</span>
       </button>
 
       {/* Tooltip personalizado - Solo mostrar si tenemos breakdown */}
       {showTooltip && hasBreakdown && breakdown && (
         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50 pointer-events-none">
-          <div className="bg-gray-800 dark:bg-gray-900 text-white px-3 py-2 rounded-lg shadow-xl text-xs whitespace-nowrap">
+          <div className="bg-ink-950 text-white px-3 py-2 rounded-xl shadow-xl text-xs whitespace-nowrap">
             <div className="space-y-1">
               <div className="flex justify-between gap-4">
                 <span>Asistencias:</span>
@@ -122,8 +114,8 @@ const PointsCard: React.FC<PointsCardProps> = ({
               </div>
               {breakdown.season && (
                 <>
-                  <div className="border-t border-gray-600 my-1.5"></div>
-                  <div className="text-gray-400 text-center">
+                  <div className="border-t border-white/15 my-1.5"></div>
+                  <div className="text-white/55 text-center">
                     {breakdown.season.name}
                   </div>
                 </>
@@ -131,7 +123,7 @@ const PointsCard: React.FC<PointsCardProps> = ({
             </div>
             {/* Flecha del tooltip */}
             <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-              <div className="border-4 border-transparent border-t-gray-800 dark:border-t-gray-900"></div>
+              <div className="border-4 border-transparent border-t-ink-950"></div>
             </div>
           </div>
         </div>

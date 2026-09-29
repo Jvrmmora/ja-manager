@@ -1,19 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { pointsService } from '../services/pointsService';
-import type { IPointsBreakdown } from '../types';
+import type { ILeaderboardEntry, IPointsBreakdown } from '../types';
 import { hasDeepChanged } from '../hooks/useDeepCompareEffect';
 
 interface PointsStatsCardsProps {
   youngId: string;
   onViewDetails: () => void;
   onViewRanking?: () => void;
+  topThree?: ILeaderboardEntry[];
 }
+
+const initials = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .map(p => p.charAt(0))
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
 
 const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
   youngId,
   onViewDetails,
   onViewRanking,
+  topThree,
 }) => {
   const [breakdown, setBreakdown] = useState<IPointsBreakdown | null>(null);
   const [position, setPosition] = useState<{
@@ -58,72 +69,26 @@ const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
     }
   };
 
-  // Obtener estilos según posición en ranking
-  const getRankingStyles = (rank: number | undefined) => {
-    if (!rank) {
-      return {
-        gradient:
-          'from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700',
-        icon: 'military_tech',
-        badge: null,
-        animation: '',
-      };
-    }
-
-    if (rank === 1) {
-      return {
-        gradient:
-          'from-yellow-400 to-amber-500 dark:from-yellow-500 dark:to-amber-600',
-        icon: 'emoji_events',
-        badge: '¡Primer Lugar!',
-        animation: 'animate-shimmer-gold',
-      };
-    }
-
-    if (rank === 2) {
-      return {
-        gradient:
-          'from-gray-300 to-gray-500 dark:from-gray-400 dark:to-gray-600',
-        icon: 'workspace_premium',
-        badge: 'Segundo Lugar',
-        animation: 'animate-shimmer-silver',
-      };
-    }
-
-    if (rank === 3) {
-      return {
-        gradient:
-          'from-orange-400 to-orange-600 dark:from-orange-500 dark:to-orange-700',
-        icon: 'stars',
-        badge: 'Tercer Lugar',
-        animation: 'animate-shimmer-bronze',
-      };
-    }
-
-    return {
-      gradient:
-        'from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700',
-      icon: 'military_tech',
-      badge: null,
-      animation: '',
-    };
+  const rankBadge = (rank?: number) => {
+    if (rank === 1)
+      return { label: '¡Primer Lugar!', cls: 'from-[#F9A23B] via-[#FDE68A] to-[#F9A23B]' };
+    if (rank === 2)
+      return { label: 'Segundo Lugar', cls: 'from-[#CBD5E1] via-[#F8FAFC] to-[#CBD5E1]' };
+    if (rank === 3)
+      return { label: 'Tercer Lugar', cls: 'from-[#D97745] via-[#F4B58C] to-[#D97745]' };
+    return null;
   };
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto mb-8">
-        {/* Skeleton Cards */}
+      <>
         {[1, 2].map(i => (
           <div
             key={i}
-            className="bg-gray-200 dark:bg-gray-700 rounded-xl p-6 animate-pulse"
-          >
-            <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-24 mb-4"></div>
-            <div className="h-10 bg-gray-300 dark:bg-gray-600 rounded w-16 mb-2"></div>
-            <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-32"></div>
-          </div>
+            className="h-[260px] rounded-[28px] border border-sand-200 bg-white animate-pulse dark:border-white/10 dark:bg-ink-900"
+          />
         ))}
-      </div>
+      </>
     );
   }
 
@@ -131,140 +96,145 @@ const PointsStatsCards: React.FC<PointsStatsCardsProps> = ({
     return null;
   }
 
+  const hasRank = !!position && position.rank > 0 && position.totalParticipants > 0;
+  const badge = hasRank ? rankBadge(position?.rank) : null;
+  const podiumOrder = [topThree?.[1], topThree?.[0], topThree?.[2]];
+  const podiumStyle = [
+    { ring: 'border-[#CBD5E1]', bar: 'h-[34px] bg-[#CBD5E1]/20 text-[#CBD5E1]', size: 'h-10 w-10', n: 2 },
+    { ring: 'border-brand-amber', bar: 'h-[50px] bg-brand-amber/25 text-brand-amber', size: 'h-12 w-12', n: 1 },
+    { ring: 'border-[#D97745]', bar: 'h-6 bg-[#D97745]/20 text-[#E8A27A]', size: 'h-10 w-10', n: 3 },
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto mb-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Card de Puntos Totales */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="group relative bg-gradient-to-br from-amber-400 to-yellow-500 dark:from-amber-500 dark:to-yellow-600 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden"
+    <>
+      {/* Puntos totales */}
+      <motion.article
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex flex-col gap-3.5 rounded-[28px] border border-sand-200 bg-white p-6 sm:p-7 text-left shadow-[0_20px_40px_-30px_rgba(78,15,58,0.4)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_56px_-28px_rgba(78,15,58,0.45)] dark:border-white/10 dark:bg-ink-900"
+      >
+        <span className="flex items-center gap-2.5 text-sm font-semibold text-cocoa-500 dark:text-white/65">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sand-100 text-brand-ember dark:bg-brand-orange/15 dark:text-brand-amber">
+            <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+          </span>
+          Puntos Totales
+        </span>
+        <span className="text-fire font-display text-6xl sm:text-7xl font-bold leading-none">
+          {breakdown.total}
+        </span>
+        <span className="text-sm text-cocoa-500 dark:text-white/60">
+          {breakdown.transactionCount}{' '}
+          {breakdown.transactionCount === 1 ? 'transacción' : 'transacciones'}
+        </span>
+        <button
+          onClick={onViewDetails}
+          className="group/btn mt-auto inline-flex items-center gap-1.5 self-start pt-1 text-[15px] font-semibold text-brand-deep hover:text-brand-wine dark:text-brand-amber"
         >
-          {/* Efecto de brillo sutil */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          Ver Desglose
+          <svg className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </button>
+      </motion.article>
 
-          <div className="relative z-10">
-            {/* Header */}
-            <div className="flex items-center gap-2 mb-4">
-              <span className="material-symbols-rounded text-white text-2xl">
-                star
+      {/* Ranking */}
+      <motion.article
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.08 }}
+        className="order-first md:order-none relative flex flex-col gap-5 overflow-hidden rounded-[28px] bg-ink-900 p-6 sm:p-7 text-left text-white shadow-[0_30px_60px_-30px_rgba(20,11,16,0.7)] transition-transform duration-300 hover:-translate-y-1 dark:border dark:border-white/10"
+      >
+        <div className="pointer-events-none absolute -right-28 -top-40 h-[380px] w-[380px] rounded-full bg-[radial-gradient(circle,rgba(249,162,59,.3)_0%,rgba(30,18,24,0)_65%)]" />
+        <div className="relative flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-2">
+            <span className="flex items-center gap-2.5 text-sm font-semibold text-white/70">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-amber/15 text-brand-amber">
+                <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                  <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                </svg>
               </span>
-              <h3 className="text-sm font-medium text-white/90 uppercase tracking-wide">
-                Puntos Totales
-              </h3>
-            </div>
-
-            {/* Puntos */}
-            <div className="mb-3">
-              <div className="text-5xl font-bold text-white mb-1">
-                {breakdown.total}
-              </div>
-              <p className="text-sm text-white/80">
-                {breakdown.transactionCount}{' '}
-                {breakdown.transactionCount === 1
-                  ? 'transacción'
-                  : 'transacciones'}
-              </p>
-            </div>
-
-            {/* Botón Ver Detalle */}
-            <button
-              onClick={onViewDetails}
-              className="inline-flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white transition-colors group/btn"
-            >
-              <span>Ver Desglose</span>
-              <span className="material-symbols-rounded text-lg transform group-hover/btn:translate-x-1 transition-transform">
-                arrow_forward
-              </span>
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Card de Ranking */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          onClick={onViewRanking}
-          className={`group relative bg-gradient-to-br ${
-            position && position.totalParticipants > 0
-              ? getRankingStyles(position?.rank).gradient
-              : 'from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700'
-          } rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden ${
-            position && position.totalParticipants > 0
-              ? getRankingStyles(position?.rank).animation
-              : ''
-          } ${onViewRanking ? 'cursor-pointer hover:scale-105' : ''}`}
-        >
-          {/* Borde animado para top 3 */}
-          {position && position.totalParticipants > 0 && position.rank <= 3 && (
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer-border"></div>
-          )}
-
-          {/* Efecto de brillo sutil */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-          <div className="relative z-10">
-            {/* Header */}
-            <div className="flex items-center gap-2 mb-4">
-              <span className="material-symbols-rounded text-white text-2xl">
-                {position && position.totalParticipants > 0
-                  ? getRankingStyles(position?.rank).icon
-                  : 'military_tech'}
-              </span>
-              <h3 className="text-sm font-medium text-white/90 uppercase tracking-wide">
-                Tu Posición
-              </h3>
-            </div>
-
-            {/* Ranking */}
+              Tu Posición
+            </span>
             {position ? (
-              position.rank > 0 && position.totalParticipants > 0 ? (
-                <div className="mb-3">
-                  <div className="text-5xl font-bold text-white mb-1">
+              hasRank ? (
+                <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="font-display text-6xl sm:text-7xl font-bold leading-none text-brand-amber">
                     #{position.rank}
-                  </div>
-                  <p className="text-sm text-white/80">
+                  </span>
+                  <span className="text-[15px] text-white/60">
                     de {position.totalParticipants}{' '}
-                    {position.totalParticipants === 1
-                      ? 'participante'
-                      : 'participantes'}
-                  </p>
-                </div>
+                    {position.totalParticipants === 1 ? 'participante' : 'participantes'}
+                  </span>
+                </span>
               ) : (
-                <div className="mb-3">
-                  <div className="text-3xl font-bold text-white mb-1">#0</div>
-                  <p className="text-sm text-white/80">
+                <span className="flex flex-col gap-1">
+                  <span className="font-display text-5xl font-bold leading-none text-brand-amber">#0</span>
+                  <span className="max-w-xs text-sm text-white/65">
                     Sin puntos aún. ¡Participa en actividades para subir de posición!
-                  </p>
-                </div>
+                  </span>
+                </span>
               )
             ) : (
-              <div className="mb-3">
-                <div className="text-3xl font-bold text-white mb-1">—</div>
-                <p className="text-sm text-white/80">Sin ranking disponible</p>
-              </div>
+              <span className="flex flex-col gap-1">
+                <span className="font-display text-5xl font-bold leading-none text-white/70">—</span>
+                <span className="text-sm text-white/65">Sin ranking disponible</span>
+              </span>
             )}
-
-            {/* Badge si es top 3 */}
-            {position &&
-              position.rank > 0 &&
-              position.totalParticipants > 0 &&
-              getRankingStyles(position.rank).badge && (
-                <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                  <span className="material-symbols-rounded text-white text-lg">
-                    {getRankingStyles(position.rank).icon}
-                  </span>
-                  <span className="text-xs font-semibold text-white">
-                    {getRankingStyles(position.rank).badge}
-                  </span>
-                </div>
-              )}
+            {badge && (
+              <span
+                className={`animate-shimmer-border inline-flex self-start h-8 items-center rounded-full bg-gradient-to-r px-3.5 text-[13px] font-bold text-ink-950 ${badge.cls}`}
+              >
+                {badge.label}
+              </span>
+            )}
           </div>
-        </motion.div>
-      </div>
-    </div>
+
+          {topThree && topThree.length > 0 && (
+            <div className="hidden sm:flex items-end gap-1.5 pt-2" aria-hidden="true">
+              {podiumOrder.map((entry, i) =>
+                entry ? (
+                  <span key={entry.youngId} className="flex flex-col items-center gap-1.5">
+                    <span
+                      className={`${podiumStyle[i].size} overflow-hidden rounded-full border-2 ${podiumStyle[i].ring} bg-ink-800 flex items-center justify-center text-xs font-bold`}
+                    >
+                      {entry.profileImage ? (
+                        <img src={entry.profileImage} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        initials(entry.youngName)
+                      )}
+                    </span>
+                    <span
+                      className={`flex w-11 items-center justify-center rounded-t-lg font-display text-[15px] ${podiumStyle[i].bar}`}
+                    >
+                      {podiumStyle[i].n}
+                    </span>
+                  </span>
+                ) : null
+              )}
+            </div>
+          )}
+        </div>
+
+        {onViewRanking && (
+          <button
+            onClick={onViewRanking}
+            className="bg-gold relative mt-auto flex h-[60px] items-center justify-center gap-3 rounded-[18px] font-display text-lg sm:text-[22px] font-semibold uppercase tracking-[0.06em] text-ink-950 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_36px_-10px_rgba(249,162,59,0.8)] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-amber/50"
+          >
+            <svg className="h-[22px] w-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+            </svg>
+            Ver ranking de la temporada
+            <svg className="hidden sm:block h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </button>
+        )}
+      </motion.article>
+    </>
   );
 };
 

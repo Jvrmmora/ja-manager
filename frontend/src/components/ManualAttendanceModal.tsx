@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  XMarkIcon,
   MagnifyingGlassIcon,
+  UserPlusIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline';
@@ -14,6 +14,7 @@ import {
 } from '../services/api';
 import { seasonService } from '../services/seasonService';
 import type { IYoung } from '../types';
+import BrandModalHeader from './ui/BrandModalHeader';
 
 interface ManualAttendanceModalProps {
   isOpen: boolean;
@@ -156,30 +157,31 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          className="absolute inset-0 bg-[#0C0609]/75 backdrop-blur-sm"
           onClick={onClose}
         />
         <motion.div
           initial={{ scale: 0.85, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.85, opacity: 0 }}
-          className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 overflow-hidden border border-gray-200 dark:border-gray-700"
+          className="relative w-full max-w-lg overflow-hidden rounded-[28px] bg-white shadow-2xl dark:bg-ink-900"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Registro manual de asistencia"
         >
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <XMarkIcon className="w-6 h-6" />
-          </button>
-          <h2 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">
-            Registro Manual de Asistencia
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <BrandModalHeader
+            title="Registro manual"
+            icon={<UserPlusIcon className="h-5 w-5" />}
+            onClose={onClose}
+            compact
+          />
+          <div className="p-6">
+          <p className="text-sm text-cocoa-500 dark:text-white/60 mb-4">
             Elige un joven y confirma. Solo disponible con Temporada y QR
             activos.
           </p>
           {loadingMeta && (
-            <div className="mb-4 text-sm text-blue-600 dark:text-blue-400">
+            <div className="mb-4 text-sm text-brand-deep dark:text-brand-amber">
               Cargando datos...
             </div>
           )}
@@ -191,10 +193,10 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
           )}
           {!errorMeta && season && qr && (
             <div className="flex items-center gap-3 mb-4">
-              <div className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 text-xs font-medium">
+              <div className="px-3 py-1 rounded-full bg-ink-950 text-brand-amber text-xs font-semibold">
                 Temporada Activa: {season.name}
               </div>
-              <div className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 text-xs font-medium">
+              <div className="px-3 py-1 rounded-full bg-sand-100 text-[#9A3412] dark:bg-brand-orange/15 dark:text-brand-amber text-xs font-semibold">
                 QR Puntos: {qr.points}
               </div>
             </div>
@@ -204,14 +206,14 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
               Buscar Joven
             </label>
             <div className="relative">
-              <MagnifyingGlassIcon className="w-5 h-5 absolute left-2 top-2.5 text-gray-400" />
+              <MagnifyingGlassIcon className="w-5 h-5 absolute left-3.5 top-3.5 text-cocoa-400" />
               <input
                 type="text"
                 placeholder="Nombre, placa..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 disabled={disabledForm}
-                className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-100 dark:disabled:bg-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400"
+                className="field-brand h-12 !pl-10 text-[15px] disabled:opacity-60"
               />
             </div>
           </div>
@@ -338,10 +340,10 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
               {submitError}
             </div>
           )}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex gap-3 pt-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200"
+              className="flex-1 h-12 rounded-full border-[1.5px] border-sand-300 bg-white text-sm font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-transparent dark:text-white/80"
               disabled={submitting}
             >
               Cancelar
@@ -356,7 +358,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                 ) ||
                 submitting
               }
-              className={`px-5 py-2 rounded-lg text-sm font-semibold text-white ${disabledForm || !selectedYoung || presentTodayIds.has(String((selectedYoung as any)?._id || selectedYoung?.id)) || submitting ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} flex items-center gap-2`}
+              className="btn-fire flex-1 h-12 text-sm disabled:cursor-not-allowed"
             >
               {submitting && (
                 <motion.span
@@ -367,6 +369,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
               )}
               <span>{submitting ? 'Registrando...' : 'Registrar'}</span>
             </button>
+          </div>
           </div>
         </motion.div>
       </div>

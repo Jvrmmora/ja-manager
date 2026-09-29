@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { QrCodeIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
-import { LightningBonus } from './LightningBonus';
 import { getCurrentQR } from '../services/api';
 
 interface AnimatedScanButtonProps {
@@ -96,292 +94,154 @@ const AnimatedScanButton: React.FC<AnimatedScanButtonProps> = ({
     };
   }, [isCompleted, disabled]);
 
-  // Si está completado, mostrar un label en lugar de botón
+  const liveBonus = useLiveBonus(bonusInfo);
+  const showBonus = !!liveBonus && liveBonus.points >= 1 && !isScanning;
+
   if (isCompleted) {
     return (
-      <motion.div
-        className={`
-          relative w-full py-4 px-6 rounded-xl font-semibold
-          bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 text-white
-          shadow-2xl
-          flex items-center justify-center gap-3
-          overflow-hidden
-          ${className}
-        `}
-        animate={{
-          scale: [1, 1.03, 1],
-          boxShadow: [
-            '0 10px 40px rgba(16, 185, 129, 0.5)',
-            '0 15px 50px rgba(5, 150, 105, 0.6)',
-            '0 10px 40px rgba(16, 185, 129, 0.5)',
-          ],
-        }}
-        transition={{
-          scale: {
-            duration: 2.5,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          },
-          boxShadow: {
-            duration: 3,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          },
-        }}
+      <div
+        className={`relative flex min-h-[220px] flex-col justify-center gap-4 rounded-[32px] border border-emerald-400/35 bg-ink-900 p-7 sm:p-9 text-left text-white ${className}`}
+        role="status"
       >
-        {/* Fondo base con gradiente */}
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-green-500/20 rounded-xl" />
-
-        {/* Efecto de brillo que recorre el botón */}
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-xl"
-          animate={{
-            x: ['-200%', '200%'],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: 'linear',
-            repeatDelay: 1,
-          }}
-        />
-
-        {/* Icono de Check con resplandor */}
-        <motion.div
-          className="relative"
-          animate={{
-            scale: [1, 1.15, 1],
-            rotate: [0, 10, -10, 0],
-          }}
-          transition={{
-            scale: {
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            },
-            rotate: {
-              duration: 4,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            },
-          }}
-        >
-          {/* Resplandor detrás del ícono */}
-          <motion.div
-            className="absolute inset-0 bg-white/40 rounded-full blur-md"
-            animate={{
-              scale: [1, 1.5, 1],
-              opacity: [0.4, 0.7, 0.4],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          />
-          <CheckCircleIcon className="w-7 h-7 relative z-10 drop-shadow-lg" />
-        </motion.div>
-
-        {/* Texto */}
-        <span className="relative z-10 text-base font-bold tracking-wide">
+        <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 motion-safe:animate-[glow-green_2.2s_ease-out_infinite]">
+          <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5 13l4 4L19 7" />
+          </svg>
+        </span>
+        <span className="font-display text-3xl sm:text-4xl font-semibold uppercase leading-none">
           Asistencia Registrada Hoy
         </span>
-
-        {/* Efecto de pulso del borde */}
-        <motion.div
-          className="absolute inset-0 rounded-xl border-2 border-emerald-300/70"
-          animate={{
-            scale: [1, 1.04, 1],
-            opacity: [0.6, 1, 0.6],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-
-        {/* Punto indicador blanco con pulso */}
-        <motion.div
-          className="absolute top-3 right-3"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{
-            scale: [0, 1.3, 1],
-            opacity: [0, 1, 0.9],
-          }}
-          transition={{
-            scale: { duration: 0.6, ease: 'backOut' },
-            opacity: { duration: 0.5 },
-          }}
-        >
-          {/* Efecto de pulso alrededor del punto */}
-          <motion.div
-            className="absolute inset-0 bg-white/60 rounded-full"
-            animate={{
-              scale: [1, 1.8, 1],
-              opacity: [0.6, 0, 0.6],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeOut',
-            }}
-          />
-          {/* Punto blanco */}
-          <div className="relative w-3 h-3 bg-white rounded-full shadow-xl border-2 border-emerald-200"></div>
-        </motion.div>
-      </motion.div>
+        <span className="text-[15px] text-white/65">
+          ¡Nos vemos el próximo sábado!
+        </span>
+      </div>
     );
   }
 
-  // Botón normal para estados no completados
-  return (
-    <motion.button
-      onClick={onClick}
-      disabled={disabled || isScanning}
-      className={`
-        relative w-full py-4 px-6 rounded-xl font-semibold
-        bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 cursor-pointer shadow-lg
-        disabled:from-gray-400 disabled:to-gray-500 disabled:text-gray-200
-        hover:shadow-xl
-        transition-all duration-300
-        flex items-center justify-center gap-3
-        overflow-hidden
-        ${className}
-      `}
-      whileHover={!disabled && !isScanning ? { scale: 1.02 } : {}}
-      whileTap={!disabled && !isScanning ? { scale: 0.98 } : {}}
-      animate={
-        !disabled && !isScanning
-          ? {
-              boxShadow: [
-                '0 4px 15px rgba(59, 130, 246, 0.4)',
-                '0 4px 25px rgba(59, 130, 246, 0.6)',
-                '0 4px 15px rgba(59, 130, 246, 0.4)',
-              ],
-            }
-          : {}
-      }
-      transition={{
-        boxShadow: {
-          duration: 2,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        },
-      }}
-    >
-      {/* Efecto de fondo animado */}
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20"
-        animate={
-          !disabled && !isScanning
-            ? {
-                x: ['-100%', '100%'],
-              }
-            : {}
-        }
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: 'linear',
-        }}
-      />
-
-      {/* Icono QR o Scanning */}
-      <motion.div
-        animate={
-          isScanning
-            ? {
-                rotate: 360,
-              }
-            : !disabled
-              ? {
-                  scale: [1, 1.1, 1],
-                }
-              : {}
-        }
-        transition={
-          isScanning
-            ? {
-                duration: 1,
-                repeat: Infinity,
-                ease: 'linear',
-              }
-            : {
-                duration: 2,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }
-        }
+  if (isScanning) {
+    return (
+      <div
+        className={`relative flex min-h-[220px] flex-col items-center justify-center gap-4 rounded-[32px] border border-white/10 bg-gradient-to-br from-[#7A2A1A] via-[#5E1A30] to-[#3A1028] p-7 text-white ${className}`}
+        role="status"
+        aria-live="polite"
       >
-        <QrCodeIcon className="w-6 h-6" />
-      </motion.div>
+        <svg className="h-11 w-11 animate-spin text-brand-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true">
+          <path d="M21 12a9 9 0 1 1-6.22-8.56" />
+        </svg>
+        <span className="font-display text-3xl font-semibold uppercase">Escaneando...</span>
+      </div>
+    );
+  }
 
-      {/* Texto */}
-      <span className="relative z-10 text-base">
-        {isScanning ? 'Escaneando...' : 'Registrar Asistencia'}
-      </span>
+  return (
+    <div className={`relative ${className}`}>
+      {!disabled && (
+        <>
+          <span className="pointer-events-none absolute inset-0 rounded-[32px] border-2 border-brand-amber/70 motion-safe:animate-pulse-ring" />
+          <span className="pointer-events-none absolute inset-0 rounded-[32px] border-2 border-brand-red/60 motion-safe:animate-pulse-ring-delayed" />
+        </>
+      )}
+      <motion.button
+        onClick={onClick}
+        disabled={disabled}
+        whileHover={!disabled ? { y: -4, scale: 1.01 } : {}}
+        whileTap={!disabled ? { scale: 0.98 } : {}}
+        className="bg-fire-bright relative flex min-h-[260px] sm:min-h-[300px] w-full flex-col justify-between gap-6 overflow-hidden rounded-[32px] p-6 sm:p-9 text-left text-white shadow-[0_30px_70px_-24px_rgba(242,106,46,0.6)] transition-shadow duration-300 hover:shadow-[0_40px_80px_-24px_rgba(242,106,46,0.75)] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-amber/60 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <span className="pointer-events-none absolute -inset-y-[20%] left-0 w-28 bg-gradient-to-r from-white/0 via-white/25 to-white/0 motion-safe:animate-sheen" />
 
-      {/* Badge de bonus de velocidad */}
-      {bonusInfo &&
-        bonusInfo.currentBonus >= 1 &&
-        !isScanning &&
-        bonusInfo.qrGeneratedAt && (
-          <motion.div
-            className="absolute -top-2 -right-2 bg-gradient-to-br from-yellow-400 via-orange-500 to-orange-600 px-2 py-1 rounded-full shadow-lg flex items-center gap-1"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-          >
-            <LightningBonus
-              bonusPoints={bonusInfo.currentBonus}
-              decayPercent={bonusInfo.decayPercent}
-              maxBonus={bonusInfo.maxBonus}
-              bonusDecayMinutes={bonusInfo.bonusDecayMinutes ?? 30}
-              qrGeneratedAt={bonusInfo.qrGeneratedAt}
-            />
-            <span className="text-xs font-bold text-white">pts</span>
-          </motion.div>
+        <span className="relative flex items-center justify-between gap-3">
+          <span className="font-display text-xs sm:text-sm uppercase tracking-[0.24em] text-white/85">
+            Asistencia de hoy
+          </span>
+          {showBonus && (
+            <span className="flex h-9 items-center gap-1.5 rounded-full border border-white/25 bg-ink-950/35 px-3.5 text-sm font-bold">
+              <svg className="h-4 w-4 text-[#FCD34D] motion-safe:animate-pulse" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              +{liveBonus.points} pts
+            </span>
+          )}
+        </span>
+
+        <span className="relative flex items-center gap-4 sm:gap-6">
+          <span className="flex h-20 w-20 sm:h-[104px] sm:w-[104px] flex-shrink-0 items-center justify-center rounded-[22px] sm:rounded-[28px] bg-white text-[#B3243B] shadow-[0_16px_32px_-12px_rgba(20,11,16,0.5)]">
+            <svg className="h-11 w-11 sm:h-14 sm:w-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="5" height="5" rx="1" />
+              <rect x="16" y="3" width="5" height="5" rx="1" />
+              <rect x="3" y="16" width="5" height="5" rx="1" />
+              <path d="M21 16h-3a2 2 0 0 0-2 2v3M21 21v.01M12 7v3a2 2 0 0 1-2 2H7M3 12h.01M12 3h.01M12 16v.01M16 12h1M21 12v.01M12 21v-1" />
+            </svg>
+          </span>
+          <span className="flex flex-col gap-1.5">
+            <span className="font-display text-[34px] sm:text-5xl font-bold uppercase leading-[0.95]">
+              Registrar
+              <br />
+              Asistencia
+            </span>
+            <span className="text-sm sm:text-[15px] text-white/85">
+              Escanea el código QR del culto joven
+            </span>
+          </span>
+        </span>
+
+        {showBonus ? (
+          <span className="relative flex flex-col gap-2">
+            <span className="flex justify-between text-xs sm:text-[13px] font-semibold text-white/90">
+              <span>Bono de velocidad</span>
+              <span>baja con cada minuto</span>
+            </span>
+            <span className="h-2 overflow-hidden rounded-full bg-ink-950/35">
+              <span
+                className="block h-full rounded-full bg-gradient-to-r from-[#FDE68A] via-[#FCD34D] to-brand-amber transition-[width] duration-1000 ease-linear"
+                style={{ width: `${Math.max(4, liveBonus.percent)}%` }}
+              />
+            </span>
+          </span>
+        ) : (
+          <span className="relative text-[13px] font-medium text-white/75">
+            Toca para abrir la cámara
+          </span>
         )}
-
-      {/* Puntos de carga cuando está escaneando */}
-      {isScanning && (
-        <div className="flex gap-1">
-          {[...Array(3)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="w-2 h-2 bg-white rounded-full"
-              animate={{
-                scale: [0.5, 1, 0.5],
-                opacity: [0.5, 1, 0.5],
-              }}
-              transition={{
-                duration: 1,
-                repeat: Infinity,
-                delay: i * 0.2,
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Efecto de pulso del borde */}
-      {!disabled && !isScanning && (
-        <motion.div
-          className="absolute inset-0 rounded-xl border-2 border-blue-300"
-          animate={{
-            scale: [1, 1.05, 1],
-            opacity: [0.7, 0.3, 0.7],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-      )}
-    </motion.button>
+      </motion.button>
+    </div>
   );
 };
+
+// Recalcula el bono cada segundo a partir de la hora de generación del QR.
+function useLiveBonus(
+  info: {
+    currentBonus: number;
+    maxBonus: number;
+    decayPercent: number;
+    qrGeneratedAt?: string | Date;
+    bonusDecayMinutes?: number;
+  } | null
+) {
+  const [live, setLive] = useState<{ points: number; percent: number } | null>(null);
+
+  useEffect(() => {
+    if (!info) {
+      setLive(null);
+      return;
+    }
+    if (!info.qrGeneratedAt) {
+      setLive({ points: info.currentBonus, percent: info.decayPercent });
+      return;
+    }
+    const generated = new Date(info.qrGeneratedAt).getTime();
+    const duration = (info.bonusDecayMinutes ?? 30) * 60 * 1000;
+    const update = () => {
+      const remaining = Math.max(0, duration - (Date.now() - generated));
+      const percent = (remaining / duration) * 100;
+      setLive({ points: Math.floor((percent / 100) * info.maxBonus), percent });
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [info]);
+
+  return live;
+}
 
 export default AnimatedScanButton;

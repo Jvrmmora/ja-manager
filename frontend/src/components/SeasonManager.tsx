@@ -87,31 +87,18 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
     }
   };
 
-  const getStatusBadge = (season: ISeason) => {
+  const getStatusBadge = (season: ISeason, dark: boolean) => {
     const { status } = season;
-
-    if (status === 'ACTIVE') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-          <span className="material-symbols-rounded text-sm">check_circle</span>
-          Activa
-        </span>
-      );
-    }
-
-    if (status === 'UPCOMING') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-          <span className="material-symbols-rounded text-sm">schedule</span>
-          Próxima
-        </span>
-      );
-    }
-
+    const [label, cls] =
+      status === 'ACTIVE'
+        ? ['Activa', dark ? 'bg-emerald-400/15 text-emerald-300' : 'bg-emerald-50 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300']
+        : status === 'UPCOMING'
+          ? ['Próxima', 'bg-sand-100 text-[#9A3412] dark:bg-brand-orange/15 dark:text-brand-amber']
+          : ['Completada', 'bg-[#F5EFEA] text-cocoa-500 dark:bg-white/5 dark:text-white/55'];
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-        <span className="material-symbols-rounded text-sm">history</span>
-        Completada
+      <span className={`inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-bold ${cls}`}>
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        {label}
       </span>
     );
   };
@@ -134,167 +121,112 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
     });
   };
 
+  const iconBtn = (dark: boolean) =>
+    `flex h-9 w-9 items-center justify-center rounded-[11px] border transition-colors disabled:opacity-50 ${
+      dark
+        ? 'border-white/15 text-white/75 hover:border-white/40 hover:text-white'
+        : 'border-sand-200 bg-white text-cocoa-500 hover:border-[#F4B58C] hover:text-brand-deep dark:border-white/10 dark:bg-ink-800 dark:text-white/70'
+    }`;
+
   return (
-    <div className="space-y-6">
-      {/* Content */}
+    <div className="flex flex-col gap-4">
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <span className="h-12 w-12 animate-spin rounded-full border-4 border-sand-200 border-t-brand-ember" />
         </div>
       ) : seasons.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-12 text-center shadow-md">
-          <span className="material-symbols-rounded text-6xl text-gray-400 mb-4">
-            calendar_month
-          </span>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
-            No hay temporadas creadas aún
-          </p>
-          <button
-            onClick={handleCreate}
-            className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded-lg transition-colors"
-          >
-            <span className="material-symbols-rounded">add_circle</span>
-            <span>Crear Primera Temporada</span>
+        <div className="flex flex-col items-center gap-3 rounded-[22px] border border-sand-200 bg-white p-12 text-center dark:border-white/10 dark:bg-ink-800">
+          <p className="m-0 text-cocoa-500 dark:text-white/60">No hay temporadas creadas aún</p>
+          <button type="button" onClick={handleCreate} className="btn-fire h-12 px-6 text-sm">
+            Crear primera temporada
           </button>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Temporada
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Fechas
-                  </th>
-                  <th className="px-6 py-4 text-center text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-6 py-4 text-center text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Configuración
-                  </th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {seasons.map(season => (
-                  <tr
-                    key={season.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="font-semibold text-gray-900 dark:text-white">
-                          {season.name}
-                        </div>
-                        {season.description && (
-                          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            {season.description}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-700 dark:text-gray-300">
-                        <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-rounded text-sm text-gray-400">
-                            event
-                          </span>
-                          <span>{formatDate(season.startDate)}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="material-symbols-rounded text-sm text-gray-400">
-                            event
-                          </span>
-                          <span>{formatDate(season.endDate)}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {getStatusBadge(season)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-rounded text-xs">
-                            event_available
-                          </span>
-                          <span>
-                            Asistencia:{' '}
-                            {season.settings?.attendancePoints || 10} pts
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-rounded text-xs">
-                            person_add
-                          </span>
-                          <span>
-                            Referido:{' '}
-                            {season.settings?.referralBonusPoints || 30}/
-                            {season.settings?.referralWelcomePoints || 10} pts
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-rounded text-xs">
-                            local_fire_department
-                          </span>
-                          <span>
-                            Racha: {season.settings?.streakMinDays || 3} días
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {/* Botón activar (solo si no está activa) */}
-                        {!season.isActive && season.status !== 'COMPLETED' && (
-                          <button
-                            onClick={() => handleActivate(season)}
-                            disabled={actionLoading === season.id}
-                            className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-50"
-                            title="Activar temporada"
-                          >
-                            {actionLoading === season.id ? (
-                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600"></div>
-                            ) : (
-                              <span className="material-symbols-rounded">
-                                check_circle
-                              </span>
-                            )}
-                          </button>
-                        )}
-
-                        {/* Botón editar */}
-                        <button
-                          onClick={() => handleEdit(season)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                          title="Editar temporada"
-                        >
-                          <span className="material-symbols-rounded">edit</span>
-                        </button>
-
-                        {/* Botón eliminar - disponible para todas las temporadas */}
-                        <button
-                          onClick={() => handleDelete(season)}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          title="Eliminar temporada"
-                        >
-                          <span className="material-symbols-rounded">
-                            delete
-                          </span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <>
+          <div className="flex justify-end">
+            <button type="button" onClick={handleCreate} className="btn-fire h-11 px-5 text-sm">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Nueva temporada
+            </button>
           </div>
-        </div>
+          {seasons.map(season => {
+            const dark = season.status === 'ACTIVE' || !!season.isActive;
+            return (
+              <div
+                key={season.id}
+                className={`grid gap-3 rounded-[20px] border p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4 sm:px-5 lg:grid-cols-[minmax(0,1fr)_250px_120px_auto] ${
+                  dark
+                    ? 'border-ink-950 bg-ink-950 text-white'
+                    : 'border-sand-200 bg-white dark:border-white/10 dark:bg-ink-800'
+                }`}
+              >
+                <div className="min-w-0">
+                  <p className={`m-0 font-display text-xl font-semibold uppercase ${dark ? 'text-white' : 'text-cocoa-900 dark:text-white'}`}>
+                    {season.name}
+                  </p>
+                  {season.description && (
+                    <p className={`m-0 mt-0.5 text-[13px] ${dark ? 'text-white/65' : 'text-cocoa-500 dark:text-white/60'}`}>
+                      {season.description}
+                    </p>
+                  )}
+                  <p className={`m-0 mt-1 text-xs ${dark ? 'text-white/55' : 'text-cocoa-400 dark:text-white/50'}`}>
+                    Asistencia {season.settings?.attendancePoints || 10} pts · Referido{' '}
+                    {season.settings?.referralBonusPoints || 30}/{season.settings?.referralWelcomePoints || 10} pts · Racha{' '}
+                    {season.settings?.streakMinDays || 3} días
+                  </p>
+                </div>
+                <span className={`text-[13px] ${dark ? 'text-white/70' : 'text-cocoa-500 dark:text-white/60'}`}>
+                  {formatDate(season.startDate)} – {formatDate(season.endDate)}
+                </span>
+                <span>{getStatusBadge(season, dark)}</span>
+                <span className="flex gap-1.5 sm:justify-end">
+                  {!season.isActive && season.status !== 'COMPLETED' && (
+                    <button
+                      type="button"
+                      onClick={() => handleActivate(season)}
+                      disabled={actionLoading === season.id}
+                      className={iconBtn(dark)}
+                      title="Activar temporada"
+                      aria-label="Activar temporada"
+                    >
+                      {actionLoading === season.id ? (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      ) : (
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <polygon points="5 3 19 12 5 21 5 3" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(season)}
+                    className={iconBtn(dark)}
+                    title="Editar temporada"
+                    aria-label="Editar temporada"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(season)}
+                    className={`${iconBtn(dark)} hover:!border-red-300 hover:!text-red-500`}
+                    title="Eliminar temporada"
+                    aria-label="Eliminar temporada"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
+                    </svg>
+                  </button>
+                </span>
+              </div>
+            );
+          })}
+        </>
       )}
 
       {/* Modal crear/editar */}

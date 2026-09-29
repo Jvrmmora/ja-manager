@@ -338,14 +338,14 @@ export default function LandingPage({
 
   if (!landingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-cream dark:bg-ink-950">
         <div className="text-center">
-          <p className="text-gray-700 dark:text-gray-300 mb-4">
+          <p className="text-cocoa-700 dark:text-white/75 mb-4">
             {error || 'Error loading content'}
           </p>
           <button
             onClick={fetchLandingContent}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="btn-fire h-11 px-6"
           >
             Retry
           </button>
@@ -416,9 +416,13 @@ export default function LandingPage({
 
   return (
     <div className={`${theme === 'dark' ? 'dark' : ''}`}>
-      <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
+      <div className="min-h-screen bg-cream dark:bg-ink-900 text-cocoa-900 dark:text-white transition-colors">
         {/* Navbar */}
-        <Navbar onOpenContact={() => setShowContactModal(true)} />
+        <Navbar
+          onOpenContact={() => setShowContactModal(true)}
+          overHero={isSectionVisible('hero')}
+        />
+        {!isSectionVisible('hero') && <div className="h-[72px] lg:h-[84px] bg-ink-950" />}
 
         {/* Hero Section */}
         {isSectionVisible('hero') && (

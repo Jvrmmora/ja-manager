@@ -6,7 +6,7 @@ import {
   ShareIcon,
 } from '@heroicons/react/24/outline';
 import type { IYoung } from '../types';
-import logo2 from '../assets/logos/logo_2.png';
+import logo2 from '../assets/logos/logo.png';
 
 interface WelcomeCardProps {
   young: IYoung;
@@ -68,7 +68,7 @@ Recuerda cambiar tu contraseña en tu primer ingreso.
     try {
       // Generar imagen del canvas (sin QR ahora)
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#1E3A8A',
+        backgroundColor: '#140B10',
         scale: 2,
         logging: false,
         useCORS: true,
@@ -139,65 +139,49 @@ Recuerda cambiar tu contraseña en tu primer ingreso.
 
   return (
     <div className="flex flex-col items-center gap-6">
-      {/* Tarjeta de Bienvenida */}
+      {/* Tarjeta de Bienvenida (se exporta como imagen: sin texto con degradado) */}
       <div
         ref={cardRef}
-        className="relative w-full max-w-[400px] h-[600px] bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-3xl shadow-2xl overflow-hidden flex flex-col items-center p-8"
+        className="relative flex h-[600px] w-full max-w-[400px] flex-col overflow-hidden rounded-[32px] bg-ink-950 p-8 text-white shadow-2xl"
       >
-        {/* Fondo decorativo sutil */}
-        <div className="absolute inset-0 opacity-15">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2" />
+        <div className="pointer-events-none absolute -right-28 -top-32 h-[340px] w-[340px] rounded-full bg-[radial-gradient(circle,rgba(242,106,46,.45)_0%,rgba(20,11,16,0)_65%)]" />
+        <div className="pointer-events-none absolute -bottom-40 -left-24 h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,rgba(138,28,69,.5)_0%,rgba(20,11,16,0)_65%)]" />
+
+        <div className="relative z-10 flex items-center gap-2.5">
+          <img src={logo2} alt="Logo Jóvenes Modelia" className="h-9 w-9 object-contain" />
+          <span className="font-display text-xs tracking-[0.28em] text-white/60">JÓVENES MODELIA</span>
         </div>
 
-        {/* Avatar / Foto del joven */}
-        <div className="relative z-10 mt-2 mb-4">
-          <div className="w-32 h-32 rounded-full ring-4 ring-white/20 overflow-hidden bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-xl">
-            {young.profileImage ? (
-              <img
-                src={young.profileImage}
-                alt={young.fullName}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <UserCircleIcon className="w-24 h-24 text-white/70" />
-            )}
-          </div>
+        <div className="relative z-10 mt-7 flex items-center gap-4">
+          <span className="block h-24 w-24 flex-shrink-0 rounded-full bg-[linear-gradient(135deg,#F9A23B,#DC3340,#8A1C45)] p-1">
+            <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-[3px] border-ink-950 bg-ink-800">
+              {young.profileImage ? (
+                <img src={young.profileImage} alt={young.fullName} className="h-full w-full object-cover" />
+              ) : (
+                <UserCircleIcon className="h-16 w-16 text-white/60" />
+              )}
+            </span>
+          </span>
         </div>
 
-        {/* Texto bienvenida */}
-        <div className="relative z-10 text-center flex flex-col items-center gap-4 flex-1 w-full">
-          <h2 className="text-2xl font-semibold text-white tracking-wide">
+        <div className="relative z-10 mt-6 flex flex-1 flex-col gap-4">
+          <h2 className="m-0 font-display text-[34px] font-bold uppercase leading-none">
             Bienvenido,
+            <span className="mt-1 block text-brand-amber">{young.fullName}</span>
           </h2>
-          <h3 className="text-3xl font-bold text-white drop-shadow">
-            {young.fullName}
-          </h3>
-
-          {/* Placa */}
-          <div className="bg-white/20 backdrop-blur-sm rounded-xl px-6 py-4 shadow-lg flex flex-col items-center w-full max-w-xs">
-            <p className="text-sm text-white/80 font-medium mb-1">Tu placa</p>
-            <p className="text-2xl font-bold text-white select-all">
+          <p className="m-0 text-sm text-white/70">Ingresa con las credenciales de más abajo:</p>
+          <div className="flex flex-col gap-2 rounded-[18px] border border-white/10 bg-white/[0.06] px-5 py-4">
+            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/55">Tu placa</span>
+            <span className="select-all font-mono text-2xl font-semibold text-brand-amber">
               {young.placa || 'Sin placa'}
-            </p>
+            </span>
+            <span className="text-[13px] text-white/70">
+              Ingresa: <strong className="select-all text-white">www.jovenesmodelia.com</strong>
+            </span>
           </div>
-
-          {/* Link de ingreso */}
-          <div className="mt-6 mb-4 flex flex-col items-center gap-2">
-            <p className="text-white/90 text-sm font-medium">Ingresa:</p>
-            <p className="text-white text-lg font-semibold select-all underline decoration-blue-300">
-              www.jovenesmodelia.com
-            </p>
-          </div>
-        </div>
-
-        {/* Logo debajo */}
-        <div className="relative z-10 mt-auto mb-4">
-          <img
-            src={logo2}
-            alt="Logo Jóvenes Modelia"
-            className="w-20 h-20 object-contain drop-shadow-lg"
-          />
+          <p className="m-0 mt-auto text-xs text-white/55">
+            Recuerda cambiar tu contraseña en tu primer ingreso.
+          </p>
         </div>
       </div>
 
@@ -206,14 +190,14 @@ Recuerda cambiar tu contraseña en tu primer ingreso.
         <button
           onClick={handleShare}
           disabled={isSharing}
-          className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-fire h-12 px-5 text-sm disabled:cursor-not-allowed"
         >
           <ArrowUpTrayIcon className="w-5 h-5" />
           {isSharing ? 'Generando...' : 'Guardar/Compartir'}
         </button>
         <button
           onClick={openWhatsapp}
-          className="flex items-center gap-2 px-5 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold shadow-lg transition-all"
+          className="inline-flex h-12 items-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-semibold text-white shadow-lg transition-all hover:brightness-105"
         >
           <ShareIcon className="w-5 h-5" /> WhatsApp
         </button>

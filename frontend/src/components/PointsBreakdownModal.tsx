@@ -238,38 +238,34 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
               {/* Puntos totales y ranking */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Total de puntos */}
-                <div className="bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl p-6 text-white shadow-lg">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="material-symbols-rounded text-3xl">
-                      star
+                <div className="rounded-2xl border border-sand-200 bg-sand-50 p-5 text-cocoa-900 dark:border-white/10 dark:bg-white/[0.05] dark:text-white">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-amber/20 text-brand-deep dark:text-brand-amber">
+                      <span className="material-symbols-rounded text-2xl">star</span>
                     </span>
-                    <span className="text-sm font-medium opacity-90">
-                      Puntos Totales
-                    </span>
+                    <span className="text-sm font-medium text-cocoa-500 dark:text-white/65">Puntos Totales</span>
                   </div>
-                  <div className="text-4xl font-bold">{breakdown.total}</div>
-                  <div className="text-sm opacity-90 mt-1">
+                  <div className="font-display text-[44px] font-bold leading-none">{breakdown.total}</div>
+                  <div className="mt-1.5 text-sm text-cocoa-500 dark:text-white/60">
                     {breakdown.transactionCount} transacciones
                   </div>
                 </div>
 
                 {/* Ranking */}
                 {position && (
-                  <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="material-symbols-rounded text-3xl">
-                        military_tech
+                  <div className="rounded-2xl border border-sand-200 bg-sand-50 p-5 text-cocoa-900 dark:border-white/10 dark:bg-white/[0.05] dark:text-white">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-wine/15 text-brand-wine dark:bg-[#B0245A]/30 dark:text-[#F4A3C0]">
+                        <span className="material-symbols-rounded text-2xl">military_tech</span>
                       </span>
-                      <span className="text-sm font-medium opacity-90">
-                        Posición
-                      </span>
+                      <span className="text-sm font-medium text-cocoa-500 dark:text-white/65">Posición</span>
                     </div>
                     {position.rank > 0 && position.totalParticipants > 0 ? (
                       <>
-                        <div className="text-4xl font-bold">
+                        <div className="font-display text-[44px] font-bold leading-none">
                           #{position.rank}
                         </div>
-                        <div className="text-sm opacity-90 mt-1">
+                        <div className="mt-1.5 text-sm text-cocoa-500 dark:text-white/60">
                           de {position.totalParticipants}{' '}
                           {position.totalParticipants === 1
                             ? 'participante'
@@ -278,8 +274,8 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
                       </>
                     ) : (
                       <>
-                        <div className="text-4xl font-bold">#0</div>
-                        <div className="text-sm opacity-90 mt-1">
+                        <div className="font-display text-[44px] font-bold leading-none">#0</div>
+                        <div className="mt-1.5 text-sm text-cocoa-500 dark:text-white/60">
                           Sin puntos aún
                         </div>
                       </>
@@ -289,23 +285,23 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
 
                 {/* Racha actual (clickable) */}
                 <div
-                  className={`rounded-xl p-6 text-white shadow-lg ${
-                    (streakWeeks ?? 0) >= 4
-                      ? 'bg-gradient-to-br from-violet-500 to-fuchsia-600'
-                      : 'bg-gradient-to-br from-orange-400 to-amber-500'
-                  } cursor-pointer hover:opacity-95 transition-opacity`}
+                  className="rounded-2xl border border-sand-200 bg-sand-50 p-5 text-cocoa-900 dark:border-white/10 dark:bg-white/[0.05] dark:text-white cursor-pointer transition-colors hover:border-brand-orange/50"
                   onClick={() => setShowStreakModal(true)}
                 >
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="material-symbols-rounded text-3xl">
-                      local_fire_department
+                  <div className="flex items-center gap-3 mb-3">
+                    <span
+                      className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                        (streakWeeks ?? 0) >= 4
+                          ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300'
+                          : 'bg-brand-orange/15 text-brand-deep dark:text-brand-orange'
+                      }`}
+                    >
+                      <span className="material-symbols-rounded text-2xl">local_fire_department</span>
                     </span>
-                    <span className="text-sm font-medium opacity-90">
-                      Racha actual
-                    </span>
+                    <span className="text-sm font-medium text-cocoa-500 dark:text-white/65">Racha actual</span>
                   </div>
-                  <div className="text-4xl font-bold">{streakWeeks ?? 0}</div>
-                  <div className="text-sm opacity-90 mt-1">
+                  <div className="font-display text-[44px] font-bold leading-none">{streakWeeks ?? 0}</div>
+                  <div className="mt-1.5 text-sm text-cocoa-500 dark:text-white/60">
                     {streakWeeks && streakWeeks >= 4
                       ? 'Llama Violeta activa'
                       : 'Semanas consecutivas (solo sábados)'}
@@ -540,15 +536,15 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
               </button>
             </div>
             <div className="p-5 space-y-4">
-              <div className="bg-gradient-to-br from-orange-400 to-amber-500 rounded-lg p-4 text-white">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="material-symbols-rounded">
+              <div className="rounded-xl border border-sand-200 bg-sand-50 p-4 text-cocoa-900 dark:border-white/10 dark:bg-white/[0.05] dark:text-white">
+                <div className="flex items-center gap-2 mb-1 text-cocoa-500 dark:text-white/65">
+                  <span className="material-symbols-rounded text-brand-deep dark:text-brand-orange">
                     local_fire_department
                   </span>
                   <span className="text-sm">Racha actual</span>
                 </div>
-                <div className="text-3xl font-bold">{streakWeeks ?? 0}</div>
-                <div className="text-xs opacity-90">
+                <div className="font-display text-3xl font-bold">{streakWeeks ?? 0}</div>
+                <div className="text-xs text-cocoa-500 dark:text-white/60">
                   Semanas consecutivas (solo sábados)
                 </div>
               </div>

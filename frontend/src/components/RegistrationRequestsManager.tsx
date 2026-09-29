@@ -140,8 +140,7 @@ const RegistrationRequestsManager: React.FC<
   const getNewUserBadge = (createdAt: string | Date) => {
     if (isRecentUser(createdAt)) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-          <span className="material-symbols-rounded text-sm">fiber_new</span>
+        <span className="bg-fire inline-flex h-6 items-center rounded-full px-2.5 text-[11px] font-bold uppercase tracking-[0.06em] text-white">
           Nuevo
         </span>
       );
@@ -172,23 +171,19 @@ const RegistrationRequestsManager: React.FC<
   return (
     <div className="space-y-6">
       {/* Header con estadísticas y filtros */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div className="rounded-[22px] border border-sand-200 bg-white p-5 dark:border-white/10 dark:bg-ink-800">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <span className="material-symbols-rounded text-xl">groups</span>
-              Registros Recientes
+            <h3 className="m-0 font-display text-xl font-semibold uppercase text-cocoa-900 dark:text-white">
+              Registros recientes
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Nuevos usuarios registrados en los últimos {daysFilter} días
             </p>
           </div>
           {recentCount > 0 && (
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <span className="material-symbols-rounded text-blue-600 dark:text-blue-400">
-                fiber_new
-              </span>
-              <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+            <div className="inline-flex h-9 items-center gap-2 rounded-full border border-[#F6D6B8] bg-sand-50 px-4 dark:border-brand-orange/30 dark:bg-brand-orange/10">
+              <span className="text-sm font-semibold text-[#9A3412] dark:text-brand-amber">
                 {recentCount} nuevo{recentCount !== 1 ? 's' : ''} (últimos 7
                 días)
               </span>
@@ -199,7 +194,7 @@ const RegistrationRequestsManager: React.FC<
         {/* Barra de búsqueda */}
         <div className="mb-4">
           <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 material-symbols-rounded text-gray-400">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 material-symbols-rounded text-cocoa-400">
               search
             </span>
             <input
@@ -207,7 +202,7 @@ const RegistrationRequestsManager: React.FC<
               placeholder="Buscar por nombre, email o placa..."
               value={search}
               onChange={e => handleSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="field-brand h-12 !pl-11 text-[15px]"
             />
           </div>
         </div>
@@ -219,30 +214,30 @@ const RegistrationRequestsManager: React.FC<
           </span>
           <button
             onClick={() => handleDaysFilterChange(7)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`h-9 rounded-full border px-4 text-[13px] font-semibold transition-colors ${
               daysFilter === 7
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'border-ink-950 bg-ink-950 text-white dark:border-white dark:bg-white dark:text-ink-950'
+                : 'border-sand-300 bg-white text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-transparent dark:text-white/75'
             }`}
           >
             7 días
           </button>
           <button
             onClick={() => handleDaysFilterChange(30)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`h-9 rounded-full border px-4 text-[13px] font-semibold transition-colors ${
               daysFilter === 30
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'border-ink-950 bg-ink-950 text-white dark:border-white dark:bg-white dark:text-ink-950'
+                : 'border-sand-300 bg-white text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-transparent dark:text-white/75'
             }`}
           >
             30 días
           </button>
           <button
             onClick={() => handleDaysFilterChange(90)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`h-9 rounded-full border px-4 text-[13px] font-semibold transition-colors ${
               daysFilter === 90
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'border-ink-950 bg-ink-950 text-white dark:border-white dark:bg-white dark:text-ink-950'
+                : 'border-sand-300 bg-white text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-transparent dark:text-white/75'
             }`}
           >
             90 días
@@ -256,7 +251,7 @@ const RegistrationRequestsManager: React.FC<
           <LoadingSpinner size="lg" />
         </div>
       ) : requests.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-12 text-center shadow-md">
+        <div className="rounded-[22px] border border-sand-200 bg-white p-12 text-center dark:border-white/10 dark:bg-ink-800">
           <span className="material-symbols-rounded text-6xl text-gray-400 dark:text-gray-500 mb-4">
             assignment_ind
           </span>
@@ -272,9 +267,9 @@ const RegistrationRequestsManager: React.FC<
           {requests.map(request => (
             <div
               key={request.id}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
+              className="overflow-hidden rounded-[22px] border border-sand-200 bg-white transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-28px_rgba(78,15,58,0.45)] dark:border-white/10 dark:bg-ink-800"
             >
-              <div className="p-6">
+              <div className="p-5">
                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                   {/* Información principal */}
                   <div className="flex-1 space-y-3">
@@ -285,11 +280,11 @@ const RegistrationRequestsManager: React.FC<
                           <img
                             src={request.profileImage}
                             alt={request.fullName}
-                            className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
+                            className="h-14 w-14 rounded-full border-2 border-[#F4B58C] object-cover"
                           />
                         ) : (
-                          <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border-2 border-gray-200 dark:border-gray-700">
-                            <span className="material-symbols-rounded text-3xl text-gray-400 dark:text-gray-500">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#F4B58C] bg-ink-800">
+                            <span className="material-symbols-rounded text-3xl text-white/70">
                               person
                             </span>
                           </div>
@@ -299,7 +294,7 @@ const RegistrationRequestsManager: React.FC<
                       {/* Datos del solicitante */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 flex-wrap">
-                          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          <h4 className="m-0 text-base font-bold text-cocoa-900 dark:text-white">
                             {request.fullName}
                           </h4>
                           {getNewUserBadge(request.createdAt!)}
@@ -327,7 +322,7 @@ const RegistrationRequestsManager: React.FC<
                               <span className="material-symbols-rounded text-base">
                                 badge
                               </span>
-                              <span className="font-mono">{request.placa}</span>
+                              <span className="font-mono font-semibold text-brand-wine dark:text-[#F4A3C0]">{request.placa}</span>
                             </div>
                           )}
                           {request.birthday && (
@@ -364,8 +359,8 @@ const RegistrationRequestsManager: React.FC<
                         {/* Información adicional */}
                         <div className="mt-3 space-y-2">
                           {request.referredBy && (
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                              <span className="font-medium">Referido por:</span>{' '}
+                            <div className="inline-flex h-7 items-center gap-1.5 rounded-full bg-[#F6E1E8] px-3 text-xs font-semibold text-brand-wine dark:bg-brand-wine/25 dark:text-[#F4A3C0]">
+                              <span>Referido por:</span>{' '}
                               {request.referredBy.fullName} (
                               {request.referredBy.placa})
                             </div>
@@ -375,7 +370,7 @@ const RegistrationRequestsManager: React.FC<
                               {request.skills.slice(0, 5).map((skill, idx) => (
                                 <span
                                   key={idx}
-                                  className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs rounded-md"
+                                  className="rounded-full bg-sand-50 px-2.5 py-0.5 text-xs font-semibold text-cocoa-600 dark:bg-white/5 dark:text-white/70"
                                 >
                                   {skill}
                                 </span>
@@ -401,11 +396,11 @@ const RegistrationRequestsManager: React.FC<
                     <button
                       onClick={() => handleDeleteClick(request)}
                       disabled={actionLoading === request.id}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-full border-[1.5px] border-red-200 bg-white px-4 text-[13px] font-semibold text-red-700 transition-colors hover:border-red-400 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-500/30 dark:bg-transparent dark:text-red-300"
                     >
                       {actionLoading === request.id ? (
                         <>
-                          <LoadingSpinner size="sm" className="text-white" />
+                          <LoadingSpinner size="sm" />
                           <span>Procesando...</span>
                         </>
                       ) : (
@@ -427,7 +422,7 @@ const RegistrationRequestsManager: React.FC<
 
       {/* Paginación */}
       {!loading && requests.length > 0 && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+        <div className="flex items-center justify-between gap-3">
           <div className="text-sm text-gray-600 dark:text-gray-400">
             Mostrando {requests.length} de {pagination.totalItems} registros
           </div>
@@ -437,11 +432,11 @@ const RegistrationRequestsManager: React.FC<
                 setFilters(prev => ({ ...prev, page: prev.page! - 1 }))
               }
               disabled={!pagination.hasPreviousPage}
-              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="h-10 rounded-full border border-sand-300 bg-white px-4 text-[13px] font-semibold text-cocoa-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/15 dark:bg-ink-800 dark:text-white/80"
             >
               Anterior
             </button>
-            <div className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+            <div className="flex h-10 items-center rounded-full bg-ink-950 px-4 text-sm font-semibold text-white dark:bg-white dark:text-ink-950">
               {pagination.currentPage} / {pagination.totalPages}
             </div>
             <button
@@ -449,7 +444,7 @@ const RegistrationRequestsManager: React.FC<
                 setFilters(prev => ({ ...prev, page: prev.page! + 1 }))
               }
               disabled={!pagination.hasNextPage}
-              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="h-10 rounded-full border border-sand-300 bg-white px-4 text-[13px] font-semibold text-cocoa-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/15 dark:bg-ink-800 dark:text-white/80"
             >
               Siguiente
             </button>
@@ -459,12 +454,12 @@ const RegistrationRequestsManager: React.FC<
 
       {/* Modal para eliminar usuario */}
       {showDeleteModal && deletingRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-[#0C0609]/75 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[28px] bg-white shadow-2xl dark:bg-ink-900" role="alertdialog" aria-modal="true" aria-label="Eliminar usuario">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Eliminar Usuario
+                <h3 className="m-0 font-display text-2xl font-semibold uppercase text-cocoa-900 dark:text-white">
+                  Eliminar usuario
                 </h3>
                 <button
                   onClick={() => {
@@ -511,14 +506,14 @@ const RegistrationRequestsManager: React.FC<
                     setDeletingRequest(null);
                     setDeleteReason('other');
                   }}
-                  className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  className="h-12 flex-1 rounded-full border-[1.5px] border-sand-300 bg-white text-sm font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-transparent dark:text-white/80"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={actionLoading === deletingRequest.id}
-                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-red-700 text-sm font-semibold text-white transition-colors hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {actionLoading === deletingRequest.id ? (
                     <>

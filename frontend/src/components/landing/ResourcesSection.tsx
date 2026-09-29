@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { normalizeRichTextHtml } from '../../utils/richText';
+import Dialog from './ui/Dialog';
+import Reveal from './ui/Reveal';
+import SectionHeader from './ui/SectionHeader';
 
 interface ResourceMedia {
   _id: string;
@@ -113,46 +116,42 @@ export default function ResourcesSection({
     : resourcesMedia.slice(0, MAX_VISIBLE_CARDS);
 
   return (
-    <section id="resources" className="py-20 px-4 bg-white dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-4xl font-bold text-center mb-4 text-gray-900 dark:text-white">
-          {title || 'Recursos para crecer'}
-        </h2>
-        <div
-          className="rich-content max-w-3xl mx-auto text-center text-gray-600 dark:text-gray-400 mb-12"
-          dangerouslySetInnerHTML={{
-            __html: normalizeRichTextHtml(
-              body ||
-                'Aquí encontrarás contenidos para aprender, compartir y fortalecer tu caminar con Dios.'
-            ),
-          }}
+    <section id="resources" className="bg-cream dark:bg-ink-900 py-24 md:py-28">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <SectionHeader
+          eyebrow="Recursos"
+          title={title || 'Recursos para crecer'}
+          body={
+            body ||
+            'Aquí encontrarás contenidos para aprender, compartir y fortalecer tu caminar con Dios.'
+          }
         />
 
         {resourcesMedia.length === 0 ? (
-          <div className="max-w-3xl mx-auto rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 p-10 text-center bg-gray-50 dark:bg-gray-800">
-            <p className="text-gray-600 dark:text-gray-300">
+          <div className="max-w-3xl mx-auto rounded-3xl border border-dashed border-sand-300 p-10 text-center bg-white dark:border-white/15 dark:bg-ink-800">
+            <p className="text-cocoa-500 dark:text-white/70">
               Estamos preparando materiales útiles para ti.
             </p>
           </div>
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {visibleResources.map(item => (
+              {visibleResources.map((item, index) => (
+                <Reveal key={item._id} delay={(index % 3) * 0.08}>
                 <article
-                  key={item._id}
-                  className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg transition-shadow"
+                  className="group h-full flex flex-col rounded-3xl overflow-hidden border border-sand-200 bg-white transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_56px_-24px_rgba(78,15,58,0.4)] dark:border-white/10 dark:bg-ink-800"
                 >
                   <button
                     type="button"
                     onClick={() => setSelectedResource(item)}
                     className="w-full text-left"
                   >
-                    <div className="h-52 bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                    <div className="h-52 bg-sand-50 dark:bg-ink-900 flex items-center justify-center overflow-hidden">
                       {item.mediaType === 'image' && (
                         <img
                           src={item.mediaUrl}
                           alt={item.altText || item.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                           loading="lazy"
                         />
                       )}
@@ -160,14 +159,14 @@ export default function ResourcesSection({
                         (isYouTubeUrl(item.mediaUrl) ||
                         isVimeoUrl(item.mediaUrl) ? (
                           blockedVideos[item._id] ? (
-                            <div className="w-full h-full bg-black/90 flex items-center justify-center text-center px-4">
+                            <div className="w-full h-full bg-ink-950 flex items-center justify-center text-center px-4">
                               <div>
                                 <p className="text-white text-sm font-semibold">No se pudo reproducir este video</p>
                                 <a
                                   href={item.mediaUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-block mt-3 text-sm font-medium text-blue-300 hover:text-blue-200 underline"
+                                  className="inline-block mt-3 text-sm font-medium text-brand-amber underline"
                                 >
                                   Abrir en YouTube
                                 </a>
@@ -196,7 +195,7 @@ export default function ResourcesSection({
                           />
                         ))}
                       {item.mediaType === 'document' && (
-                        <div className="w-full h-full relative bg-gray-200 dark:bg-gray-700">
+                        <div className="w-full h-full relative bg-sand-100 dark:bg-ink-900">
                           {isPdfUrl(item.mediaUrl) ? (
                             <iframe
                               src={`${item.mediaUrl}#toolbar=0&navpanes=0&scrollbar=0&page=1`}
@@ -207,7 +206,7 @@ export default function ResourcesSection({
                           ) : (
                             <div className="text-center px-6 h-full flex items-center justify-center">
                               <svg
-                                className="w-12 h-12 mx-auto text-red-500"
+                                className="w-12 h-12 mx-auto text-brand-ember"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
@@ -233,8 +232,8 @@ export default function ResourcesSection({
                               </svg>
                             </div>
                           )}
-                          <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
-                            <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white/90 text-gray-900">
+                          <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-ink-950/60 to-transparent">
+                            <span className="inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white text-cocoa-900">
                               {isPdfUrl(item.mediaUrl)
                                 ? 'Vista previa PDF'
                                 : 'Documento'}
@@ -245,16 +244,16 @@ export default function ResourcesSection({
                     </div>
                   </button>
 
-                  <div className="p-5">
-                    <p className="text-xs uppercase tracking-wide text-blue-600 dark:text-blue-400 font-semibold mb-1">
+                  <div className="flex flex-grow flex-col p-6">
+                    <p className="text-xs uppercase tracking-[0.12em] text-brand-deep dark:text-brand-amber font-bold mb-1.5">
                       {getResourceTypeLabel(item)}
                     </p>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    <h3 className="m-0 font-display text-xl font-semibold uppercase text-cocoa-900 dark:text-white">
                       {item.title}
                     </h3>
                     {item.description && (
                       <div
-                        className="mt-2 rich-content text-sm text-gray-600 dark:text-gray-300 line-clamp-3 break-words [&_a]:break-words [&_p]:my-0"
+                        className="mt-2 rich-content text-sm text-cocoa-500 dark:text-white/65 line-clamp-3 break-words [&_a]:break-words [&_p]:my-0"
                         dangerouslySetInnerHTML={{
                           __html: normalizeRichTextHtml(item.description),
                         }}
@@ -264,7 +263,7 @@ export default function ResourcesSection({
                       href={item.mediaUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-4 inline-flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 hover:text-blue-800 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/60"
+                      className="mt-auto self-start pt-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-deep hover:text-brand-wine dark:text-brand-amber"
                     >
                       <ArrowTopRightOnSquareIcon
                         className="h-4 w-4"
@@ -274,6 +273,7 @@ export default function ResourcesSection({
                     </a>
                   </div>
                 </article>
+                </Reveal>
               ))}
             </div>
 
@@ -282,7 +282,7 @@ export default function ResourcesSection({
                 <button
                   type="button"
                   onClick={() => setShowAllResources(prev => !prev)}
-                  className="inline-flex items-center px-5 py-2.5 rounded-lg border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-semibold text-sm transition"
+                  className="inline-flex h-12 items-center rounded-full border border-sand-300 px-6 text-sm font-semibold text-cocoa-900 transition-colors hover:bg-ink-950 hover:text-white dark:border-white/20 dark:text-white"
                 >
                   {showAllResources
                     ? 'Ver menos'
@@ -294,30 +294,16 @@ export default function ResourcesSection({
         )}
       </div>
 
-      {selectedResource && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setSelectedResource(null)}
-        >
-          <div
-            className="relative bg-white dark:bg-gray-900 rounded-xl max-w-5xl w-full p-4"
-            onClick={e => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setSelectedResource(null)}
-              className="absolute top-2 right-2 p-2 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
-            >
-              Cerrar
-            </button>
-
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 pr-16">
-              {selectedResource.title}
-            </h3>
-
+      <Dialog
+        open={Boolean(selectedResource)}
+        onClose={() => setSelectedResource(null)}
+        title={selectedResource?.title || ''}
+      >
+        {selectedResource && (
+          <>
             {selectedResource.description && (
               <div
-                className="rich-content mb-4 text-sm text-gray-600 dark:text-gray-300 break-words"
+                className="rich-content rich-content-invert mb-4 text-sm break-words"
                 dangerouslySetInnerHTML={{
                   __html: normalizeRichTextHtml(selectedResource.description),
                 }}
@@ -328,7 +314,7 @@ export default function ResourcesSection({
               <img
                 src={selectedResource.mediaUrl}
                 alt={selectedResource.altText || selectedResource.title}
-                className="w-full max-h-[70vh] object-contain rounded-lg"
+                className="w-full max-h-[70vh] object-contain rounded-2xl"
               />
             )}
 
@@ -338,7 +324,7 @@ export default function ResourcesSection({
                 <iframe
                   src={toEmbeddableUrl(selectedResource.mediaUrl)}
                   title={selectedResource.title}
-                  className="w-full h-[70vh] rounded-lg border border-gray-200 dark:border-gray-700"
+                  className="w-full h-[70vh] rounded-2xl border border-white/10"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
@@ -346,7 +332,7 @@ export default function ResourcesSection({
                 <video
                   src={selectedResource.mediaUrl}
                   controls
-                  className="w-full max-h-[70vh] rounded-lg"
+                  className="w-full max-h-[70vh] rounded-2xl"
                 />
               ))}
 
@@ -354,12 +340,12 @@ export default function ResourcesSection({
               <iframe
                 src={`${selectedResource.mediaUrl}${selectedResource.mediaUrl.includes('#') ? '&' : '#'}view=FitH`}
                 title={selectedResource.title}
-                className="w-full h-[70vh] rounded-lg border border-gray-200 dark:border-gray-700"
+                className="w-full h-[70vh] rounded-2xl border border-white/10 bg-white"
               />
             )}
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Dialog>
     </section>
   );
 }
