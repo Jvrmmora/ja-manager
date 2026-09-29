@@ -313,9 +313,23 @@ export const isWithinBirthdayClaimWindow = (
   const birthDate =
     typeof birthday === 'string' ? new Date(birthday) : birthday;
 
-  // Extraer mes y día del cumpleaños
-  const birthMonth = birthDate.getMonth();
-  const birthDay = birthDate.getDate();
+  // Extraer mes y día del cumpleaños en la zona horaria de Colombia. No usar
+  // birthDate.getMonth()/getDate() directamente: esos leen la hora local del
+  // proceso (UTC en CI, America/Bogota en Docker), y para una fecha guardada
+  // como medianoche UTC eso puede leer el día anterior o siguiente según
+  // dónde corra el proceso, haciendo la validación no determinista.
+  const birthFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: COLOMBIA_TIMEZONE,
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const birthParts = birthFormatter.formatToParts(birthDate);
+  const birthMonth =
+    parseInt(birthParts.find(part => part.type === 'month')?.value || '0') -
+    1;
+  const birthDay = parseInt(
+    birthParts.find(part => part.type === 'day')?.value || '0'
+  );
 
   // Extraer mes, día y año actual
   const currentMonth = today.getMonth();
