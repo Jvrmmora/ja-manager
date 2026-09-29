@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { pointsService } from '../services/pointsService';
 import PointsTransaction from '../models/PointsTransaction';
+import { captureLeaderboardSnapshot } from '../services/leaderboardSnapshotService';
 
 /**
  * Asignar puntos manualmente (por actividad)
@@ -258,6 +259,22 @@ export const getLeaderboard = async (
       success: true,
       ranking,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Capturar el snapshot semanal del ranking (disparado por cron externo).
+ */
+export const captureLeaderboardSnapshotHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    await captureLeaderboardSnapshot();
+    res.status(200).json({ success: true });
   } catch (error) {
     next(error);
   }

@@ -8,8 +8,10 @@ import {
   deleteTransaction,
   getLeaderboard,
   getYoungPosition,
+  captureLeaderboardSnapshotHandler,
 } from '../controllers/pointsController';
 import { authenticateToken } from '../middleware/auth';
+import { requireCronSecret } from '../middleware/cronAuth';
 
 const router = Router();
 
@@ -32,6 +34,13 @@ router.get('/leaderboard', authenticateToken, getLeaderboard);
 
 // Obtener posición de un joven en el ranking
 router.get('/position/:youngId', authenticateToken, getYoungPosition);
+
+// Capturar snapshot semanal del ranking (disparado por cron externo, GitHub Actions)
+router.post(
+  '/leaderboard/snapshot',
+  requireCronSecret,
+  captureLeaderboardSnapshotHandler
+);
 
 // Obtener todas las transacciones (admin)
 router.get('/transactions', authenticateToken, getAllTransactions);
