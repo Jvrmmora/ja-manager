@@ -22,7 +22,6 @@ import contactRoutes from './routes/contactRoutes';
 import legalRoutes from './routes/legalRoutes';
 import consentRoutes from './routes/consentRoutes';
 import { DatabaseSeeder } from './seeders/DatabaseSeeder';
-import { startBirthdayScheduler } from './services/birthdayScheduler';
 import { authenticateToken } from './middleware/auth';
 import { ensureDatabaseConnection } from './middleware/databaseCheck';
 import { connectDatabase } from './config/database';
@@ -116,9 +115,6 @@ const initializeApp = async () => {
 
     // Ejecutar seeders
     await DatabaseSeeder.runAllSeeders();
-
-    // Iniciar scheduler de cumpleaños
-    startBirthdayScheduler();
 
     // Configurar rutas después de que la BD esté lista
     setupRoutes();

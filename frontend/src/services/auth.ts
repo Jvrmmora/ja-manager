@@ -32,6 +32,7 @@ export interface UserProfile {
     ageRange?: string;
     phone?: string;
     birthday?: string;
+    birthdayPointsClaimed?: string | null;
     profileImage?: string;
     role_name: string;
     role: string;

@@ -1,0 +1,38 @@
+name: Asignación automática de puntos de cumpleaños (grupo 1)
+
+# Cada día a las 6:05am hora Bogotá asigna automáticamente los puntos de
+# cumpleaños a los jóvenes de grupo 1 que cumplen años hoy, llamando al
+# endpoint interno protegido por CRON_SECRET. El endpoint es idempotente
+# (findOneAndUpdate atómico), así que los reintentos de red son seguros y
+# nunca duplican puntos.
+#
+# El backend (Azure F1, sin "Always On") puede estar dormido si no recibió
+# tráfico recientemente, y un cold start completo (arrancar Node, reconectar
+# Mongo) puede tardar más que los reintentos del segundo paso. En vez de
+# asumir que "keep-backend-alive" ya lo despertó minutos antes (frágil: son
+# dos workflows independientes, sin garantía real de orden ni de que el cold
+# start haya terminado a tiempo), este workflow despierta el backend por su
+# cuenta primero, con reintentos, y solo después dispara la asignación.
+
+on:
+  schedule:
+    - cron: '5 11 * * *' # 11:05 UTC = 06:05 hora Bogotá
+  workflow_dispatch:
+
+jobs:
+  auto-assign:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Despertar el backend (por si estaba dormido)
+        run: |
+          curl -fsS --max-time 30 --retry 8 --retry-delay 10 --retry-all-errors \
+            https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api/health \
+            || echo "::warning::No se pudo confirmar que el backend despertó; se intenta la asignación de todas formas"
+
+      - name: Disparar asignación automática de puntos de cumpleaños
+        run: |
+          curl -fsS --max-time 30 --retry 5 --retry-delay 15 \
+            -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api/birthday/auto-assign
