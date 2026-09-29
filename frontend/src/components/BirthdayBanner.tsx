@@ -1,8 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
-import { formatBirthday } from '../utils/dateUtils';
+import {
+  formatBirthday,
+  getCurrentDateTimeColombia,
+  parseYYYYMMDD,
+} from '../utils/dateUtils';
+
+// Fecha de cumpleaños como día calendario local (sin corrimiento por UTC)
+const toCalendarDate = (value: Date | string): Date =>
+  typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)
+    ? parseYYYYMMDD(value.split('T')[0] as string)
+    : new Date(value);
+
+const SPARKS = [
+  { left: '8%', delay: 0, color: '#F9A23B', size: 6 },
+  { left: '22%', delay: 1.1, color: '#FDE68A', size: 5 },
+  { left: '38%', delay: 0.5, color: '#F26A2E', size: 7 },
+  { left: '55%', delay: 1.6, color: '#F9A23B', size: 5 },
+  { left: '70%', delay: 0.9, color: '#DC3340', size: 6 },
+  { left: '86%', delay: 0.3, color: '#FDE68A', size: 7 },
+];
 
 interface BirthdayBannerProps {
   birthday?: Date | string | null;
@@ -18,6 +37,7 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
   onOpenMonthBirthdays,
 }) => {
   const navigate = useNavigate();
+  const reduceMotion = useReducedMotion();
   const [isBirthdayMonth, setIsBirthdayMonth] = useState(false);
   const [canClaim, setCanClaim] = useState(false);
   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
@@ -42,9 +62,8 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
     }
 
     // Convertir birthday a Date si es string
-    const birthdayDate =
-      typeof birthday === 'string' ? new Date(birthday) : birthday;
-    const currentDate = new Date();
+    const birthdayDate = toCalendarDate(birthday);
+    const currentDate = getCurrentDateTimeColombia();
 
     // Verificar si es el mes de cumpleaños
     const isMonth = birthdayDate.getMonth() === currentDate.getMonth();
@@ -134,14 +153,7 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
       particleCount: 40,
       spread: 70,
       origin: { x, y },
-      colors: [
-        '#FFB6C1',
-        '#FFD700',
-        '#FF69B4',
-        '#FFA07A',
-        '#87CEEB',
-        '#DDA0DD',
-      ],
+      colors: ['#F9A23B', '#F26A2E', '#DC3340', '#8A1C45', '#FDE68A'],
       gravity: 0.6,
       scalar: 0.7,
       drift: 0,
@@ -152,99 +164,95 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
     });
   };
 
-  // Si no hay fecha de cumpleaños
+  // Estado de la fecha: hoy, este mes o cuenta regresiva
+  const today = getCurrentDateTimeColombia();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const bd = birthday ? toCalendarDate(birthday) : null;
+  const isToday =
+    !!bd && bd.getMonth() === today.getMonth() && bd.getDate() === today.getDate();
+  let daysUntil = 0;
+  let nextYear = today.getFullYear();
+  if (bd) {
+    let next = new Date(today.getFullYear(), bd.getMonth(), bd.getDate());
+    if (next < startOfToday) next = new Date(today.getFullYear() + 1, bd.getMonth(), bd.getDate());
+    nextYear = next.getFullYear();
+    daysUntil = Math.round((next.getTime() - startOfToday.getTime()) / 86400000);
+  }
+  const monthDelta = bd ? bd.getDate() - today.getDate() : 0;
+  const plural = (n: number) => `${n} ${n === 1 ? 'día' : 'días'}`;
+  const statusPill = !bd
+    ? null
+    : isBirthdayMonth
+      ? monthDelta > 0
+        ? `En ${plural(monthDelta)}`
+        : monthDelta < 0
+          ? 'Ya pasó este mes'
+          : null
+      : daysUntil === 1
+        ? 'Tu cumple es mañana'
+        : `Faltan ${plural(daysUntil)} para tu cumple`;
+  const yearProgress = Math.max(0, Math.min(100, ((365 - daysUntil) / 365) * 100));
+
+  const cardCls =
+    'relative flex h-full flex-col gap-3.5 overflow-hidden rounded-[28px] border border-sand-200 bg-white p-6 sm:p-7 text-left shadow-[0_20px_40px_-30px_rgba(78,15,58,0.4)] transition-all duration-300 hover:-translate-y-1 dark:border-white/10 dark:bg-ink-900 md:col-span-2 lg:col-span-1';
+
+  const header = (
+    <span className="flex items-center justify-between gap-2">
+      <span className={`flex items-center gap-2.5 text-sm font-semibold ${isToday ? 'text-white/75' : 'text-cocoa-500 dark:text-white/65'}`}>
+        <motion.span
+          animate={isToday && !reduceMotion ? { rotate: [0, -10, 10, -8, 8, 0], scale: [1, 1.08, 1] } : { rotate: 0, scale: 1 }}
+          transition={{ duration: 1.4, repeat: Infinity, repeatDelay: 2.6, ease: 'easeInOut' }}
+          className={`flex h-9 w-9 items-center justify-center rounded-xl ${isToday ? 'bg-fire text-white' : 'bg-[#F6E1E8] text-brand-wine dark:bg-brand-wine/25 dark:text-[#F4A3C0]'}`}
+        >
+          <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1M2 21h20M7 8v3M12 8v3M17 8v3M7 4h.01M12 4h.01M17 4h.01" />
+          </svg>
+        </motion.span>
+        {birthday ? 'Tu Cumpleaños' : 'Fecha de cumpleaños'}
+      </span>
+      {isToday ? (
+        <span className="bg-fire inline-flex h-[26px] items-center rounded-full px-2.5 text-xs font-bold text-white">
+          ¡Hoy es tu día!
+        </span>
+      ) : isBirthdayMonth && (
+        <span className="inline-flex h-[26px] items-center rounded-full bg-sand-100 px-2.5 text-xs font-bold text-[#9A3412] dark:bg-brand-orange/15 dark:text-brand-amber">
+          ¡Tu mes!
+        </span>
+      )}
+    </span>
+  );
+
+  const monthButton = onOpenMonthBirthdays && (
+    <button
+      onClick={onOpenMonthBirthdays}
+      title="Ver cumpleaños del mes"
+      className={`mt-auto inline-flex h-10 items-center gap-2 self-start rounded-full border px-4 text-[13px] font-semibold transition-colors ${isToday ? 'border-white/20 text-white/85 hover:bg-white/10' : 'border-sand-300 text-cocoa-600 hover:bg-ink-950 hover:text-white dark:border-white/15 dark:text-white/75'}`}
+    >
+      Cumpleaños de {monthName}
+      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M5 12h14M13 6l6 6-6 6" />
+      </svg>
+    </button>
+  );
+
   if (!birthday) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="max-w-4xl mx-auto mb-8"
+        transition={{ duration: 0.4, delay: 0.16 }}
+        className={cardCls}
       >
-        <div className="relative bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-700 dark:to-gray-600 rounded-xl p-5 shadow-md">
-          <div className="flex items-center justify-between gap-3">
-            {/* Información del cumpleaños no registrado */}
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <span className="material-symbols-rounded text-gray-600 dark:text-gray-300 text-3xl sm:text-4xl flex-shrink-0">
-                cake
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-base sm:text-lg font-bold text-gray-700 dark:text-gray-200">
-                  Fecha de cumpleaños
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  No registrada
-                </p>
-              </div>
-            </div>
-
-            {/* Botones del lado derecho */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {/* Botón de cumpleaños del mes */}
-              {onOpenMonthBirthdays && (
-                <motion.button
-                  onClick={onOpenMonthBirthdays}
-                  className="group relative"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  title="Cumpleaños del mes"
-                >
-                  <div className="flex flex-col items-center gap-1 sm:flex-row sm:items-center sm:gap-2.5">
-                    {/* Texto del mes - solo visible en desktop */}
-                    <div className="hidden sm:flex flex-col items-end justify-center">
-                      <p className="text-xs font-bold text-gray-700 dark:text-gray-200 leading-tight whitespace-nowrap">
-                        Cumpleaños
-                      </p>
-                      <p className="text-sm font-bold text-gray-700 dark:text-gray-200 leading-tight whitespace-nowrap">
-                        mes {monthName}
-                      </p>
-                    </div>
-
-                    {/* Botón circular con flecha */}
-                    <div className="relative">
-                      {/* Pulso de fondo */}
-                      <motion.div
-                        className="absolute inset-0 bg-white/30 dark:bg-gray-500/30 rounded-full"
-                        animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      />
-
-                      <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-lg group-hover:bg-gray-50 dark:group-hover:bg-gray-700 transition-all duration-300 border-2 border-gray-400/40 dark:border-gray-500/40 group-hover:border-gray-500/60 dark:group-hover:border-gray-400/60">
-                        <motion.span
-                          className="material-symbols-rounded text-gray-700 dark:text-gray-200 text-2xl sm:text-3xl font-bold"
-                          animate={{ x: [0, 3, 0] }}
-                          transition={{
-                            duration: 1.5,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                          }}
-                        >
-                          arrow_forward
-                        </motion.span>
-                      </div>
-                    </div>
-
-                    {/* Texto móvil */}
-                    <p className="sm:hidden text-[10px] font-bold text-gray-700 dark:text-gray-200 leading-tight text-center whitespace-nowrap">
-                      Cumple. {monthName}
-                    </p>
-                  </div>
-                </motion.button>
-              )}
-
-              {/* Botón de editar perfil - más compacto en móvil */}
-              {onEditProfile && (
-                <button
-                  onClick={onEditProfile}
-                  className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm border border-gray-300 dark:border-gray-600"
-                >
-                  <span className="material-symbols-rounded text-lg">edit</span>
-                  <span>Agregar Fecha</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+        {header}
+        <span className="font-display text-3xl font-semibold uppercase text-cocoa-400 dark:text-white/50">
+          No registrada
+        </span>
+        {onEditProfile && (
+          <button onClick={onEditProfile} className="btn-fire h-12 text-[15px]">
+            Agregar Fecha
+          </button>
+        )}
+        {monthButton}
       </motion.div>
     );
   }
@@ -252,158 +260,101 @@ const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
   return (
     <motion.div
       ref={bannerRef}
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: 0.2 }}
-      className="max-w-4xl mx-auto mb-8 relative"
+      transition={{ duration: 0.4, delay: 0.16 }}
+      className={
+        isToday
+          ? cardCls
+              .replace('border-sand-200 bg-white', 'border-brand-amber/30 bg-ink-950 text-white')
+              .replace('dark:bg-ink-900', '')
+          : cardCls
+      }
     >
-      {/* Banner principal */}
-      <div
-        className={`relative overflow-hidden rounded-xl p-5 shadow-lg transition-all duration-300 ${
-          isBirthdayMonth
-            ? 'bg-gradient-to-r from-pink-400 via-rose-400 to-pink-500 dark:from-pink-600 dark:via-rose-600 dark:to-pink-700'
-            : 'bg-gradient-to-r from-purple-400 to-indigo-500 dark:from-purple-600 dark:to-indigo-700'
-        }`}
-      >
-        {/* Efecto de brillo sutil */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-30"></div>
+      {isToday ? (
+        <>
+          <div className="pointer-events-none absolute -right-24 -top-28 h-[340px] w-[340px] rounded-full bg-[radial-gradient(circle,rgba(242,106,46,.38)_0%,rgba(20,11,16,0)_65%)]" />
+          {!reduceMotion &&
+            SPARKS.map((sp, i) => (
+              <motion.span
+                key={i}
+                aria-hidden="true"
+                className="pointer-events-none absolute bottom-2 rounded-full"
+                style={{ left: sp.left, width: sp.size, height: sp.size, backgroundColor: sp.color }}
+                initial={{ y: 0, opacity: 0 }}
+                animate={{ y: -150, opacity: [0, 0.9, 0] }}
+                transition={{ duration: 3.2, delay: sp.delay, repeat: Infinity, ease: 'easeOut' }}
+              />
+            ))}
+        </>
+      ) : (
+        <svg
+          className="pointer-events-none absolute -bottom-6 -right-4 h-36 w-36 text-brand-wine/[0.06] dark:text-white/[0.05]"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1M2 21h20M7 8v3M12 8v3M17 8v3M7 4h.01M12 4h.01M17 4h.01" />
+        </svg>
+      )}
 
-        {/* Contenido */}
-        <div className="relative z-10">
-          <div className="flex items-start justify-between gap-4">
-            {/* Lado izquierdo: Ícono + Info */}
-            <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
-              {/* Ícono animado si es el mes */}
-              {isBirthdayMonth ? (
-                <motion.span
-                  className="material-symbols-rounded text-white text-3xl sm:text-4xl flex-shrink-0 mt-0.5"
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    rotate: [0, 10, -10, 0],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatDelay: 3,
-                  }}
-                >
-                  celebration
-                </motion.span>
-              ) : (
-                <span className="material-symbols-rounded text-white text-3xl sm:text-4xl flex-shrink-0 mt-0.5">
-                  cake
-                </span>
-              )}
+      <div className="relative flex flex-1 flex-col gap-3.5">
+        {header}
+        {isToday ? (
+          <span className="flex flex-col gap-1">
+            <span className="text-fire-name font-display text-[34px] font-bold uppercase leading-none sm:text-[38px]">
+              ¡Feliz cumpleaños!
+            </span>
+            <span className="font-display text-lg font-medium uppercase tracking-[0.04em] text-white/70">
+              {formatBirthday(birthday)} de {nextYear}
+            </span>
+          </span>
+        ) : (
+          <span className="font-display text-3xl sm:text-[34px] font-semibold uppercase leading-tight text-cocoa-900 dark:text-white">
+            {formatBirthday(birthday)} de {nextYear}
+          </span>
+        )}
 
-              {/* Información */}
-              <div className="flex-1 min-w-0 pt-0.5">
-                <h3 className="text-base sm:text-lg font-bold text-white mb-1">
-                  Tu Cumpleaños
-                </h3>
-                <p className="text-xl sm:text-2xl font-bold text-white leading-tight">
-                  {formatBirthday(birthday)}
-                </p>
-
-                {/* Botón de reclamar puntos o badge de reclamado */}
-                {alreadyClaimed && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-green-500/30 backdrop-blur-sm rounded-full border border-green-300/50"
-                  >
-                    <span className="material-symbols-rounded text-white text-sm">
-                      check_circle
-                    </span>
-                    <span className="text-xs font-semibold text-white">
-                      Puntos Reclamados
-                    </span>
-                  </motion.div>
-                )}
-
-                {canClaim && !alreadyClaimed && (
-                  <motion.button
-                    onClick={() => navigate('/birthday-claim?auto=true')}
-                    className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-gray-900 rounded-lg font-bold text-sm shadow-lg transition-all duration-200"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    animate={{
-                      boxShadow: [
-                        '0 0 20px rgba(250, 204, 21, 0.5)',
-                        '0 0 40px rgba(250, 204, 21, 0.8)',
-                        '0 0 20px rgba(250, 204, 21, 0.5)',
-                      ],
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                  >
-                    <span className="material-symbols-rounded text-lg">
-                      redeem
-                    </span>
-                    <span>¡Reclamar Puntos!</span>
-                  </motion.button>
-                )}
-              </div>
-            </div>
-
-            {/* Lado derecho: Badge + Botón */}
-            {onOpenMonthBirthdays && (
-              <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                {/* Badge "¡Tu mes!" arriba - solo cuando es su cumpleaños */}
-                {isBirthdayMonth && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.3, type: 'spring', bounce: 0.5 }}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-white/25 backdrop-blur-sm rounded-full border border-white/30"
-                  >
-                    <span className="material-symbols-rounded text-white text-sm">
-                      stars
-                    </span>
-                    <span className="text-xs font-bold text-white whitespace-nowrap">
-                      ¡Tu mes!
-                    </span>
-                  </motion.div>
-                )}
-
-                {/* Botón de flecha */}
-                <motion.button
-                  onClick={onOpenMonthBirthdays}
-                  className="group relative"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  title="Ver cumpleaños del mes"
-                >
-                  <div className="relative">
-                    {/* Pulso de fondo animado */}
-                    <motion.div
-                      className="absolute inset-0 bg-white/20 rounded-full"
-                      animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
-
-                    {/* Botón circular */}
-                    <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center shadow-lg group-hover:bg-white/50 transition-all duration-300 border-2 border-white/50 group-hover:border-white/70">
-                      <motion.span
-                        className="material-symbols-rounded text-white text-2xl sm:text-3xl font-bold"
-                        animate={{ x: [0, 3, 0] }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: 'easeInOut',
-                        }}
-                      >
-                        arrow_forward
-                      </motion.span>
-                    </div>
-                  </div>
-                </motion.button>
-              </div>
+        {statusPill && (
+          <span className="flex flex-col gap-2">
+            <span className="inline-flex h-7 items-center self-start rounded-full bg-sand-100 px-3 text-xs font-bold text-[#9A3412] dark:bg-brand-orange/15 dark:text-brand-amber">
+              {statusPill}
+            </span>
+            {!isBirthdayMonth && (
+              <span className="block h-1.5 overflow-hidden rounded-full bg-sand-100 dark:bg-white/10" aria-hidden="true">
+                <span
+                  className="block h-full rounded-full bg-[linear-gradient(90deg,#F9A23B,#DC3340,#8A1C45)]"
+                  style={{ width: `${yearProgress}%` }}
+                />
+              </span>
             )}
-          </div>
-        </div>
+          </span>
+        )}
+
+        {alreadyClaimed && (
+          <span className="inline-flex h-9 items-center gap-2 self-start rounded-full bg-emerald-50 px-3.5 text-[13px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 13l4 4L19 7" />
+            </svg>
+            Puntos Reclamados
+          </span>
+        )}
+
+        {canClaim && !alreadyClaimed && (
+          <motion.button
+            onClick={() => navigate('/birthday-claim?auto=true')}
+            className="btn-fire h-12 text-[15px]"
+            whileTap={{ scale: 0.97 }}
+          >
+            ¡Reclamar Puntos!
+          </motion.button>
+        )}
+
+        {monthButton}
       </div>
     </motion.div>
   );

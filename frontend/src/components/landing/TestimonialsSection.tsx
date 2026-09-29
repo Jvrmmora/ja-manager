@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { normalizeRichTextHtml } from '../../utils/richText';
 import ImageWithFallback from './ImageWithFallback';
+import Reveal from './ui/Reveal';
 
 interface TestimonialMedia {
   _id: string;
@@ -193,36 +194,57 @@ export default function TestimonialsSection({
   }, [startIndex, itemsPerPage, goNext, goPrev]);
 
   return (
-    <section id="testimonials" className="py-20 px-4 bg-gray-50 dark:bg-gray-800">
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-4xl font-bold text-center mb-4 text-gray-900 dark:text-white">
-          {title || 'Historias que inspiran'}
-        </h2>
-        <div
-          className="rich-content max-w-2xl mx-auto text-center text-gray-600 dark:text-gray-400 mb-12"
-          dangerouslySetInnerHTML={{
-            __html: normalizeRichTextHtml(
-              body ||
-                'Muy pronto compartiremos testimonios de jóvenes que han encontrado amistad, propósito y crecimiento espiritual en Modelia.'
-            ),
-          }}
-        />
+    <section id="testimonials" className="bg-ink-950 px-4 sm:px-6 lg:px-8 py-24 md:py-28">
+      <div className="relative max-w-7xl mx-auto overflow-hidden rounded-[32px] md:rounded-[36px] border border-white/[0.08] bg-ink-900 px-5 py-12 sm:px-10 md:px-14 md:py-16">
+        <div className="pointer-events-none absolute -left-52 -top-52 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,rgba(242,106,46,.22)_0%,rgba(30,18,24,0)_65%)] motion-safe:animate-ember" />
+        <span className="text-fire pointer-events-none absolute right-8 top-2 font-display text-[180px] leading-none opacity-80 select-none" aria-hidden="true">
+          “
+        </span>
+
+        <div className="relative mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <Reveal className="flex max-w-2xl flex-col gap-4">
+            <span className="eyebrow text-brand-amber">Testimonios</span>
+            <h2 className="m-0 font-display text-4xl md:text-6xl font-semibold uppercase leading-none text-white">
+              {title || 'Historias que inspiran'}
+            </h2>
+            <div
+              className="rich-content rich-content-invert text-base md:text-lg"
+              dangerouslySetInnerHTML={{
+                __html: normalizeRichTextHtml(
+                  body ||
+                    'Muy pronto compartiremos testimonios de jóvenes que han encontrado amistad, propósito y crecimiento espiritual en Modelia.'
+                ),
+              }}
+            />
+          </Reveal>
+          {hasTestimonials && maxStart > 0 && (
+            <div className="flex gap-2.5">
+              <button
+                onClick={goPrev}
+                disabled={startIndex === 0}
+                className="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:border-white/50 disabled:opacity-35"
+                aria-label="Anterior"
+              >
+                <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+              </button>
+              <button
+                onClick={goNext}
+                disabled={startIndex >= maxStart}
+                className="bg-fire flex h-12 w-12 items-center justify-center rounded-full text-white transition-opacity disabled:opacity-35"
+                aria-label="Siguiente"
+              >
+                <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+              </button>
+            </div>
+          )}
+        </div>
 
         {!hasTestimonials ? (
-          <div className="max-w-3xl mx-auto rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 p-10 text-center bg-white/70 dark:bg-gray-900/30">
-            <p className="text-gray-600 dark:text-gray-300">Estamos preparando testimonios reales de nuestra comunidad.</p>
+          <div className="relative rounded-3xl border border-dashed border-white/15 p-10 text-center">
+            <p className="text-white/70">Estamos preparando testimonios reales de nuestra comunidad.</p>
           </div>
         ) : (
           <div className="relative">
-            <button
-              onClick={goPrev}
-              disabled={startIndex === 0}
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg disabled:opacity-40"
-              aria-label="Anterior"
-            >
-              <span className="text-2xl">‹</span>
-            </button>
-
             <div className="overflow-hidden">
               <div
                 ref={trackRef}
@@ -231,21 +253,21 @@ export default function TestimonialsSection({
                 {testimonials.map(item => (
                   <article
                     key={item._id}
-                    className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm hover:shadow-lg transition-shadow"
+                    className="rounded-3xl overflow-hidden border border-white/10 bg-ink-950 transition-colors hover:border-brand-amber/40"
                     style={{ flex: '0 0 auto', boxSizing: 'border-box' }}
                   >
-                    <div className="h-52">
+                    <div className="h-56 bg-ink-800">
                       {item.mediaType === 'video' ? (
                         isYouTubeUrl(item.mediaUrl) || isVimeoUrl(item.mediaUrl) ? (
                           blockedVideos[item._id] ? (
-                            <div className="w-full h-full bg-black/90 flex items-center justify-center text-center px-4">
+                            <div className="w-full h-full bg-ink-950 flex items-center justify-center text-center px-4">
                               <div>
                                 <p className="text-white text-sm font-semibold">No se pudo reproducir este video</p>
                                 <a
                                   href={item.mediaUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-block mt-3 text-sm font-medium text-blue-300 hover:text-blue-200 underline"
+                                  className="inline-block mt-3 text-sm font-medium text-brand-amber underline"
                                 >
                                   Abrir en YouTube
                                 </a>
@@ -271,7 +293,7 @@ export default function TestimonialsSection({
                       ) : item.mediaType === 'image' ? (
                         <ImageWithFallback src={item.mediaUrl} alt={item.altText || item.title} fallbackLabel={item.title} className="w-full h-full object-cover" loading="lazy" />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex flex-col items-center justify-center text-red-600 dark:text-red-300">
+                        <div className="w-full h-full bg-gradient-to-br from-brand-wine to-ink-900 flex flex-col items-center justify-center text-white/85">
                           <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V8l-5-6z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M14 2v6h6" />
@@ -280,30 +302,22 @@ export default function TestimonialsSection({
                         </div>
                       )}
                     </div>
-                    <div className="p-5">
-                      <p className="text-sm uppercase tracking-wide text-blue-600 dark:text-blue-400 font-semibold">Testimonio</p>
-                      <h3 className="mt-2 text-lg font-bold text-gray-900 dark:text-white">{item.title}</h3>
+                    <div className="p-6">
+                      <p className="m-0 text-xs font-bold uppercase tracking-[0.14em] text-brand-amber">Testimonio</p>
+                      <h3 className="m-0 mt-2 font-display text-xl font-semibold uppercase text-white">{item.title}</h3>
                     </div>
                   </article>
                 ))}
               </div>
             </div>
 
-            <button
-              onClick={goNext}
-              disabled={startIndex >= maxStart}
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg disabled:opacity-40"
-              aria-label="Siguiente"
-            >
-              <span className="text-2xl">›</span>
-            </button>
             {/* pagination dots */}
-            <div className="mt-6 flex items-center justify-center gap-2">
+            <div className="mt-8 flex items-center justify-center gap-2">
               {Array.from({ length: Math.max(1, maxStart + 1) }).map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setStartIndex(i)}
-                  className={`w-2.5 h-2.5 rounded-full transition ${i === startIndex ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+                  className={`h-2 rounded-full transition-all ${i === startIndex ? 'w-7 bg-brand-orange' : 'w-2 bg-white/30 hover:bg-white/50'}`}
                   aria-label={`Página ${i + 1}`}
                 />
               ))}

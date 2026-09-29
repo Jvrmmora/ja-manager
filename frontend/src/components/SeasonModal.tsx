@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BrandModalHeader from './ui/BrandModalHeader';
 import { seasonService } from '../services/seasonService';
 import type { ISeason, ISeasonCreate, ISeasonUpdate } from '../types';
 
@@ -169,28 +170,23 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-rounded text-primary text-2xl">
-              calendar_today
-            </span>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {isEditing ? 'Editar Temporada' : 'Nueva Temporada'}
-            </h2>
-          </div>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-            disabled={loading}
-          >
-            <span className="material-symbols-rounded text-gray-500 dark:text-gray-400">
-              close
-            </span>
-          </button>
-        </div>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#0C0609]/75 backdrop-blur-sm sm:p-4">
+      <div
+        className="flex max-h-[94vh] sm:max-h-[90vh] w-full sm:max-w-2xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-[30px] bg-white shadow-2xl dark:bg-ink-900"
+        role="dialog"
+        aria-modal="true"
+        aria-label={isEditing ? 'Editar temporada' : 'Nueva temporada'}
+      >
+        <BrandModalHeader
+          title={isEditing ? 'Editar temporada' : 'Nueva temporada'}
+          icon={
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <path d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
+          }
+          onClose={loading ? undefined : handleClose}
+        />
 
         {/* Content */}
         <form
@@ -199,7 +195,7 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
         >
           {/* Información básica */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <h3 className="eyebrow m-0 flex items-center gap-2 text-[13px] text-brand-deep dark:text-brand-amber">
               <span className="material-symbols-rounded text-primary">
                 info
               </span>
@@ -276,7 +272,7 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
 
           {/* Configuración de puntos */}
           <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <h3 className="eyebrow m-0 flex items-center gap-2 text-[13px] text-brand-deep dark:text-brand-amber">
               <span className="material-symbols-rounded text-amber-500">
                 star
               </span>
@@ -452,14 +448,14 @@ const SeasonModal: React.FC<SeasonModalProps> = ({
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="h-12 flex-1 rounded-full border-[1.5px] border-sand-300 bg-white text-[15px] font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-transparent dark:text-white/80"
               disabled={loading}
             >
               Cancelar
             </button>
             <button
               onClick={handleSubmit}
-              className="flex-1 bg-primary hover:bg-primary-dark text-white font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-fire h-12 flex-1 text-[15px] disabled:cursor-not-allowed"
               disabled={loading}
             >
               {loading ? (

@@ -4,6 +4,7 @@ import { pointsService } from '../services/pointsService';
 import type { IYoung, TransactionType } from '../types';
 import { POINTS_PRESETS } from '../constants/points';
 import { apiRequest } from '../services/api';
+import BrandModalHeader from './ui/BrandModalHeader';
 
 interface AssignPointsModalProps {
   young: IYoung;
@@ -296,28 +297,19 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col my-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-rounded text-amber-500 text-2xl">
-              add_circle
-            </span>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Asignar Puntos
-            </h2>
-          </div>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-            disabled={loading}
-          >
-            <span className="material-symbols-rounded text-gray-500 dark:text-gray-400">
-              close
-            </span>
-          </button>
-        </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0C0609]/75 backdrop-blur-sm">
+      <div className="bg-white dark:bg-ink-900 rounded-[28px] shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col my-auto">
+        <BrandModalHeader
+          title="Asignar puntos"
+          subtitle={young.fullName}
+          icon={
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+          }
+          iconTone="fire"
+          onClose={loading ? undefined : handleClose} compact
+        />
 
         {/* Content - Scrollable */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -371,7 +363,7 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                 className="w-10 h-10 rounded-full object-cover"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-orange to-brand-wine flex items-center justify-center text-white text-sm font-bold">
                 {young.fullName.charAt(0).toUpperCase()}
               </div>
             )}
@@ -438,7 +430,7 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                           className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                         />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-orange to-brand-wine flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                           {selectedYoung.fullName.charAt(0).toUpperCase()}
                         </div>
                       )}
@@ -519,7 +511,7 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                                 className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                               />
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-orange to-brand-wine flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                                 {youngItem.fullName.charAt(0).toUpperCase()}
                               </div>
                             )}
@@ -606,7 +598,7 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                     transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
                     ${
                       points === value
-                        ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 ring-2 ring-blue-400 ring-offset-2 dark:ring-offset-gray-800'
+                        ? 'bg-gradient-to-br from-brand-orange to-[#B3243B] text-white shadow-lg shadow-brand-orange/30 ring-2 ring-brand-amber ring-offset-2 dark:ring-offset-ink-900'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }
                   `}
@@ -614,7 +606,7 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                   {points === value && (
                     <motion.div
                       layoutId="selectedPill"
-                      className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg"
+                      className="absolute inset-0 bg-gradient-to-br from-brand-orange to-[#B3243B] rounded-lg"
                       transition={{
                         type: 'spring',
                         bounce: 0.2,
@@ -702,14 +694,14 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="h-12 flex-1 rounded-full border-[1.5px] border-sand-300 bg-white text-sm font-semibold text-cocoa-600 hover:border-cocoa-400 disabled:opacity-50 dark:border-white/15 dark:bg-transparent dark:text-white/80"
               disabled={loading}
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 bg-primary hover:bg-primary-dark text-white font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-fire h-12 flex-1 text-sm disabled:cursor-not-allowed"
               disabled={loading}
             >
               {loading ? (
@@ -719,8 +711,7 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
                 </>
               ) : (
                 <>
-                  <span className="material-symbols-rounded text-lg">send</span>
-                  <span>Asignar Puntos</span>
+                  <span>Asignar puntos</span>
                 </>
               )}
             </button>

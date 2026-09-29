@@ -9,7 +9,6 @@ import {
 import { scanQRAndRegisterAttendance } from '../services/api';
 import AttendanceModal from './AttendanceModal';
 import PointsAnimation from './PointsAnimation';
-import { useTheme } from '../context/ThemeContext';
 import { formatDisplayDate } from '../utils/dateUtils';
 import {
   getSharedCameraStream,
@@ -41,7 +40,6 @@ const QRScanner: React.FC<QRScannerProps> = ({
   const [cameraState, setCameraState] = useState<
     'prompt' | 'granted' | 'denied'
   >('prompt');
-  const { isDark } = useTheme();
   // Guardaremos el permiso en sessionStorage para la sesión activa
   const CAMERA_PERMISSION_KEY = 'cameraPermissionGranted';
 
@@ -524,13 +522,13 @@ const QRScanner: React.FC<QRScannerProps> = ({
     <>
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black bg-opacity-75"
+              className="absolute inset-0 bg-[#0C0609]/85 backdrop-blur-sm"
               onClick={handleClose}
             />
 
@@ -542,9 +540,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
                 opacity: showModal ? 0 : 1, // Ocultar cuando se muestra el modal de resultado
               }}
               exit={{ scale: 0.7, opacity: 0 }}
-              className={`relative w-full max-w-md mx-auto ${
-                isDark ? 'bg-gray-800' : 'bg-white'
-              } rounded-2xl overflow-hidden shadow-2xl ${
+              className={`relative flex h-full w-full flex-col justify-center sm:block sm:h-auto sm:max-w-[520px] mx-auto bg-ink-950 text-white sm:rounded-[32px] sm:border sm:border-white/10 overflow-hidden shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)] ${
                 showModal ? 'pointer-events-none' : '' // Deshabilitar interacción cuando se muestra el resultado
               }`}
               style={{
@@ -555,25 +551,18 @@ const QRScanner: React.FC<QRScannerProps> = ({
             >
               {/* Header */}
               <div
-                className={`p-4 border-b ${
-                  isDark ? 'border-gray-700' : 'border-gray-200'
-                }`}
+                className="absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-ink-950 to-transparent px-5 pb-6 pt-5 sm:static sm:bg-none sm:px-7 sm:pb-2 sm:pt-6"
               >
                 <div className="flex items-center justify-between">
                   <h3
-                    className={`text-lg font-semibold ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}
+                    className="font-display text-[22px] sm:text-[26px] font-semibold uppercase text-white"
                   >
                     Escanear Código QR
                   </h3>
                   <button
                     onClick={handleClose}
-                    className={`p-1 rounded-lg transition-colors ${
-                      isDark
-                        ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
-                        : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-                    }`}
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:border-white/50"
+                    aria-label="Cerrar escáner"
                   >
                     <XMarkIcon className="w-5 h-5" />
                   </button>
@@ -581,7 +570,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
               </div>
 
               {/* Content */}
-              <div className="relative">
+              <div className="relative sm:px-7 sm:pb-7 sm:pt-4">
                 {/* Inicializando */}
                 {isInitializing && (
                   <div className="p-8 text-center">
@@ -595,15 +584,11 @@ const QRScanner: React.FC<QRScannerProps> = ({
                       className="w-12 h-12 mx-auto mb-4"
                     >
                       <ArrowPathIcon
-                        className={`w-full h-full ${
-                          isDark ? 'text-blue-400' : 'text-blue-500'
-                        }`}
+                        className="w-full h-full text-brand-amber"
                       />
                     </motion.div>
                     <p
-                      className={`text-sm ${
-                        isDark ? 'text-gray-300' : 'text-gray-600'
-                      }`}
+                      className="text-sm text-white/70"
                     >
                       {isMobile
                         ? 'Preparando cámara móvil...'
@@ -616,30 +601,24 @@ const QRScanner: React.FC<QRScannerProps> = ({
                 {error && !isInitializing && (
                   <div className="p-8 text-center">
                     <ExclamationTriangleIcon
-                      className={`w-16 h-16 mx-auto mb-4 ${
-                        isDark ? 'text-red-400' : 'text-red-500'
-                      }`}
+                      className="w-16 h-16 mx-auto mb-4 text-brand-amber"
                     />
                     <h4
-                      className={`font-semibold mb-2 ${
-                        isDark ? 'text-white' : 'text-gray-900'
-                      }`}
+                      className="font-display text-2xl font-semibold uppercase mb-2 text-white"
                     >
                       {cameraState === 'denied'
                         ? 'Permisos Requeridos'
                         : 'Error de Cámara'}
                     </h4>
                     <p
-                      className={`text-sm mb-6 ${
-                        isDark ? 'text-gray-300' : 'text-gray-600'
-                      }`}
+                      className="text-sm mb-6 text-white/70"
                     >
                       {error}
                     </p>
                     <div className="space-y-3">
                       <button
                         onClick={handleRetry}
-                        className="w-full px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                        className="btn-fire h-12 w-full text-[15px]"
                       >
                         {cameraState === 'denied'
                           ? 'Solicitar Permisos'
@@ -647,9 +626,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
                       </button>
                       {isMobile && (
                         <div
-                          className={`text-xs ${
-                            isDark ? 'text-gray-400' : 'text-gray-500'
-                          }`}
+                          className="text-xs text-white/55"
                         >
                           <p>
                             💡 En móviles: Permite el acceso cuando tu navegador
@@ -667,7 +644,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
 
                 {/* Scanner activo */}
                 {cameraState === 'granted' && !error && (
-                  <div className="relative aspect-square bg-black">
+                  <div className="relative aspect-square overflow-hidden bg-black sm:rounded-[24px]">
                     <video
                       ref={videoRef}
                       className="w-full h-full object-cover"
@@ -683,7 +660,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
                     {/* Overlay de escaneo */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="relative">
-                        <div className="w-56 h-56 relative">
+                        <div className="w-60 h-60 relative">
                           {/* Esquinas del marco */}
                           {[
                             { top: 0, left: 0, rotate: 0 },
@@ -693,7 +670,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
                           ].map((corner, i) => (
                             <motion.div
                               key={i}
-                              className="absolute w-8 h-8"
+                              className="absolute w-12 h-12"
                               style={corner}
                               animate={{
                                 opacity: [0.7, 1, 0.7],
@@ -705,15 +682,15 @@ const QRScanner: React.FC<QRScannerProps> = ({
                                 delay: i * 0.2,
                               }}
                             >
-                              <div className="w-full h-1 bg-blue-400 rounded"></div>
-                              <div className="w-1 h-full bg-blue-400 rounded"></div>
+                              <div className={`w-full h-[5px] rounded-full ${i < 2 ? 'bg-brand-amber' : 'bg-brand-red'}`}></div>
+                              <div className={`absolute left-0 top-0 w-[5px] h-full rounded-full ${i < 2 ? 'bg-brand-amber' : 'bg-brand-red'}`}></div>
                             </motion.div>
                           ))}
 
                           {/* Línea de escaneo */}
                           <motion.div
-                            className="absolute left-4 right-4 h-0.5 bg-blue-400 shadow-lg"
-                            animate={{ y: [16, 208, 16] }}
+                            className="absolute left-4 right-4 h-[3px] rounded-full bg-gradient-to-r from-transparent via-brand-amber to-transparent shadow-[0_0_18px_4px_rgba(249,162,59,0.55)]"
+                            animate={{ y: [16, 224, 16] }}
                             transition={{
                               duration: 2.5,
                               repeat: Infinity,
@@ -727,7 +704,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
                     {/* Estado */}
                     <div className="absolute bottom-4 left-0 right-0 text-center">
                       <motion.div
-                        className="bg-black/70 rounded-full px-6 py-3 mx-4"
+                        className="inline-flex bg-ink-950/80 border border-white/15 rounded-full px-5 py-2.5 mx-4"
                         style={{ backdropFilter: 'blur(8px)' }}
                         animate={
                           isScanning
@@ -754,7 +731,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
                           ) : isInitializing ? (
                             <>
                               <motion.div
-                                className="w-2 h-2 bg-blue-400 rounded-full"
+                                className="w-2 h-2 bg-brand-amber rounded-full"
                                 animate={{ scale: [1, 1.5, 1] }}
                                 transition={{ duration: 1, repeat: Infinity }}
                               />
@@ -786,6 +763,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
           message={modalData.message}
           subtitle={modalData.subtitle}
           date={modalData.date}
+          variant="brand"
         />
       )}
 

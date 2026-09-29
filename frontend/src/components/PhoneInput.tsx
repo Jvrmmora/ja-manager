@@ -6,6 +6,7 @@ interface PhoneInputProps {
   error?: string;
   placeholder?: string;
   className?: string;
+  variant?: 'default' | 'brand';
 }
 
 const PhoneInput: React.FC<PhoneInputProps> = ({
@@ -13,8 +14,10 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   onChange,
   error,
   placeholder = "Escribe tu número",
-  className = ""
+  className = "",
+  variant = 'default'
 }) => {
+  const brand = variant === 'brand';
   // Países con códigos más comunes para Colombia
   const countries = [
     { code: '+57', country: 'CO', flag: '🇨🇴', name: 'Colombia' },
@@ -158,12 +161,16 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   return (
     <div className={`space-y-1 ${className}`}>
       <div className="relative">
-        <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-blue-400 focus-within:border-blue-500 dark:focus-within:border-blue-400 bg-white dark:bg-gray-700">
+        <div className={brand
+          ? 'flex h-12 border-[1.5px] border-sand-300 dark:border-white/15 rounded-2xl overflow-hidden transition focus-within:ring-4 focus-within:ring-brand-orange/20 focus-within:border-brand-orange bg-white dark:bg-ink-800'
+          : 'flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-blue-400 focus-within:border-blue-500 dark:focus-within:border-blue-400 bg-white dark:bg-gray-700'}>
           {/* Dropdown de países */}
           <div className="relative flex-shrink-0">
             <button
               type="button"
-              className="flex items-center px-3 py-2 bg-gray-50 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors duration-200 focus:outline-none focus:ring-0 whitespace-nowrap"
+              className={brand
+                ? 'flex h-full items-center px-3 bg-sand-50 dark:bg-ink-900 border-r border-sand-300 dark:border-white/10 whitespace-nowrap focus:outline-none'
+                : 'flex items-center px-3 py-2 bg-gray-50 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors duration-200 focus:outline-none focus:ring-0 whitespace-nowrap'}
               onClick={() => {
                 // Aquí podrías implementar un dropdown personalizado si quieres
                 // Por ahora uso el select nativo pero estilizado
@@ -201,7 +208,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
             value={phoneNumber}
             onChange={handlePhoneChange}
             placeholder={placeholder}
-            className={`flex-1 min-w-0 px-3 py-2 focus:outline-none bg-white dark:bg-gray-700 ${
+            className={`flex-1 min-w-0 px-3 py-2 focus:outline-none ${brand ? 'bg-white dark:bg-ink-800 text-[15px]' : 'bg-white dark:bg-gray-700'} ${
               error ? 'text-red-900 dark:text-red-300' : 'text-gray-900 dark:text-gray-100'
             } placeholder-gray-500 dark:placeholder-gray-400`}
             maxLength={selectedCountry.code === '+57' ? 13 : 20}

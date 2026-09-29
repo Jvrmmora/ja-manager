@@ -14,9 +14,7 @@ import PointsBreakdownModal from '../components/PointsBreakdownModal';
 import BirthdayBanner from '../components/BirthdayBanner';
 import MonthBirthdaysModal from '../components/MonthBirthdaysModal.tsx';
 import BirthdayBoardFullscreen from '../components/BirthdayBoardFullscreen';
-import LeaderboardSection from '../components/LeaderboardSection';
-import SeasonStatsBar from '../components/SeasonStatsBar';
-import FullscreenLeaderboard from '../components/FullscreenLeaderboard';
+import RankingModal from '../components/RankingModal';
 import ReferralShareModal from '../components/ReferralShareModal';
 import { SeasonProvider, useSeason } from '../context/SeasonContext';
 import { authService } from '../services/auth';
@@ -25,6 +23,7 @@ import { pointsService } from '../services/pointsService';
 import { seasonService } from '../services/seasonService';
 import type { IYoung, ILeaderboardEntry, ISeason } from '../types';
 import logo from '../assets/logos/logo.png';
+import '../brand-skin.css';
 import ToastContainer from '../components/ToastContainer';
 import { useToast } from '../hooks/useToast';
 import { getCurrentDateTimeColombia } from '../utils/dateUtils';
@@ -281,6 +280,14 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
     loadReferralPoints();
   }, []);
 
+  const topThree = useMemo(
+    () =>
+      [...leaderboard]
+        .filter(e => e.currentRank >= 1 && e.currentRank <= 3)
+        .sort((a, b) => a.currentRank - b.currentRank),
+    [leaderboard]
+  );
+
   // QRScanner maneja todo internamente
   const handleQRScanSuccess = (_data: any) => {
     setAttendanceRefresh(prev => prev + 1);
@@ -289,37 +296,33 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
   return (
     <SeasonProvider>
       <SeasonDataUpdater activeSeason={activeSeason} />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="brand-skin min-h-screen bg-cream dark:bg-ink-950">
         {/* Header */}
-        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <header className="bg-white dark:bg-ink-950 border-b border-sand-200 dark:border-white/10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              {/* Logo y título */}
+            <div className="flex justify-between items-center h-16 lg:h-[72px]">
               <button
                 type="button"
                 onClick={() => navigate('/')}
-                className="flex items-center space-x-4 text-left rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex items-center gap-3 text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange"
                 aria-label="Ir a la landing"
               >
-                <div className="w-8 h-8">
-                  <img
-                    src={logo}
-                    alt="JA Manager Logo"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                <div>
-                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Bienvenido, {getFirstName()}
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
-                    Tu espacio personal en JA Manager
-                  </p>
-                </div>
+                <img
+                  src={logo}
+                  alt="Jóvenes Modelia"
+                  className="h-9 w-9 lg:h-10 lg:w-10 object-contain"
+                />
+                <span className="flex flex-col leading-none">
+                  <span className="font-display text-[10px] lg:text-[11px] tracking-[0.28em] text-cocoa-400 dark:text-white/55">
+                    JÓVENES
+                  </span>
+                  <span className="font-display text-lg lg:text-xl font-semibold tracking-[0.04em] text-cocoa-900 dark:text-white">
+                    MODELIA
+                  </span>
+                </span>
               </button>
 
-              {/* Theme Toggle y Profile Dropdown */}
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <ThemeToggle />
                 <ProfileDropdown
                   onChangePassword={handleOpenChangePassword}
@@ -331,218 +334,177 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
           </div>
         </header>
 
-        {/* Contenido principal */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
-            {/* Mensaje de bienvenida */}
-            <div className="text-center py-12">
-              {/* Foto de perfil con botón de editar */}
-              <div className="relative inline-block mb-6">
-                <div
-                  className={`relative w-24 h-24 rounded-full overflow-hidden mx-auto bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center ${
-                    userInfo?.profileImage ? 'cursor-pointer group' : ''
-                  }`}
-                  onClick={handleOpenImageModal}
-                  title={userInfo?.profileImage ? 'Ver foto en grande' : ''}
-                >
-                  {userInfo?.profileImage ? (
-                    <>
-                      <img
-                        src={userInfo.profileImage}
-                        alt={userInfo.fullName || 'Foto de perfil'}
-                        className="w-full h-full object-cover transition-all duration-300 group-hover:scale-110"
-                      />
-                      {/* Overlay con icono de ojo en hover */}
-                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <EyeIcon className="w-8 h-8 text-white" />
-                      </div>
-                    </>
-                  ) : (
-                    <svg
-                      className="w-12 h-12 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                  )}
-                </div>
-                {/* Botón de editar foto */}
-                <button
-                  onClick={handleOpenProfile}
-                  className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-lg"
-                  title="Editar perfil"
-                >
-                  <svg
-                    className="w-4 h-4 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+        {/* Franja de bienvenida */}
+        <section className="relative overflow-hidden bg-ink-950 pb-24 lg:pb-28">
+          <div className="pointer-events-none absolute left-1/3 -top-96 h-[900px] w-[900px] rounded-full bg-[radial-gradient(circle,rgba(242,106,46,.3)_0%,rgba(220,51,64,.13)_38%,rgba(20,11,16,0)_68%)] motion-safe:animate-ember" />
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 lg:pt-14 grid gap-8 lg:grid-cols-[minmax(0,1fr)_560px] lg:gap-16 lg:items-center">
+            <div className="flex flex-col gap-5 lg:gap-6">
+              <div className="flex items-center gap-4 lg:gap-5">
+                <div className="relative flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleOpenImageModal}
+                    title={userInfo?.profileImage ? 'Ver foto en grande' : ''}
+                    className={`group block h-16 w-16 lg:h-[88px] lg:w-[88px] rounded-full bg-gradient-to-br from-brand-amber via-brand-red to-brand-wine p-[3px] ${userInfo?.profileImage ? 'cursor-pointer' : 'cursor-default'}`}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                    />
-                  </svg>
-                </button>
+                    <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border-[3px] border-ink-950 bg-ink-800">
+                      {userInfo?.profileImage ? (
+                        <>
+                          <img
+                            src={userInfo.profileImage}
+                            alt={userInfo.fullName || 'Foto de perfil'}
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                          />
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                            <EyeIcon className="h-6 w-6 text-white" />
+                          </span>
+                        </>
+                      ) : (
+                        <svg className="h-8 w-8 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      )}
+                    </span>
+                  </button>
+                  <button
+                    onClick={handleOpenProfile}
+                    className="absolute -bottom-1 -right-1 flex h-7 w-7 lg:h-8 lg:w-8 items-center justify-center rounded-full bg-white text-brand-wine shadow-lg hover:scale-110 transition-transform"
+                    title="Editar perfil"
+                    aria-label="Editar perfil"
+                  >
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                    </svg>
+                  </button>
+                </div>
+                <span className="hidden sm:inline-flex h-9 items-center gap-2 rounded-full border border-white/15 px-4 text-[13px] font-medium text-white/80">
+                  <span className="material-symbols-rounded text-lg text-brand-amber">
+                    {greeting.icon}
+                  </span>
+                  Tu espacio personal en JA Manager
+                </span>
               </div>
 
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 flex items-center justify-center gap-2">
-                <span className="material-symbols-rounded text-amber-500 dark:text-amber-400 text-4xl">
-                  {greeting.icon}
-                </span>
-                {greeting.text}
-              </h2>
+              <h1 className="m-0 font-display text-[32px] font-bold uppercase leading-[1.05] text-white sm:text-5xl lg:text-[56px]">
+                {greeting.text.split(',')[0]},{' '}
+                <span className="text-fire-name">{getFirstName()}</span>
+              </h1>
 
-              <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+              <p className="m-0 hidden sm:block max-w-xl text-base lg:text-[17px] leading-relaxed text-white/70">
                 Bienvenido a tu panel personal de JA Manager. Aquí podrás ver tu
                 información, participar en actividades y mantenerte conectado
                 con la comunidad.
               </p>
 
-              {/* Información de la placa - Sección mejorada */}
               {userInfo?.placa && (
-                <div className="mb-6 mx-auto w-fit bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-700/50 rounded-xl p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row items-center gap-4 max-w-full sm:max-w-none">
-                  {/* Tu Placa */}
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 bg-blue-500 text-white rounded-lg flex-shrink-0">
-                      <svg
-                        className="w-5 h-5"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 font-medium uppercase tracking-wide">
-                        Tu Placa
-                      </p>
-                      <p className="text-lg font-bold text-blue-700 dark:text-blue-300 font-mono">
-                        {userInfo.placa}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Botón para invitar amigos */}
+                <div className="flex w-full sm:w-auto sm:self-start items-center justify-between gap-4 rounded-2xl border border-white/[0.12] bg-white/[0.06] py-2.5 pl-4 pr-2.5">
+                  <span className="flex flex-col gap-0.5">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">
+                      Tu Placa
+                    </span>
+                    <span className="font-mono text-base lg:text-lg font-semibold text-brand-amber">
+                      {userInfo.placa}
+                    </span>
+                  </span>
                   <button
                     onClick={() => setShowReferralModal(true)}
-                    className="px-4 sm:px-5 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg transition-all active:scale-95 shadow-lg hover:shadow-xl flex items-center gap-2 whitespace-nowrap text-sm flex-shrink-0 w-full sm:w-auto justify-center sm:justify-start"
+                    className="flex h-11 items-center gap-2 rounded-xl border border-brand-amber/40 bg-brand-amber/15 px-4 text-sm font-semibold text-[#FCD3A8] transition-colors hover:bg-brand-amber/25"
                   >
-                    <svg
-                      className="w-4 h-4"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="8.5" cy="7" r="4" />
+                      <path d="M20 8v6M23 11h-6" />
                     </svg>
                     Invitar amigos
                   </button>
                 </div>
               )}
+            </div>
 
-              {/* Mensaje para primer login */}
-              {authService.isFirstLogin() && (
-                <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-6 mb-8">
-                  <div className="flex items-start">
-                    <svg
-                      className="w-6 h-6 text-orange-600 dark:text-orange-400 mr-3 mt-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                      />
-                    </svg>
-                    <div className="flex-1 text-left">
-                      <h3 className="text-lg font-semibold text-orange-800 dark:text-orange-300 mb-2">
-                        ¡Bienvenido por primera vez!
-                      </h3>
-                      <p className="text-orange-700 dark:text-orange-300 mb-4">
-                        Te recomendamos cambiar tu contraseña temporal por una
-                        personalizada para mayor seguridad.
-                      </p>
-                      <button
-                        onClick={handleOpenChangePassword}
-                        className="bg-orange-600 dark:bg-orange-700 text-white px-4 py-2 rounded-lg hover:bg-orange-700 dark:hover:bg-orange-800 transition-colors mr-4"
-                      >
-                        Cambiar Contraseña
-                      </button>
-                      <button
-                        onClick={() => {
-                          authService.logout();
-                          window.location.reload();
-                        }}
-                        className="bg-gray-600 dark:bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-800 transition-colors"
-                      >
-                        Cerrar Sesión
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Botón de registrar asistencia debajo de la placa */}
-              <div className="mb-8">
-                {isLoadingAttendance ? (
-                  // Skeleton loader mientras se verifica la asistencia
-                  <div className="max-w-md mx-auto">
-                    <div className="relative w-full py-4 px-6 rounded-xl bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-700 dark:to-gray-600 animate-pulse">
-                      <div className="flex items-center justify-center gap-3">
-                        <div className="w-6 h-6 bg-gray-400 dark:bg-gray-500 rounded"></div>
-                        <div className="h-4 w-48 bg-gray-400 dark:bg-gray-500 rounded"></div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <AnimatedScanButton
-                    onClick={handleOpenQRScanner}
-                    isScanning={isScanning}
-                    isCompleted={hasAttendanceToday}
-                    className="max-w-md mx-auto"
-                  />
-                )}
-              </div>
-
-              {/* Cards de Puntos y Ranking - PROPUESTA 1 */}
-              {userInfo?.id && (
-                <PointsStatsCards
-                  youngId={userInfo.id}
-                  onViewDetails={() => setShowPointsBreakdown(true)}
-                  onViewRanking={() => setShowRankingModal(true)}
+            <div className="hidden lg:block">
+              {isLoadingAttendance ? (
+                <div className="h-[300px] rounded-[32px] bg-white/5 animate-pulse" />
+              ) : (
+                <AnimatedScanButton
+                  onClick={handleOpenQRScanner}
+                  isScanning={isScanning}
+                  isCompleted={hasAttendanceToday}
                 />
               )}
-
-              {/* Banner de Cumpleaños */}
-              <BirthdayBanner
-                birthday={userInfo?.birthday}
-                birthdayPointsClaimed={userInfo?.birthdayPointsClaimed}
-                onEditProfile={handleOpenProfile}
-                onOpenMonthBirthdays={() => setShowBirthdayBoard(true)}
-              />
-
-              {/* Historial de asistencias */}
-              <div className="mt-8">
-                <AttendanceHistory
-                  compact={false}
-                  className="max-w-4xl mx-auto"
-                  key={attendanceRefresh} // Para forzar re-render cuando se actualiza
-                />
-              </div>
             </div>
           </div>
+        </section>
+
+        {/* Contenido principal */}
+        <main className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 lg:-mt-16 pb-16 flex flex-col gap-5 lg:gap-8">
+          {/* Asistencia (móvil): superpuesta a la franja */}
+          <div className="lg:hidden">
+            {isLoadingAttendance ? (
+              <div className="h-[260px] rounded-[32px] bg-ink-800 animate-pulse" />
+            ) : (
+              <AnimatedScanButton
+                onClick={handleOpenQRScanner}
+                isScanning={isScanning}
+                isCompleted={hasAttendanceToday}
+              />
+            )}
+          </div>
+
+          {authService.isFirstLogin() && (
+            <div className="flex flex-col sm:flex-row gap-4 rounded-3xl border border-[#F6D6B8] bg-sand-50 p-5 sm:p-6 dark:border-brand-amber/25 dark:bg-ink-900">
+              <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-sand-100 text-brand-ember dark:bg-brand-orange/15 dark:text-brand-amber">
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </span>
+              <div className="flex flex-col gap-2 text-left">
+                <h3 className="m-0 font-display text-xl font-semibold uppercase text-cocoa-900 dark:text-white">
+                  ¡Bienvenido por primera vez!
+                </h3>
+                <p className="m-0 text-[15px] text-cocoa-600 dark:text-white/70">
+                  Te recomendamos cambiar tu contraseña temporal por una
+                  personalizada para mayor seguridad.
+                </p>
+                <div className="flex flex-wrap gap-2.5 pt-1">
+                  <button onClick={handleOpenChangePassword} className="btn-fire h-11 px-5 text-sm">
+                    Cambiar Contraseña
+                  </button>
+                  <button
+                    onClick={() => {
+                      authService.logout();
+                      window.location.reload();
+                    }}
+                    className="h-11 rounded-full border border-sand-300 bg-white px-5 text-sm font-semibold text-cocoa-600 hover:bg-sand-50 dark:border-white/20 dark:bg-transparent dark:text-white/80"
+                  >
+                    Cerrar Sesión
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-4 lg:gap-5 md:grid-cols-2 lg:grid-cols-[1fr_1.35fr_1fr]">
+            {userInfo?.id && (
+              <PointsStatsCards
+                youngId={userInfo.id}
+                onViewDetails={() => setShowPointsBreakdown(true)}
+                onViewRanking={() => setShowRankingModal(true)}
+                topThree={topThree}
+              />
+            )}
+            <BirthdayBanner
+              birthday={userInfo?.birthday}
+              birthdayPointsClaimed={userInfo?.birthdayPointsClaimed}
+              onEditProfile={handleOpenProfile}
+              onOpenMonthBirthdays={() => setShowBirthdayBoard(true)}
+            />
+          </div>
+
+          <AttendanceHistory
+            compact={false}
+            key={attendanceRefresh}
+          />
         </main>
 
         {/* Mensaje de éxito */}
@@ -611,54 +573,11 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
 
         {/* Modal de Ranking */}
         {showRankingModal && (
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            onClick={() => setShowRankingModal(false)}
-          >
-            <div
-              className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto"
-              onClick={e => e.stopPropagation()}
-            >
-              {/* Header with close button and fullscreen button */}
-              <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  📊 Ranking de la Temporada
-                </h2>
-                <div className="flex items-center gap-2">
-                  <FullscreenLeaderboard leaderboard={leaderboard} />
-                  <button
-                    aria-label="Cerrar ranking"
-                    onClick={() => setShowRankingModal(false)}
-                    className="p-2 rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="w-5 h-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-6">
-                {/* Season Stats Bar */}
-                <SeasonStatsBar activeParticipants={leaderboard.length} />
-
-                {/* Leaderboard Section */}
-                <LeaderboardSection />
-              </div>
-            </div>
-          </div>
+          <RankingModal
+            leaderboard={leaderboard}
+            seasonName={activeSeason?.name}
+            onClose={() => setShowRankingModal(false)}
+          />
         )}
 
         {/* Modal de Cumpleaños del Mes (vista reducida) */}

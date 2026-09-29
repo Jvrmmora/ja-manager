@@ -1,17 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  UsersIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  DocumentArrowDownIcon,
-  CalendarDaysIcon,
-  ArrowsPointingOutIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline';
 import { getTodayAttendances, getAttendancesByDate } from '../services/api';
-import { useTheme } from '../context/ThemeContext';
 import LoadingSpinner from './LoadingSpinner';
+import { initialsOf } from './young/useYoungActions';
 import {
   getCurrentDateColombia,
   formatDisplayDate,
@@ -27,7 +19,6 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
   className = '',
   refreshTrigger = 0,
 }) => {
-  const { isDark } = useTheme();
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +56,7 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isFullscreen) {
+        event.preventDefault();
         setIsFullscreen(false);
         setFullscreenData(null);
       }
@@ -146,35 +138,22 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
     link.click();
   };
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return (
-      <div className={`text-center py-8 ${className}`}>
+      <div className={`py-10 text-center ${className}`}>
         <LoadingSpinner />
-        <p
-          className={`mt-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
-        >
-          Cargando asistencias...
-        </p>
+        <p className="mt-4 text-sm text-cocoa-500 dark:text-white/60">Cargando asistencias...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={`text-center py-8 ${className}`}>
-        <div
-          className={`p-4 rounded-lg ${isDark ? 'bg-red-900/20' : 'bg-red-50'} border ${isDark ? 'border-red-800' : 'border-red-200'}`}
-        >
-          <p className={`text-sm ${isDark ? 'text-red-400' : 'text-red-600'}`}>
-            {error}
-          </p>
-          <button
-            onClick={loadAttendances}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Reintentar
-          </button>
-        </div>
+      <div className={`rounded-2xl border border-red-200 bg-red-50 p-5 text-center dark:border-red-500/30 dark:bg-red-500/10 ${className}`}>
+        <p className="m-0 text-sm text-red-700 dark:text-red-300">{error}</p>
+        <button type="button" onClick={loadAttendances} className="btn-fire mt-4 h-10 px-5 text-sm">
+          Reintentar
+        </button>
       </div>
     );
   }
@@ -183,281 +162,163 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
     return null;
   }
 
+  const isToday = !selectedDate || selectedDate === getCurrentDateColombia();
+  const sorted = [...data.attendances].sort(
+    (a: any, b: any) => new Date(b.scannedAt).getTime() - new Date(a.scannedAt).getTime()
+  );
+  const percentage = Number(data.stats.attendancePercentage) || 0;
+
   return (
-    <div className={`${className}`}>
-      <div
-        className={`rounded-lg p-6 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}
-      >
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
-          <div className="flex items-center gap-3">
-            <UsersIcon
-              className={`w-6 h-6 ${isDark ? 'text-blue-400' : 'text-blue-500'}`}
-            />
-            <div>
-              <h2
-                className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}
-              >
-                Asistencias del Día
-              </h2>
-              <p
-                className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
-              >
-                {formatDate(data.date)}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Botón de pantalla completa */}
-            {data.attendances.length > 0 && (
-              <button
-                onClick={() => {
-                  // Capturar datos estáticos al abrir pantalla completa
-                  setFullscreenData(JSON.parse(JSON.stringify(data)));
-                  setIsFullscreen(true);
-                }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors font-medium ${
-                  isDark
-                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white'
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-                title="Ver en pantalla completa"
-              >
-                <ArrowsPointingOutIcon className="w-4 h-4" />
-                Pantalla Completa
-              </button>
-            )}
-
-            {/* Selector de fecha */}
-            <div className="flex items-center gap-2">
-              <CalendarDaysIcon
-                className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
-              />
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={e => {
-                  const newDate = e.target.value;
-                  // Si la fecha está vacía, usar fecha actual en zona horaria de Colombia
-                  if (!newDate) {
-                    const today = getCurrentDateColombia();
-                    setSelectedDate(today);
-                  } else {
-                    setSelectedDate(newDate);
-                  }
-                }}
-                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                  isDark
-                    ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-400'
-                    : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
-              />
-            </div>
-
-            {data.attendances.length > 0 && (
-              <button
-                onClick={exportToCSV}
-                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
-              >
-                <DocumentArrowDownIcon className="w-4 h-4" />
-                Exportar CSV
-              </button>
-            )}
-          </div>
+    <div className={`flex flex-col gap-4 ${className}`}>
+      {/* Controles + estadísticas */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[250px_repeat(3,minmax(0,1fr))]">
+        <label className="flex flex-col gap-2 rounded-[20px] border border-sand-200 bg-white px-4 py-3.5 text-xs font-bold uppercase tracking-[0.08em] text-cocoa-400 dark:border-white/10 dark:bg-ink-800 dark:text-white/50">
+          Fecha
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={e => {
+              const newDate = e.target.value;
+              // Si la fecha está vacía, usar fecha actual en zona horaria de Colombia
+              setSelectedDate(newDate || getCurrentDateColombia());
+            }}
+            className="field-brand h-11 !rounded-xl !px-3 text-[15px] normal-case tracking-normal"
+          />
+        </label>
+        <div className="flex flex-col justify-center gap-1.5 rounded-[20px] bg-ink-950 px-5 py-4 text-white">
+          <span className="text-[13px] text-white/65">Presentes</span>
+          <span className="font-display text-[44px] font-bold leading-none text-brand-amber">
+            {data.stats.totalPresent}
+          </span>
         </div>
-
-        {/* Estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div
-            className={`p-4 rounded-lg ${isDark ? 'bg-green-900/20' : 'bg-green-50'} border ${isDark ? 'border-green-800' : 'border-green-200'}`}
-          >
-            <div className="flex items-center gap-3">
-              <CheckCircleIcon
-                className={`w-8 h-8 ${isDark ? 'text-green-400' : 'text-green-500'}`}
-              />
-              <div>
-                <p
-                  className={`text-2xl font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}
-                >
-                  {data.stats.totalPresent}
-                </p>
-                <p
-                  className={`text-sm ${isDark ? 'text-green-300' : 'text-green-700'}`}
-                >
-                  Presentes
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className={`p-4 rounded-lg ${isDark ? 'bg-blue-900/20' : 'bg-blue-50'} border ${isDark ? 'border-blue-800' : 'border-blue-200'}`}
-          >
-            <div className="flex items-center gap-3">
-              <UsersIcon
-                className={`w-8 h-8 ${isDark ? 'text-blue-400' : 'text-blue-500'}`}
-              />
-              <div>
-                <p
-                  className={`text-2xl font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
-                >
-                  {data.stats.totalYoung}
-                </p>
-                <p
-                  className={`text-sm ${isDark ? 'text-blue-300' : 'text-blue-700'}`}
-                >
-                  Jóvenes Activos
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className={`p-4 rounded-lg ${isDark ? 'bg-purple-900/20' : 'bg-purple-50'} border ${isDark ? 'border-purple-800' : 'border-purple-200'}`}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-8 h-8 rounded-full ${isDark ? 'bg-purple-400' : 'bg-purple-500'} flex items-center justify-center text-white font-bold`}
-              >
-                %
-              </div>
-              <div>
-                <p
-                  className={`text-2xl font-bold ${isDark ? 'text-purple-400' : 'text-purple-600'}`}
-                >
-                  {data.stats.attendancePercentage}%
-                </p>
-                <p
-                  className={`text-sm ${isDark ? 'text-purple-300' : 'text-purple-700'}`}
-                >
-                  Asistencia
-                </p>
-              </div>
-            </div>
-          </div>
+        <div className="flex flex-col justify-center gap-1.5 rounded-[20px] border border-sand-200 bg-white px-5 py-4 dark:border-white/10 dark:bg-ink-800">
+          <span className="text-[13px] text-cocoa-500 dark:text-white/60">Jóvenes activos</span>
+          <span className="font-display text-[44px] font-bold leading-none text-cocoa-900 dark:text-white">
+            {data.stats.totalYoung}
+          </span>
         </div>
-
-        {/* Lista de asistencias */}
-        {data.attendances.length > 0 ? (
-          <div className="space-y-3">
-            <div
-              className={`flex items-center gap-2 mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
-            >
-              <ClockIcon className="w-4 h-4" />
-              <span className="text-sm">
-                {!selectedDate || selectedDate === getCurrentDateColombia()
-                  ? 'Actualizado automáticamente cada 30 segundos'
-                  : `Mostrando asistencias del ${formatDate(selectedDate)}`}
-              </span>
-            </div>
-
-            {data.attendances
-              .sort(
-                (a: any, b: any) =>
-                  new Date(b.scannedAt).getTime() -
-                  new Date(a.scannedAt).getTime()
-              )
-              .map((attendance: any, index: number) => (
-                <motion.div
-                  key={attendance._id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={`flex items-center justify-between p-4 rounded-lg border ${
-                    isDark
-                      ? 'bg-gray-700 border-gray-600'
-                      : 'bg-gray-50 border-gray-200'
-                  } hover:shadow-md transition-all`}
-                >
-                  <div className="flex items-center gap-4">
-                    {/* Foto de perfil */}
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-green-500">
-                        {attendance.youngId.profileImage ? (
-                          <img
-                            src={attendance.youngId.profileImage}
-                            alt={attendance.youngId.fullName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div
-                            className={`w-full h-full flex items-center justify-center ${
-                              isDark ? 'bg-gray-600' : 'bg-gray-200'
-                            }`}
-                          >
-                            <svg
-                              className={`w-6 h-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                              />
-                            </svg>
-                          </div>
-                        )}
-                      </div>
-                      {/* Indicador de presente */}
-                      <div className="absolute -bottom-1 -right-1">
-                        <CheckCircleIcon className="w-5 h-5 text-green-500 bg-white rounded-full" />
-                      </div>
-                    </div>
-
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <p
-                          className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
-                        >
-                          {attendance.youngId.fullName}
-                        </p>
-                      </div>
-                      {attendance.youngId.email && (
-                        <p
-                          className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} mt-1`}
-                        >
-                          {attendance.youngId.email}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div
-                    className={`text-right ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
-                  >
-                    <p className="font-medium">
-                      {formatTime(attendance.scannedAt)}
-                    </p>
-                    <p className="text-xs">Registrado</p>
-                  </div>
-                </motion.div>
-              ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <UsersIcon
-              className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}
+        <div className="flex flex-col justify-center gap-2 rounded-[20px] border border-sand-200 bg-white px-5 py-4 dark:border-white/10 dark:bg-ink-800">
+          <span className="flex items-baseline justify-between text-[13px] text-cocoa-500 dark:text-white/60">
+            Asistencia
+            <strong className="font-display text-[22px] text-brand-ember dark:text-brand-amber">{percentage}%</strong>
+          </span>
+          <span className="block h-2.5 overflow-hidden rounded-full bg-sand-50 dark:bg-white/10">
+            <span
+              className="block h-full rounded-full bg-[linear-gradient(90deg,#F9A23B,#DC3340,#8A1C45)]"
+              style={{ width: `${Math.min(100, percentage)}%` }}
             />
-            <p
-              className={`text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="text-[13px] text-cocoa-500 dark:text-white/60">
+          {isToday
+            ? `${formatDate(data.date)} · se actualiza automáticamente cada 30 segundos`
+            : `Mostrando asistencias del ${formatDate(selectedDate)}`}
+        </span>
+        {data.attendances.length > 0 && (
+          <span className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                // Capturar datos estáticos al abrir pantalla completa
+                setFullscreenData(JSON.parse(JSON.stringify(data)));
+                setIsFullscreen(true);
+              }}
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-sand-300 bg-white px-4 text-[13px] font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-ink-800 dark:text-white/80"
             >
-              No hay asistencias registradas aún
-            </p>
-            <p
-              className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'} mt-2`}
+              <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
+              </svg>
+              Pantalla completa
+            </button>
+            <button
+              type="button"
+              onClick={exportToCSV}
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-sand-300 bg-white px-4 text-[13px] font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-ink-800 dark:text-white/80"
             >
-              Las asistencias aparecerán aquí cuando los jóvenes escaneen el
-              código QR
-            </p>
-          </div>
+              <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+              </svg>
+              Exportar CSV
+            </button>
+          </span>
         )}
       </div>
 
-      {/* Modal de Pantalla Completa */}
+      {/* Lista */}
+      {data.attendances.length > 0 ? (
+        <div className="rounded-[22px] border border-sand-200 bg-white dark:border-white/10 dark:bg-ink-800">
+          <div className="hidden h-11 grid-cols-[48px_minmax(0,1fr)_170px_110px_110px] items-center gap-3.5 rounded-t-[22px] border-b border-sand-200 bg-sand-50 px-5 text-xs font-bold uppercase tracking-[0.08em] text-cocoa-400 md:grid dark:border-white/10 dark:bg-white/[0.03] dark:text-white/50">
+            <span>#</span>
+            <span>Joven</span>
+            <span>Placa</span>
+            <span>Hora</span>
+            <span>Estado</span>
+          </div>
+          {sorted.map((attendance: any, index: number) => (
+            <motion.div
+              key={attendance._id}
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: Math.min(index, 12) * 0.03 }}
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-sand-100 px-4 py-3 last:border-b-0 hover:bg-cream md:grid-cols-[48px_minmax(0,1fr)_170px_110px_110px] md:gap-3.5 md:px-5 dark:border-white/5 dark:hover:bg-white/[0.03]"
+            >
+              <span className="hidden font-display text-lg text-cocoa-400 md:block dark:text-white/45">
+                {sorted.length - index}
+              </span>
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="relative flex-shrink-0">
+                  <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-ink-800 text-xs font-bold text-white">
+                    {attendance.youngId.profileImage ? (
+                      <img src={attendance.youngId.profileImage} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      initialsOf(attendance.youngId.fullName || '')
+                    )}
+                  </span>
+                  <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-emerald-600 dark:border-ink-800">
+                    <svg className="h-2 w-2" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
+                </span>
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate text-sm font-bold text-cocoa-900 dark:text-white">
+                    {attendance.youngId.fullName}
+                  </span>
+                  {attendance.youngId.email && (
+                    <span className="truncate text-xs text-cocoa-400 dark:text-white/50">
+                      {attendance.youngId.email}
+                    </span>
+                  )}
+                </span>
+              </span>
+              <span className="hidden truncate font-mono text-xs font-semibold text-brand-wine md:block dark:text-[#F4A3C0]">
+                {attendance.youngId.placa || '—'}
+              </span>
+              <span className="text-right text-sm text-cocoa-600 md:text-left dark:text-white/70">
+                {formatTime(attendance.scannedAt)}
+              </span>
+              <span className="hidden md:block">
+                <span className="inline-flex h-[26px] items-center rounded-full bg-emerald-50 px-2.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
+                  Registrado
+                </span>
+              </span>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-[22px] border border-sand-200 bg-white px-6 py-12 text-center dark:border-white/10 dark:bg-ink-800">
+          <p className="m-0 text-lg text-cocoa-600 dark:text-white/70">No hay asistencias registradas aún</p>
+          <p className="m-0 mt-2 text-sm text-cocoa-400 dark:text-white/50">
+            Las asistencias aparecerán aquí cuando los jóvenes escaneen el código QR
+          </p>
+        </div>
+      )}
+
+      {/* Modo proyector (portal: evita quedar atrapado en paneles con transform) */}
+      {createPortal(
       <AnimatePresence>
         {isFullscreen &&
           fullscreenData &&
@@ -467,118 +328,77 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-gray-900"
-              style={{ zIndex: 9999 }}
-              onClick={e => {
-                // Cerrar si se hace clic en el backdrop
-                if (e.target === e.currentTarget) {
-                  setIsFullscreen(false);
-                  setFullscreenData(null);
-                }
-              }}
+              className="dark fixed inset-0 z-[9999] flex flex-col overflow-hidden bg-ink-950 text-white"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Lista de asistencia"
             >
-              {/* Header de pantalla completa */}
-              <div className="flex items-center justify-between p-6 bg-gray-800 border-b border-gray-700">
-                <div className="flex items-center gap-4">
-                  <UsersIcon className="w-8 h-8 text-blue-400" />
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">
-                      Lista de Asistencia
-                    </h2>
-                    <p className="text-gray-400">
-                      {formatDate(fullscreenData.date)} •{' '}
-                      {fullscreenData.attendances.length} asistentes
-                    </p>
-                  </div>
+              <div className="pointer-events-none absolute left-1/3 -top-[420px] h-[820px] w-[820px] rounded-full bg-[radial-gradient(circle,rgba(242,106,46,.28)_0%,rgba(20,11,16,0)_65%)]" />
+              <div className="relative flex items-center justify-between gap-4 border-b border-white/10 px-6 py-5 lg:px-12">
+                <div>
+                  <h2 className="m-0 font-display text-3xl font-bold uppercase lg:text-4xl">
+                    Lista de <span className="text-fire">asistencia</span>
+                  </h2>
+                  <p className="m-0 mt-1 text-white/60">
+                    {formatDate(fullscreenData.date)} · {fullscreenData.attendances.length} asistentes
+                  </p>
                 </div>
-
                 <button
+                  type="button"
                   onClick={() => {
                     setIsFullscreen(false);
                     setFullscreenData(null);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                  className="inline-flex h-11 items-center gap-2 rounded-full border border-white/20 px-4 text-sm font-semibold text-white/80 hover:border-white/50 hover:text-white"
                 >
-                  <XMarkIcon className="w-5 h-5" />
-                  Cerrar
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                  Cerrar · Esc
                 </button>
               </div>
-
-              {/* Lista en pantalla completa */}
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="max-w-4xl mx-auto">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {fullscreenData.attendances
-                      .sort(
-                        (a: any, b: any) =>
-                          new Date(a.scannedAt).getTime() -
-                          new Date(b.scannedAt).getTime()
-                      ) // Ordenar por orden de llegada
-                      .map((attendance: any, index: number) => (
-                        <motion.div
-                          key={attendance._id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.03 }}
-                          className="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-all"
-                        >
-                          <div className="flex items-center gap-4">
-                            {/* Foto de perfil */}
-                            <div className="relative">
-                              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-green-500">
-                                {attendance.youngId.profileImage ? (
-                                  <img
-                                    src={attendance.youngId.profileImage}
-                                    alt={attendance.youngId.fullName}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center bg-gray-600">
-                                    <svg
-                                      className="w-8 h-8 text-gray-400"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                      />
-                                    </svg>
-                                  </div>
-                                )}
-                              </div>
-                              {/* Número de orden */}
-                              <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                                {index + 1}
-                              </div>
-                            </div>
-
-                            {/* Información del asistente - Solo nombre y hora */}
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-white font-semibold text-lg truncate">
-                                {attendance.youngId.fullName}
-                              </h3>
-
-                              {/* Hora de registro */}
-                              <div className="flex items-center gap-2 mt-2 text-green-400">
-                                <ClockIcon className="w-4 h-4" />
-                                <span className="text-sm font-medium">
-                                  {formatTime(attendance.scannedAt)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                  </div>
+              <div className="relative flex-1 overflow-y-auto px-6 py-6 lg:px-12">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {[...fullscreenData.attendances]
+                    .sort(
+                      (a: any, b: any) =>
+                        new Date(a.scannedAt).getTime() - new Date(b.scannedAt).getTime()
+                    ) // Ordenar por orden de llegada
+                    .map((attendance: any, index: number) => (
+                      <motion.div
+                        key={attendance._id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(index, 20) * 0.03 }}
+                        className="flex items-center gap-4 rounded-[20px] border border-white/10 bg-white/[0.05] px-4 py-3.5"
+                      >
+                        <span className="relative flex-shrink-0">
+                          <span className="block h-16 w-16 rounded-full bg-[linear-gradient(135deg,#F9A23B,#DC3340,#8A1C45)] p-[3px]">
+                            <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-ink-800 font-display text-xl">
+                              {attendance.youngId.profileImage ? (
+                                <img src={attendance.youngId.profileImage} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                initialsOf(attendance.youngId.fullName || '')
+                              )}
+                            </span>
+                          </span>
+                          <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-amber text-xs font-bold text-ink-950">
+                            {index + 1}
+                          </span>
+                        </span>
+                        <span className="flex min-w-0 flex-col gap-1">
+                          <span className="truncate text-lg font-semibold">{attendance.youngId.fullName}</span>
+                          <span className="text-sm text-white/60">{formatTime(attendance.scannedAt)}</span>
+                        </span>
+                      </motion.div>
+                    ))}
                 </div>
               </div>
             </motion.div>
           )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
     </div>
   );
 };

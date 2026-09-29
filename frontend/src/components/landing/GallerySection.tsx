@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { normalizeRichTextHtml } from '../../utils/richText';
+import { motion } from 'framer-motion';
 import ImageWithFallback from './ImageWithFallback';
+import SectionHeader from './ui/SectionHeader';
 
 interface GalleryMedia {
   _id: string;
@@ -19,6 +20,14 @@ interface GallerySectionProps {
 }
 
 const MAX_VISIBLE = 8;
+
+// Mosaico: algunas piezas ocupan dos filas o dos columnas.
+const tileSpan = (idx: number) => {
+  const slot = idx % 6;
+  if (slot === 0) return 'row-span-2';
+  if (slot === 2 || slot === 3) return 'lg:col-span-2';
+  return '';
+};
 
 export default function GallerySection({
   title,
@@ -65,25 +74,19 @@ export default function GallerySection({
 
   if (!galleryMedia || total === 0) {
     return (
-      <section id="gallery" className="py-20 px-4 bg-gray-50 dark:bg-gray-800">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
-            {title || 'Galería'}
-          </h2>
-          <div
-            className="rich-content max-w-2xl mx-auto text-gray-500 dark:text-gray-400 mb-12"
-            dangerouslySetInnerHTML={{
-              __html: normalizeRichTextHtml(
-                body ||
-                  'Próximamente compartiremos momentos de nuestra comunidad.'
-              ),
-            }}
+      <section id="gallery" className="bg-ink-950 py-24 md:py-28">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <SectionHeader
+            eyebrow="Momentos"
+            title={title || 'Galería'}
+            body={body || 'Próximamente compartiremos momentos de nuestra comunidad.'}
+            tone="dark"
           />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map(i => (
               <div
                 key={i}
-                className="aspect-[4/5] rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 animate-pulse"
+                className="aspect-[4/5] rounded-3xl border border-white/10 bg-ink-900 animate-pulse"
               />
             ))}
           </div>
@@ -102,7 +105,7 @@ export default function GallerySection({
           src={media.mediaUrl}
           alt={media.altText || media.title}
           fallbackLabel={media.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
           loading="lazy"
         />
       );
@@ -131,7 +134,7 @@ export default function GallerySection({
       );
     }
     return (
-      <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex flex-col items-center justify-center text-red-600 dark:text-red-300">
+      <div className="w-full h-full bg-gradient-to-br from-brand-wine to-ink-900 flex flex-col items-center justify-center text-white/85">
         <svg
           className="w-12 h-12"
           viewBox="0 0 24 24"
@@ -157,50 +160,35 @@ export default function GallerySection({
   };
 
   return (
-    <section id="gallery" className="py-20 px-4 bg-gray-50 dark:bg-gray-800">
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-4xl font-bold text-center mb-4 text-gray-900 dark:text-white">
-          {title || 'Galería'}
-        </h2>
-        <div
-          className="rich-content max-w-2xl mx-auto text-center text-gray-600 dark:text-gray-400 mb-12"
-          dangerouslySetInnerHTML={{
-            __html: normalizeRichTextHtml(
-              body || 'Momentos de nuestra comunidad.'
-            ),
-          }}
+    <section id="gallery" className="bg-ink-950 py-24 md:py-28">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <SectionHeader
+          eyebrow="Momentos"
+          title={title || 'Galería'}
+          body={body || 'Momentos de nuestra comunidad.'}
+          tone="dark"
         />
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 auto-rows-[180px] sm:auto-rows-[220px] gap-3 sm:gap-4 [grid-auto-flow:dense]">
           {visible.map((media, idx) => (
             <button
               key={media._id}
               type="button"
               onClick={() => setSelectedIndex(idx)}
-              className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all"
+              className={`group relative overflow-hidden rounded-3xl border border-white/10 bg-ink-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-amber/50 transition-shadow hover:shadow-[0_28px_56px_-24px_rgba(242,106,46,0.45)] ${tileSpan(idx)}`}
             >
               {renderTileMedia(media)}
 
-              <span className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/75 to-transparent" />
+              <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ink-950/85 to-transparent opacity-80 transition-opacity group-hover:opacity-100" />
 
-              <span className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
-                  />
+              <span className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-ink-950/60 text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
                 </svg>
               </span>
 
-              <span className="absolute inset-x-0 bottom-0 p-3 text-left">
-                <span className="block text-sm font-semibold text-white line-clamp-2 drop-shadow">
+              <span className="absolute inset-x-0 bottom-0 p-4 text-left">
+                <span className="block text-sm font-semibold text-white line-clamp-2">
                   {media.title}
                 </span>
               </span>
@@ -213,7 +201,7 @@ export default function GallerySection({
             <button
               type="button"
               onClick={() => setShowAll(prev => !prev)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-semibold text-sm transition"
+              className="inline-flex h-12 items-center gap-2 rounded-full border border-white/20 px-6 text-sm font-semibold text-white transition-colors hover:border-brand-amber hover:text-brand-amber"
             >
               {showAll ? 'Ver menos' : `Ver todas (${total})`}
               <svg
@@ -236,7 +224,7 @@ export default function GallerySection({
         {/* Lightbox */}
         {selectedMedia && selectedIndex !== null && createPortal(
           <div
-            className="fixed inset-0 z-[999] flex items-center justify-center bg-black/90 p-4 sm:p-6"
+            className="fixed inset-0 z-[999] flex items-center justify-center bg-[#0C0609]/95 p-4 sm:p-6 backdrop-blur-sm"
             onClick={() => setSelectedIndex(null)}
             onTouchStart={e => {
               touchStartXRef.current = e.touches[0]?.clientX ?? null;
@@ -261,7 +249,7 @@ export default function GallerySection({
             <button
               type="button"
               onClick={() => setSelectedIndex(null)}
-              className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+              className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/20 text-white hover:border-white/50 transition"
               aria-label="Cerrar"
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -278,23 +266,27 @@ export default function GallerySection({
               onClick={e => e.stopPropagation()}
             >
               {selectedMedia.mediaType === 'image' ? (
-                <img
+                <motion.img
+                  key={selectedMedia._id}
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
                   src={selectedMedia.mediaUrl}
                   alt={selectedMedia.altText || selectedMedia.title}
-                  className="max-h-[78vh] w-auto max-w-full rounded-lg object-contain select-none"
+                  className="max-h-[78vh] w-auto max-w-full rounded-2xl object-contain select-none"
                 />
               ) : selectedMedia.mediaType === 'video' ? (
                 <video
                   src={selectedMedia.mediaUrl}
                   controls
                   autoPlay
-                  className="max-h-[78vh] w-full rounded-lg"
+                  className="max-h-[78vh] w-full rounded-2xl"
                 />
               ) : (
                 <iframe
                   src={selectedMedia.mediaUrl}
                   title={selectedMedia.title}
-                  className="h-[78vh] w-full rounded-lg border border-gray-700 bg-white"
+                  className="h-[78vh] w-full rounded-2xl border border-white/10 bg-white"
                 />
               )}
 
@@ -303,7 +295,7 @@ export default function GallerySection({
                   <button
                     type="button"
                     onClick={showPrev}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 sm:-translate-x-14 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 sm:-translate-x-14 flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-ink-950/60 text-white hover:border-brand-amber hover:text-brand-amber transition"
                     aria-label="Anterior"
                   >
                     <svg
@@ -323,7 +315,7 @@ export default function GallerySection({
                   <button
                     type="button"
                     onClick={showNext}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 sm:translate-x-14 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 sm:translate-x-14 flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-ink-950/60 text-white hover:border-brand-amber hover:text-brand-amber transition"
                     aria-label="Siguiente"
                   >
                     <svg
@@ -344,7 +336,7 @@ export default function GallerySection({
               )}
 
               <div className="mt-4 text-center text-white">
-                <p className="font-medium">{selectedMedia.title}</p>
+                <p className="font-display text-lg uppercase tracking-wide">{selectedMedia.title}</p>
                 {total > 1 && (
                   <p className="mt-1 text-sm text-white/60">
                     {selectedIndex + 1} / {total}

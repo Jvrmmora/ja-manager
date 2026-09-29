@@ -3,171 +3,76 @@ import { getTimeUntilExpiration } from '../utils/dateUtils';
 
 interface QRCountdownProps {
   expiresAt: string | Date;
-  isDark?: boolean;
+  /** 'blocks': bloques grandes (proyector). 'inline': texto hh:mm:ss */
+  variant?: 'blocks' | 'inline';
 }
 
-export const QRCountdown: React.FC<QRCountdownProps> = ({
-  expiresAt,
-  isDark = true,
-}) => {
+const pad = (value: number) => value.toString().padStart(2, '0');
+
+export const useCountdown = (expiresAt: string | Date) => {
   const [timeLeft, setTimeLeft] = useState(() =>
     getTimeUntilExpiration(expiresAt)
   );
-
-  const formatTime = (value: number): string => {
-    return value.toString().padStart(2, '0');
-  };
-
   useEffect(() => {
+    setTimeLeft(getTimeUntilExpiration(expiresAt));
     const interval = setInterval(() => {
       setTimeLeft(getTimeUntilExpiration(expiresAt));
     }, 1000);
-
     return () => clearInterval(interval);
   }, [expiresAt]);
+  return timeLeft;
+};
+
+export const QRCountdown: React.FC<QRCountdownProps> = ({
+  expiresAt,
+  variant = 'blocks',
+}) => {
+  const timeLeft = useCountdown(expiresAt);
+  const hours = timeLeft.hours + timeLeft.days * 24;
+
+  if (variant === 'inline') {
+    return (
+      <span className="font-mono">
+        {timeLeft.isExpired
+          ? 'Expirado'
+          : `${pad(hours)}:${pad(timeLeft.minutes)}:${pad(timeLeft.seconds)}`}
+      </span>
+    );
+  }
 
   if (timeLeft.isExpired) {
     return (
-      <div
-        className={`flex items-center justify-center px-4 py-3 rounded-lg ${
-          isDark
-            ? 'bg-red-900/20 border border-red-700/50'
-            : 'bg-red-50 border border-red-200'
-        }`}
-      >
-        <span
-          className={`text-xl font-bold ${isDark ? 'text-red-400' : 'text-red-500'}`}
-        >
-          QR Expirado
+      <div className="flex items-center justify-center rounded-2xl border border-red-400/40 bg-red-500/10 px-4 py-3">
+        <span className="font-display text-xl font-semibold uppercase text-red-300">
+          QR expirado
         </span>
       </div>
     );
   }
 
+  const blocks: Array<[string, string, boolean]> = [
+    [pad(hours), 'horas', false],
+    [pad(timeLeft.minutes), 'min', false],
+    [pad(timeLeft.seconds), 'seg', true],
+  ];
+
   return (
-    <div className="flex items-center justify-center gap-1.5">
-      {/* Días */}
-      <div
-        className={`flex flex-col items-center rounded-lg px-2.5 py-2 min-w-[55px] ${
-          isDark
-            ? 'bg-blue-900/20 border border-blue-700/50'
-            : 'bg-blue-50 border border-blue-200'
-        }`}
-      >
+    <div className="grid grid-cols-3 gap-2">
+      {blocks.map(([value, label, accent]) => (
         <div
-          className={`text-2xl font-black font-mono leading-none ${
-            isDark ? 'text-blue-400' : 'text-blue-600'
-          }`}
+          key={label}
+          className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.06] py-3"
         >
-          {formatTime(timeLeft.days)}
+          <span
+            className={`font-mono text-[34px] font-semibold leading-none ${
+              accent ? 'text-brand-amber' : 'text-white'
+            }`}
+          >
+            {value}
+          </span>
+          <span className="mt-1 text-[11px] text-white/50">{label}</span>
         </div>
-        <div
-          className={`text-[10px] font-semibold mt-1 uppercase tracking-wider ${
-            isDark ? 'text-blue-400/70' : 'text-blue-600/70'
-          }`}
-        >
-          Días
-        </div>
-      </div>
-
-      {/* Separador */}
-      <div
-        className={`text-xl font-bold self-center -mt-3 ${
-          isDark ? 'text-gray-600' : 'text-gray-400'
-        }`}
-      >
-        :
-      </div>
-
-      {/* Horas */}
-      <div
-        className={`flex flex-col items-center rounded-lg px-2.5 py-2 min-w-[55px] ${
-          isDark
-            ? 'bg-green-900/20 border border-green-700/50'
-            : 'bg-green-50 border border-green-200'
-        }`}
-      >
-        <div
-          className={`text-2xl font-black font-mono leading-none ${
-            isDark ? 'text-green-400' : 'text-green-600'
-          }`}
-        >
-          {formatTime(timeLeft.hours)}
-        </div>
-        <div
-          className={`text-[10px] font-semibold mt-1 uppercase tracking-wider ${
-            isDark ? 'text-green-400/70' : 'text-green-600/70'
-          }`}
-        >
-          Hrs
-        </div>
-      </div>
-
-      {/* Separador */}
-      <div
-        className={`text-xl font-bold self-center -mt-3 ${
-          isDark ? 'text-gray-600' : 'text-gray-400'
-        }`}
-      >
-        :
-      </div>
-
-      {/* Minutos */}
-      <div
-        className={`flex flex-col items-center rounded-lg px-2.5 py-2 min-w-[55px] ${
-          isDark
-            ? 'bg-amber-900/20 border border-amber-700/50'
-            : 'bg-amber-50 border border-amber-200'
-        }`}
-      >
-        <div
-          className={`text-2xl font-black font-mono leading-none ${
-            isDark ? 'text-amber-400' : 'text-amber-600'
-          }`}
-        >
-          {formatTime(timeLeft.minutes)}
-        </div>
-        <div
-          className={`text-[10px] font-semibold mt-1 uppercase tracking-wider ${
-            isDark ? 'text-amber-400/70' : 'text-amber-600/70'
-          }`}
-        >
-          Min
-        </div>
-      </div>
-
-      {/* Separador */}
-      <div
-        className={`text-xl font-bold self-center -mt-3 ${
-          isDark ? 'text-gray-600' : 'text-gray-400'
-        }`}
-      >
-        :
-      </div>
-
-      {/* Segundos */}
-      <div
-        className={`flex flex-col items-center rounded-lg px-2.5 py-2 min-w-[55px] ${
-          isDark
-            ? 'bg-purple-900/20 border border-purple-700/50'
-            : 'bg-purple-50 border border-purple-200'
-        }`}
-      >
-        <div
-          className={`text-2xl font-black font-mono leading-none ${
-            isDark ? 'text-purple-400' : 'text-purple-600'
-          }`}
-        >
-          {formatTime(timeLeft.seconds)}
-        </div>
-        <div
-          className={`text-[10px] font-semibold mt-1 uppercase tracking-wider ${
-            isDark ? 'text-purple-400/70' : 'text-purple-600/70'
-          }`}
-        >
-          Seg
-        </div>
-      </div>
+      ))}
     </div>
   );
 };

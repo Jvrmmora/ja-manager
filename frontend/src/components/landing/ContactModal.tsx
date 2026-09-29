@@ -152,25 +152,25 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-[1px] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[70] bg-[#0C0609]/75 backdrop-blur-sm flex items-center justify-center p-4"
             onClick={onClose}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="w-full max-w-xl rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl"
+              className="w-full max-w-xl overflow-hidden rounded-[28px] bg-white dark:bg-ink-900 shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)]"
               onClick={e => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+              <div className="bg-fire-bright flex items-center justify-between px-6 py-5 text-white">
+                <h3 className="m-0 font-display text-2xl font-semibold uppercase text-white">
                   Contáctanos
                 </h3>
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={submitting}
-                  className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 transition"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-ink-950/25 text-white hover:bg-ink-950/40 transition"
                   aria-label="Cerrar modal de contacto"
                 >
                   <svg
@@ -190,14 +190,14 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
               </div>
 
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-300">
+                <p className="text-sm text-cocoa-500 dark:text-white/70">
                   Envía tu mensaje y nuestro equipo te responderá pronto.
                 </p>
 
                 <div>
                   <label
                     htmlFor="fullName"
-                    className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1"
+                    className="block text-sm font-semibold text-cocoa-700 dark:text-white/85 mb-1.5"
                   >
                     Nombre
                   </label>
@@ -207,7 +207,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                     type="text"
                     value={formData.fullName}
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    className="field-brand h-12"
                     placeholder="Tu nombre completo"
                   />
                 </div>
@@ -215,7 +215,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1"
+                    className="block text-sm font-semibold text-cocoa-700 dark:text-white/85 mb-1.5"
                   >
                     Correo
                   </label>
@@ -225,7 +225,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                     type="text"
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    className="field-brand h-12"
                     placeholder="tunombre@correo.com"
                   />
                 </div>
@@ -233,7 +233,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                 <div>
                   <label
                     htmlFor="message"
-                    className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1"
+                    className="block text-sm font-semibold text-cocoa-700 dark:text-white/85 mb-1.5"
                   >
                     Mensaje
                   </label>
@@ -243,7 +243,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                     value={formData.message}
                     onChange={handleChange}
                     rows={5}
-                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y transition-colors"
+                    className="field-brand py-3 resize-y"
                     placeholder="Escribe aquí tu mensaje..."
                   />
                 </div>
@@ -262,14 +262,14 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                     type="button"
                     onClick={onClose}
                     disabled={submitting}
-                    className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    className="h-12 px-5 rounded-full border border-sand-300 text-cocoa-900 font-semibold hover:bg-sand-50 dark:border-white/20 dark:text-white dark:hover:bg-white/5 transition"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                    className="btn-fire h-12 px-6 disabled:cursor-not-allowed"
                   >
                     {submitting ? (
                       <>
@@ -301,14 +301,14 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm"
+            className="absolute inset-0 bg-[#0C0609]/75 backdrop-blur-sm"
           />
 
           <motion.div
             initial={{ scale: 0.7, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.7, opacity: 0, y: 20 }}
-            className="relative w-full max-w-sm mx-auto bg-emerald-500 rounded-2xl p-8 text-white text-center shadow-2xl"
+            className="relative w-full max-w-sm mx-auto bg-ink-950 border border-white/10 rounded-[28px] p-8 text-white text-center shadow-2xl"
           >
             <motion.div
               initial={{ scale: 0 }}
@@ -316,14 +316,14 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
               transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
               className="flex justify-center mb-6"
             >
-              <CheckCircleIcon className="w-16 h-16 text-white" />
+              <CheckCircleIcon className="w-16 h-16 text-brand-amber" />
             </motion.div>
 
             <motion.h2
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-2xl font-bold mb-2"
+              className="font-display text-3xl font-semibold uppercase mb-2"
             >
               ¡Gracias!
             </motion.h2>

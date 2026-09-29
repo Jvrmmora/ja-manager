@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { normalizeWhatsAppUrl } from '../../utils/whatsapp';
 import PrivacyPolicyModal from '../privacy/PrivacyPolicyModal';
+import logo from '../../assets/logos/logo.png';
 
 interface FooterProps {
   addressLabel?: string;
@@ -130,71 +131,58 @@ export default function Footer({
   ];
 
   return (
-    <footer className="bg-gray-900 text-gray-300 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid md:grid-cols-4 gap-8 mb-8">
-          {/* About */}
-          <div>
-            <h3 className="text-white font-bold mb-4">Jóvenes Modelia</h3>
-            <p className="text-sm text-gray-400">
+    <footer className="relative overflow-hidden bg-ink-950 text-white/70">
+      <div className="pointer-events-none absolute -left-40 -top-40 h-[480px] w-[480px] rounded-full bg-[radial-gradient(circle,rgba(138,28,69,.25)_0%,rgba(20,11,16,0)_65%)]" />
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-20">
+        <div className="grid grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr] gap-10 md:gap-12">
+          <div className="col-span-2 md:col-span-1 flex flex-col gap-4">
+            <span className="flex items-center gap-3">
+              <img src={logo} alt="Jóvenes Modelia" className="h-12 w-12 object-contain" />
+              <span className="font-display text-2xl font-semibold tracking-[0.04em] text-white">
+                JÓVENES MODELIA
+              </span>
+            </span>
+            <p className="max-w-sm text-[15px] leading-relaxed">
               Un movimiento de jóvenes apasionados por servir a Dios y
               transformar el mundo.
             </p>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h3 className="text-white font-bold mb-4">Enlaces</h3>
-            <ul className="text-sm space-y-2">
-              {quickLinks.map(link => (
-                <li key={link.id}>
-                  <button
-                    onClick={() => scrollToSection(link.id)}
-                    className="hover:text-blue-400 transition"
-                  >
-                    {link.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
+          <div className="flex flex-col gap-3 text-[15px]">
+            <h3 className="eyebrow text-[13px] text-brand-amber">Explora</h3>
+            {quickLinks.map(link => (
+              <button
+                key={link.id}
+                onClick={() => scrollToSection(link.id)}
+                className="text-left hover:text-white transition-colors"
+              >
+                {link.label}
+              </button>
+            ))}
           </div>
 
-          {/* Contact */}
-          <div>
-            <h3 className="text-white font-bold mb-4">Ubicación</h3>
-            <p className="text-sm text-gray-400 inline-flex items-center gap-2">
-              <svg
-                className="w-4 h-4 text-red-400"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                  clipRule="evenodd"
-                />
+          <div className="flex flex-col gap-3 text-[15px]">
+            <h3 className="eyebrow text-[13px] text-brand-amber">Ubicación</h3>
+            <p className="flex items-start gap-2">
+              <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
               </svg>
               {addressLabel || 'Cra. 72C #23d-44, Bogota'}
             </p>
             {onOpenContact && (
               <button
                 onClick={onOpenContact}
-                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95"
+                className="text-left font-semibold text-white hover:text-brand-amber transition-colors"
               >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                </svg>
-                Contáctanos
+                Contáctanos →
               </button>
             )}
           </div>
 
-          {/* Social */}
-          <div>
-            <h3 className="text-white font-bold mb-4">Síguenos</h3>
-            <div className="flex gap-4">
+          <div className="flex flex-col gap-3 text-[15px]">
+            <h3 className="eyebrow text-[13px] text-brand-amber">Síguenos</h3>
+            <div className="flex flex-wrap gap-2.5">
               {socialLinks
                 .filter(link => Boolean(link.href))
                 .map(link => (
@@ -203,7 +191,7 @@ export default function Footer({
                     href={link.href || undefined}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-blue-400 transition"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 text-white/80 hover:border-brand-amber hover:text-brand-amber transition-colors"
                     aria-label={link.name}
                   >
                     {link.icon}
@@ -213,51 +201,26 @@ export default function Footer({
           </div>
         </div>
 
-        {/* Separator */}
-        <div className="border-t border-gray-700 my-8"></div>
-
-        {displayVisitCountValue > 0 && (
-          <div className="mb-8 flex justify-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-300/20 bg-white/[0.04] px-4 py-2 text-sm text-blue-100/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-sm">
-              <svg
-                className="h-4 w-4 text-blue-300/80"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.458 12C3.732 7.943 7.522 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.478 0-8.268-2.943-9.542-7z"
-                />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-
-              <p className="tracking-wide">
-                Visitas actuales: {formattedAnimatedCount || '0'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Copyright */}
-        <div className="text-center text-sm text-gray-400">
-          <p>
-            &copy; {currentYear} Jóvenes Adventistas Modelia Bogotá. Todos los
-            derechos reservados.
-          </p>
-          <p className="mt-2">
+        <div className="mt-14 flex flex-col-reverse gap-4 border-t border-white/10 py-7 text-[13px] text-white/50 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+            <span>
+              &copy; {currentYear} Jóvenes Adventistas Modelia Bogotá. Todos
+              los derechos reservados.
+            </span>
             <button
               type="button"
               onClick={() => setShowPolicy(true)}
-              className="hover:text-blue-400 transition underline-offset-2 hover:underline"
+              className="text-left hover:text-white underline-offset-2 hover:underline transition-colors"
             >
               Política de Privacidad
             </button>
-          </p>
-          <p className="mt-2">"Encendidos por Cristo"</p>
+          </div>
+          {displayVisitCountValue > 0 && (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-amber" />
+              Visitas actuales: {formattedAnimatedCount || '0'}
+            </span>
+          )}
         </div>
       </div>
 
