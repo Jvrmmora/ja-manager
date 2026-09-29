@@ -255,6 +255,7 @@ export interface ILeaderboardEntry {
   totalPoints: number;
   currentRank: number;
   previousRank?: number;
+  rankChange?: number;
   pointsByType: {
     attendance: number;
     activity: number;

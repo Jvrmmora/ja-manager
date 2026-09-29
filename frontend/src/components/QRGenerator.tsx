@@ -1,31 +1,24 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  QrCodeIcon,
-  XMarkIcon,
-  ArrowsPointingOutIcon,
-  UsersIcon,
-  ClockIcon,
-  CheckCircleIcon,
-} from '@heroicons/react/24/outline';
 import {
   generateDailyQR,
   getCurrentQR,
   getQRStats,
   getTodayAttendances,
 } from '../services/api';
-import { useTheme } from '../context/ThemeContext';
 import LoadingSpinner from './LoadingSpinner';
 import { QRCountdown } from './QRCountdown';
+import BrandModalHeader from './ui/BrandModalHeader';
 import { seasonService } from '../services/seasonService';
 import { POINTS_PRESETS } from '../constants/points';
 import {
   formatDisplayDate,
   formatDisplayTime,
-  formatCountdown,
   isExpired,
   getCurrentDateColombia,
 } from '../utils/dateUtils';
+import logo from '../assets/logos/logo.png';
 
 interface QRGeneratorProps {
   onSuccess?: (data: any) => void;
@@ -33,7 +26,6 @@ interface QRGeneratorProps {
 }
 
 const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
-  const { isDark } = useTheme();
   const [qrData, setQrData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,10 +51,8 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
     if (qrData) {
       interval = setInterval(() => {
         loadStats();
-        // Si está en pantalla completa, cargar asistencias también
-        if (showFullscreen) {
-          loadLiveAttendances();
-        }
+        // Asistentes en vivo (panel y proyector)
+        loadLiveAttendances();
       }, 3000); // Cada 3 segundos para tiempo real
     }
     return () => {
@@ -70,17 +60,20 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
     };
   }, [qrData, showFullscreen]);
 
-  // Cargar asistencias en tiempo real cuando se abre pantalla completa
+  // Cargar asistencias en tiempo real cuando hay un QR activo
   useEffect(() => {
-    if (showFullscreen) {
+    if (qrData) {
       loadLiveAttendances();
     }
-  }, [showFullscreen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrData]);
 
   // Manejar tecla Escape para cerrar modal
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && showFullscreen) {
+        // Evita que el panel que contiene al QR también se cierre
+        event.preventDefault();
         setShowFullscreen(false);
       }
     };
@@ -88,14 +81,6 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
     if (showFullscreen) {
       document.addEventListener('keydown', handleEscape);
       return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [showFullscreen]);
-
-  // Limpiar datos cuando se cierra el modal
-  useEffect(() => {
-    if (!showFullscreen) {
-      setLiveAttendances([]);
-      setLastAttendanceCount(0);
     }
   }, [showFullscreen]);
 
@@ -225,438 +210,320 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
 
   if (isLoading) {
     return (
-      <div className="text-center py-8">
+      <div className="py-10 text-center">
         <LoadingSpinner />
-        <p
-          className={`mt-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
-        >
+        <p className="mt-4 text-sm text-cocoa-500 dark:text-white/60">
           Cargando información del QR...
         </p>
       </div>
     );
   }
 
+  const qrCode = qrData?.qrCode;
+  const attendanceCount = stats?.attendanceCount ?? liveAttendances.length;
+  const maxBonus = qrCode ? Math.floor((qrCode.points || 10) * 0.5) : 0;
+
+  const openGenerate = async () => {
+    if (!(await ensureActiveSeason())) return;
+    setIsRegenerate(false);
+    setSelectedPoints(10);
+    setShowConfigModal(true);
+  };
+
   return (
     <>
-      <div
-        className={`rounded-lg p-6 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}
-      >
-        <div className="text-center">
-          <h2
-            className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}
-          >
-            Código QR de Asistencia
-          </h2>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          {!qrData || isExpiredQR() ? (
-            <div className="py-8">
-              <QrCodeIcon
-                className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}
-              />
-              <p
-                className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
-              >
-                {isExpiredQR()
-                  ? 'El código QR ha expirado'
-                  : 'No hay código QR activo para el día de hoy'}
-              </p>
-              <motion.button
-                onClick={async () => {
-                  if (!(await ensureActiveSeason())) return;
-                  setIsRegenerate(false);
-                  setSelectedPoints(10);
-                  setShowConfigModal(true);
-                }}
-                disabled={isGenerating}
-                className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 transition-colors font-semibold flex items-center gap-2 mx-auto"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {isGenerating ? (
-                  <>
-                    <LoadingSpinner size="sm" />
-                    Generando...
-                  </>
-                ) : (
-                  <>
-                    <QrCodeIcon className="w-5 h-5" />
-                    Generar QR del {formatDate(getCurrentDateColombia())}
-                  </>
-                )}
-              </motion.button>
-            </div>
-          ) : (
-            <div>
-              {/* Información del QR */}
-              <div
-                className={`mb-4 p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}
-              >
-                <p
-                  className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}
-                >
-                  <strong>Fecha:</strong> {formatDate(qrData.qrCode.dailyDate)}
-                </p>
-                <p
-                  className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}
-                >
-                  <strong>Generado:</strong>{' '}
-                  {formatTime(qrData.qrCode.generatedAt)}
-                </p>
-                <p
-                  className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}
-                >
-                  <strong>Expira:</strong>{' '}
-                  <span
-                    className={`${
-                      formatCountdown(qrData.qrCode.expiresAt) === 'Expirado'
-                        ? 'text-red-500 font-semibold'
-                        : 'text-red-600 font-mono font-semibold'
-                    }`}
-                  >
-                    {formatCountdown(qrData.qrCode.expiresAt)}
-                  </span>
-                </p>
-                <div
-                  className={`mt-2 pt-2 border-t ${isDark ? 'border-gray-600' : 'border-gray-300'}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`text-sm font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-                    >
-                      Puntos por asistencia:
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="material-symbols-rounded text-amber-500 text-lg">
-                        bolt
-                      </span>
-                      <span className="text-xl font-bold text-blue-500">
-                        {qrData.qrCode.points || 10}
-                      </span>
-                      <span
-                        className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
-                      >
-                        pts
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* QR Code */}
-              <div className="mb-4">
-                <img
-                  src={qrData.qrImage}
-                  alt="Código QR de Asistencia"
-                  className="w-64 h-64 mx-auto border-2 border-gray-200 rounded-lg"
-                />
-              </div>
-
-              {/* Estadísticas */}
-              {stats && (
-                <div
-                  className={`mb-4 p-3 rounded-lg ${isDark ? 'bg-green-900/20' : 'bg-green-50'} border ${isDark ? 'border-green-800' : 'border-green-200'}`}
-                >
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <UsersIcon
-                      className={`w-5 h-5 ${isDark ? 'text-green-400' : 'text-green-600'}`}
-                    />
-                    <span
-                      className={`font-semibold ${isDark ? 'text-green-400' : 'text-green-600'}`}
-                    >
-                      {stats.attendanceCount} asistencias registradas
-                    </span>
-                  </div>
-                  <p
-                    className={`text-xs ${isDark ? 'text-green-300' : 'text-green-700'}`}
-                  >
-                    Actualizado automáticamente cada 10 segundos
-                  </p>
-                </div>
-              )}
-
-              {/* Botones de acción */}
-              <div className="flex gap-3 justify-center">
-                <motion.button
-                  onClick={async () => {
-                    if (!(await ensureActiveSeason())) return;
-                    setShowFullscreen(true);
-                  }}
-                  className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium flex items-center gap-2"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <ArrowsPointingOutIcon className="w-4 h-4" />
-                  Ampliar para Proyector
-                </motion.button>
-
-                <motion.button
-                  onClick={async () => {
-                    if (!(await ensureActiveSeason())) return;
-                    setIsRegenerate(true);
-                    setSelectedPoints(qrData?.qrCode?.points || 10);
-                    setShowConfigModal(true);
-                  }}
-                  disabled={isGenerating}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 transition-colors font-medium flex items-center gap-2"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {isGenerating ? (
-                    <>
-                      <LoadingSpinner size="sm" />
-                      Regenerando...
-                    </>
-                  ) : (
-                    <>
-                      <QrCodeIcon className="w-4 h-4" />
-                      Regenerar QR
-                    </>
-                  )}
-                </motion.button>
-              </div>
-            </div>
-          )}
+      {error && (
+        <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+          {error}
         </div>
-      </div>
+      )}
 
-      {/* Modal Pantalla Completa con Vista Dividida */}
+      {!qrData || isExpiredQR() ? (
+        <div className="flex flex-col items-center gap-4 rounded-[26px] border border-sand-200 bg-white px-6 py-12 text-center dark:border-white/10 dark:bg-ink-800">
+          <span className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-sand-100 text-brand-ember dark:bg-brand-orange/15 dark:text-brand-amber">
+            <QrIcon className="h-8 w-8" />
+          </span>
+          <p className="m-0 text-[15px] text-cocoa-600 dark:text-white/70">
+            {isExpiredQR()
+              ? 'El código QR ha expirado'
+              : 'No hay código QR activo para el día de hoy'}
+          </p>
+          <button
+            type="button"
+            onClick={openGenerate}
+            disabled={isGenerating}
+            className="btn-fire h-[52px] px-7 text-[15px]"
+          >
+            {isGenerating ? (
+              <>
+                <LoadingSpinner size="sm" />
+                Generando...
+              </>
+            ) : (
+              <>
+                <QrIcon className="h-5 w-5" />
+                Generar QR del {formatDate(getCurrentDateColombia())}
+              </>
+            )}
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-5 md:grid-cols-[320px_minmax(0,1fr)]">
+          {/* Código */}
+          <div className="flex flex-col gap-3">
+            <div className="relative flex items-center justify-center rounded-[26px] border border-sand-200 bg-white p-6 dark:border-white/10">
+              <BrandCorners size="sm" />
+              <img
+                src={qrData.qrImage}
+                alt="Código QR de Asistencia"
+                className="h-60 w-60 rounded-xl"
+              />
+            </div>
+            <span className="flex h-9 items-center justify-center gap-2 rounded-full bg-emerald-50 text-[13px] font-semibold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-glow-green" />
+              Activo · expira en <QRCountdown expiresAt={qrCode.expiresAt} variant="inline" />
+            </span>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!(await ensureActiveSeason())) return;
+                setShowFullscreen(true);
+              }}
+              className="btn-fire h-[52px] text-[15px]"
+            >
+              <ExpandIcon className="h-[17px] w-[17px]" />
+              Ampliar para proyector
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!(await ensureActiveSeason())) return;
+                setIsRegenerate(true);
+                setSelectedPoints(qrCode?.points || 10);
+                setShowConfigModal(true);
+              }}
+              disabled={isGenerating}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full border-[1.5px] border-sand-300 bg-white text-sm font-semibold text-cocoa-600 transition-colors hover:border-cocoa-400 disabled:opacity-60 dark:border-white/15 dark:bg-transparent dark:text-white/80"
+            >
+              {isGenerating ? (
+                <>
+                  <LoadingSpinner size="sm" />
+                  Regenerando...
+                </>
+              ) : (
+                <>
+                  <RefreshIcon className="h-4 w-4" />
+                  Regenerar QR
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Información */}
+          <div className="flex min-w-0 flex-col gap-3.5">
+            <div className="grid grid-cols-3 gap-2.5">
+              <InfoTile label="Fecha" value={formatDate(qrCode.dailyDate)} />
+              <InfoTile label="Generado" value={formatTime(qrCode.generatedAt)} />
+              <InfoTile label="Puntos" value={`+${qrCode.points || 10}`} accent />
+            </div>
+            {qrCode.speedBonusEnabled && (
+              <LiveBonusDisplay
+                maxBonus={maxBonus}
+                bonusDecayMinutes={qrCode.bonusDecayMinutes || 30}
+                qrGeneratedAt={qrCode.generatedAt}
+                variant="panel"
+              />
+            )}
+            <div className="flex flex-1 flex-col gap-2 rounded-[22px] border border-sand-200 bg-white p-4 dark:border-white/10 dark:bg-ink-800">
+              <div className="flex items-start justify-between gap-3">
+                <span className="flex flex-col gap-0.5">
+                  <span className="font-display text-lg font-semibold uppercase text-cocoa-900 dark:text-white">
+                    Asistentes registrados
+                  </span>
+                  <span className="text-xs text-cocoa-400 dark:text-white/50">
+                    Actualizado automáticamente cada pocos segundos
+                  </span>
+                </span>
+                <span className="font-display text-[34px] font-bold leading-none text-brand-ember dark:text-brand-amber">
+                  {attendanceCount}
+                </span>
+              </div>
+              {liveAttendances.length === 0 ? (
+                <p className="m-0 py-4 text-center text-sm text-cocoa-400 dark:text-white/50">
+                  Esperando primeros registros...
+                </p>
+              ) : (
+                <ul className="m-0 flex list-none flex-col p-0">
+                  {liveAttendances.slice(0, 6).map(attendance => (
+                    <li
+                      key={attendance._id}
+                      className="flex items-center gap-3 border-b border-sand-100 py-2 last:border-b-0 dark:border-white/5"
+                    >
+                      <AttendeeAvatar attendance={attendance} size={34} />
+                      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-cocoa-900 dark:text-white">
+                        {attendance.youngId?.fullName}
+                      </span>
+                      <span className="text-xs text-cocoa-400 dark:text-white/50">
+                        {formatTime(attendance.scannedAt)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modo proyector (portal: evita quedar atrapado en paneles con transform) */}
+      {createPortal(
       <AnimatePresence>
         {showFullscreen && qrData && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-gray-900"
-            style={{ zIndex: 9999 }}
+            className="dark fixed inset-0 z-[9999] overflow-hidden bg-ink-950 text-white"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Código QR para proyector"
           >
-            <div className="h-full flex">
-              {/* Panel Izquierdo - QR Code */}
-              <div className="w-1/2 flex flex-col items-center justify-center bg-gray-900 text-white p-8">
-                <button
-                  onClick={() => setShowFullscreen(false)}
-                  className="absolute top-6 left-6 text-white hover:text-gray-300 transition-colors z-10 flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-800"
-                >
-                  <XMarkIcon className="w-6 h-6" />
-                  Cerrar
-                </button>
+            <div className="pointer-events-none absolute -left-52 -top-[420px] h-[900px] w-[900px] rounded-full bg-[radial-gradient(circle,rgba(242,106,46,.28)_0%,rgba(220,51,64,.1)_40%,rgba(20,11,16,0)_68%)] motion-safe:animate-ember" />
+            <div className="pointer-events-none absolute left-1/4 top-1/2 h-[700px] w-[700px] rounded-full bg-[radial-gradient(circle,rgba(138,28,69,.35)_0%,rgba(20,11,16,0)_65%)] motion-safe:animate-ember-slow" />
 
-                {/* Título */}
+            <div className="relative grid h-full grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(380px,38%)]">
+              {/* Código */}
+              <div className="flex flex-col items-center overflow-y-auto px-6 py-6 lg:px-14 lg:py-9">
+                <div className="flex w-full items-center justify-between">
+                  <span className="flex items-center gap-3">
+                    <img src={logo} alt="" className="h-11 w-11 object-contain" />
+                    <span className="flex flex-col leading-none">
+                      <span className="font-display text-[11px] tracking-[0.3em] text-white/55">JÓVENES</span>
+                      <span className="font-display text-[22px] font-semibold tracking-[0.04em]">MODELIA</span>
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowFullscreen(false)}
+                    className="inline-flex h-10 items-center gap-2 rounded-full border border-white/20 px-4 text-[13px] font-semibold text-white/75 transition-colors hover:border-white/50 hover:text-white"
+                  >
+                    <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+                      <path d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                    Cerrar · Esc
+                  </button>
+                </div>
+
+                <span className="mt-5 font-display text-base uppercase tracking-[0.3em] text-brand-amber">
+                  {formatDate(qrCode.dailyDate)}
+                </span>
                 <motion.h1
                   initial={{ y: -20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  className="text-5xl font-bold mb-6 text-center"
+                  className="m-0 mt-2 text-center font-display text-5xl font-bold uppercase leading-[0.95] xl:text-[72px]"
                 >
-                  Registra tu Asistencia
+                  Registra tu <span className="text-fire">asistencia</span>
                 </motion.h1>
 
-                {/* QR Code */}
-                <motion.div
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="mb-6"
-                >
-                  <img
-                    src={qrData.qrImage}
-                    alt="Código QR de Asistencia"
-                    className="w-80 h-80 border-8 border-white rounded-3xl shadow-2xl"
-                  />
-                </motion.div>
-
-                {/* Bonus por Velocidad - Indicador dinámico en tiempo real */}
-                {qrData?.qrCode?.speedBonusEnabled && (
-                  <LiveBonusDisplay
-                    maxBonus={Math.floor(qrData.qrCode.points * 0.5)}
-                    bonusDecayMinutes={qrData.qrCode.bonusDecayMinutes || 30}
-                    qrGeneratedAt={qrData.qrCode.generatedAt}
-                  />
-                )}
-
-                {/* Información del QR */}
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-center space-y-3"
-                >
-                  <p className="text-2xl font-medium">
-                    {formatDate(qrData.qrCode.dailyDate)}
-                  </p>
-
-                  {stats && (
-                    <motion.div
-                      key={stats.attendanceCount}
-                      initial={{ scale: 1.2, color: '#10B981' }}
-                      animate={{ scale: 1, color: '#059669' }}
-                      className="flex items-center justify-center gap-3 text-xl"
-                    >
-                      <UsersIcon className="w-6 h-6" />
-                      <span className="font-bold">
-                        {stats.attendanceCount} personas registradas
-                      </span>
-                    </motion.div>
-                  )}
-
+                <div className="mt-7 flex flex-1 flex-col items-center justify-center gap-9 pb-4 xl:flex-row xl:gap-12">
                   <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="space-y-2"
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="relative rounded-[36px] bg-white p-7 shadow-[0_40px_100px_-30px_rgba(242,106,46,0.6)]"
                   >
-                    <p className="text-sm font-medium text-gray-400">
-                      Expira en:
-                    </p>
-                    <QRCountdown
-                      expiresAt={qrData.qrCode.expiresAt}
-                      isDark={isDark}
+                    <BrandCorners size="lg" />
+                    <span className="pointer-events-none absolute inset-x-7 h-[3px] rounded bg-[linear-gradient(90deg,rgba(249,162,59,0),#F9A23B,rgba(249,162,59,0))] shadow-[0_0_18px_2px_rgba(249,162,59,0.6)] motion-safe:animate-scan-line" />
+                    <img
+                      src={qrData.qrImage}
+                      alt="Código QR de Asistencia"
+                      className="h-72 w-72 rounded-2xl [image-rendering:pixelated] lg:h-[min(46vh,440px)] lg:w-[min(46vh,440px)] xl:h-[min(60vh,600px)] xl:w-[min(60vh,600px)]"
                     />
                   </motion.div>
-                </motion.div>
+
+                  <div className="flex w-full max-w-[300px] flex-col gap-[18px]">
+                    {qrCode.speedBonusEnabled && (
+                      <LiveBonusDisplay
+                        maxBonus={maxBonus}
+                        bonusDecayMinutes={qrCode.bonusDecayMinutes || 30}
+                        qrGeneratedAt={qrCode.generatedAt}
+                        variant="projector"
+                      />
+                    )}
+                    <div className="flex flex-col gap-2">
+                      <span className="text-[13px] font-semibold uppercase tracking-[0.14em] text-white/55">
+                        Expira en
+                      </span>
+                      <QRCountdown expiresAt={qrCode.expiresAt} />
+                    </div>
+                    <p className="m-0 text-[15px] leading-relaxed text-white/65">
+                      Abre JA Manager en tu celular → <strong className="text-white">Registrar asistencia</strong> → apunta al código.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Panel Derecho - Asistentes en Tiempo Real */}
-              <div className="w-1/2 bg-gray-800 flex flex-col">
-                {/* Header del panel */}
-                <div className="bg-gray-700 px-6 py-4 border-b border-gray-600">
-                  <div className="flex items-center gap-3">
-                    <CheckCircleIcon className="w-6 h-6 text-green-400" />
-                    <h2 className="text-xl font-bold text-white">
-                      Asistentes Registrados
-                    </h2>
-                  </div>
-                  <p className="text-gray-400 text-sm mt-1">
-                    Actualizándose en tiempo real
-                  </p>
+              {/* Asistentes en vivo */}
+              <div className="hidden flex-col border-l border-white/10 bg-ink-900/90 lg:flex">
+                <div className="flex items-end justify-between gap-4 border-b border-white/10 px-9 pb-5 pt-8">
+                  <span className="flex flex-col gap-2">
+                    <span className="flex items-center gap-2.5 text-[13px] font-bold uppercase tracking-[0.16em] text-emerald-400">
+                      <span className="h-[9px] w-[9px] rounded-full bg-emerald-400 motion-safe:animate-glow-green" />
+                      En vivo
+                    </span>
+                    <span className="font-display text-[32px] font-semibold uppercase leading-none">
+                      Asistentes registrados
+                    </span>
+                  </span>
+                  <motion.span
+                    key={attendanceCount}
+                    initial={{ scale: 1.25 }}
+                    animate={{ scale: 1 }}
+                    className="bg-[linear-gradient(135deg,#FDE68A,#F9A23B,#DC3340)] bg-clip-text font-display text-[80px] font-bold leading-[0.85] text-transparent"
+                  >
+                    {attendanceCount}
+                  </motion.span>
                 </div>
-
-                {/* Lista de asistentes */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <div className="flex-1 space-y-3 overflow-y-auto px-7 py-5">
                   <AnimatePresence>
                     {liveAttendances.map((attendance, index) => (
                       <motion.div
                         key={attendance._id}
-                        initial={{ x: 300, opacity: 0, scale: 0.8 }}
+                        initial={{ x: 200, opacity: 0, scale: 0.9 }}
                         animate={{ x: 0, opacity: 1, scale: 1 }}
-                        exit={{ x: -300, opacity: 0, scale: 0.8 }}
-                        transition={{
-                          type: 'spring',
-                          stiffness: 200,
-                          damping: 20,
-                          delay: index * 0.1,
-                        }}
-                        className="bg-gray-700 rounded-xl p-4 border border-gray-600 hover:border-green-400 transition-all duration-300"
+                        exit={{ x: -200, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 22, delay: Math.min(index, 6) * 0.08 }}
+                        className={`flex items-center gap-4 rounded-[20px] border px-[18px] py-3.5 ${
+                          index === 0
+                            ? 'border-brand-amber/60 bg-brand-amber/10 shadow-[0_0_30px_-8px_rgba(249,162,59,0.5)]'
+                            : 'border-white/10 bg-white/[0.04]'
+                        }`}
                       >
-                        <div className="flex items-center gap-4">
-                          {/* Avatar con animación de entrada */}
-                          <motion.div
-                            initial={{ rotate: -180, scale: 0 }}
-                            animate={{ rotate: 0, scale: 1 }}
-                            transition={{ delay: index * 0.1 + 0.2 }}
-                            className="relative"
-                          >
-                            <div className="w-14 h-14 rounded-full overflow-hidden border-3 border-green-500 shadow-lg">
-                              {attendance.youngId.profileImage ? (
-                                <img
-                                  src={attendance.youngId.profileImage}
-                                  alt={attendance.youngId.fullName}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-                                  <svg
-                                    className="w-8 h-8 text-white"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                    />
-                                  </svg>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Badge de confirmación */}
-                            <motion.div
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ delay: index * 0.1 + 0.4 }}
-                              className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-gray-700"
-                            >
-                              <CheckCircleIcon className="w-4 h-4 text-white" />
-                            </motion.div>
-                          </motion.div>
-
-                          {/* Información del asistente */}
-                          <div className="flex-1">
-                            <motion.h3
-                              initial={{ y: 10, opacity: 0 }}
-                              animate={{ y: 0, opacity: 1 }}
-                              transition={{ delay: index * 0.1 + 0.3 }}
-                              className="text-white font-semibold text-lg truncate"
-                            >
-                              {attendance.youngId.fullName}
-                            </motion.h3>
-
-                            <motion.div
-                              initial={{ y: 10, opacity: 0 }}
-                              animate={{ y: 0, opacity: 1 }}
-                              transition={{ delay: index * 0.1 + 0.4 }}
-                              className="flex items-center gap-2 mt-1 text-green-400"
-                            >
-                              <ClockIcon className="w-4 h-4" />
-                              <span className="text-sm font-medium">
-                                {formatTime(attendance.scannedAt)}
-                              </span>
-                            </motion.div>
-                          </div>
-
-                          {/* Animación de pulso para nuevos registros */}
-                          {index < 3 && (
-                            <motion.div
-                              animate={{
-                                scale: [1, 1.2, 1],
-                                opacity: [0.5, 1, 0.5],
-                              }}
-                              transition={{
-                                duration: 2,
-                                repeat: Infinity,
-                                ease: 'easeInOut',
-                              }}
-                              className="w-3 h-3 bg-green-400 rounded-full"
-                            />
-                          )}
-                        </div>
+                        <span className="relative flex-shrink-0">
+                          <AttendeeAvatar attendance={attendance} size={56} ring />
+                          <span className="absolute -bottom-1 -right-1 flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-ink-900 bg-emerald-600">
+                            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M5 13l4 4L19 7" />
+                            </svg>
+                          </span>
+                        </span>
+                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <span className="truncate text-xl font-bold">
+                            {attendance.youngId?.fullName}
+                          </span>
+                          <span className="text-sm text-white/55">
+                            {formatTime(attendance.scannedAt)}
+                          </span>
+                        </span>
                       </motion.div>
                     ))}
                   </AnimatePresence>
-
-                  {/* Mensaje cuando no hay asistentes */}
                   {liveAttendances.length === 0 && (
-                    <div className="text-center py-12">
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-gray-400"
-                      >
-                        <UsersIcon className="w-16 h-16 mx-auto mb-4 text-gray-500" />
-                        <p className="text-lg">
-                          Esperando primeros registros...
-                        </p>
-                        <p className="text-sm mt-2">
-                          Los asistentes aparecerán aquí en tiempo real
-                        </p>
-                      </motion.div>
+                    <div className="py-16 text-center text-white/55">
+                      <p className="m-0 text-lg">Esperando primeros registros...</p>
+                      <p className="m-0 mt-2 text-sm">
+                        Los asistentes aparecerán aquí en tiempo real
+                      </p>
                     </div>
                   )}
                 </div>
@@ -664,176 +531,108 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
 
-      {/* Modal de Configuración de Puntos */}
+      {/* Modal de configuración de puntos */}
       <AnimatePresence>
         {showConfigModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-50"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0C0609]/75 p-4 backdrop-blur-sm"
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-2xl w-full max-w-md`}
+              initial={{ scale: 0.95, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-md overflow-hidden rounded-[28px] bg-white shadow-2xl dark:bg-ink-900"
+              role="dialog"
+              aria-modal="true"
+              aria-label={isRegenerate ? 'Regenerar QR' : 'Generar QR'}
             >
-              {/* Header */}
-              <div
-                className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-rounded text-blue-500 text-2xl">
-                      settings
-                    </span>
-                    <h3
-                      className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}
-                    >
-                      {isRegenerate ? 'Regenerar QR' : 'Generar QR'}
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setShowConfigModal(false)}
-                    className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
-                  >
-                    <XMarkIcon className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="p-6 space-y-4">
+              <BrandModalHeader
+                title={isRegenerate ? 'Regenerar QR' : 'Generar QR'}
+                icon={isRegenerate ? <RefreshIcon className="h-5 w-5" /> : <QrIcon className="h-5 w-5" />}
+                onClose={() => setShowConfigModal(false)}
+                compact
+              />
+              <div className="space-y-4 p-6">
                 <div>
-                  <label
-                    className={`block text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}
-                  >
+                  <p className="m-0 text-[15px] font-bold text-cocoa-900 dark:text-white">
                     Puntos por asistencia
-                  </label>
-                  <p
-                    className={`text-xs mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
-                  >
-                    Selecciona cuántos puntos ganará cada joven al escanear este
-                    QR
                   </p>
-
-                  {/* Grid de Pills */}
-                  <div className="grid grid-cols-5 gap-2">
-                    {POINTS_PRESETS.map(value => (
-                      <motion.button
-                        key={value}
-                        type="button"
-                        onClick={() => setSelectedPoints(value)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`
-                          px-3 py-2.5 rounded-lg font-semibold text-sm
-                          transition-all duration-200
-                          ${
-                            selectedPoints === value
-                              ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg ring-2 ring-blue-400'
-                              : isDark
-                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }
-                        `}
-                      >
-                        {value}
-                      </motion.button>
-                    ))}
-                  </div>
-
-                  {/* Recomendaciones */}
-                  <div
-                    className={`mt-4 p-3 rounded-lg ${isDark ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'} border`}
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className="material-symbols-rounded text-blue-500 text-sm mt-0.5">
-                        info
-                      </span>
-                      <div
-                        className={`text-xs ${isDark ? 'text-blue-300' : 'text-blue-700'}`}
-                      >
-                        <p className="font-semibold mb-1">
-                          Valores recomendados:
-                        </p>
-                        <ul className="space-y-0.5">
-                          <li>
-                            • <strong>10 pts</strong>: Asistencia regular
-                          </li>
-                          <li>
-                            • <strong>20 pts</strong>: Evento especial
-                          </li>
-                          <li>
-                            • <strong>30 pts</strong>: Evento excepcional
-                            (campamento)
-                          </li>
-                          <li>
-                            • <strong>40-50 pts</strong>: Eventos
-                            extraordinarios
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  {isRegenerate && (
-                    <div
-                      className={`mt-3 p-3 rounded-lg ${isDark ? 'bg-amber-900/20 border-amber-700/50' : 'bg-amber-50 border-amber-200'} border`}
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="material-symbols-rounded text-amber-500 text-sm mt-0.5">
-                          warning
-                        </span>
-                        <p
-                          className={`text-xs ${isDark ? 'text-amber-300' : 'text-amber-700'}`}
-                        >
-                          <strong>Atención:</strong> Esto desactivará el QR
-                          actual y generará uno nuevo con los puntos
-                          configurados.
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                  <p className="m-0 mt-1 text-[13px] text-cocoa-500 dark:text-white/60">
+                    Selecciona cuántos puntos ganará cada joven al escanear este QR
+                  </p>
                 </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {POINTS_PRESETS.map(value => (
+                    <motion.button
+                      key={value}
+                      type="button"
+                      onClick={() => setSelectedPoints(value)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      aria-pressed={selectedPoints === value}
+                      className={`h-[46px] rounded-[14px] border-[1.5px] font-display text-lg font-semibold transition-colors ${
+                        selectedPoints === value
+                          ? 'border-brand-ember bg-gradient-to-br from-brand-orange to-[#B3243B] text-white shadow-lg'
+                          : 'border-sand-200 bg-cream text-cocoa-600 hover:border-[#F4B58C] dark:border-white/10 dark:bg-white/5 dark:text-white/80'
+                      }`}
+                    >
+                      {value}
+                    </motion.button>
+                  ))}
+                </div>
+                <div className="rounded-2xl border border-[#F6D6B8] bg-sand-50 p-4 text-[13px] leading-relaxed text-cocoa-600 dark:border-brand-orange/25 dark:bg-brand-orange/10 dark:text-white/75">
+                  <p className="m-0 mb-1 font-bold text-[#9A3412] dark:text-brand-amber">
+                    Valores recomendados
+                  </p>
+                  <ul className="m-0 list-none space-y-0.5 p-0">
+                    <li>• <strong>10 pts</strong>: Asistencia regular</li>
+                    <li>• <strong>20 pts</strong>: Evento especial</li>
+                    <li>• <strong>30 pts</strong>: Evento excepcional (campamento)</li>
+                    <li>• <strong>40-50 pts</strong>: Eventos extraordinarios</li>
+                  </ul>
+                </div>
+                {isRegenerate && (
+                  <div className="flex gap-2.5 rounded-2xl border border-red-200 bg-red-50 p-3.5 text-[13px] leading-snug text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                    <svg className="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" />
+                    </svg>
+                    <span>
+                      <strong>Atención:</strong> Esto desactivará el QR actual y generará uno nuevo con los puntos configurados.
+                    </span>
+                  </div>
+                )}
               </div>
-
-              {/* Footer */}
-              <div
-                className={`p-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} flex gap-3`}
-              >
+              <div className="flex gap-3 px-6 pb-6">
                 <button
+                  type="button"
                   onClick={() => setShowConfigModal(false)}
                   disabled={isGenerating}
-                  className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-colors ${
-                    isDark
-                      ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                      : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
-                  }`}
+                  className="h-[50px] flex-1 rounded-full border-[1.5px] border-sand-300 bg-white text-[15px] font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-transparent dark:text-white/80"
                 >
                   Cancelar
                 </button>
                 <button
+                  type="button"
                   onClick={handleGenerateQR}
                   disabled={isGenerating}
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="btn-fire h-[50px] flex-1 text-[15px]"
                 >
                   {isGenerating ? (
                     <>
                       <LoadingSpinner size="sm" />
-                      <span>
-                        {isRegenerate ? 'Regenerando...' : 'Generando...'}
-                      </span>
+                      <span>{isRegenerate ? 'Regenerando...' : 'Generando...'}</span>
                     </>
                   ) : (
                     <>
-                      <QrCodeIcon className="w-5 h-5" />
-                      <span>
-                        {isRegenerate ? 'Regenerar QR' : 'Generar QR'}
-                      </span>
+                      <QrIcon className="h-5 w-5" />
+                      <span>{isRegenerate ? 'Regenerar QR' : 'Generar QR'}</span>
                     </>
                   )}
                 </button>
@@ -846,13 +645,104 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
   );
 };
 
-// Componente para mostrar el bonus en tiempo real
+const InfoTile: React.FC<{ label: string; value: string; accent?: boolean }> = ({
+  label,
+  value,
+  accent = false,
+}) => (
+  <div className="flex min-w-0 flex-col gap-1 rounded-[18px] border border-sand-200 bg-white px-3.5 py-3 dark:border-white/10 dark:bg-ink-800">
+    <span className="text-xs font-semibold text-cocoa-400 dark:text-white/50">{label}</span>
+    <span
+      className={`truncate ${
+        accent
+          ? 'font-display text-xl font-semibold text-brand-ember dark:text-brand-amber'
+          : 'text-[15px] font-bold text-cocoa-900 dark:text-white'
+      }`}
+    >
+      {value}
+    </span>
+  </div>
+);
+
+// Esquinas de marca alrededor del código
+const BrandCorners: React.FC<{ size: 'sm' | 'lg' }> = ({ size }) => {
+  const box = size === 'lg' ? 'h-16 w-16 border-[6px]' : 'h-[30px] w-[30px] border-4';
+  const off = size === 'lg' ? '-left-2.5 -top-2.5' : 'left-3.5 top-3.5';
+  const offR = size === 'lg' ? '-right-2.5 -top-2.5' : 'right-3.5 top-3.5';
+  const offBL = size === 'lg' ? '-left-2.5 -bottom-2.5' : 'left-3.5 bottom-3.5';
+  const offBR = size === 'lg' ? '-right-2.5 -bottom-2.5' : 'right-3.5 bottom-3.5';
+  const r = size === 'lg' ? '30px' : '12px';
+  return (
+    <>
+      <span className={`pointer-events-none absolute ${off} ${box} border-b-0 border-r-0 border-brand-amber`} style={{ borderTopLeftRadius: r }} />
+      <span className={`pointer-events-none absolute ${offR} ${box} border-b-0 border-l-0 border-brand-orange`} style={{ borderTopRightRadius: r }} />
+      <span className={`pointer-events-none absolute ${offBL} ${box} border-r-0 border-t-0 border-brand-red`} style={{ borderBottomLeftRadius: r }} />
+      <span className={`pointer-events-none absolute ${offBR} ${box} border-l-0 border-t-0 border-brand-wine`} style={{ borderBottomRightRadius: r }} />
+    </>
+  );
+};
+
+const AttendeeAvatar: React.FC<{ attendance: any; size: number; ring?: boolean }> = ({
+  attendance,
+  size,
+  ring = false,
+}) => {
+  const young = attendance.youngId || {};
+  const initials = (young.fullName || '?')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w: string) => w[0]?.toUpperCase())
+    .join('');
+  return (
+    <span
+      className={`block flex-shrink-0 rounded-full ${ring ? 'bg-[linear-gradient(135deg,#F9A23B,#DC3340,#8A1C45)] p-[3px]' : ''}`}
+      style={{ width: size, height: size }}
+    >
+      <span
+        className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-ink-800 font-display text-white"
+        style={{ fontSize: Math.round(size * 0.32) }}
+      >
+        {young.profileImage ? (
+          <img src={young.profileImage} alt="" className="h-full w-full object-cover" />
+        ) : (
+          initials
+        )}
+      </span>
+    </span>
+  );
+};
+
+const QrIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="3" width="5" height="5" rx="1" />
+    <rect x="16" y="3" width="5" height="5" rx="1" />
+    <rect x="3" y="16" width="5" height="5" rx="1" />
+    <path d="M21 16h-3a2 2 0 0 0-2 2v3M21 21v.01M12 7v3a2 2 0 0 1-2 2H7M3 12h.01M12 3h.01M12 16v.01M16 12h1M21 12v.01M12 21v-1" />
+  </svg>
+);
+
+const RefreshIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" />
+  </svg>
+);
+
+const ExpandIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
+  </svg>
+);
+
+// Bonus de velocidad en tiempo real
 const LiveBonusDisplay: React.FC<{
   maxBonus: number;
   bonusDecayMinutes: number;
   qrGeneratedAt: string | Date;
-}> = ({ maxBonus, bonusDecayMinutes, qrGeneratedAt }) => {
+  variant: 'panel' | 'projector';
+}> = ({ maxBonus, bonusDecayMinutes, qrGeneratedAt, variant }) => {
   const [currentBonus, setCurrentBonus] = useState(maxBonus);
+  const [percent, setPercent] = useState(100);
 
   useEffect(() => {
     const updateBonus = () => {
@@ -863,6 +753,7 @@ const LiveBonusDisplay: React.FC<{
 
       if (elapsedMs >= decayDurationMs) {
         setCurrentBonus(0);
+        setPercent(0);
         return;
       }
 
@@ -870,20 +761,14 @@ const LiveBonusDisplay: React.FC<{
         0,
         Math.min(100, ((decayDurationMs - elapsedMs) / decayDurationMs) * 100)
       );
-      const calculatedBonus = Math.max(
-        0,
-        Math.floor((remainingPercent / 100) * maxBonus)
+      setPercent(remainingPercent);
+      setCurrentBonus(
+        Math.max(0, Math.floor((remainingPercent / 100) * maxBonus))
       );
-
-      setCurrentBonus(calculatedBonus);
     };
 
-    // Actualizar inmediatamente
     updateBonus();
-
-    // Actualizar cada segundo
     const interval = setInterval(updateBonus, 1000);
-
     return () => clearInterval(interval);
   }, [maxBonus, bonusDecayMinutes, qrGeneratedAt]);
 
@@ -891,53 +776,79 @@ const LiveBonusDisplay: React.FC<{
     return null;
   }
 
-  return (
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0, y: 20 }}
-      animate={{ scale: 1, opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-      className="mb-6 bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-orange-600/20 backdrop-blur-sm border-2 border-orange-400/50 rounded-2xl px-8 py-4 shadow-2xl"
+  const bolt = (
+    <svg
+      className={`${variant === 'projector' ? 'h-10 w-10' : 'h-4 w-4'} flex-shrink-0 motion-safe:animate-pulse`}
+      viewBox="0 0 24 24"
+      fill="#FCD34D"
+      stroke="#FCD34D"
+      strokeWidth={1.2}
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={{ filter: 'drop-shadow(0 0 10px rgba(252,211,77,.7))' }}
     >
-      <div className="flex items-center justify-center gap-3">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 5, -5, 0],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        >
-          <span
-            className="material-symbols-rounded text-5xl text-yellow-400"
-            style={{
-              fontVariationSettings:
-                '"FILL" 1, "wght" 700, "GRAD" 0, "opsz" 48',
-              filter: 'drop-shadow(0 0 10px rgba(251, 191, 36, 0.8))',
-            }}
-          >
-            bolt
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  );
+  const bar = (
+    <span className="block h-2 overflow-hidden rounded bg-white/10">
+      <span
+        className="block h-full rounded bg-[linear-gradient(90deg,#FDE68A,#F9A23B,#DC3340)] transition-[width] duration-1000"
+        style={{ width: `${percent}%` }}
+      />
+    </span>
+  );
+
+  if (variant === 'panel') {
+    return (
+      <div className="flex flex-col gap-2.5 rounded-[18px] bg-ink-950 px-[18px] py-4 text-white">
+        <span className="flex items-center justify-between">
+          <span className="flex items-center gap-2 text-sm font-bold">
+            {bolt}
+            Bonus activo
           </span>
-        </motion.div>
-        <div className="text-center">
-          <p className="text-sm font-semibold text-yellow-300 uppercase tracking-wide">
-            Bonus Activo
-          </p>
-          <motion.p
+          <motion.span
             key={currentBonus}
             initial={{ scale: 1.2 }}
             animate={{ scale: 1 }}
-            className="text-4xl font-bold text-white"
+            className="font-display text-xl text-brand-amber"
           >
             +{currentBonus} pts
-          </motion.p>
-          <p className="text-xs text-orange-200 mt-1">
-            ¡Escanea rápido para obtenerlo!
-          </p>
-        </div>
+          </motion.span>
+        </span>
+        {bar}
+        <span className="text-xs text-white/60">
+          ¡Escanea rápido para obtenerlo! Baja con cada minuto.
+        </span>
       </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ scale: 0.9, opacity: 0, y: 20 }}
+      animate={{ scale: 1, opacity: 1, y: 0 }}
+      transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+      className="flex flex-col gap-2.5 rounded-3xl border-[1.5px] border-brand-amber/55 bg-[linear-gradient(135deg,rgba(249,162,59,.2),rgba(220,51,64,.12))] px-[22px] py-5"
+    >
+      <span className="flex items-center gap-3">
+        {bolt}
+        <span className="flex flex-col">
+          <span className="text-xs font-bold uppercase tracking-[0.16em] text-[#FCD34D]">
+            Bonus activo
+          </span>
+          <motion.span
+            key={currentBonus}
+            initial={{ scale: 1.2 }}
+            animate={{ scale: 1 }}
+            className="font-display text-[44px] font-bold leading-none"
+          >
+            +{currentBonus} pts
+          </motion.span>
+        </span>
+      </span>
+      {bar}
+      <span className="text-sm text-white/80">¡Escanea rápido para obtenerlo!</span>
     </motion.div>
   );
 };

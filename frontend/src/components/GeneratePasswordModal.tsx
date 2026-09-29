@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { generateNewPassword } from '../services/api';
+import BrandModalHeader from './ui/BrandModalHeader';
 
 interface GeneratePasswordModalProps {
   isOpen: boolean;
@@ -96,36 +97,29 @@ const GeneratePasswordModal: React.FC<GeneratePasswordModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Generar Nueva Contraseña
-          </h3>
-          <button
-            onClick={handleClose}
-            disabled={isLoading}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0C0609]/75 p-4 backdrop-blur-sm">
+      <div
+        className="w-full max-w-md overflow-hidden rounded-[28px] bg-white shadow-[0_50px_100px_-40px_rgba(0,0,0,0.8)] dark:bg-ink-900"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Generar nueva contraseña"
+      >
+        <BrandModalHeader
+          title="Nueva contraseña"
+          subtitle={youngName}
+          icon={
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="7.5" cy="15.5" r="5.5" />
+              <path d="M21 2l-9.6 9.6M15.5 7.5l3 3L22 7l-3-3" />
             </svg>
-          </button>
-        </div>
+          }
+          onClose={isLoading ? undefined : handleClose}
+          compact
+        />
 
         <form onSubmit={handleSubmit} className="p-6">
           <div className="mb-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-sm text-cocoa-600 dark:text-white/70 mb-4">
               Generando nueva contraseña para: <strong>{youngName}</strong>
             </p>
 
@@ -133,7 +127,7 @@ const GeneratePasswordModal: React.FC<GeneratePasswordModalProps> = ({
               <div>
                 <label
                   htmlFor="newPassword"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  className="block text-[13px] font-semibold text-cocoa-600 dark:text-white/75 mb-1.5"
                 >
                   Nueva Contraseña
                 </label>
@@ -143,14 +137,14 @@ const GeneratePasswordModal: React.FC<GeneratePasswordModalProps> = ({
                     id="newPassword"
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
-                    className="w-full px-3 py-2 pr-20 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="field-brand h-12 !pr-20 text-[15px]"
                     placeholder="Ingresa la nueva contraseña"
                     disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="absolute right-11 top-1/2 -translate-y-1/2 text-cocoa-400 hover:text-cocoa-600 dark:text-white/50"
                     disabled={isLoading}
                   >
                     {showPassword ? (
@@ -192,7 +186,7 @@ const GeneratePasswordModal: React.FC<GeneratePasswordModalProps> = ({
                   <button
                     type="button"
                     onClick={handleGenerateRandom}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-deep hover:text-brand-wine dark:text-brand-amber"
                     disabled={isLoading}
                     title="Generar contraseña aleatoria"
                   >
@@ -211,7 +205,7 @@ const GeneratePasswordModal: React.FC<GeneratePasswordModalProps> = ({
                     </svg>
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs leading-relaxed text-cocoa-400 dark:text-white/50 mt-1.5">
                   Debe tener entre 8-50 caracteres, incluir al menos una
                   mayúscula, una minúscula y un número. Caracteres especiales
                   permitidos: @$!%*?&._-+=
@@ -221,10 +215,13 @@ const GeneratePasswordModal: React.FC<GeneratePasswordModalProps> = ({
               <button
                 type="button"
                 onClick={handleGenerateRandom}
-                className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-dashed border-[#F4B58C] bg-cream text-[13px] font-semibold text-brand-deep hover:bg-sand-50 dark:bg-white/5 dark:text-brand-amber"
                 disabled={isLoading}
               >
-                🎲 Generar Contraseña Aleatoria
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+                </svg>
+                Generar contraseña aleatoria
               </button>
             </div>
           </div>
@@ -240,14 +237,14 @@ const GeneratePasswordModal: React.FC<GeneratePasswordModalProps> = ({
               type="button"
               onClick={handleClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
+              className="h-12 flex-1 rounded-full border-[1.5px] border-sand-300 bg-white text-sm font-semibold text-cocoa-600 hover:border-cocoa-400 disabled:opacity-50 dark:border-white/15 dark:bg-transparent dark:text-white/80"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isLoading || !newPassword.trim()}
-              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="btn-fire h-12 flex-1 text-sm disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
@@ -273,7 +270,7 @@ const GeneratePasswordModal: React.FC<GeneratePasswordModalProps> = ({
                   Generando...
                 </>
               ) : (
-                'Generar Contraseña'
+                'Generar contraseña'
               )}
             </button>
           </div>

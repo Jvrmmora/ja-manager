@@ -111,10 +111,13 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       {/* Botón del perfil */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        className="flex h-11 items-center gap-2.5 rounded-full border border-sand-300 bg-white py-1 pl-1 pr-2.5 transition-colors hover:border-cocoa-400 md:h-12 dark:border-white/15 dark:bg-ink-800 dark:hover:border-white/40"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        aria-label="Menú de perfil"
       >
         {/* Imagen de perfil o avatar por defecto */}
-        <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+        <div className="h-9 w-9 overflow-hidden rounded-full bg-[linear-gradient(135deg,#F9A23B,#8A1C45)] flex items-center justify-center md:h-10 md:w-10">
           {getProfileImage() ? (
             <img
               src={getProfileImage()}
@@ -130,17 +133,17 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
 
         {/* Información del usuario - Solo en pantallas medianas y grandes */}
         <div className="hidden md:block text-left">
-          <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[120px]">
+          <p className="m-0 text-sm font-semibold text-cocoa-900 dark:text-white truncate max-w-[130px]">
             {getUserDisplayName()}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[120px]">
+          <p className="m-0 text-xs text-cocoa-400 dark:text-white/55 truncate max-w-[130px]">
             {getUserRole()}
           </p>
         </div>
 
         {/* Icono de flecha */}
         <svg
-          className={`w-4 h-4 text-gray-400 dark:text-gray-300 transition-transform ${
+          className={`w-4 h-4 text-cocoa-400 dark:text-white/55 transition-transform ${
             isOpen ? 'rotate-180' : ''
           }`}
           fill="none"
@@ -158,12 +161,12 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-2 z-50">
+        <div role="menu" className="absolute right-0 z-50 mt-2 w-72 rounded-2xl border border-sand-200 bg-white p-1.5 shadow-[0_24px_48px_-16px_rgba(20,11,16,0.35)] dark:border-white/10 dark:bg-ink-800">
           {/* Header del dropdown */}
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="mb-1 border-b border-sand-100 px-3 pb-3.5 pt-2.5 dark:border-white/10">
             <div className="flex items-center space-x-3">
               <div
-                className={`relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center ${
+                className={`relative w-12 h-12 rounded-full overflow-hidden bg-[linear-gradient(135deg,#F9A23B,#8A1C45)] flex items-center justify-center ${
                   getProfileImage() ? 'cursor-pointer group' : ''
                 }`}
                 onClick={() => {
@@ -193,13 +196,13 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                <p className="m-0 text-sm font-bold text-cocoa-900 dark:text-white truncate">
                   {getUserDisplayName()}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                <p className="m-0 text-xs text-cocoa-400 dark:text-white/55 truncate">
                   {userInfo?.email}
                 </p>
-                <span className="inline-block px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full mt-1">
+                <span className="mt-1.5 inline-block rounded-full bg-ink-950 px-2.5 py-0.5 text-[11px] font-semibold text-brand-amber dark:bg-white/10">
                   {getUserRole()}
                 </span>
               </div>
@@ -207,16 +210,17 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           </div>
 
           {/* Menu items */}
-          <div className="py-2">
+          <div className="py-0.5">
             <button
               onClick={() => {
                 setIsOpen(false);
                 onOpenProfile?.();
               }}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3"
+              role="menuitem"
+              className="flex h-11 w-full items-center gap-3 rounded-[10px] px-3 text-left text-sm font-medium text-cocoa-900 hover:bg-cream dark:text-white dark:hover:bg-white/5"
             >
               <svg
-                className="w-4 h-4"
+                className="w-4 h-4 text-brand-deep dark:text-brand-amber"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -228,7 +232,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                   d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                 />
               </svg>
-              <span>Mi Perfil</span>
+              <span>Mi perfil</span>
             </button>
 
             {userInfo?.role_name !== 'Young role' && (
@@ -237,10 +241,11 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                   setIsOpen(false);
                   navigate('/admin/landing');
                 }}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3"
+                role="menuitem"
+              className="flex h-11 w-full items-center gap-3 rounded-[10px] px-3 text-left text-sm font-medium text-cocoa-900 hover:bg-cream dark:text-white dark:hover:bg-white/5"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="w-4 h-4 text-brand-deep dark:text-brand-amber"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -252,7 +257,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                     d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
                   />
                 </svg>
-                <span>CRM de la Página</span>
+                <span>Landing CMS</span>
               </button>
             )}
 
@@ -263,10 +268,11 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                     setIsOpen(false);
                     onChangePassword?.();
                   }}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3"
+                  role="menuitem"
+              className="flex h-11 w-full items-center gap-3 rounded-[10px] px-3 text-left text-sm font-medium text-cocoa-900 hover:bg-cream dark:text-white dark:hover:bg-white/5"
                 >
                   <svg
-                    className="w-4 h-4"
+                    className="w-4 h-4 text-brand-deep dark:text-brand-amber"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -278,48 +284,51 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                   </svg>
-                  <span>Cambiar Contraseña</span>
+                  <span>Cambiar contraseña</span>
                   {authService.isFirstLogin() && (
-                    <span className="ml-auto text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 px-2 py-0.5 rounded">
+                    <span className="ml-auto rounded-full bg-sand-100 px-2 py-0.5 text-xs font-semibold text-[#9A3412] dark:bg-brand-orange/15 dark:text-brand-amber">
                       Requerido
                     </span>
                   )}
                 </button>
                 <div className="px-4 py-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                  <p className="m-0 text-xs italic text-cocoa-400 dark:text-white/50">
                     ¿Olvidaste tu contraseña actual? Contacta a un admin.
                   </p>
                 </div>
               </div>
             )}
 
-            <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+            <div className="mx-2 my-1.5 border-t border-sand-100 dark:border-white/10"></div>
 
             {/* Session Expiration Info */}
             {expirationInfo && expirationInfo.expiresAt && (
               <div
                 className={`px-4 py-3 mx-2 rounded-lg text-xs ${
                   expirationInfo.isExpiringSoon
-                    ? 'bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700/50'
-                    : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50'
+                    ? 'border border-[#F6D6B8] bg-sand-50 dark:border-brand-orange/30 dark:bg-brand-orange/10'
+                    : 'border border-sand-200 bg-cream dark:border-white/10 dark:bg-white/[0.03]'
                 }`}
               >
                 <div className="flex items-start gap-2">
                   <span
                     className={`text-lg flex-shrink-0 pt-0.5 ${
                       expirationInfo.isExpiringSoon
-                        ? 'text-orange-600 dark:text-orange-400'
-                        : 'text-blue-600 dark:text-blue-400'
+                        ? 'text-brand-ember dark:text-brand-amber'
+                        : 'text-cocoa-400 dark:text-white/55'
                     }`}
                   >
-                    ⏱️
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="13" r="8" />
+                      <path d="M12 9v4l2 2M9 2h6" />
+                    </svg>
                   </span>
                   <div className="flex-1">
                     <p
                       className={`font-semibold mb-1 ${
                         expirationInfo.isExpiringSoon
-                          ? 'text-orange-800 dark:text-orange-300'
-                          : 'text-blue-800 dark:text-blue-300'
+                          ? 'text-[#9A3412] dark:text-brand-amber'
+                          : 'text-cocoa-600 dark:text-white/70'
                       }`}
                     >
                       {expirationInfo.isExpiringSoon
@@ -329,8 +338,8 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                     <p
                       className={`font-bold text-sm ${
                         expirationInfo.isExpiringSoon
-                          ? 'text-orange-700 dark:text-orange-300'
-                          : 'text-blue-700 dark:text-blue-300'
+                          ? 'text-[#9A3412] dark:text-brand-amber'
+                          : 'text-cocoa-900 dark:text-white'
                       }`}
                     >
                       {expirationInfo.expiresAtDate}
@@ -340,11 +349,12 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
               </div>
             )}
 
-            <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+            <div className="mx-2 my-1.5 border-t border-sand-100 dark:border-white/10"></div>
 
             <button
               onClick={handleLogout}
-              className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3"
+              role="menuitem"
+              className="flex h-11 w-full items-center gap-3 rounded-[10px] px-3 text-left text-sm font-semibold text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
             >
               <svg
                 className="w-4 h-4"
@@ -359,7 +369,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                 />
               </svg>
-              <span>Cerrar Sesión</span>
+              <span>Cerrar sesión</span>
             </button>
           </div>
         </div>

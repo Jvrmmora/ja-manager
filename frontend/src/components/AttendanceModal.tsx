@@ -13,6 +13,7 @@ interface AttendanceModalProps {
   message: string;
   subtitle?: string | undefined;
   date?: string | undefined;
+  variant?: 'default' | 'brand';
 }
 
 const AttendanceModal: React.FC<AttendanceModalProps> = ({
@@ -22,7 +23,9 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   message,
   subtitle,
   date,
+  variant = 'default',
 }) => {
+  const brand = variant === 'brand';
   React.useEffect(() => {
     if (isOpen) {
       // Auto-close después de 2 segundos
@@ -44,7 +47,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm"
+          className={brand ? 'absolute inset-0 bg-[#0C0609]/85 backdrop-blur-sm' : 'absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm'}
           onClick={onClose}
         />
 
@@ -53,9 +56,11 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
           initial={{ scale: 0.7, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.7, opacity: 0, y: 20 }}
-          className={`relative w-full max-w-sm mx-auto ${
-            success ? 'bg-emerald-500' : 'bg-red-500'
-          } rounded-2xl p-8 text-white text-center shadow-2xl`}
+          className={
+            brand
+              ? `relative w-full max-w-sm mx-auto overflow-hidden rounded-[32px] border bg-ink-950 px-8 pb-9 pt-10 text-white text-center shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)] ${success ? 'border-white/10' : 'border-red-500/40'}`
+              : `relative w-full max-w-sm mx-auto ${success ? 'bg-emerald-500' : 'bg-red-500'} rounded-2xl p-8 text-white text-center shadow-2xl`
+          }
         >
           {/* Icono */}
           <motion.div
@@ -64,6 +69,21 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
             transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
             className="flex justify-center mb-6"
           >
+            {brand ? (
+              <div
+                className={`flex h-24 w-24 items-center justify-center rounded-full ${
+                  success
+                    ? 'bg-gradient-to-br from-brand-amber via-brand-red to-brand-wine motion-safe:animate-dot-pulse'
+                    : 'bg-red-600'
+                }`}
+              >
+                {success ? (
+                  <CheckCircleIcon className="h-12 w-12 text-white" />
+                ) : (
+                  <XCircleIcon className="h-12 w-12 text-white" />
+                )}
+              </div>
+            ) : (
             <div className="relative">
               <DevicePhoneMobileIcon className="w-16 h-16 text-white" />
               <div className="absolute inset-0 flex items-center justify-center">
@@ -74,6 +94,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                 )}
               </div>
             </div>
+            )}
           </motion.div>
 
           {/* Mensaje principal */}
@@ -81,7 +102,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-xl font-bold mb-2"
+            className={brand ? 'font-display text-[28px] font-bold uppercase leading-[1.05] mb-3' : 'text-xl font-bold mb-2'}
           >
             {message}
           </motion.h2>
@@ -112,7 +133,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
           {/* Barra de progreso para auto-close */}
           <motion.div
-            className="absolute bottom-0 left-0 h-1 bg-white/30 rounded-b-2xl"
+            className={brand ? 'absolute bottom-0 left-0 h-1 bg-gradient-to-r from-brand-amber to-brand-red' : 'absolute bottom-0 left-0 h-1 bg-white/30 rounded-b-2xl'}
             initial={{ width: '100%' }}
             animate={{ width: '0%' }}
             transition={{ duration: 2, ease: 'linear' }}

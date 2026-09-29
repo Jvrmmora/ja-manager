@@ -3,6 +3,7 @@ import PhoneInput from './PhoneInput';
 import GroupSelect from './GroupSelect';
 import type { IYoung } from '../types';
 import { formatDateColombia, parseYYYYMMDD } from '../utils/dateUtils';
+import BrandModalHeader from './ui/BrandModalHeader';
 
 interface YoungFormData {
   fullName: string;
@@ -249,32 +250,25 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
-            Editar Joven
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-100 transition-colors"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#0C0609]/75 backdrop-blur-sm sm:p-4">
+      <div
+        className="flex max-h-[94vh] sm:max-h-[90vh] w-full sm:max-w-xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-[30px] bg-white shadow-2xl dark:bg-ink-900"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Editar joven"
+      >
+        <BrandModalHeader
+          title="Editar joven"
+          subtitle={young.fullName}
+          icon={
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM19 8v6M22 11h-6" />
             </svg>
-          </button>
-        </div>
-
+          }
+          iconTone="fire"
+          onClose={onClose}
+        />
+        <div className="flex-1 overflow-y-auto p-5 sm:p-7">
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Imagen de perfil */}
           <div>
@@ -309,7 +303,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
-                className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50"
+                className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sand-100 file:text-brand-deep hover:file:bg-sand-200 dark:file:bg-brand-orange/15 dark:file:text-brand-amber"
               />
             </div>
           </div>
@@ -352,6 +346,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
           <div>
             <label className="form-label">Teléfono (opcional)</label>
             <PhoneInput
+              variant="brand"
               value={formData.phone}
               onChange={value => {
                 setFormData({ ...formData, phone: value });
@@ -496,7 +491,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
                 <button
                   type="button"
                   onClick={addSkill}
-                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+                  className="rounded-2xl bg-ink-950 px-4 py-2 font-semibold text-white transition-colors hover:bg-ink-800 dark:bg-white dark:text-ink-950"
                 >
                   Agregar
                 </button>
@@ -530,20 +525,21 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors"
+              className="h-12 flex-1 rounded-full border-[1.5px] border-sand-300 bg-white text-sm font-semibold text-cocoa-600 hover:border-cocoa-400 disabled:opacity-50 dark:border-white/15 dark:bg-transparent dark:text-white/80"
               disabled={loading}
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+              className="btn-fire h-12 flex-1 text-sm disabled:cursor-not-allowed"
               disabled={loading}
             >
               {loading ? 'Actualizando...' : 'Actualizar'}
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
