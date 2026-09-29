@@ -60,7 +60,8 @@ export const contentTypeValidator = (req: Request, res: Response, next: NextFunc
     
     // Excluir endpoints que no requieren body JSON
     const excludeContentTypeValidation = [
-      '/generate-placa' // Endpoint que solo usa parámetros URL
+      '/generate-placa', // Endpoint que solo usa parámetros URL
+      '/leaderboard/snapshot' // Disparado por cron externo (curl sin body ni Content-Type)
     ];
     
     const shouldExclude = excludeContentTypeValidation.some(path => 
