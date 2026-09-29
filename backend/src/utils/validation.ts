@@ -1,6 +1,56 @@
 import Joi from 'joi';
 
-export const createYoungSchema = Joi.object({
+const AGE_RANGE_BOUNDS: Record<string, { min: number; max: number }> = {
+  '13-15': { min: 13, max: 15 },
+  '16-18': { min: 16, max: 18 },
+  '19-21': { min: 19, max: 21 },
+  '22-25': { min: 22, max: 25 },
+  '26-30': { min: 26, max: 30 },
+  '30+': { min: 30, max: Infinity },
+};
+
+/**
+ * Edad exacta a partir de la fecha de nacimiento (mismo cálculo que usa
+ * consentController para decidir si alguien es menor de edad).
+ */
+export function calculateAgeFromBirthday(birthday: Date): number {
+  const now = new Date();
+  let age = now.getFullYear() - birthday.getFullYear();
+  const monthDiff = now.getMonth() - birthday.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birthday.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+export function ageMatchesRange(age: number, ageRange: string): boolean {
+  const bounds = AGE_RANGE_BOUNDS[ageRange];
+  if (!bounds) return true; // rango desconocido: ya lo rechaza el .valid() del campo
+  return age >= bounds.min && age <= bounds.max;
+}
+
+/**
+ * Valida que fecha de nacimiento y rango de edad sean consistentes entre sí.
+ * Sin este cruce, un typo en la fecha (ej. seleccionar el año actual por
+ * error en el date picker) puede guardarse sin error y, más tarde, hacer que
+ * el sistema trate como menor de edad a alguien que no lo es — bloqueándolo
+ * para aceptar la política de datos por sí mismo.
+ */
+function withBirthdayAgeRangeCheck<T extends Joi.ObjectSchema>(schema: T): T {
+  return schema.custom((value, helpers) => {
+    if (value.birthday && value.ageRange) {
+      const age = calculateAgeFromBirthday(new Date(value.birthday));
+      if (!ageMatchesRange(age, value.ageRange)) {
+        return helpers.message({
+          custom: `La fecha de nacimiento no coincide con el rango de edad seleccionado (edad calculada: ${age} años para el rango ${value.ageRange}). Verifica el día, mes y año.`,
+        });
+      }
+    }
+    return value;
+  }) as T;
+}
+
+export const createYoungSchema = withBirthdayAgeRangeCheck(Joi.object({
   fullName: Joi.string().trim().min(2).max(100).required().messages({
     'string.empty': 'El nombre completo es obligatorio',
     'string.min': 'El nombre debe tener al menos 2 caracteres',
@@ -90,9 +140,9 @@ export const createYoungSchema = Joi.object({
     'number.min': 'El grupo debe ser entre 1 y 5',
     'number.max': 'El grupo debe ser entre 1 y 5',
   }),
-});
+}));
 
-export const updateYoungSchema = Joi.object({
+export const updateYoungSchema = withBirthdayAgeRangeCheck(Joi.object({
   fullName: Joi.string().trim().min(2).max(100).optional().messages({
     'string.min': 'El nombre debe tener al menos 2 caracteres',
     'string.max': 'El nombre no puede exceder 100 caracteres',
@@ -171,7 +221,7 @@ export const updateYoungSchema = Joi.object({
     'number.min': 'El grupo debe ser entre 1 y 5',
     'number.max': 'El grupo debe ser entre 1 y 5',
   }),
-});
+}));
 
 export const querySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
@@ -247,7 +297,7 @@ export const resetPasswordSchema = Joi.object({
 });
 
 // Esquema para registro parcial (con password y verificación)
-export const partialRegistrationSchema = Joi.object({
+export const partialRegistrationSchema = withBirthdayAgeRangeCheck(Joi.object({
   fullName: Joi.string().trim().min(2).max(100).required().messages({
     'string.empty': 'El nombre completo es obligatorio',
     'string.min': 'El nombre debe tener al menos 2 caracteres',
@@ -385,7 +435,7 @@ export const partialRegistrationSchema = Joi.object({
   guardianFullName: Joi.string().trim().max(100).optional().allow('', null),
 
   guardianRelationship: Joi.string().trim().max(60).optional().allow('', null),
-});
+}));
 
 // Aceptación de la política vigente por un usuario ya autenticado
 export const consentAcceptSchema = Joi.object({

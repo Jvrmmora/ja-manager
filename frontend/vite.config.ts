@@ -51,6 +51,7 @@ function prerenderMeta(isSsrBuild: boolean): Plugin {
         const robots = route.noindex
           ? 'noindex, nofollow'
           : 'index, follow';
+        const image = route.image || DEFAULT_IMAGE;
 
         const html = template
           .replace(/<title>[\s\S]*?<\/title>/, `<title>${title}</title>`)
@@ -88,7 +89,11 @@ function prerenderMeta(isSsrBuild: boolean): Plugin {
           )
           .replace(
             /<meta\s+property="og:image"\s+content="[\s\S]*?"\s*\/>/,
-            `<meta property="og:image" content="${DEFAULT_IMAGE}" />`
+            `<meta property="og:image" content="${image}" />`
+          )
+          .replace(
+            /<meta\s+name="twitter:image"\s+content="[\s\S]*?"\s*\/>/,
+            `<meta name="twitter:image" content="${image}" />`
           );
 
         const target = join(outDir, route.path.replace(/^\//, ''), 'index.html');

@@ -27,6 +27,7 @@ export default function RouteSeo() {
       title={route.title}
       description={route.description || undefined}
       path={route.path}
+      image={route.image}
       noindex={route.noindex}
     />
   );
