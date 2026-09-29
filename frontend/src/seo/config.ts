@@ -25,6 +25,8 @@ export interface RouteSeo {
   noindex?: boolean;
   /** true => generar dist/<path>/index.html en el build */
   prerender?: boolean;
+  /** og:image / twitter:image específica de la ruta (URL absoluta). Por defecto DEFAULT_IMAGE. */
+  image?: string;
 }
 
 export const ROUTES: RouteSeo[] = [
@@ -70,9 +72,12 @@ export const ROUTES: RouteSeo[] = [
   },
   {
     path: '/attendance/scan',
-    title: 'Escanear asistencia — Jóvenes Modelia',
-    description: 'Registro de asistencia por código QR.',
+    title: '¡Hola! Registra tu asistencia — Jóvenes Modelia',
+    description:
+      'Toca este enlace y confirma tu presencia de hoy. No necesitas escanear el QR — suma tus puntos al instante.',
     noindex: true,
+    prerender: true,
+    image: `${SITE_URL}/og-attendance.jpg`,
   },
 ];
 

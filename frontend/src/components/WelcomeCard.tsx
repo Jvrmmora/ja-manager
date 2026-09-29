@@ -7,6 +7,7 @@ import {
 } from '@heroicons/react/24/outline';
 import type { IYoung } from '../types';
 import logo2 from '../assets/logos/logo.png';
+import { buildLoginUrl } from '../utils/loginUrl';
 
 interface WelcomeCardProps {
   young: IYoung;
@@ -18,9 +19,7 @@ const WelcomeCard: React.FC<WelcomeCardProps> = ({ young, onDownload }) => {
   const [isSharing, setIsSharing] = useState(false);
 
   // URL de login con query de placa
-  const loginUrl = young.placa
-    ? `https://www.jovenesmodelia.com/?placa=${encodeURIComponent(young.placa)}`
-    : 'https://www.jovenesmodelia.com';
+  const loginUrl = buildLoginUrl(young.placa);
 
   // Generar mensaje de WhatsApp (sin emojis, versión simple para compatibilidad máxima)
   const generateWhatsappMessage = () => {
@@ -176,7 +175,7 @@ Recuerda cambiar tu contraseña en tu primer ingreso.
               {young.placa || 'Sin placa'}
             </span>
             <span className="text-[13px] text-white/70">
-              Ingresa: <strong className="select-all text-white">www.jovenesmodelia.com</strong>
+              Ingresa: <strong className="select-all text-white">www.jovenesmodelia.com/login</strong>
             </span>
           </div>
           <p className="m-0 mt-auto text-xs text-white/55">

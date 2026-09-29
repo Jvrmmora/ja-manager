@@ -12,7 +12,8 @@
       "/apple-touch-icon.png",
       "/robots.txt",
       "/sitemap.xml",
-      "/og-image.jpg"
+      "/og-image.jpg",
+      "/og-attendance.jpg"
     ]
   },
   "routes": [
@@ -22,6 +23,7 @@
     },
     { "route": "/register", "rewrite": "/register/index.html" },
     { "route": "/login", "rewrite": "/login/index.html" },
+    { "route": "/attendance/scan", "rewrite": "/attendance/scan/index.html" },
     {
       "route": "/assets/*.js",
       "headers": {
