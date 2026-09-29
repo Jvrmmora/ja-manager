@@ -4,6 +4,7 @@ import PointsTransaction, {
 import Season from '../models/Season';
 import Attendance from '../models/Attendance';
 import Streak from '../models/Streak';
+import LeaderboardSnapshot from '../models/LeaderboardSnapshot';
 import { formatDateColombia, getStartOfWeekColombia } from '../utils/dateUtils';
 import mongoose from 'mongoose';
 import { updateStreakOnAttendance } from './streakService';
@@ -604,7 +605,29 @@ class PointsService {
       return (a.youngName || '').localeCompare(b.youngName || '');
     });
 
-    return adjusted;
+    // Comparar contra el último snapshot semanal para calcular "cambio" de posición
+    const previousSnapshot = await LeaderboardSnapshot.getLatestBeforeOrAt(
+      (seasonId as mongoose.Types.ObjectId).toString(),
+      now
+    );
+    const previousRankByYoungId = new Map<string, number>();
+    if (previousSnapshot) {
+      for (const entry of previousSnapshot.rankings) {
+        previousRankByYoungId.set(entry.youngId.toString(), entry.rank);
+      }
+    }
+
+    const withRankChange = adjusted.map((r: any) => {
+      const previousRank = previousRankByYoungId.get(r.youngId.toString());
+      return {
+        ...r,
+        previousRank,
+        rankChange:
+          previousRank !== undefined ? previousRank - r.currentRank : undefined,
+      };
+    });
+
+    return withRankChange;
   }
 
   /**

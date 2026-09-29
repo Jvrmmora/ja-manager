@@ -1,0 +1,23 @@
+name: Snapshot semanal del ranking
+
+# Cierra el ranking de puntos cada sábado a las 11pm hora Bogotá (UTC-5, sin
+# horario de verano) llamando al endpoint interno de snapshot. El workflow
+# "keep-backend-alive" ya mantiene el backend despierto hasta esa hora, pero
+# igual reintentamos por si hubo un cold start puntual.
+
+on:
+  schedule:
+    - cron: '0 4 * * 0' # 04:00 UTC domingo = 23:00 sábado hora Bogotá
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Disparar captura de snapshot
+        run: |
+          curl -fsS --max-time 30 --retry 5 --retry-delay 15 \
+            -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api/points/leaderboard/snapshot

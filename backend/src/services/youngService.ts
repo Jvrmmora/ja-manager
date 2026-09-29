@@ -151,6 +151,7 @@ export const listYoung = async (query: PaginationQuery) => {
     email: doc.email,
     skills: doc.skills || [],
     placa: doc.placa,
+    birthdayPointsClaimed: doc.birthdayPointsClaimed,
     totalPoints: pointsMap.get(doc._id.toString()) || 0,
     ...(doc.profileImage && { profileImage: doc.profileImage }),
     createdAt: doc.createdAt || new Date(),
