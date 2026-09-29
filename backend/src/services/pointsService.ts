@@ -7,7 +7,12 @@ import Streak from '../models/Streak';
 import LeaderboardSnapshot from '../models/LeaderboardSnapshot';
 import { formatDateColombia, getStartOfWeekColombia } from '../utils/dateUtils';
 import mongoose from 'mongoose';
-import { updateStreakOnAttendance } from './streakService';
+import {
+  updateStreakOnAttendance,
+  getSaturdayStart,
+  getEventDateKeysBetween,
+  computeEffectiveStreak,
+} from './streakService';
 
 export interface CreatePointsTransactionDTO {
   youngId: string;
@@ -360,17 +365,23 @@ class PointsService {
       attended: attendedSet.has(s.str),
     }));
 
-    // Ajuste sin cron: si pasaron 2 sábados completos sin asistir => racha 0
+    // Ajuste sin cron: si pasaron 2 sábados con culto joven real sin asistir => racha 0.
+    // Los sábados sin QR (no hubo culto) no cuentan como falta.
     let currentWeeks = streakDoc?.currentStreakWeeks || 0;
     if (streakDoc?.lastAttendanceSaturday) {
       const currentSaturday = new Date(startOfThisWeek);
       currentSaturday.setDate(startOfThisWeek.getDate() + 6);
       currentSaturday.setHours(0, 0, 0, 0);
-      const last = new Date(streakDoc.lastAttendanceSaturday);
-      const weeksBetween = Math.round(
-        (currentSaturday.getTime() - last.getTime()) / (7 * 24 * 60 * 60 * 1000)
+      const eventKeys = await getEventDateKeysBetween(
+        new Date(streakDoc.lastAttendanceSaturday),
+        currentSaturday
       );
-      if (weeksBetween >= 3) currentWeeks = 0;
+      currentWeeks = computeEffectiveStreak(
+        currentWeeks,
+        streakDoc.lastAttendanceSaturday,
+        currentSaturday,
+        eventKeys
+      );
     }
 
     return {
@@ -574,27 +585,23 @@ class PointsService {
 
     const ranking = await PointsTransaction.aggregate(aggregation);
 
-    // Ajuste en lectura: si ya pasaron 2 sábados desde la última asistencia, considerar racha 0
-    const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setHours(0, 0, 0, 0);
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // domingo
-    const currentSaturday = new Date(weekStart);
-    currentSaturday.setDate(weekStart.getDate() + 6);
-    currentSaturday.setHours(0, 0, 0, 0);
+    // Ajuste en lectura: si ya pasaron 2 sábados con culto joven real sin
+    // asistir, considerar racha 0. Los sábados sin QR (no hubo culto) no
+    // cuentan como falta. Se carga una sola vez el set de fechas con QR
+    // real para todo el ranking, en vez de consultar por cada joven.
+    const currentSaturday = getSaturdayStart(new Date());
+    const eventDateKeys = await getEventDateKeysBetween(
+      new Date(season.startDate),
+      currentSaturday
+    );
 
     const adjusted = ranking.map((r: any) => {
-      let effectiveStreak = r.streak || 0;
-      if (r.streakLastAttendanceSaturday) {
-        const last = new Date(r.streakLastAttendanceSaturday);
-        const weeksBetween = Math.round(
-          (currentSaturday.getTime() - last.getTime()) /
-            (7 * 24 * 60 * 60 * 1000)
-        );
-        if (weeksBetween >= 3) {
-          effectiveStreak = 0;
-        }
-      }
+      const effectiveStreak = computeEffectiveStreak(
+        r.streak || 0,
+        r.streakLastAttendanceSaturday,
+        currentSaturday,
+        eventDateKeys
+      );
       return { ...r, streak: effectiveStreak };
     });
 
@@ -608,7 +615,7 @@ class PointsService {
     // Comparar contra el último snapshot semanal para calcular "cambio" de posición
     const previousSnapshot = await LeaderboardSnapshot.getLatestBeforeOrAt(
       (seasonId as mongoose.Types.ObjectId).toString(),
-      now
+      new Date()
     );
     const previousRankByYoungId = new Map<string, number>();
     if (previousSnapshot) {
@@ -720,27 +727,20 @@ class PointsService {
 
     const allTotals = await PointsTransaction.aggregate(aggregation);
 
-    // Aplicar el mismo ajuste de racha que getLeaderboard
-    const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setHours(0, 0, 0, 0);
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // domingo
-    const currentSaturday = new Date(weekStart);
-    currentSaturday.setDate(weekStart.getDate() + 6);
-    currentSaturday.setHours(0, 0, 0, 0);
+    // Aplicar el mismo ajuste de racha que getLeaderboard (sábados sin QR no cuentan como falta)
+    const currentSaturday = getSaturdayStart(new Date());
+    const eventDateKeys = await getEventDateKeysBetween(
+      new Date(season.startDate),
+      currentSaturday
+    );
 
     const adjusted = allTotals.map((r: any) => {
-      let effectiveStreak = r.streak || 0;
-      if (r.streakLastAttendanceSaturday) {
-        const last = new Date(r.streakLastAttendanceSaturday);
-        const weeksBetween = Math.round(
-          (currentSaturday.getTime() - last.getTime()) /
-            (7 * 24 * 60 * 60 * 1000)
-        );
-        if (weeksBetween >= 3) {
-          effectiveStreak = 0;
-        }
-      }
+      const effectiveStreak = computeEffectiveStreak(
+        r.streak || 0,
+        r.streakLastAttendanceSaturday,
+        currentSaturday,
+        eventDateKeys
+      );
       return { ...r, streak: effectiveStreak };
     });
 
