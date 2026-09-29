@@ -1,11 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { authenticateAndAuthorize as authenticate } from '../middleware/auth';
 import { birthdayClaimLimiter } from '../middleware/rateLimiter';
+import { requireCronSecret } from '../middleware/cronAuth';
 import { JWTService } from '../services/jwtService';
 import { pointsService } from '../services/pointsService';
-import { emailService } from '../services/emailService';
 import Young from '../models/Young';
-import Season from '../models/Season';
 import PointsTransaction from '../models/PointsTransaction';
 import logger from '../utils/logger';
 import { getCurrentDateTimeColombia } from '../utils/dateUtils';
@@ -13,116 +12,38 @@ import { getCurrentDateTimeColombia } from '../utils/dateUtils';
 const router = Router();
 
 /**
- * POST /api/birthday/send-email/:youngId
- * Enviar correo de cumpleaños manualmente a un joven
- * Requiere autenticación y permisos de lectura de jóvenes
+ * POST /api/birthday/auto-assign
+ * Asigna automáticamente puntos de cumpleaños a los jóvenes de grupo 1
+ * que cumplen años hoy. Disparado por un cron externo (GitHub Actions);
+ * no requiere JWT de usuario, se autentica vía header x-cron-secret.
  */
 router.post(
-  '/send-email/:youngId',
-  authenticate(['young:read'] as any),
+  '/auto-assign',
+  requireCronSecret,
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { youngId } = req.params;
+      const result = await pointsService.assignBirthdayPointsForGroupOne();
 
-      // Obtener el joven
-      const young = await Young.findById(youngId);
-      if (!young) {
-        res.status(404).json({
-          success: false,
-          message: 'Joven no encontrado',
-        });
-        return;
-      }
-
-      // Validar que tenga email
-      if (!young.email || !young.email.trim()) {
-        res.status(400).json({
-          success: false,
-          message: 'El joven no tiene email registrado',
-        });
-        return;
-      }
-
-      // Validar formato de email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(young.email)) {
-        res.status(400).json({
-          success: false,
-          message: 'El email del joven no es válido',
-        });
-        return;
-      }
-
-      // Validar que tenga fecha de cumpleaños
-      if (!young.birthday) {
-        res.status(400).json({
-          success: false,
-          message: 'El joven no tiene fecha de cumpleaños registrada',
-        });
-        return;
-      }
-
-      // Validar que sea su mes de cumpleaños
-      const today = getCurrentDateTimeColombia();
-      const birthDate = new Date(young.birthday);
-      const isCurrentMonth = today.getMonth() === birthDate.getMonth();
-
-      if (!isCurrentMonth) {
-        res.status(400).json({
-          success: false,
-          message: 'No es el mes de cumpleaños del joven',
-        });
-        return;
-      }
-
-      // Obtener temporada activa para puntos configurados
-      const activeSeason = await Season.findOne({ status: 'ACTIVE' });
-      const birthdayPoints = activeSeason?.settings?.birthdayBonusPoints || 100;
-
-      // Generar token de cumpleaños
-      const birthdayToken = JWTService.generateBirthdayToken(
-        (young._id as any).toString(),
-        young.email
-      );
-
-      // Enviar email
-      await emailService.sendEmail({
-        toEmail: young.email,
-        toName: young.fullName,
-        message: '',
-        type: 'birthday',
-        birthdayToken,
-        birthdayPoints,
-      });
-
-      logger.info('Correo de cumpleaños enviado manualmente', {
+      logger.info('Asignación automática de puntos de cumpleaños ejecutada', {
         context: 'BirthdayController',
-        method: 'sendBirthdayEmail',
-        youngId: (young._id as any).toString(),
-        youngName: young.fullName,
-        youngEmail: young.email,
-        sentBy: req.user?.userId,
+        method: 'autoAssignBirthdayPoints',
+        ...result,
       });
 
       res.status(200).json({
         success: true,
-        message: `Correo de cumpleaños enviado a ${young.fullName}`,
-        data: {
-          youngName: young.fullName,
-          email: young.email,
-          points: birthdayPoints,
-        },
+        data: result,
       });
     } catch (error) {
-      logger.error('Error enviando correo de cumpleaños', {
+      logger.error('Error en asignación automática de puntos de cumpleaños', {
         context: 'BirthdayController',
-        method: 'sendBirthdayEmail',
+        method: 'autoAssignBirthdayPoints',
         error: error instanceof Error ? error.message : String(error),
       });
 
       res.status(500).json({
         success: false,
-        message: 'Error al enviar correo de cumpleaños',
+        message: 'Error al asignar puntos de cumpleaños automáticamente',
         error: error instanceof Error ? error.message : 'Error desconocido',
       });
     }
@@ -251,13 +172,13 @@ router.get(
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
 
-      // Contar correos enviados hoy (basado en birthdayPointsClaimed de hoy)
+      // Contar puntos de cumpleaños asignados hoy (basado en birthdayPointsClaimed de hoy)
       const startOfDay = new Date(today);
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(today);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const emailsSentToday = await Young.countDocuments({
+      const birthdayPointsAssignedToday = await Young.countDocuments({
         birthday: { $exists: true },
         birthdayPointsClaimed: {
           $gte: startOfDay,
@@ -329,7 +250,7 @@ router.get(
       res.status(200).json({
         success: true,
         data: {
-          emailsSentToday,
+          birthdayPointsAssignedToday,
           totalPointsClaimedThisMonth,
           transactionsCount: birthdayTransactionsThisMonth.length,
           upcomingBirthdays,

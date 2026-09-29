@@ -86,6 +86,7 @@ const pointsTransactionSchema = new Schema<
           'REFERRAL_BONUS',
           'REFERRAL_WELCOME',
           'BONUS',
+          'BIRTHDAY',
         ],
         message: 'Tipo de transacción no válido',
       },
