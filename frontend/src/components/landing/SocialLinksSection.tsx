@@ -1,3 +1,4 @@
+import Reveal from './ui/Reveal';
 import { normalizeWhatsAppUrl } from '../../utils/whatsapp';
 
 interface SocialLink {
@@ -57,34 +58,36 @@ export default function SocialLinksSection({
     },
   ];
 
-  return (
-    <section id="social" className="py-20 px-4 bg-gray-50 dark:bg-gray-800">
-      <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-bold text-center mb-4 text-gray-900 dark:text-white">
-          Síguenos en Redes Sociales
-        </h2>
-        <p className="text-center text-gray-600 dark:text-gray-400 mb-12">
-          Mantente conectado con nuestro movimiento
-        </p>
+  const activeLinks = socialLinks.filter(link => link.url !== '#');
 
-        <div className="flex justify-center gap-8 flex-wrap">
-          {socialLinks.map(
-            link =>
-              link.url !== '#' && (
-                <a
-                  key={link.name}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-4 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 rounded-full shadow-md hover:shadow-lg transition transform hover:scale-110"
-                  aria-label={link.name}
-                >
-                  {link.icon}
-                </a>
-              )
-          )}
+  return (
+    <section id="social" className="bg-cream dark:bg-ink-900 pb-24 md:pb-28 pt-4">
+      <Reveal className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-6 text-center">
+        <div className="flex flex-col items-center gap-3">
+          <span className="eyebrow text-brand-deep dark:text-brand-amber">Síguenos</span>
+          <h2 className="m-0 font-display text-3xl md:text-4xl font-semibold uppercase text-cocoa-900 dark:text-white">
+            Síguenos en Redes Sociales
+          </h2>
+          <p className="m-0 text-cocoa-500 dark:text-white/65">
+            Mantente conectado con nuestro movimiento
+          </p>
         </div>
-      </div>
+        <div className="flex flex-wrap justify-center gap-3">
+          {activeLinks.map(link => (
+            <a
+              key={link.name}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-12 items-center gap-2.5 rounded-full border border-sand-300 bg-white px-5 text-[15px] font-semibold text-cocoa-900 transition-colors hover:border-ink-950 hover:bg-ink-950 hover:text-white dark:border-white/15 dark:bg-ink-800 dark:text-white dark:hover:border-brand-amber dark:hover:text-brand-amber"
+              aria-label={link.name}
+            >
+              <span className="[&_svg]:h-[18px] [&_svg]:w-[18px]">{link.icon}</span>
+              {link.name}
+            </a>
+          ))}
+        </div>
+      </Reveal>
     </section>
   );
 }

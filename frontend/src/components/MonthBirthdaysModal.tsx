@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '../services/api';
 import type { IYoung } from '../types';
-import { formatBirthday, parseYYYYMMDD } from '../utils/dateUtils';
+import {
+  formatBirthday,
+  parseYYYYMMDD,
+  getCurrentDateTimeColombia,
+} from '../utils/dateUtils';
+import BrandModalHeader from './ui/BrandModalHeader';
+import { initialsOf } from './young/useYoungActions';
 import ImageModal from './ImageModal';
 
 interface MonthBirthdaysModalProps {
@@ -104,126 +110,123 @@ const MonthBirthdaysModal: React.FC<MonthBirthdaysModalProps> = ({
   const monthName = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(
     new Date()
   );
+  const monthTitle = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  const monthAbbr = monthName.slice(0, 3).toUpperCase();
+  const today = getCurrentDateTimeColombia().getDate();
+
+  const dayOf = (value: Date | string) =>
+    (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)
+      ? parseYYYYMMDD(value.split('T')[0] as string)
+      : new Date(value)
+    ).getDate();
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#0C0609]/75 backdrop-blur-sm sm:p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden"
+        className="flex max-h-[90vh] w-full sm:max-w-xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-[30px] bg-white shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)] dark:bg-ink-900"
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Cumpleaños de ${monthName}`}
       >
-        {/* Header */}
-        <div className="relative px-6 py-5 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-indigo-600 dark:from-violet-600 dark:via-fuchsia-600 dark:to-indigo-700 text-white">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
-              <span className="material-symbols-rounded text-2xl">cake</span>
-              Jóvenes cumpleaños mes{' '}
-              {monthName.charAt(0).toUpperCase() + monthName.slice(1)}
-            </h2>
-            <button
-              onClick={onClose}
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-              title="Cerrar"
-            >
-              <span className="material-symbols-rounded text-xl">close</span>
-            </button>
-          </div>
-        </div>
+        <BrandModalHeader
+          title={`Cumpleaños de ${monthTitle}`}
+          subtitle={loading ? 'Cargando…' : `${birthdays.length} ${birthdays.length === 1 ? 'joven' : 'jóvenes'}`}
+          icon={
+            <svg className="h-[22px] w-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1M2 21h20M7 8v3M12 8v3M17 8v3M7 4h.01M12 4h.01M17 4h.01" />
+            </svg>
+          }
+          iconTone="wine"
+          onClose={onClose}
+        />
 
-        {/* Content */}
-        <div className="p-6 max-h-[60vh] overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-3 py-2 sm:px-5">
           {loading && (
             <div className="py-10 text-center">
-              <div className="mx-auto mb-4 w-10 h-10 border-4 border-purple-400 border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Cargando cumpleaños...
-              </p>
+              <span className="mx-auto mb-4 block h-10 w-10 animate-spin rounded-full border-4 border-sand-200 border-t-brand-ember" />
+              <p className="m-0 text-sm text-cocoa-500 dark:text-white/60">Cargando cumpleaños...</p>
             </div>
           )}
           {error && !loading && (
-            <div className="py-6 text-center text-red-600 dark:text-red-400 text-sm">
-              {error}
-            </div>
+            <div className="py-6 text-center text-sm text-red-600 dark:text-red-400">{error}</div>
           )}
           {!loading && !error && birthdays.length === 0 && (
-            <div className="py-10 text-center">
-              <span className="material-symbols-rounded text-5xl text-purple-400 mb-3">
-                cake
-              </span>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                No hay cumpleaños este mes.
-              </p>
-            </div>
+            <p className="m-0 py-10 text-center text-sm text-cocoa-500 dark:text-white/60">
+              No hay cumpleaños este mes.
+            </p>
           )}
           {!loading && !error && birthdays.length > 0 && (
-            <ul className="space-y-4">
+            <ul className="m-0 list-none p-0">
               {birthdays.map(b => {
-                // Determinar día
-                const dateDisplay = formatBirthday(b.birthday);
+                const day = dayOf(b.birthday);
+                const diff = day - today;
+                const isToday = diff === 0;
+                const past = diff < 0;
                 return (
                   <li
                     key={b.id}
-                    className="flex items-center gap-4 p-3 rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800 border border-purple-100 dark:border-gray-700"
+                    className="grid grid-cols-[52px_44px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border-b border-sand-100 px-1.5 py-3 last:border-b-0 hover:bg-cream dark:border-white/5 dark:hover:bg-white/[0.03]"
                   >
-                    <div
-                      className="w-14 h-14 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center relative cursor-pointer"
+                    <span
+                      className={`flex h-[50px] w-[50px] flex-col items-center justify-center rounded-[14px] leading-none ${
+                        isToday
+                          ? 'bg-ink-950 text-white dark:bg-white dark:text-ink-950'
+                          : past
+                            ? 'bg-[#F5EFEA] text-cocoa-400 dark:bg-white/5 dark:text-white/45'
+                            : 'bg-sand-50 text-cocoa-900 dark:bg-white/5 dark:text-white'
+                      }`}
+                    >
+                      <span className="font-display text-[19px] font-semibold">{day}</span>
+                      <span className={`text-[9px] font-bold tracking-[0.1em] ${isToday ? 'text-brand-amber dark:text-brand-ember' : past ? '' : 'text-brand-deep dark:text-brand-amber'}`}>
+                        {monthAbbr}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      className={`h-11 w-11 rounded-full bg-[linear-gradient(135deg,#F9A23B,#DC3340,#8A1C45)] p-[2px] ${b.profileImage ? 'group/photo cursor-pointer' : 'cursor-default'}`}
                       onClick={() => {
                         if (b.profileImage) {
-                          setImageModal({
-                            open: true,
-                            url: b.profileImage!,
-                            name: b.fullName,
-                          });
+                          setImageModal({ open: true, url: b.profileImage, name: b.fullName });
                         }
                       }}
                       title={b.profileImage ? 'Ver foto en grande' : ''}
+                      aria-label={b.profileImage ? `Ver foto de ${b.fullName}` : b.fullName}
                     >
-                      {b.profileImage ? (
-                        <img
-                          src={b.profileImage}
-                          alt={b.fullName}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="material-symbols-rounded text-purple-500 dark:text-purple-300 text-3xl">
-                          person
-                        </span>
-                      )}
-                      {b.profileImage && (
-                        <div className="absolute inset-0 bg-black/35 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <span className="material-symbols-rounded text-white text-xl">
-                            visibility
+                      <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-white bg-sand-100 text-cocoa-600 dark:bg-white/10 dark:text-white/85 text-xs font-bold dark:border-ink-900">
+                        {b.profileImage ? (
+                          <>
+                            <img src={b.profileImage} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover/photo:scale-110" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-300 group-hover/photo:bg-black/50 group-focus-visible/photo:bg-black/50">
+                            <svg className="h-4 w-4 text-white opacity-0 transition-opacity duration-300 group-hover/photo:opacity-100 group-focus-visible/photo:opacity-100" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
                           </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 dark:text-white truncate">
-                        {b.fullName}
-                      </p>
-                      <p className="text-sm text-purple-700 dark:text-purple-300 font-medium flex items-center gap-1">
-                        <span className="material-symbols-rounded text-base">
-                          event
-                        </span>
-                        {dateDisplay}
-                      </p>
-                    </div>
-                    <div className="text-lg font-bold text-purple-600 dark:text-purple-300">
-                      {(() => {
-                        let date: Date;
-                        if (
-                          typeof b.birthday === 'string' &&
-                          /^\d{4}-\d{2}-\d{2}/.test(b.birthday)
-                        ) {
-                          date = parseYYYYMMDD(b.birthday.split('T')[0]);
-                        } else {
-                          date = new Date(b.birthday);
-                        }
-                        return date.getDate();
-                      })()}
-                    </div>
+                          </>
+                        ) : (
+                          initialsOf(b.fullName)
+                        )}
+                      </span>
+                    </button>
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate text-sm font-bold text-cocoa-900 dark:text-white">{b.fullName}</span>
+                      <span className="truncate text-xs text-cocoa-400 dark:text-white/55">
+                        {formatBirthday(b.birthday)}
+                      </span>
+                    </span>
+                    {isToday ? (
+                      <span className="bg-fire inline-flex h-[26px] items-center rounded-full px-2.5 text-xs font-bold text-white">
+                        ¡Hoy!
+                      </span>
+                    ) : (
+                      <span className={`text-xs font-semibold ${past ? 'text-cocoa-400 dark:text-white/45' : 'text-brand-deep dark:text-brand-amber'}`}>
+                        {past ? 'Ya pasó' : diff === 1 ? 'Mañana' : `En ${diff} días`}
+                      </span>
+                    )}
                   </li>
                 );
               })}
@@ -231,14 +234,12 @@ const MonthBirthdaysModal: React.FC<MonthBirthdaysModalProps> = ({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800 border-t dark:border-gray-700 flex justify-between items-center">
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            {birthdays.length} cumpleaños este mes
-          </p>
+        <div className="flex flex-shrink-0 items-center justify-between border-t border-sand-200 bg-cream px-5 py-3.5 text-xs text-cocoa-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/55">
+          <span>Grupo 1 · toca una foto para ampliarla</span>
           <button
+            type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium transition-colors"
+            className="h-9 rounded-full bg-ink-950 px-4 text-[13px] font-semibold text-white dark:bg-white dark:text-ink-950"
           >
             Cerrar
           </button>

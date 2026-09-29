@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiRequest, apiUpload } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import PageLoader from '../components/PageLoader';
 import RichTextEditor from '../components/RichTextEditor';
+import ThemeToggle from '../components/ThemeToggle';
+import BrandModalHeader from '../components/ui/BrandModalHeader';
+import logo from '../assets/logos/logo.png';
+import '../brand-skin.css';
 
 interface LandingContent {
   _id: string;
@@ -138,8 +143,24 @@ const MEDIA_CATEGORIES: { value: MediaCategory; label: string }[] = [
   { value: 'event', label: 'Eventos' },
 ];
 
-const fieldClass =
-  'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500';
+const fieldClass = 'field-brand min-h-[48px] py-2.5 text-[15px]';
+
+// Índice lateral del contenido (id del ancla, etiqueta)
+const CMS_SECTIONS: Array<[string, string]> = [
+  ['cms-hero', 'Hero'],
+  ['cms-about', 'Acerca de'],
+  ['cms-mission', 'Misión y visión'],
+  ['cms-values', 'Valores'],
+  ['cms-visibility', 'Visibilidad'],
+  ['cms-social', 'Redes sociales'],
+  ['cms-location', 'Ubicación'],
+  ['cms-events', 'Eventos'],
+  ['cms-gallery', 'Galería'],
+  ['cms-resources', 'Recursos'],
+  ['cms-testimonials', 'Testimonios'],
+  ['cms-cta', 'CTA final'],
+  ['cms-seo', 'SEO y estado'],
+];
 
 const getYouTubeVideoId = (url: string): string | null => {
   try {
@@ -306,6 +327,7 @@ const normalizeLandingContent = (
 
 export default function LandingCMSPage() {
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const meetingImageInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<'content' | 'meetings' | 'media'>(
@@ -780,13 +802,13 @@ export default function LandingCMSPage() {
 
   if (!content) {
     return (
-      <div className="p-8 text-center">
+      <div className="brand-skin min-h-screen bg-cream p-8 text-center dark:bg-ink-950">
         <p className="text-red-600 dark:text-red-400">
           Error al cargar contenido
         </p>
         <button
           onClick={fetchAll}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="btn-fire mt-4 h-11 px-6 text-sm"
         >
           Reintentar
         </button>
@@ -800,57 +822,143 @@ export default function LandingCMSPage() {
       : media.filter(m => m.category === mediaFilter);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="brand-skin min-h-screen bg-cream dark:bg-ink-950">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            CMS — Landing Page
-          </h1>
-          <a
-            href="/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Ver landing ↗
-          </a>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tab Navigation */}
-        <div className="flex gap-1 mb-8 border-b border-gray-200 dark:border-gray-700">
-          {(['content', 'meetings', 'media'] as const).map(tab => (
+      <header className="border-b border-sand-200 bg-white dark:border-white/10 dark:bg-ink-950">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:h-[72px] lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2.5 font-medium text-sm transition-colors ${
-                activeTab === tab
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+              type="button"
+              onClick={() => navigate('/admin')}
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-sand-300 pl-2.5 pr-3.5 text-sm font-semibold text-cocoa-600 transition-colors hover:border-cocoa-400 dark:border-white/15 dark:text-white/80"
+              aria-label="Volver al panel"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+              <span className="hidden sm:inline">Panel</span>
+            </button>
+            <img src={logo} alt="Jóvenes Modelia" className="h-9 w-9 object-contain lg:h-10 lg:w-10" />
+            <span className="hidden flex-col leading-none sm:flex">
+              <span className="font-display text-[11px] tracking-[0.28em] text-cocoa-400 dark:text-white/55">JÓVENES</span>
+              <span className="font-display text-xl font-semibold tracking-[0.04em] text-cocoa-900 dark:text-white">MODELIA</span>
+            </span>
+            <span className="inline-flex h-6 items-center rounded-full bg-ink-950 px-2.5 font-display text-[11px] tracking-[0.18em] text-brand-amber dark:bg-white/10">
+              CMS
+            </span>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-sand-300 px-4 text-sm font-semibold text-cocoa-600 transition-colors hover:border-cocoa-400 dark:border-white/15 dark:text-white/80"
+              aria-label="Ver landing"
+            >
+              <span className="hidden sm:inline">Ver landing</span>
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M7 17L17 7M8 7h9v9" />
+              </svg>
+            </a>
+            <ThemeToggle />
+          </div>
+        </div>
+      </header>
+
+      {/* Franja con título y pestañas */}
+      <section className="relative overflow-hidden bg-ink-950 pt-7 sm:pt-9">
+        <div className="pointer-events-none absolute left-1/2 -top-[440px] h-[760px] w-[760px] rounded-full bg-[radial-gradient(circle,rgba(242,106,46,.3)_0%,rgba(20,11,16,0)_65%)]" />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="flex flex-col gap-2">
+              <span className="eyebrow text-brand-amber">Landing CMS</span>
+              <h1 className="m-0 font-display text-3xl font-bold uppercase leading-none text-white sm:text-[46px]">
+                {activeTab === 'content'
+                  ? 'Contenido de la landing'
+                  : activeTab === 'meetings'
+                    ? 'Reuniones semanales'
+                    : 'Galería y archivos'}
+              </h1>
+            </div>
+            <span
+              className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold ${
+                content.isPublished
+                  ? 'border-emerald-400/40 bg-emerald-400/15 text-emerald-200'
+                  : 'border-white/20 bg-white/10 text-white/70'
               }`}
             >
-              {tab === 'content' && 'Contenido'}
-              {tab === 'meetings' && `Reuniones (${meetings.length})`}
-              {tab === 'media' && `Galería (${media.length})`}
-            </button>
-          ))}
+              <span className={`h-2 w-2 rounded-full ${content.isPublished ? 'bg-emerald-400' : 'bg-white/50'}`} />
+              {content.isPublished ? 'Publicado' : 'No publicado'}
+            </span>
+          </div>
+          <nav aria-label="Secciones del CMS" className="mt-6 flex gap-1.5 overflow-x-auto [scrollbar-width:none]">
+            {(['content', 'meetings', 'media'] as const).map(tab => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                aria-current={activeTab === tab ? 'page' : undefined}
+                className={`inline-flex h-12 flex-shrink-0 items-center gap-2 rounded-t-2xl px-5 text-[15px] transition-colors ${
+                  activeTab === tab
+                    ? 'bg-cream font-bold text-cocoa-900 dark:bg-ink-950 dark:text-white'
+                    : 'font-semibold text-white/70 hover:text-white'
+                }`}
+              >
+                {tab === 'content' && 'Contenido'}
+                {tab === 'meetings' && 'Reuniones'}
+                {tab === 'media' && 'Galería'}
+                {tab !== 'content' && (
+                  <span
+                    className={`inline-flex h-[22px] items-center rounded-full px-2 text-xs ${
+                      activeTab === tab
+                        ? 'bg-sand-100 text-[#9A3412] dark:bg-brand-orange/15 dark:text-brand-amber'
+                        : 'bg-white/10'
+                    }`}
+                  >
+                    {tab === 'meetings' ? meetings.length : media.length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
         </div>
+      </section>
 
+      <div className="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8">
         {/* ── CONTENT TAB ──────────────────────────────────── */}
         {activeTab === 'content' && (
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm space-y-8">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Contenido General
-            </h2>
+          <div className="grid gap-6 lg:grid-cols-[230px_minmax(0,1fr)]">
+            {/* Índice de secciones */}
+            <nav
+              aria-label="Secciones del contenido"
+              className="sticky top-4 z-10 -mx-4 overflow-x-auto bg-cream/95 px-4 py-2 backdrop-blur [scrollbar-width:none] lg:mx-0 lg:self-start lg:rounded-[22px] lg:border lg:border-sand-200 lg:bg-white lg:p-3 dark:bg-ink-950/95 lg:dark:border-white/10 lg:dark:bg-ink-900"
+            >
+              <span className="hidden px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-[0.16em] text-cocoa-400 lg:block dark:text-white/50">
+                Secciones
+              </span>
+              <div className="flex gap-1.5 lg:flex-col lg:gap-0.5">
+                {CMS_SECTIONS.map(([id, label]) => (
+                  <a
+                    key={id}
+                    href={`#${id}`}
+                    className="inline-flex h-9 flex-shrink-0 items-center rounded-xl border border-sand-200 bg-white px-3 text-[13px] font-semibold text-cocoa-600 transition-colors hover:bg-sand-50 hover:text-cocoa-900 lg:h-10 lg:border-0 lg:bg-transparent lg:text-sm dark:border-white/10 dark:bg-ink-900 dark:text-white/70 dark:hover:bg-white/5 dark:hover:text-white lg:dark:bg-transparent"
+                  >
+                    {label}
+                  </a>
+                ))}
+              </div>
+            </nav>
+            <div className="min-w-0 space-y-5 pb-4">
 
             {/* Hero */}
-            <section>
-              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+            <section id="cms-hero" className="scroll-mt-24 rounded-[26px] border border-sand-200 bg-white p-5 sm:p-7 dark:border-white/10 dark:bg-ink-900">
+              <h3 className="m-0 mb-4 flex items-center gap-3 font-display text-[22px] font-semibold uppercase text-cocoa-900 dark:text-white">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-ink-950 font-display text-[15px] text-brand-amber dark:bg-white/10">
+                  01
+                </span>
                 Hero
               </h3>
-              <div className="space-y-3 pl-4 border-l-2 border-blue-400">
+              <div className="space-y-3 pl-4 border-l-2 border-brand-orange/60">
                 <input
                   className={fieldClass}
                   placeholder="Título principal"
@@ -906,8 +1014,11 @@ export default function LandingCMSPage() {
             </section>
 
             {/* About */}
-            <section>
-              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+            <section id="cms-about" className="scroll-mt-24 rounded-[26px] border border-sand-200 bg-white p-5 sm:p-7 dark:border-white/10 dark:bg-ink-900">
+              <h3 className="m-0 mb-4 flex items-center gap-3 font-display text-[22px] font-semibold uppercase text-cocoa-900 dark:text-white">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-ink-950 font-display text-[15px] text-brand-amber dark:bg-white/10">
+                  02
+                </span>
                 Acerca de
               </h3>
               <input
@@ -926,9 +1037,9 @@ export default function LandingCMSPage() {
             </section>
 
             {/* Mission & Vision */}
-            <section className="grid md:grid-cols-2 gap-4">
+            <section id="cms-mission" className="scroll-mt-24 rounded-[26px] border border-sand-200 bg-white p-5 sm:p-7 dark:border-white/10 dark:bg-ink-900 grid md:grid-cols-2 gap-5">
               <div>
-                <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+                <h3 className="eyebrow m-0 mb-3 text-[13px] text-brand-deep dark:text-brand-amber">
                   Misión
                 </h3>
                 <input
@@ -949,7 +1060,7 @@ export default function LandingCMSPage() {
                 />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+                <h3 className="eyebrow m-0 mb-3 text-[13px] text-brand-deep dark:text-brand-amber">
                   Visión
                 </h3>
                 <input
@@ -972,8 +1083,11 @@ export default function LandingCMSPage() {
             </section>
 
             {/* Values */}
-            <section>
-              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+            <section id="cms-values" className="scroll-mt-24 rounded-[26px] border border-sand-200 bg-white p-5 sm:p-7 dark:border-white/10 dark:bg-ink-900">
+              <h3 className="m-0 mb-4 flex items-center gap-3 font-display text-[22px] font-semibold uppercase text-cocoa-900 dark:text-white">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-ink-950 font-display text-[15px] text-brand-amber dark:bg-white/10">
+                  04
+                </span>
                 Valores
               </h3>
               <div className="space-y-3">
@@ -1012,7 +1126,7 @@ export default function LandingCMSPage() {
                     <button
                       type="button"
                       onClick={() => handleRemoveValue(index)}
-                      className="md:col-span-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm"
+                      className="md:col-span-1 h-11 rounded-full border-[1.5px] border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:border-red-400 dark:border-red-500/30 dark:bg-transparent dark:text-red-300"
                     >
                       X
                     </button>
@@ -1022,7 +1136,7 @@ export default function LandingCMSPage() {
                 <button
                   type="button"
                   onClick={handleAddValue}
-                  className="px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-100 rounded-lg text-sm font-medium"
+                  className="h-10 rounded-full border-[1.5px] border-sand-300 bg-white px-4 text-sm font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-transparent dark:text-white/80"
                 >
                   + Agregar valor
                 </button>
@@ -1030,8 +1144,11 @@ export default function LandingCMSPage() {
             </section>
 
             {/* Secciones visibles */}
-            <section>
-              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+            <section id="cms-visibility" className="scroll-mt-24 rounded-[26px] border border-sand-200 bg-white p-5 sm:p-7 dark:border-white/10 dark:bg-ink-900">
+              <h3 className="m-0 mb-4 flex items-center gap-3 font-display text-[22px] font-semibold uppercase text-cocoa-900 dark:text-white">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-ink-950 font-display text-[15px] text-brand-amber dark:bg-white/10">
+                  05
+                </span>
                 Visibilidad de secciones
               </h3>
               <div className="grid md:grid-cols-2 gap-3">
@@ -1070,9 +1187,12 @@ export default function LandingCMSPage() {
             </section>
 
             {/* Social */}
-            <section>
-              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
-                Redes Sociales
+            <section id="cms-social" className="scroll-mt-24 rounded-[26px] border border-sand-200 bg-white p-5 sm:p-7 dark:border-white/10 dark:bg-ink-900">
+              <h3 className="m-0 mb-4 flex items-center gap-3 font-display text-[22px] font-semibold uppercase text-cocoa-900 dark:text-white">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-ink-950 font-display text-[15px] text-brand-amber dark:bg-white/10">
+                  06
+                </span>
+                Redes sociales
               </h3>
               <div className="grid md:grid-cols-2 gap-3">
                 <input
@@ -1123,8 +1243,11 @@ export default function LandingCMSPage() {
             </section>
 
             {/* Location */}
-            <section>
-              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+            <section id="cms-location" className="scroll-mt-24 rounded-[26px] border border-sand-200 bg-white p-5 sm:p-7 dark:border-white/10 dark:bg-ink-900">
+              <h3 className="m-0 mb-4 flex items-center gap-3 font-display text-[22px] font-semibold uppercase text-cocoa-900 dark:text-white">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-ink-950 font-display text-[15px] text-brand-amber dark:bg-white/10">
+                  07
+                </span>
                 Ubicación
               </h3>
               <div className="space-y-3">
@@ -1203,8 +1326,11 @@ export default function LandingCMSPage() {
             </section>
 
             {/* Eventos */}
-            <section>
-              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+            <section id="cms-events" className="scroll-mt-24 rounded-[26px] border border-sand-200 bg-white p-5 sm:p-7 dark:border-white/10 dark:bg-ink-900">
+              <h3 className="m-0 mb-4 flex items-center gap-3 font-display text-[22px] font-semibold uppercase text-cocoa-900 dark:text-white">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-ink-950 font-display text-[15px] text-brand-amber dark:bg-white/10">
+                  08
+                </span>
                 Eventos
               </h3>
               <div className="space-y-3">
@@ -1228,8 +1354,11 @@ export default function LandingCMSPage() {
             </section>
 
             {/* Galería */}
-            <section>
-              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+            <section id="cms-gallery" className="scroll-mt-24 rounded-[26px] border border-sand-200 bg-white p-5 sm:p-7 dark:border-white/10 dark:bg-ink-900">
+              <h3 className="m-0 mb-4 flex items-center gap-3 font-display text-[22px] font-semibold uppercase text-cocoa-900 dark:text-white">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-ink-950 font-display text-[15px] text-brand-amber dark:bg-white/10">
+                  09
+                </span>
                 Galería
               </h3>
               <div className="space-y-3">
@@ -1253,8 +1382,11 @@ export default function LandingCMSPage() {
             </section>
 
             {/* Recursos */}
-            <section>
-              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+            <section id="cms-resources" className="scroll-mt-24 rounded-[26px] border border-sand-200 bg-white p-5 sm:p-7 dark:border-white/10 dark:bg-ink-900">
+              <h3 className="m-0 mb-4 flex items-center gap-3 font-display text-[22px] font-semibold uppercase text-cocoa-900 dark:text-white">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-ink-950 font-display text-[15px] text-brand-amber dark:bg-white/10">
+                  10
+                </span>
                 Recursos
               </h3>
               <div className="space-y-3">
@@ -1278,8 +1410,11 @@ export default function LandingCMSPage() {
             </section>
 
             {/* Testimonios */}
-            <section>
-              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+            <section id="cms-testimonials" className="scroll-mt-24 rounded-[26px] border border-sand-200 bg-white p-5 sm:p-7 dark:border-white/10 dark:bg-ink-900">
+              <h3 className="m-0 mb-4 flex items-center gap-3 font-display text-[22px] font-semibold uppercase text-cocoa-900 dark:text-white">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-ink-950 font-display text-[15px] text-brand-amber dark:bg-white/10">
+                  11
+                </span>
                 Testimonios
               </h3>
               <div className="space-y-3">
@@ -1306,8 +1441,11 @@ export default function LandingCMSPage() {
             </section>
 
             {/* CTA */}
-            <section>
-              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+            <section id="cms-cta" className="scroll-mt-24 rounded-[26px] border border-sand-200 bg-white p-5 sm:p-7 dark:border-white/10 dark:bg-ink-900">
+              <h3 className="m-0 mb-4 flex items-center gap-3 font-display text-[22px] font-semibold uppercase text-cocoa-900 dark:text-white">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-ink-950 font-display text-[15px] text-brand-amber dark:bg-white/10">
+                  12
+                </span>
                 CTA final
               </h3>
               <div className="space-y-3">
@@ -1353,8 +1491,11 @@ export default function LandingCMSPage() {
             </section>
 
             {/* SEO */}
-            <section>
-              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+            <section id="cms-seo" className="scroll-mt-24 rounded-[26px] border border-sand-200 bg-white p-5 sm:p-7 dark:border-white/10 dark:bg-ink-900">
+              <h3 className="m-0 mb-4 flex items-center gap-3 font-display text-[22px] font-semibold uppercase text-cocoa-900 dark:text-white">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-ink-950 font-display text-[15px] text-brand-amber dark:bg-white/10">
+                  13
+                </span>
                 SEO
               </h3>
               <div className="space-y-3">
@@ -1381,32 +1522,27 @@ export default function LandingCMSPage() {
               </div>
             </section>
 
-            {/* Publicación */}
-            <section>
-              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
-                Estado
-              </h3>
-              <label className="inline-flex items-center gap-3">
+            <div className="sticky bottom-3 z-20 flex flex-wrap items-center justify-between gap-3 rounded-[22px] bg-ink-950/95 px-4 py-3 text-white shadow-[0_20px_50px_-20px_rgba(20,11,16,0.7)] backdrop-blur sm:px-5">
+              <label className="inline-flex cursor-pointer items-center gap-2.5 text-sm text-white/80">
                 <input
                   type="checkbox"
                   checked={content.isPublished}
                   onChange={e =>
                     setContent({ ...content, isPublished: e.target.checked })
                   }
+                  className="h-4 w-4 accent-brand-orange"
                 />
-                <span className="text-gray-700 dark:text-gray-300">
-                  Publicado (visible en la landing)
-                </span>
+                Publicado (visible en la landing)
               </label>
-            </section>
-
-            <button
-              onClick={handleSaveContent}
-              disabled={saving}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition"
-            >
-              {saving ? 'Guardando…' : 'Guardar cambios'}
-            </button>
+              <button
+                onClick={handleSaveContent}
+                disabled={saving}
+                className="btn-fire h-12 px-7 text-[15px]"
+              >
+                {saving ? 'Guardando…' : 'Guardar cambios'}
+              </button>
+            </div>
+            </div>
           </div>
         )}
 
@@ -1415,8 +1551,8 @@ export default function LandingCMSPage() {
           <div className="space-y-6">
             {/* Form */}
             {showMeetingForm && (
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-blue-200 dark:border-blue-800">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">
+              <div className="rounded-[26px] border-[1.5px] border-[#F4B58C] bg-white p-5 sm:p-6 dark:border-brand-orange/40 dark:bg-ink-900">
+                <h2 className="m-0 font-display text-xl font-semibold uppercase text-cocoa-900 dark:text-white mb-5">
                   {editingMeeting ? 'Editar reunión' : 'Nueva reunión'}
                 </h2>
                 <div className="space-y-4">
@@ -1472,7 +1608,7 @@ export default function LandingCMSPage() {
                         type="button"
                         onClick={handleUploadMeetingImage}
                         disabled={!meetingImageFile || uploadingMeetingImage}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition"
+                        className="btn-fire h-11 px-5 text-sm"
                       >
                         {uploadingMeetingImage ? 'Subiendo…' : 'Subir imagen'}
                       </button>
@@ -1589,7 +1725,7 @@ export default function LandingCMSPage() {
                     <button
                       onClick={handleSaveMeeting}
                       disabled={savingMeeting}
-                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition"
+                      className="btn-fire h-11 px-5 text-sm"
                     >
                       {savingMeeting
                         ? 'Guardando…'
@@ -1609,15 +1745,15 @@ export default function LandingCMSPage() {
             )}
 
             {/* List */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+            <div className="rounded-[26px] border border-sand-200 bg-white p-5 sm:p-6 dark:border-white/10 dark:bg-ink-900">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                <h2 className="m-0 font-display text-xl font-semibold uppercase text-cocoa-900 dark:text-white">
                   Reuniones Semanales
                 </h2>
                 {!showMeetingForm && (
                   <button
                     onClick={openNewMeeting}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg text-sm transition"
+                    className="btn-fire h-11 px-5 text-sm"
                   >
                     + Nueva reunión
                   </button>
@@ -1645,13 +1781,13 @@ export default function LandingCMSPage() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => openEditMeeting(m)}
-                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition"
+                          className="h-9 rounded-full border-[1.5px] border-sand-300 bg-white px-4 text-[13px] font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-transparent dark:text-white/80"
                         >
                           Editar
                         </button>
                         <button
                           onClick={() => handleDeleteMeeting(m._id)}
-                          className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition"
+                          className="h-9 rounded-full border-[1.5px] border-red-200 bg-white px-4 text-[13px] font-semibold text-red-700 hover:border-red-400 dark:border-red-500/30 dark:bg-transparent dark:text-red-300"
                         >
                           Eliminar
                         </button>
@@ -1668,22 +1804,22 @@ export default function LandingCMSPage() {
         {activeTab === 'media' && (
           <div className="space-y-6">
             {/* Upload Panel */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">
+            <div className="rounded-[26px] border border-sand-200 bg-white p-5 sm:p-6 dark:border-white/10 dark:bg-ink-900">
+              <h2 className="m-0 font-display text-xl font-semibold uppercase text-cocoa-900 dark:text-white mb-5">
                 Cargar recurso
               </h2>
               <div className="flex gap-2 mb-5">
                 <button
                   type="button"
                   onClick={() => setUploadMode('file')}
-                  className={`px-3 py-1.5 text-sm rounded-full transition ${uploadMode === 'file' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
+                  className={`px-3 py-1.5 text-sm rounded-full transition ${uploadMode === 'file' ? 'bg-ink-950 text-white dark:bg-white dark:text-ink-950' : 'bg-sand-50 text-cocoa-600 dark:bg-white/5 dark:text-white/70'}`}
                 >
                   Archivo
                 </button>
                 <button
                   type="button"
                   onClick={() => setUploadMode('link')}
-                  className={`px-3 py-1.5 text-sm rounded-full transition ${uploadMode === 'link' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
+                  className={`px-3 py-1.5 text-sm rounded-full transition ${uploadMode === 'link' ? 'bg-ink-950 text-white dark:bg-white dark:text-ink-950' : 'bg-sand-50 text-cocoa-600 dark:bg-white/5 dark:text-white/70'}`}
                 >
                   Enlace (YouTube/Vimeo/PDF/etc.)
                 </button>
@@ -1695,7 +1831,7 @@ export default function LandingCMSPage() {
                     <>
                       <div
                         onClick={() => fileInputRef.current?.click()}
-                        className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 transition-colors"
+                        className="cursor-pointer rounded-[22px] border-2 border-dashed border-[#F4B58C] bg-cream p-6 text-center transition-colors hover:border-brand-orange dark:border-brand-orange/40 dark:bg-white/[0.03]"
                       >
                         {uploadPreview ? (
                           <img
@@ -1820,7 +1956,7 @@ export default function LandingCMSPage() {
                         ? !uploadFile
                         : !uploadLinkUrl.trim())
                     }
-                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition"
+                    className="btn-fire h-12 w-full text-[15px]"
                   >
                     {uploading
                       ? uploadMode === 'file'
@@ -1835,14 +1971,14 @@ export default function LandingCMSPage() {
             </div>
 
             {/* Gallery */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+            <div className="rounded-[26px] border border-sand-200 bg-white p-5 sm:p-6 dark:border-white/10 dark:bg-ink-900">
               <div className="flex flex-wrap items-center gap-3 mb-5">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white mr-2">
+                <h2 className="m-0 font-display text-xl font-semibold uppercase text-cocoa-900 dark:text-white mr-2">
                   Archivos guardados
                 </h2>
                 <button
                   onClick={() => setMediaFilter('all')}
-                  className={`px-3 py-1 text-sm rounded-full transition ${mediaFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
+                  className={`px-3 py-1 text-sm rounded-full transition ${mediaFilter === 'all' ? 'bg-ink-950 text-white dark:bg-white dark:text-ink-950' : 'bg-sand-50 text-cocoa-600 dark:bg-white/5 dark:text-white/70'}`}
                 >
                   Todas ({media.length})
                 </button>
@@ -1854,7 +1990,7 @@ export default function LandingCMSPage() {
                     <button
                       key={c.value}
                       onClick={() => setMediaFilter(c.value)}
-                      className={`px-3 py-1 text-sm rounded-full transition ${mediaFilter === c.value ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
+                      className={`px-3 py-1 text-sm rounded-full transition ${mediaFilter === c.value ? 'bg-ink-950 text-white dark:bg-white dark:text-ink-950' : 'bg-sand-50 text-cocoa-600 dark:bg-white/5 dark:text-white/70'}`}
                     >
                       {c.label} ({count})
                     </button>
@@ -1892,7 +2028,7 @@ export default function LandingCMSPage() {
                                     href={img.mediaUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-block mt-2 text-[11px] font-medium text-blue-300 underline"
+                                    className="inline-block mt-2 text-[11px] font-medium text-brand-amber underline"
                                   >
                                     Abrir enlace
                                   </a>
@@ -1961,7 +2097,7 @@ export default function LandingCMSPage() {
                           href={img.mediaUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline mt-1 inline-flex"
+                          className="text-xs text-brand-deep dark:text-brand-amber font-medium hover:underline mt-1 inline-flex"
                         >
                           Abrir
                         </a>
@@ -2000,25 +2136,21 @@ export default function LandingCMSPage() {
 
             {editingMedia && (
               <div
-                className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+                className="fixed inset-0 z-50 flex items-center justify-center bg-[#0C0609]/75 p-4 backdrop-blur-sm"
                 onClick={() => setEditingMedia(null)}
               >
                 <div
-                  className="w-full max-w-2xl rounded-xl bg-white dark:bg-gray-800 shadow-xl"
+                  className="w-full max-w-2xl overflow-hidden rounded-[28px] bg-white shadow-2xl dark:bg-ink-900"
                   onClick={e => e.stopPropagation()}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Editar archivo guardado"
                 >
-                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                      Editar archivo guardado
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={() => setEditingMedia(null)}
-                      className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                    >
-                      Cerrar
-                    </button>
-                  </div>
+                  <BrandModalHeader
+                    title="Editar archivo guardado"
+                    onClose={() => setEditingMedia(null)}
+                    compact
+                  />
 
                   <div className="p-6 space-y-4">
                     <input
@@ -2074,11 +2206,11 @@ export default function LandingCMSPage() {
                     </div>
                   </div>
 
-                  <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-3 justify-end">
+                  <div className="px-6 pb-6 flex gap-3 justify-end">
                     <button
                       type="button"
                       onClick={() => setEditingMedia(null)}
-                      className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold"
+                      className="h-11 rounded-full border-[1.5px] border-sand-300 bg-white px-5 text-sm font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-transparent dark:text-white/80"
                     >
                       Cancelar
                     </button>
@@ -2086,7 +2218,7 @@ export default function LandingCMSPage() {
                       type="button"
                       onClick={handleSaveMediaEdit}
                       disabled={savingMediaEdit}
-                      className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold"
+                      className="btn-fire h-11 px-6 text-sm"
                     >
                       {savingMediaEdit ? 'Guardando…' : 'Guardar cambios'}
                     </button>

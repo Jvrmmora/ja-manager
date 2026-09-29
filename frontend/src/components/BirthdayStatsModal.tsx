@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getAuthToken } from '../services/api';
-import { formatBirthday } from '../utils/dateUtils';
+import { formatBirthday, parseYYYYMMDD } from '../utils/dateUtils';
+import BrandModalHeader from './ui/BrandModalHeader';
+import { initialsOf } from './young/useYoungActions';
+
+const MONTHS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
 
 interface BirthdayStats {
   emailsSentToday: number;
@@ -62,200 +66,171 @@ const BirthdayStatsModal: React.FC<BirthdayStatsModalProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Captura: cierra solo este modal y no el de cumpleaños que está debajo
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 dark:from-purple-600 dark:to-indigo-700 text-white p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                <span className="material-symbols-rounded text-3xl">cake</span>
-                Estadísticas de Cumpleaños
-              </h2>
-              <p className="text-white/80 mt-1">
-                Resumen de envíos y reclamaciones
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-white hover:text-white/90 transition-colors p-2 bg-white/20 rounded-full"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
+  const tile =
+    'flex flex-col gap-2.5 rounded-[20px] border px-[18px] py-4';
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+  return (
+    <div
+      className="fixed inset-0 z-[55] flex items-end sm:items-center justify-center bg-[#0C0609]/75 backdrop-blur-sm sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[94vh] sm:max-h-[90vh] w-full sm:max-w-2xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-[30px] bg-cream shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)] dark:bg-ink-900"
+        onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Estadísticas de cumpleaños"
+      >
+        <BrandModalHeader
+          title="Estadísticas de cumpleaños"
+          subtitle="Resumen de envíos y reclamaciones"
+          iconTone="wine"
+          icon={
+            <svg className="h-[22px] w-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 3v18h18M7 15l4-4 3 3 5-6" />
+            </svg>
+          }
+          onClose={onClose}
+        />
+
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+              <span className="h-12 w-12 animate-spin rounded-full border-4 border-sand-200 border-t-brand-ember" />
             </div>
           ) : error ? (
-            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
-              <p className="text-red-800 dark:text-red-200 flex items-center gap-2">
-                <span className="material-symbols-rounded">error</span>
-                {error}
-              </p>
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+              {error}
             </div>
           ) : stats ? (
-            <>
-              {/* Cards de estadísticas */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {/* Correos enviados hoy */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/40 dark:to-blue-800/40 rounded-lg p-5 border border-blue-200 dark:border-blue-700">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="material-symbols-rounded text-4xl text-blue-600 dark:text-blue-400">
-                      mail
-                    </span>
-                    <span className="text-3xl font-bold text-blue-700 dark:text-blue-300">
-                      {stats.emailsSentToday}
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                    Correos Enviados Hoy
-                  </h3>
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className={`${tile} border-sand-200 bg-white dark:border-white/10 dark:bg-ink-800`}>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sand-100 text-brand-ember dark:bg-brand-orange/15 dark:text-brand-amber">
+                    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="M22 7l-10 6L2 7" />
+                    </svg>
+                  </span>
+                  <span className="font-display text-[40px] font-bold leading-none text-cocoa-900 dark:text-white">
+                    {stats.emailsSentToday}
+                  </span>
+                  <span className="text-[13px] text-cocoa-500 dark:text-white/60">Correos enviados hoy</span>
                 </div>
-
-                {/* Puntos reclamados este mes */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/40 dark:to-purple-800/40 rounded-lg p-5 border border-purple-200 dark:border-purple-700">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="material-symbols-rounded text-4xl text-purple-600 dark:text-purple-400">
-                      stars
-                    </span>
-                    <span className="text-3xl font-bold text-purple-700 dark:text-purple-300">
-                      {stats.totalPointsClaimedThisMonth}
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-semibold text-purple-800 dark:text-purple-200">
-                    Puntos Reclamados (Mes)
-                  </h3>
+                <div className={`${tile} border-ink-950 bg-ink-950 text-white`}>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-amber/15 text-brand-amber">
+                    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  </span>
+                  <span className="font-display text-[40px] font-bold leading-none text-brand-amber">
+                    {stats.totalPointsClaimedThisMonth}
+                  </span>
+                  <span className="text-[13px] text-white/65">Puntos reclamados (mes)</span>
                 </div>
-
-                {/* Reclamaciones este mes */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/40 dark:to-green-800/40 rounded-lg p-5 border border-green-200 dark:border-green-700">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="material-symbols-rounded text-4xl text-green-600 dark:text-green-400">
-                      redeem
-                    </span>
-                    <span className="text-3xl font-bold text-green-700 dark:text-green-300">
-                      {stats.transactionsCount}
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-semibold text-green-800 dark:text-green-200">
-                    Reclamaciones (Mes)
-                  </h3>
+                <div className={`${tile} border-sand-200 bg-white dark:border-white/10 dark:bg-ink-800`}>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F6E1E8] text-brand-wine dark:bg-brand-wine/25 dark:text-[#F4A3C0]">
+                    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+                    </svg>
+                  </span>
+                  <span className="font-display text-[40px] font-bold leading-none text-cocoa-900 dark:text-white">
+                    {stats.transactionsCount}
+                  </span>
+                  <span className="text-[13px] text-cocoa-500 dark:text-white/60">Reclamaciones este mes</span>
                 </div>
               </div>
 
-              {/* Próximos cumpleaños */}
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg p-5 border border-purple-200 dark:border-purple-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <span className="material-symbols-rounded">event</span>
-                  Próximos Cumpleaños
-                </h3>
-
+              <div className="rounded-[22px] border border-sand-200 bg-white p-4 dark:border-white/10 dark:bg-ink-800">
+                <span className="eyebrow block px-1.5 pb-2 text-[13px] text-brand-deep dark:text-brand-amber">
+                  Próximos cumpleaños
+                </span>
                 {stats.upcomingBirthdays.length === 0 ? (
-                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                  <p className="m-0 py-4 text-center text-sm text-cocoa-500 dark:text-white/60">
                     No hay cumpleaños próximos registrados
                   </p>
                 ) : (
-                  <div className="space-y-3">
-                    {stats.upcomingBirthdays.map(birthday => (
-                      <div
-                        key={birthday.youngId}
-                        className="bg-white dark:bg-gray-700 rounded-lg p-4 flex items-center justify-between hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center overflow-hidden">
-                            {birthday.profileImage ? (
-                              <img
-                                src={birthday.profileImage}
-                                alt={birthday.fullName}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <span className="material-symbols-rounded text-white text-2xl">
-                                person
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900 dark:text-white">
-                              {birthday.fullName}
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {formatBirthday(birthday.birthday)}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          <div
-                            className={`
-                            inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium
-                            ${
-                              birthday.daysUntil === 0
-                                ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200'
-                                : birthday.daysUntil <= 7
-                                  ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200'
-                                  : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                            }
-                          `}
+                  <ul className="m-0 list-none p-0">
+                    {stats.upcomingBirthdays.map(birthday => {
+                      const bd =
+                        /^\d{4}-\d{2}-\d{2}/.test(birthday.birthday)
+                          ? parseYYYYMMDD(birthday.birthday.split('T')[0] as string)
+                          : new Date(birthday.birthday);
+                      const valid = !isNaN(bd.getTime());
+                      const isToday = birthday.daysUntil === 0;
+                      return (
+                        <li
+                          key={birthday.youngId}
+                          className="grid grid-cols-[50px_42px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border-b border-sand-100 px-1.5 py-2.5 last:border-b-0 dark:border-white/5"
+                        >
+                          <span
+                            className={`flex h-12 w-12 flex-col items-center justify-center rounded-[14px] leading-none ${
+                              isToday ? 'bg-ink-950 text-white' : 'bg-sand-50 text-cocoa-900 dark:bg-white/5 dark:text-white'
+                            }`}
                           >
-                            {birthday.daysUntil === 0 ? (
-                              <>
-                                <span className="material-symbols-rounded text-base">
-                                  celebration
-                                </span>
-                                ¡Hoy!
-                              </>
-                            ) : birthday.daysUntil === 1 ? (
-                              <>
-                                <span className="material-symbols-rounded text-base">
-                                  schedule
-                                </span>
-                                Mañana
-                              </>
+                            <span className="font-display text-[19px] font-semibold">
+                              {valid ? bd.getDate() : '·'}
+                            </span>
+                            <span className={`text-[9px] font-bold tracking-[0.1em] ${isToday ? 'text-brand-amber' : 'text-brand-deep dark:text-brand-amber'}`}>
+                              {valid ? MONTHS[bd.getMonth()] : ''}
+                            </span>
+                          </span>
+                          <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-ink-800 text-xs font-bold text-white">
+                            {birthday.profileImage ? (
+                              <img src={birthday.profileImage} alt="" className="h-full w-full object-cover" />
                             ) : (
-                              <>
-                                <span className="material-symbols-rounded text-base">
-                                  schedule
-                                </span>
-                                {birthday.daysUntil} días
-                              </>
+                              initialsOf(birthday.fullName)
                             )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                          </span>
+                          <span className="flex min-w-0 flex-col">
+                            <span className="truncate text-sm font-bold text-cocoa-900 dark:text-white">
+                              {birthday.fullName}
+                            </span>
+                            <span className="truncate text-xs text-cocoa-400 dark:text-white/55">
+                              {formatBirthday(birthday.birthday)}
+                            </span>
+                          </span>
+                          <span
+                            className={`inline-flex h-[26px] items-center rounded-full px-2.5 text-xs font-bold ${
+                              isToday
+                                ? 'bg-fire text-white'
+                                : birthday.daysUntil === 1
+                                  ? 'bg-sand-100 text-[#9A3412] dark:bg-brand-orange/15 dark:text-brand-amber'
+                                  : 'bg-sand-50 text-cocoa-500 dark:bg-white/5 dark:text-white/60'
+                            }`}
+                          >
+                            {isToday ? '¡Hoy!' : birthday.daysUntil === 1 ? 'Mañana' : `En ${birthday.daysUntil} días`}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
               </div>
-            </>
+            </div>
           ) : null}
         </div>
 
-        {/* Footer */}
-        <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-t dark:border-gray-600 flex justify-end">
+        <div className="flex flex-shrink-0 justify-end border-t border-sand-200 px-5 py-3.5 dark:border-white/10">
           <button
+            type="button"
             onClick={onClose}
-            className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+            className="h-11 rounded-full bg-ink-950 px-6 text-sm font-semibold text-white dark:bg-white dark:text-ink-950"
           >
             Cerrar
           </button>

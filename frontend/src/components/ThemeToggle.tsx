@@ -7,21 +7,20 @@ const ThemeToggle: React.FC = () => {
   return (
     <button
       onClick={toggleTheme}
-      className={`
-        relative flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-300 
-        ${isDark 
-          ? 'bg-gray-700 hover:bg-gray-600 text-yellow-400' 
-          : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-        }
-        shadow-md hover:shadow-lg group
-      `}
+      type="button"
+      className={`relative flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange ${
+        isDark
+          ? 'border-white/15 bg-ink-800 text-brand-amber hover:border-white/40'
+          : 'border-sand-300 bg-white text-cocoa-600 hover:border-cocoa-400'
+      }`}
       title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+      aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
     >
-      <div className="relative w-6 h-6">
+      <div className="relative h-5 w-5">
         {/* Icono de sol (modo claro) */}
         <svg
           className={`
-            absolute inset-0 w-6 h-6 transition-all duration-500 transform
+            absolute inset-0 h-5 w-5 transition-all duration-500 transform
             ${isDark 
               ? 'opacity-0 rotate-180 scale-50' 
               : 'opacity-100 rotate-0 scale-100'
@@ -42,7 +41,7 @@ const ThemeToggle: React.FC = () => {
         {/* Icono de luna (modo oscuro) */}
         <svg
           className={`
-            absolute inset-0 w-6 h-6 transition-all duration-500 transform
+            absolute inset-0 h-5 w-5 transition-all duration-500 transform
             ${isDark 
               ? 'opacity-100 rotate-0 scale-100' 
               : 'opacity-0 -rotate-180 scale-50'
@@ -61,26 +60,6 @@ const ThemeToggle: React.FC = () => {
         </svg>
       </div>
 
-      {/* Tooltip */}
-      <div 
-        className={`
-          absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs font-medium
-          rounded-md whitespace-nowrap pointer-events-none transition-all duration-200
-          ${isDark 
-            ? 'bg-gray-800 text-white' 
-            : 'bg-gray-900 text-white'
-          }
-          opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0
-        `}
-      >
-        {isDark ? 'Modo claro' : 'Modo oscuro'}
-        <div 
-          className={`
-            absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent
-            ${isDark ? 'border-t-gray-800' : 'border-t-gray-900'}
-          `}
-        />
-      </div>
     </button>
   );
 };

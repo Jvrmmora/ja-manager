@@ -334,16 +334,12 @@ function RegistrationPage() {
   };
 
   const inputCls = (field: string) =>
-    `w-full px-3 py-2.5 border rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-      isDark
-        ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-500'
-        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-    } ${errors[field] ? 'border-red-500' : ''}`;
+    `field-brand h-12 text-[15px] ${errors[field] ? '!border-red-500' : ''}`;
 
   return (
     <div className={`min-h-screen flex flex-col ${isDark ? 'dark' : ''}`}>
       {/* ── Top bar: same layout as Login/Landing ──────────────────────── */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 z-50 flex-shrink-0">
+      <div className="bg-white dark:bg-ink-950 border-b border-sand-200 dark:border-white/10 z-50 flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between py-3">
           <button
             onClick={() => navigate('/')}
@@ -353,9 +349,9 @@ function RegistrationPage() {
             <img
               src={logo}
               alt="JA Modelia"
-              className="h-8 w-8 object-contain transition-transform group-hover:scale-110"
+              className="h-9 w-9 object-contain transition-transform group-hover:scale-110"
             />
-            <span className="font-bold text-gray-900 dark:text-white text-sm sm:text-base group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            <span className="font-display text-lg font-semibold tracking-wide text-cocoa-900 dark:text-white group-hover:text-brand-deep dark:group-hover:text-brand-amber transition-colors">
               Jóvenes Modelia Bogotá
             </span>
           </button>
@@ -363,88 +359,59 @@ function RegistrationPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 lg:flex-row">
-        {/* ── Left branding panel (desktop) ─────────────────────────────── */}
-        <div className="hidden lg:flex lg:w-5/12 xl:w-2/5 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 relative overflow-hidden flex-col justify-center items-center p-12 text-center">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/95 via-blue-600/95 to-indigo-700/95" />
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-10 left-10 w-32 h-32 bg-white/5 rounded-full" />
-            <div className="absolute bottom-20 right-10 w-48 h-48 bg-white/5 rounded-full" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/5 rounded-full" />
-          </div>
-          <div className="relative z-10 flex flex-col items-center">
-            <div className="mb-8 relative">
-              <div className="absolute inset-0 bg-white/10 rounded-full blur-xl" />
-              <img
-                src={logo}
-                alt="JA Modelia"
-                className="w-28 h-28 relative z-10 drop-shadow-2xl object-contain"
-              />
-            </div>
-            <h1 className="text-white text-3xl font-bold mb-2">
-              Crea tu cuenta
+      <div className="flex flex-1 flex-col lg:flex-row">
+        {/* ── Panel de marca (móvil: franja superior) ─────────────────────── */}
+        <aside className="relative overflow-hidden bg-ink-950 lg:w-5/12 xl:w-2/5 flex items-center justify-center px-6 pt-10 pb-14 lg:p-16 text-center">
+          <div className="pointer-events-none absolute left-1/2 top-2/3 h-[720px] w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(242,106,46,.34)_0%,rgba(138,28,69,.18)_40%,rgba(20,11,16,0)_68%)] motion-safe:animate-ember" />
+          <div className="relative flex w-full max-w-md flex-col items-center gap-4 lg:gap-6">
+            <h1 className="m-0 flex flex-col items-center gap-2 font-display uppercase">
+              <span className="text-fire text-5xl lg:text-7xl font-bold leading-[0.95]">
+                Crea tu cuenta
+              </span>
+              <span className="text-[17px] lg:text-2xl font-medium tracking-[0.06em] text-white/85">
+                Jóvenes Modelia Bogotá
+              </span>
             </h1>
-            <h2 className="text-blue-200 text-xl font-semibold mb-6">
-              Jóvenes Modelia Bogotá
-            </h2>
-            <p className="text-white/85 text-base max-w-xs leading-relaxed mb-8">
+            <p className="m-0 text-[15px] lg:text-[17px] leading-relaxed text-white/75">
               Únete a nuestra comunidad de jóvenes apasionados por servir a
               Dios.
             </p>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20 max-w-xs w-full">
-              <svg
-                className="w-7 h-7 text-white/60 mb-3 mx-auto"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z" />
-              </svg>
-              <p className="text-white/90 text-sm leading-relaxed italic mb-2">
-                "Que nadie te menosprecie por tu juventud, sino sé un ejemplo
-                para los creyentes."
-              </p>
-              <p className="text-white/60 text-xs font-medium">
-                — 1 Timoteo 4:12
-              </p>
-            </div>
+            <figure className="hidden lg:flex m-0 mt-2 w-full flex-col items-center gap-3 rounded-[20px] border border-white/10 bg-white/[0.05] px-7 py-6">
+              <span className="text-fire -mb-6 font-display text-6xl leading-none" aria-hidden="true">
+                “
+              </span>
+              <blockquote className="m-0 text-base italic leading-relaxed text-white/90">
+                Que nadie te menosprecie por tu juventud, sino sé un ejemplo
+                para los creyentes.
+              </blockquote>
+              <figcaption className="font-display text-[13px] uppercase tracking-[0.16em] text-brand-amber">
+                1 Timoteo 4:12
+              </figcaption>
+            </figure>
             <button
               onClick={() => navigate('/')}
-              className="mt-8 flex items-center gap-2 text-white/70 hover:text-white text-sm transition-colors"
+              className="btn-outline-light hidden lg:inline-flex h-12 px-6 text-[15px]"
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M19 12H5M11 18l-6-6 6-6" />
               </svg>
               Volver al inicio
             </button>
           </div>
-        </div>
+        </aside>
 
         {/* ── Right form panel ───────────────────────────────────────────── */}
         <div
-          className={`flex-1 flex flex-col overflow-y-auto ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}
+          className="flex-1 flex flex-col overflow-y-auto bg-cream dark:bg-ink-950"
         >
-          <div className="flex-1 flex items-start justify-center py-8 px-4 sm:px-6 lg:px-8">
-            <div className="w-full max-w-lg">
+          <div className="flex-1 flex items-start justify-center pb-10 lg:py-14 px-4 sm:px-6 lg:px-10">
+            <div className="-mt-6 lg:mt-0 relative w-full max-w-xl">
               {/* Page header */}
-              <div className="mb-6">
-                <h1
-                  className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}
-                >
+              <div className="mb-6 hidden lg:block">
+                <h2 className="m-0 font-display text-[44px] font-semibold uppercase leading-none text-cocoa-900 dark:text-white">
                   Crear Cuenta
-                </h1>
-                <p
-                  className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
-                >
+                </h2>
+                <p className="mt-2 text-base text-cocoa-500 dark:text-white/65">
                   Completa el formulario para unirte a nuestra comunidad.
                 </p>
               </div>
@@ -452,10 +419,10 @@ function RegistrationPage() {
               {/* Form card */}
               <form
                 onSubmit={handleSubmit}
-                className={`rounded-2xl shadow-sm border p-6 space-y-5 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}
+                className="rounded-[28px] border border-sand-200 bg-white p-6 sm:p-9 space-y-5 shadow-[0_30px_60px_-40px_rgba(78,15,58,0.4)] dark:border-white/10 dark:bg-ink-900"
               >
                 {errors.submit && (
-                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-2xl text-sm">
                     {errors.submit}
                   </div>
                 )}
@@ -463,13 +430,13 @@ function RegistrationPage() {
                 {/* Profile image */}
                 <div>
                   <label
-                    className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                    className="block text-sm font-semibold mb-2 text-cocoa-700 dark:text-white/85"
                   >
                     Foto de Perfil (opcional)
                   </label>
                   <div className="flex items-center gap-4">
                     <div
-                      className={`w-14 h-14 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}
+                      className="w-16 h-16 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden border-2 border-dashed border-[#E6BFA6] bg-cream text-brand-ember dark:border-white/20 dark:bg-ink-800 dark:text-brand-amber"
                     >
                       {imagePreview ? (
                         <img
@@ -479,7 +446,7 @@ function RegistrationPage() {
                         />
                       ) : (
                         <svg
-                          className="w-7 h-7 text-gray-400"
+                          className="w-7 h-7"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -498,7 +465,7 @@ function RegistrationPage() {
                       accept="image/*"
                       onChange={handleImageChange}
                       disabled={loading}
-                      className="text-sm text-gray-500 dark:text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400"
+                      className="text-sm text-cocoa-500 dark:text-white/60 file:mr-3 file:h-10 file:px-4 file:rounded-full file:border-[1.5px] file:border-sand-300 file:bg-white file:text-sm file:font-semibold file:text-cocoa-900 hover:file:bg-sand-50 dark:file:border-white/20 dark:file:bg-ink-800 dark:file:text-white"
                     />
                   </div>
                   {errors.profileImage && (
@@ -513,7 +480,7 @@ function RegistrationPage() {
                   <div className="sm:col-span-3">
                     <label
                       htmlFor="fullName"
-                      className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                      className="block text-sm font-semibold mb-1.5 text-cocoa-700 dark:text-white/85"
                     >
                       Nombre Completo *
                     </label>
@@ -536,7 +503,7 @@ function RegistrationPage() {
                   <div className="sm:col-span-2">
                     <label
                       htmlFor="birthday"
-                      className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                      className="block text-sm font-semibold mb-1.5 text-cocoa-700 dark:text-white/85"
                     >
                       Fecha de Nacimiento *
                     </label>
@@ -557,7 +524,7 @@ function RegistrationPage() {
                       </p>
                     )}
                     {formData.birthday && !errors.birthday && (
-                      <p className="mt-1 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                      <p className="mt-1 text-xs text-[#9A3412] dark:text-brand-amber font-semibold">
                         Rango: {calculateAgeRange(formData.birthday)}
                       </p>
                     )}
@@ -569,7 +536,7 @@ function RegistrationPage() {
                   <div>
                     <label
                       htmlFor="gender"
-                      className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                      className="block text-sm font-semibold mb-1.5 text-cocoa-700 dark:text-white/85"
                     >
                       Género *
                     </label>
@@ -593,7 +560,7 @@ function RegistrationPage() {
                   </div>
                   <div className="sm:col-span-2">
                     <label
-                      className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                      className="block text-sm font-semibold mb-1.5 text-cocoa-700 dark:text-white/85"
                     >
                       Teléfono *
                     </label>
@@ -609,12 +576,11 @@ function RegistrationPage() {
                           });
                       }}
                       error={errors.phone}
+                      variant="brand"
                       className={
                         errors.phone
                           ? 'border-red-500'
-                          : isDark
-                            ? 'border-gray-600'
-                            : 'border-gray-300'
+                          : 'border-sand-300 dark:border-white/15'
                       }
                     />
                     {errors.phone && (
@@ -629,7 +595,7 @@ function RegistrationPage() {
                 <div>
                   <label
                     htmlFor="email"
-                    className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                    className="block text-sm font-semibold mb-1.5 text-cocoa-700 dark:text-white/85"
                   >
                     Email *
                   </label>
@@ -663,7 +629,7 @@ function RegistrationPage() {
                 <div>
                   <label
                     htmlFor="password"
-                    className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                    className="block text-sm font-semibold mb-1.5 text-cocoa-700 dark:text-white/85"
                   >
                     Contraseña *
                   </label>
@@ -681,7 +647,7 @@ function RegistrationPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-cocoa-400 hover:text-cocoa-700 dark:text-white/50 dark:hover:text-white"
                     >
                       <svg
                         className="w-5 h-5"
@@ -726,7 +692,7 @@ function RegistrationPage() {
                 <div>
                   <label
                     htmlFor="passwordConfirmation"
-                    className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                    className="block text-sm font-semibold mb-1.5 text-cocoa-700 dark:text-white/85"
                   >
                     Confirmar Contraseña *
                   </label>
@@ -777,7 +743,7 @@ function RegistrationPage() {
                     <button
                       type="button"
                       onClick={() => setShowPasswordConfirm(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-cocoa-400 hover:text-cocoa-700 dark:text-white/50 dark:hover:text-white"
                     >
                       <svg
                         className="w-5 h-5"
@@ -820,15 +786,11 @@ function RegistrationPage() {
 
                 {/* Referral placa */}
                 <div
-                  className={`p-4 rounded-xl border-2 transition-colors ${
-                    isDark
-                      ? 'bg-purple-900/10 border-purple-500/30'
-                      : 'bg-purple-50/50 border-purple-200'
-                  }`}
+                  className="p-5 rounded-[18px] border border-[#F6D6B8] bg-sand-50 dark:border-brand-amber/25 dark:bg-brand-amber/[0.06]"
                 >
                   <label
                     htmlFor="referredByPlaca"
-                    className={`block text-sm font-semibold mb-2 ${isDark ? 'text-purple-300' : 'text-purple-700'}`}
+                    className="block text-sm font-semibold mb-2 text-cocoa-700 dark:text-white/85"
                   >
                     Placa de Referido (Opcional)
                     {placaValid === true && (
@@ -846,11 +808,7 @@ function RegistrationPage() {
                       onChange={handleChange}
                       disabled={loading}
                       placeholder="@MODJAVI001"
-                      className={`w-full px-3 py-2.5 border-2 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 pr-10 ${
-                        isDark
-                          ? 'bg-gray-800 text-white border-purple-500/40 placeholder-gray-500'
-                          : 'bg-white text-gray-900 border-purple-200 placeholder-gray-400'
-                      } ${placaValid === false ? 'border-red-500' : placaValid === true ? 'border-green-500' : ''}`}
+                      className={`field-brand h-12 font-mono text-[15px] pr-10 ${placaValid === false ? '!border-red-500' : placaValid === true ? '!border-green-500' : ''}`}
                     />
                     {(validatingPlaca || placaValid !== null) && (
                       <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -882,7 +840,7 @@ function RegistrationPage() {
                     </p>
                   )}
                   <p
-                    className={`mt-2 text-xs ${isDark ? 'text-purple-400' : 'text-purple-600'}`}
+                    className="mt-2 text-xs text-cocoa-500 dark:text-white/55"
                   >
                     Si alguien te refirió, ingresa su placa (ej: @MODJAVI001)
                   </p>
@@ -892,7 +850,7 @@ function RegistrationPage() {
                 <div>
                   {calculateAge(formData.birthday) !== null &&
                     (calculateAge(formData.birthday) as number) < 18 && (
-                      <div className="mb-3 space-y-2 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 p-3">
+                      <div className="mb-3 space-y-2 rounded-[18px] bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 p-4">
                         <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
                           Eres menor de edad: se requiere la autorización de tu
                           padre, madre o representante legal.
@@ -941,16 +899,16 @@ function RegistrationPage() {
                         });
                       }}
                       disabled={loading}
-                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="mt-0.5 h-[18px] w-[18px] flex-shrink-0 rounded accent-brand-ember"
                     />
                     <span
-                      className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                      className="text-sm leading-relaxed text-cocoa-600 dark:text-white/75"
                     >
                       He leído y acepto la{' '}
                       <button
                         type="button"
                         onClick={() => setShowPolicy(true)}
-                        className="text-blue-600 dark:text-blue-400 underline font-medium"
+                        className="text-brand-deep dark:text-brand-amber underline font-semibold"
                       >
                         Política de Privacidad
                       </button>{' '}
@@ -968,7 +926,7 @@ function RegistrationPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
+                  className="btn-fire w-full h-14 text-base disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
@@ -983,12 +941,12 @@ function RegistrationPage() {
 
               {/* Footer link */}
               <p
-                className={`mt-5 text-center text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+                className="mt-6 text-center text-[15px] text-cocoa-500 dark:text-white/60"
               >
                 ¿Ya tienes cuenta?{' '}
                 <button
                   onClick={() => navigate('/login')}
-                  className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                  className="text-brand-deep dark:text-brand-amber hover:underline font-semibold"
                 >
                   Inicia sesión
                 </button>

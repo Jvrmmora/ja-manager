@@ -82,7 +82,7 @@ export default function ImageWithFallback({
   if (!src || attempt > RETRY_DELAYS_MS.length) {
     return (
       <div
-        className={`flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 text-gray-400 dark:text-gray-500 ${className ?? ''}`}
+        className={`flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-sand-100 to-sand-200 dark:from-ink-800 dark:to-ink-900 text-cocoa-400 dark:text-white/40 ${className ?? ''}`}
         role="img"
         aria-label={alt || fallbackLabel || 'Imagen no disponible'}
       >

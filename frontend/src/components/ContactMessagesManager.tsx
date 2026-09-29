@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { contactService } from '../services/contactService';
 import { getAuthToken } from '../services/api';
 import type { IContactMessage } from '../types';
+import BrandModalHeader from './ui/BrandModalHeader';
 
 interface ContactMessagesManagerProps {
   onShowError: (message: string) => void;
@@ -141,7 +142,7 @@ export default function ContactMessagesManager({
           <p className="text-sm text-gray-600 dark:text-gray-300">
             Total mensajes: {totalItems}
             {selectedIds.size > 0 && (
-              <span className="ml-2 text-blue-600 dark:text-blue-400">
+              <span className="ml-2 font-semibold text-brand-deep dark:text-brand-amber">
                 ({selectedIds.size} seleccionado{selectedIds.size > 1 ? 's' : ''})
               </span>
             )}
@@ -152,7 +153,7 @@ export default function ContactMessagesManager({
             <button
               onClick={handleDeleteSelected}
               disabled={deleting}
-              className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-medium transition flex items-center gap-2"
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-red-700 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-red-800 disabled:opacity-60"
             >
               {deleting ? (
                 <>
@@ -174,7 +175,7 @@ export default function ContactMessagesManager({
           )}
           <button
             onClick={() => loadMessages(currentPage)}
-            className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-sand-300 bg-white px-4 text-[13px] font-semibold text-cocoa-600 transition-colors hover:border-cocoa-400 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/15 dark:bg-ink-800 dark:text-white/80"
           >
             Recargar
           </button>
@@ -183,7 +184,7 @@ export default function ContactMessagesManager({
 
       {loading ? (
         <div className="text-center py-10">
-          <div className="inline-block h-7 w-7 animate-spin rounded-full border-b-2 border-blue-600" />
+          <span className="inline-block h-7 w-7 animate-spin rounded-full border-[3px] border-sand-200 border-t-brand-ember" />
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
             Cargando mensajes...
           </p>
@@ -194,56 +195,56 @@ export default function ContactMessagesManager({
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="overflow-x-auto rounded-[22px] border border-sand-200 bg-white dark:border-white/10 dark:bg-ink-800">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-900/50">
+              <thead className="bg-sand-50 dark:bg-white/[0.03]">
                 <tr>
                   <th className="px-4 py-3 text-left">
                     <input
                       type="checkbox"
                       checked={messages.length > 0 && selectedIds.size === messages.length}
                       onChange={toggleSelectAll}
-                      className="rounded border-gray-300 text-blue-600 cursor-pointer w-4 h-4"
+                      className="h-4 w-4 cursor-pointer rounded border-sand-300 accent-brand-ember"
                       aria-label="Seleccionar todos"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-cocoa-400 dark:text-white/50">
                     Nombre
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-cocoa-400 dark:text-white/50">
                     Correo
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-cocoa-400 dark:text-white/50">
                     Mensaje
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-cocoa-400 dark:text-white/50">
                     Fecha
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">
+                  <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-[0.08em] text-cocoa-400 dark:text-white/50">
                     Acciones
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-800">
+              <tbody className="divide-y divide-sand-100 dark:divide-white/5">
                 {messages.map(item => {
                   const itemId = item._id || item.id;
                   if (!itemId) return null;
                   return (
-                  <tr key={itemId} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                    <td className="px-4 py-3">
+                  <tr key={itemId} className="cursor-pointer transition-colors hover:bg-cream dark:hover:bg-white/[0.03]" onClick={() => setSelectedMessage(item)}>
+                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedIds.has(itemId)}
                         onChange={() => toggleSelectMessage(itemId)}
-                        className="rounded border-gray-300 text-blue-600 cursor-pointer w-4 h-4"
+                        className="h-4 w-4 cursor-pointer rounded border-sand-300 accent-brand-ember"
                         aria-label={`Seleccionar ${item.fullName}`}
                       />
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                    <td className="px-4 py-3 text-sm font-bold text-cocoa-900 dark:text-white whitespace-nowrap">
                       {item.fullName}
                     </td>
-                    <td className="px-4 py-3 text-sm text-blue-700 dark:text-blue-300 whitespace-nowrap">
-                      <a href={`mailto:${item.email}`} className="hover:underline">
+                    <td className="px-4 py-3 text-sm whitespace-nowrap">
+                      <a href={`mailto:${item.email}`} onClick={e => e.stopPropagation()} className="text-brand-deep hover:underline dark:text-brand-amber">
                         {item.email}
                       </a>
                     </td>
@@ -258,8 +259,9 @@ export default function ContactMessagesManager({
                     <td className="px-4 py-3 text-center">
                       <button
                         onClick={() => setSelectedMessage(item)}
-                        className="inline-flex items-center justify-center p-2 rounded-lg text-gray-500 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-[11px] border border-sand-200 bg-white text-cocoa-500 transition-colors hover:border-[#F4B58C] hover:text-brand-deep dark:border-white/10 dark:bg-ink-900 dark:text-white/70"
                         title="Ver detalle"
+                        aria-label="Ver detalle"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -281,13 +283,13 @@ export default function ContactMessagesManager({
                 loadMessages(previousPage);
               }}
               disabled={currentPage <= 1}
-              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-10 rounded-full border border-sand-300 bg-white px-4 text-[13px] font-semibold text-cocoa-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/15 dark:bg-ink-800 dark:text-white/80"
             >
               Anterior
             </button>
 
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Pagina {currentPage} de {totalPages}
+              Página {currentPage} de {totalPages}
             </p>
 
             <button
@@ -296,7 +298,7 @@ export default function ContactMessagesManager({
                 loadMessages(nextPage);
               }}
               disabled={currentPage >= totalPages}
-              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-10 rounded-full border border-sand-300 bg-white px-4 text-[13px] font-semibold text-cocoa-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/15 dark:bg-ink-800 dark:text-white/80"
             >
               Siguiente
             </button>
@@ -312,7 +314,7 @@ export default function ContactMessagesManager({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-[1px]"
+              className="fixed inset-0 z-[60] bg-[#0C0609]/75 backdrop-blur-sm"
               onClick={() => setSelectedMessage(null)}
             />
             <motion.div
@@ -322,22 +324,23 @@ export default function ContactMessagesManager({
               className="fixed inset-0 z-[61] flex items-center justify-center p-4 pointer-events-none"
             >
               <div
-                className="w-full max-w-2xl rounded-2xl bg-white dark:bg-gray-900 shadow-2xl pointer-events-auto"
+                className="pointer-events-auto w-full max-w-xl overflow-hidden rounded-[28px] bg-white shadow-2xl dark:bg-ink-900"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Detalle del mensaje"
                 onClick={e => e.stopPropagation()}
               >
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                    Detalle del Mensaje
-                  </h3>
-                  <button
-                    onClick={() => setSelectedMessage(null)}
-                    className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+                <BrandModalHeader
+          title="Detalle del mensaje"
+          subtitle={selectedMessage.fullName}
+          icon={
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M2 4h20v16H2zM22 7l-10 6L2 7" />
+            </svg>
+          }
+          iconTone="fire"
+          onClose={() => setSelectedMessage(null)} compact
+        />
 
                 <div className="px-6 py-4 space-y-4">
                   <div>
@@ -349,7 +352,7 @@ export default function ContactMessagesManager({
                     <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Correo</p>
                     <a
                       href={`mailto:${selectedMessage.email}`}
-                      className="text-blue-600 dark:text-blue-400 hover:underline"
+                      className="text-brand-deep hover:underline dark:text-brand-amber"
                     >
                       {selectedMessage.email}
                     </a>
@@ -364,7 +367,7 @@ export default function ContactMessagesManager({
 
                   <div>
                     <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Mensaje</p>
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 max-h-64 overflow-y-auto">
+                    <div className="max-h-64 overflow-y-auto rounded-[18px] border border-sand-200 bg-cream p-4 dark:border-white/10 dark:bg-white/[0.03]">
                       <p className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
                         {selectedMessage.message}
                       </p>
@@ -375,13 +378,13 @@ export default function ContactMessagesManager({
                 <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-3 justify-end">
                   <button
                     onClick={() => setSelectedMessage(null)}
-                    className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    className="h-11 rounded-full border-[1.5px] border-sand-300 bg-white px-5 text-sm font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-transparent dark:text-white/80"
                   >
                     Cerrar
                   </button>
                   <a
                     href={`mailto:${selectedMessage.email}`}
-                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition"
+                    className="btn-fire h-11 px-6 text-sm"
                   >
                     Responder
                   </a>

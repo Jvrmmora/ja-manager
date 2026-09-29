@@ -104,6 +104,9 @@ export const env = {
     apiSecret: CLOUDINARY_API_SECRET,
   },
   dbDebug: process.env.DB_DEBUG === 'true',
+  // Secreto compartido para endpoints internos disparados por cron externo
+  // (ej. GitHub Actions). Si no está definido, esos endpoints rechazan todo.
+  cronSecret: process.env.CRON_SECRET || '',
   // Semilla opcional del usuario Super Admin (nunca hardcodear credenciales).
   seedAdmin: {
     enabled: process.env.SEED_ADMIN_ENABLED === 'true',

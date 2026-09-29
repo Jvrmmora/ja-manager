@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { normalizeRichTextHtml } from '../../utils/richText';
 import ImageWithFallback from './ImageWithFallback';
+import EventDetailModal from './EventDetailModal';
+import Reveal from './ui/Reveal';
+import SectionHeader from './ui/SectionHeader';
 
 interface EventMedia {
   _id: string;
@@ -31,112 +34,117 @@ export default function EventsSection({
     ? eventMedia
     : eventMedia.slice(0, MAX_VISIBLE_CARDS);
 
+  const renderThumb = (event: EventMedia) => {
+    if (event.mediaType === 'video') {
+      return (
+        <video
+          src={event.mediaUrl}
+          muted
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+      );
+    }
+    if (event.mediaType === 'image') {
+      return (
+        <ImageWithFallback
+          src={event.mediaUrl}
+          alt={event.altText || event.title}
+          fallbackLabel={event.title}
+          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+          loading="lazy"
+        />
+      );
+    }
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-white/85">
+        <svg className="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <path d="M14 2v6h6" />
+        </svg>
+        <span className="text-sm font-semibold">PDF</span>
+      </div>
+    );
+  };
+
   return (
-    <section
-      id="events"
-      className="py-20 px-4 bg-gradient-to-b from-white to-slate-50 dark:from-gray-900 dark:to-gray-800"
-    >
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-4xl font-bold text-center mb-4 text-gray-900 dark:text-white">
-          {title || 'Próximos encuentros'}
-        </h2>
-        <div
-          className="rich-content max-w-2xl mx-auto text-center text-gray-600 dark:text-gray-400 mb-12"
-          dangerouslySetInnerHTML={{
-            __html: normalizeRichTextHtml(
-              body ||
-                'Muy pronto podrás ver aquí retiros, campamentos y actividades destacadas del ministerio juvenil.'
-            ),
-          }}
+    <section id="events" className="bg-white dark:bg-ink-950 pb-24 md:pb-28 pt-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <SectionHeader
+          eyebrow="Eventos"
+          title={title || 'Próximos encuentros'}
+          body={
+            body ||
+            'Muy pronto podrás ver aquí retiros, campamentos y actividades destacadas del ministerio juvenil.'
+          }
         />
 
         {!hasEvents ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {[1, 2, 3].map(item => (
               <div
                 key={item}
-                className="h-64 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 animate-pulse"
+                className="h-64 rounded-3xl border border-sand-200 bg-cream dark:border-white/10 dark:bg-ink-900 animate-pulse"
               />
             ))}
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {visibleEvents.map(event => (
-                <article
-                  key={event._id}
-                  className="group overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm hover:shadow-xl transition-all"
-                >
-                  <div className="h-56 overflow-hidden">
-                    {event.mediaType === 'video' ? (
-                      <video
-                        src={event.mediaUrl}
-                        controls
-                        className="w-full h-full object-cover"
-                      />
-                    ) : event.mediaType === 'image' ? (
-                      <ImageWithFallback
-                        src={event.mediaUrl}
-                        alt={event.altText || event.title}
-                        fallbackLabel={event.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex flex-col items-center justify-center text-red-600 dark:text-red-300">
-                        <svg
-                          className="w-10 h-10"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.8}
-                            d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V8l-5-6z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.8}
-                            d="M14 2v6h6"
-                          />
-                        </svg>
-                        <span className="mt-2 text-sm font-semibold">PDF</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                      {event.title}
-                    </h3>
-                    {event.description && (
-                      <div
-                        className="rich-content mt-2 text-sm text-gray-600 dark:text-gray-400 line-clamp-2"
-                        dangerouslySetInnerHTML={{
-                          __html: normalizeRichTextHtml(event.description),
-                        }}
-                      />
-                    )}
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:auto-rows-[250px]">
+              {visibleEvents.map((event, index) => {
+                const featured = index === 0 && visibleEvents.length > 1;
+                return (
+                  <Reveal
+                    key={event._id}
+                    delay={(index % 3) * 0.08}
+                    className={featured ? 'md:col-span-2 md:row-span-2' : ''}
+                  >
                     <button
                       type="button"
                       onClick={() => setSelectedEvent(event)}
-                      className="mt-2 inline-flex text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                      className={`group relative block h-full w-full overflow-hidden text-left bg-gradient-to-br from-[#E7B48E] via-[#C0584E] to-brand-wine transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_56px_-24px_rgba(220,51,64,0.5)] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-orange/40 ${
+                        featured ? 'min-h-[360px] rounded-[28px]' : 'min-h-[250px] rounded-3xl'
+                      }`}
                     >
-                      Ver detalle
+                      <div className="absolute inset-0">{renderThumb(event)}</div>
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-ink-950/20 to-ink-950/85" />
+                      <div className={`absolute inset-x-0 bottom-0 flex flex-col gap-2 text-white ${featured ? 'p-7 md:p-10' : 'p-6'}`}>
+                        {featured && (
+                          <span className="self-start inline-flex h-8 items-center rounded-full bg-white px-3.5 text-[13px] font-bold text-brand-wine">
+                            Destacado
+                          </span>
+                        )}
+                        <h3 className={`m-0 font-display font-semibold uppercase leading-[1.05] ${featured ? 'text-3xl md:text-[44px]' : 'text-2xl'}`}>
+                          {event.title}
+                        </h3>
+                        {featured && event.description && (
+                          <div
+                            className="rich-content max-w-xl text-[15px] text-white/80 line-clamp-2 [&_p]:my-0"
+                            dangerouslySetInnerHTML={{
+                              __html: normalizeRichTextHtml(event.description),
+                            }}
+                          />
+                        )}
+                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#FCD3A8]">
+                          Ver detalle
+                          <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M5 12h14M13 6l6 6-6 6" />
+                          </svg>
+                        </span>
+                      </div>
                     </button>
-                  </div>
-                </article>
-              ))}
+                  </Reveal>
+                );
+              })}
             </div>
 
             {eventMedia.length > MAX_VISIBLE_CARDS && (
-              <div className="mt-8 text-center">
+              <div className="mt-10 text-center">
                 <button
                   type="button"
                   onClick={() => setShowAllEvents(prev => !prev)}
-                  className="inline-flex items-center px-5 py-2.5 rounded-lg border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-semibold text-sm transition"
+                  className="inline-flex h-12 items-center rounded-full border border-sand-300 px-6 text-sm font-semibold text-cocoa-900 transition-colors hover:bg-ink-950 hover:text-white dark:border-white/20 dark:text-white"
                 >
                   {showAllEvents
                     ? 'Ver menos'
@@ -148,65 +156,10 @@ export default function EventsSection({
         )}
       </div>
 
-      {selectedEvent && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setSelectedEvent(null)}
-        >
-          <div
-            className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-900"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-4 border-b border-gray-200 dark:border-gray-700 p-4">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                {selectedEvent.title}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setSelectedEvent(null)}
-                className="shrink-0 p-2 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
-              >
-                Cerrar
-              </button>
-            </div>
-
-            <div className="overflow-y-auto p-4">
-              {selectedEvent.mediaType === 'image' && (
-                <img
-                  src={selectedEvent.mediaUrl}
-                  alt={selectedEvent.altText || selectedEvent.title}
-                  className="mx-auto w-full max-h-[60vh] object-contain rounded-lg"
-                />
-              )}
-
-              {selectedEvent.mediaType === 'video' && (
-                <video
-                  src={selectedEvent.mediaUrl}
-                  controls
-                  className="w-full max-h-[60vh] rounded-lg"
-                />
-              )}
-
-              {selectedEvent.mediaType === 'document' && (
-                <iframe
-                  src={selectedEvent.mediaUrl}
-                  title={selectedEvent.title}
-                  className="w-full h-[60vh] rounded-lg border border-gray-200 dark:border-gray-700"
-                />
-              )}
-
-              {selectedEvent.description && (
-                <div
-                  className="rich-content mt-5 text-sm text-gray-700 dark:text-gray-300"
-                  dangerouslySetInnerHTML={{
-                    __html: normalizeRichTextHtml(selectedEvent.description),
-                  }}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <EventDetailModal
+        event={selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+      />
     </section>
   );
 }

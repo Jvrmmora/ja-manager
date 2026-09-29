@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import ImageWithFallback from './ImageWithFallback';
+import Reveal from './ui/Reveal';
+import SectionHeader from './ui/SectionHeader';
 
 interface Meeting {
   _id: string;
@@ -24,13 +26,16 @@ const MAX_VISIBLE_CARDS = 6;
 const modalityBadge = (modality: string) => {
   switch (modality) {
     case 'virtual':
-      return 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200';
+      return 'bg-white text-brand-wine';
     case 'híbrido':
-      return 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200';
+      return 'bg-brand-amber text-ink-950';
     default:
-      return 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200';
+      return 'bg-ink-950/80 text-white';
   }
 };
+
+const chipClass =
+  'inline-flex h-[30px] items-center gap-1.5 rounded-full bg-sand-100 px-3 text-[13px] font-semibold text-[#9A3412] dark:bg-brand-orange/15 dark:text-brand-amber';
 
 export default function MeetingsSection({ meetings }: MeetingsSectionProps) {
   const hasMeetings = meetings && meetings.length > 0;
@@ -40,116 +45,107 @@ export default function MeetingsSection({ meetings }: MeetingsSectionProps) {
     : meetings.slice(0, MAX_VISIBLE_CARDS);
 
   return (
-    <section
-      id="meetings"
-      className="py-20 px-4 bg-gradient-to-b from-white to-slate-50 dark:from-gray-900 dark:to-gray-800"
-    >
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-4xl font-bold text-center mb-4 text-gray-900 dark:text-white">
-          Nuestras Reuniones Semanales
-        </h2>
-        <p className="text-center text-gray-600 dark:text-gray-400 mb-12">
-          Espacios especiales para crecer juntos
-        </p>
+    <section id="meetings" className="bg-white dark:bg-ink-950 py-24 md:py-28">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <SectionHeader
+          eyebrow="Cada semana"
+          title="Nuestras Reuniones"
+          body="Espacios especiales para crecer juntos."
+        />
 
         {!hasMeetings ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map(i => (
               <div
                 key={i}
-                className="h-64 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 animate-pulse"
+                className="h-80 rounded-3xl border border-sand-200 bg-cream dark:border-white/10 dark:bg-ink-900 animate-pulse"
               />
             ))}
           </div>
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {visibleMeetings.map(meeting => (
-                <article
-                  key={meeting._id}
-                  className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm hover:shadow-xl transition-all"
-                >
-                  {/* Image */}
-                  {meeting.imageUrl && (
-                    <div className="h-56 overflow-hidden">
-                      <ImageWithFallback
-                        src={meeting.imageUrl}
-                        alt={meeting.title}
-                        fallbackLabel={meeting.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
+              {visibleMeetings.map((meeting, index) => (
+                <Reveal key={meeting._id} delay={(index % 3) * 0.1}>
+                  <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-sand-200 bg-cream transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_56px_-24px_rgba(220,51,64,0.45)] dark:border-white/10 dark:bg-ink-900">
+                    <div className="relative h-52 overflow-hidden bg-gradient-to-br from-[#F7C9A3] via-[#E48A6B] to-brand-wine">
+                      {meeting.imageUrl && (
+                        <ImageWithFallback
+                          src={meeting.imageUrl}
+                          alt={meeting.title}
+                          fallbackLabel={meeting.title}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      )}
+                      <span
+                        className={`absolute left-4 top-4 inline-flex h-[30px] items-center rounded-full px-3 text-xs font-bold ${modalityBadge(meeting.modality)}`}
+                      >
+                        {meeting.modality.charAt(0).toUpperCase() +
+                          meeting.modality.slice(1)}
+                      </span>
                     </div>
-                  )}
 
-                  {/* Content */}
-                  <div className="flex flex-grow flex-col p-5">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                      {meeting.title}
-                    </h3>
-
-                    <p className="min-h-[1.25rem] text-sm text-blue-600 dark:text-blue-400 font-semibold mt-1">
-                      {meeting.subtitle}
-                    </p>
-
-                    <p className="mt-2 min-h-[2.5rem] text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                      {meeting.description}
-                    </p>
-
-                    {/* Footer pinned to the bottom so it lines up across cards */}
-                    <div className="mt-auto space-y-3 pt-4">
-                      {/* Schedule */}
-                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
-                        <svg
-                          className="w-4 h-4 shrink-0"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                          aria-hidden="true"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            clipRule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                          />
-                        </svg>
-                        <span>
-                          {meeting.schedule.day} • {meeting.schedule.time}
+                    <div className="flex flex-grow flex-col gap-3.5 p-6 md:p-7">
+                      <div className="flex flex-wrap gap-2">
+                        <span className={chipClass}>
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <rect x="3" y="4" width="18" height="18" rx="2" />
+                            <path d="M16 2v4M8 2v4M3 10h18" />
+                          </svg>
+                          {meeting.schedule.day}
+                        </span>
+                        <span className={chipClass}>
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 6v6l4 2" />
+                          </svg>
+                          {meeting.schedule.time}
                         </span>
                       </div>
 
-                      {/* Modality badge */}
-                      <div>
-                        <span
-                          className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${modalityBadge(meeting.modality)}`}
-                        >
-                          {meeting.modality.charAt(0).toUpperCase() +
-                            meeting.modality.slice(1)}
-                        </span>
+                      <div className="flex flex-col gap-1">
+                        <h3 className="m-0 font-display text-2xl font-semibold uppercase text-cocoa-900 dark:text-white">
+                          {meeting.title}
+                        </h3>
+                        {meeting.subtitle && (
+                          <p className="m-0 text-sm font-semibold text-brand-deep dark:text-brand-amber">
+                            {meeting.subtitle}
+                          </p>
+                        )}
                       </div>
 
-                      {/* Join link */}
+                      {meeting.description && (
+                        <p className="m-0 text-[15px] leading-relaxed text-cocoa-500 dark:text-white/65 line-clamp-3">
+                          {meeting.description}
+                        </p>
+                      )}
+
                       {meeting.meetingLink && (
                         <a
                           href={meeting.meetingLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                          className="mt-auto inline-flex items-center gap-2 self-start pt-2 text-[15px] font-semibold text-brand-deep hover:text-brand-wine dark:text-brand-amber"
                         >
-                          Unirse
+                          Unirse a la reunión
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M5 12h14M13 6l6 6-6 6" />
+                          </svg>
                         </a>
                       )}
                     </div>
-                  </div>
-                </article>
+                  </article>
+                </Reveal>
               ))}
             </div>
 
             {meetings.length > MAX_VISIBLE_CARDS && (
-              <div className="mt-8 text-center">
+              <div className="mt-10 text-center">
                 <button
                   type="button"
                   onClick={() => setShowAllMeetings(prev => !prev)}
-                  className="inline-flex items-center px-5 py-2.5 rounded-lg border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-semibold text-sm transition"
+                  className="inline-flex h-12 items-center rounded-full border border-sand-300 px-6 text-sm font-semibold text-cocoa-900 transition-colors hover:bg-ink-950 hover:text-white dark:border-white/20 dark:text-white"
                 >
                   {showAllMeetings
                     ? 'Ver menos'

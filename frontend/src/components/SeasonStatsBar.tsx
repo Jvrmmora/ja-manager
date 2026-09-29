@@ -3,10 +3,13 @@ import { useSeason } from '../context/SeasonContext';
 
 interface SeasonStatsBarProps {
   activeParticipants: number;
+  /** Fila delgada de una sola línea (modo proyector) */
+  compact?: boolean;
 }
 
 const SeasonStatsBar: React.FC<SeasonStatsBarProps> = ({
   activeParticipants,
+  compact = false,
 }) => {
   const { activeSeason, countdown, progressPercent } = useSeason();
 
@@ -14,157 +17,125 @@ const SeasonStatsBar: React.FC<SeasonStatsBarProps> = ({
     return value.toString().padStart(2, '0');
   };
 
-  return (
-    <div className="mb-6 space-y-4">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Total Registered Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Participantes Activos
-              </p>
-              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">
-                {activeParticipants}
-              </p>
-            </div>
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <span className="material-symbols-rounded text-5xl text-blue-600 dark:text-blue-400">
-                group
-              </span>
-            </div>
-          </div>
+  if (compact) {
+    const chip =
+      'flex items-baseline gap-2.5 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-2.5';
+    return (
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className={chip}>
+          <span className="text-sm text-white/60">Participantes activos</span>
+          <span className="ml-auto font-display text-3xl font-bold leading-none text-white">
+            {activeParticipants}
+          </span>
         </div>
-
-        {/* Remaining Time Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="material-symbols-rounded text-2xl text-amber-600 dark:text-amber-400">
-              schedule
-            </span>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              Tiempo Restante
-            </p>
-          </div>
+        <div className={`${chip} !items-center`}>
+          <span className="text-sm text-white/60">Tiempo restante</span>
           {countdown.isExpired ? (
-            <p className="text-lg font-semibold text-red-600 dark:text-red-400">
-              Temporada Finalizada
-            </p>
+            <span className="ml-auto font-display text-2xl font-semibold leading-none text-red-300">
+              Finalizada
+            </span>
           ) : (
-            <div className="flex items-center justify-center gap-1.5">
-              {/* Días */}
-              <div className="flex flex-col items-center bg-blue-50 dark:bg-blue-900/20 rounded-lg px-2.5 py-2 min-w-[55px]">
-                <div className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono leading-none">
-                  {formatTime(countdown.days)}
-                </div>
-                <div className="text-[10px] font-semibold text-blue-600/70 dark:text-blue-400/70 mt-1 uppercase tracking-wider">
-                  Días
-                </div>
-              </div>
-
-              {/* Separador */}
-              <div className="text-xl font-bold text-gray-400 dark:text-gray-600 self-center -mt-3">
-                :
-              </div>
-
-              {/* Horas */}
-              <div className="flex flex-col items-center bg-green-50 dark:bg-green-900/20 rounded-lg px-2.5 py-2 min-w-[55px]">
-                <div className="text-2xl font-black text-green-600 dark:text-green-400 font-mono leading-none">
-                  {formatTime(countdown.hours)}
-                </div>
-                <div className="text-[10px] font-semibold text-green-600/70 dark:text-green-400/70 mt-1 uppercase tracking-wider">
-                  Hrs
-                </div>
-              </div>
-
-              {/* Separador */}
-              <div className="text-xl font-bold text-gray-400 dark:text-gray-600 self-center -mt-3">
-                :
-              </div>
-
-              {/* Minutos */}
-              <div className="flex flex-col items-center bg-amber-50 dark:bg-amber-900/20 rounded-lg px-2.5 py-2 min-w-[55px]">
-                <div className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono leading-none">
-                  {formatTime(countdown.minutes)}
-                </div>
-                <div className="text-[10px] font-semibold text-amber-600/70 dark:text-amber-400/70 mt-1 uppercase tracking-wider">
-                  Min
-                </div>
-              </div>
-
-              {/* Separador */}
-              <div className="text-xl font-bold text-gray-400 dark:text-gray-600 self-center -mt-3">
-                :
-              </div>
-
-              {/* Segundos */}
-              <div className="flex flex-col items-center bg-purple-50 dark:bg-purple-900/20 rounded-lg px-2.5 py-2 min-w-[55px]">
-                <div className="text-2xl font-black text-purple-600 dark:text-purple-400 font-mono leading-none">
-                  {formatTime(countdown.seconds)}
-                </div>
-                <div className="text-[10px] font-semibold text-purple-600/70 dark:text-purple-400/70 mt-1 uppercase tracking-wider">
-                  Seg
-                </div>
-              </div>
-            </div>
+            <span className="ml-auto flex gap-1.5">
+              {(
+                [
+                  [countdown.days, 'Días', 'text-brand-amber'],
+                  [countdown.hours, 'Hrs', 'text-white'],
+                  [countdown.minutes, 'Min', 'text-white'],
+                  [countdown.seconds, 'Seg', 'text-white'],
+                ] as const
+              ).map(([value, unit, tone]) => (
+                <span
+                  key={unit}
+                  className="flex min-w-[52px] flex-col items-center rounded-xl border border-white/5 bg-white/[0.05] px-2 py-1.5"
+                >
+                  <span className={`font-display text-2xl font-semibold leading-none ${tone}`}>
+                    {formatTime(value)}
+                  </span>
+                  <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-white/45">
+                    {unit}
+                  </span>
+                </span>
+              ))}
+            </span>
           )}
         </div>
-
-        {/* Season Progress Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-rounded text-2xl text-emerald-600 dark:text-emerald-400">
-                calendar_month
-              </span>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Avance de Temporada
-              </p>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="material-symbols-rounded text-xl text-emerald-600 dark:text-emerald-400">
-                trending_up
-              </span>
-              <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                {progressPercent.toFixed(1)}%
-              </span>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="relative w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 via-emerald-500 to-purple-500 rounded-full transition-all duration-500 ease-out"
+        <div className={`${chip} flex-col !items-stretch gap-1.5`}>
+          <span className="flex items-baseline justify-between text-sm text-white/60">
+            {activeSeason?.name || 'Avance de temporada'}
+            <strong className="font-display text-xl leading-none text-white">
+              {progressPercent.toFixed(1)}%
+            </strong>
+          </span>
+          <span className="block h-2 overflow-hidden rounded-full bg-white/10">
+            <span
+              className="block h-full rounded-full bg-[linear-gradient(90deg,#F9A23B,#DC3340,#8A1C45)]"
               style={{ width: `${progressPercent}%` }}
-            >
-              <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-            </div>
-          </div>
-
-          {/* Season Info */}
-          {activeSeason && (
-            <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-              <p className="font-semibold text-gray-700 dark:text-gray-300">
-                {activeSeason.name}
-              </p>
-              <p className="mt-1">
-                {new Date(activeSeason.startDate).toLocaleDateString('es-ES')} -{' '}
-                {new Date(activeSeason.endDate).toLocaleDateString('es-ES')}
-              </p>
-            </div>
-          )}
+            />
+          </span>
         </div>
       </div>
+    );
+  }
 
-      {/* Optional: Additional info bar */}
-      {activeSeason?.description && (
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-lg p-4 border border-blue-200 dark:border-gray-600">
-          <p className="text-sm text-gray-700 dark:text-gray-300 text-center">
-            {activeSeason.description}
+  const card =
+    'rounded-2xl border border-white/10 bg-white/[0.04] p-5';
+  const label = 'text-[13px] font-medium text-white/60';
+  const timeBox = (value: number, unit: string, tone: string) => (
+    <div className="flex min-w-0 flex-1 flex-col items-center rounded-xl border border-white/5 bg-white/[0.04] px-1 py-2">
+      <span className={`font-display text-2xl font-semibold leading-none ${tone}`}>
+        {formatTime(value)}
+      </span>
+      <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-white/45">
+        {unit}
+      </span>
+    </div>
+  );
+
+  return (
+    <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className={card}>
+        <p className={`m-0 ${label}`}>Participantes activos</p>
+        <p className="m-0 mt-2 font-display text-[44px] font-bold leading-none text-white">
+          {activeParticipants}
+        </p>
+      </div>
+
+      <div className={card}>
+        <p className={`m-0 ${label}`}>Tiempo restante</p>
+        {countdown.isExpired ? (
+          <p className="m-0 mt-3 font-display text-xl font-semibold text-red-300">
+            Temporada finalizada
           </p>
+        ) : (
+          <div className="mt-3 flex gap-2">
+            {timeBox(countdown.days, 'Días', 'text-brand-amber')}
+            {timeBox(countdown.hours, 'Hrs', 'text-white')}
+            {timeBox(countdown.minutes, 'Min', 'text-white')}
+            {timeBox(countdown.seconds, 'Seg', 'text-white')}
+          </div>
+        )}
+      </div>
+
+      <div className={card}>
+        <div className="flex items-baseline justify-between gap-2">
+          <p className={`m-0 ${label}`}>Avance de temporada</p>
+          <strong className="font-display text-xl leading-none text-white">
+            {progressPercent.toFixed(1)}%
+          </strong>
         </div>
-      )}
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full bg-[linear-gradient(90deg,#F9A23B,#DC3340,#8A1C45)] transition-all duration-500"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+        {activeSeason && (
+          <p className="m-0 mt-3 text-xs text-white/45">
+            {new Date(activeSeason.startDate).toLocaleDateString('es-ES')} –{' '}
+            {new Date(activeSeason.endDate).toLocaleDateString('es-ES')}
+          </p>
+        )}
+      </div>
     </div>
   );
 };

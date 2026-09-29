@@ -157,13 +157,13 @@ export default function DynamicCredentialInput({
     <div className={`w-full ${className}`}>
       <label
         htmlFor={id}
-        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        className="block text-sm font-semibold text-cocoa-700 dark:text-white/85 mb-2"
       >
         {label}
       </label>
 
       {/* Toggle de modo con micro-animación */}
-      <div className="mb-2 inline-flex rounded-full p-1 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 relative overflow-hidden">
+      <div className="mb-2 inline-flex rounded-full p-1 bg-sand-50 dark:bg-ink-800 border border-sand-200 dark:border-white/10 relative overflow-hidden">
         {(['auto', 'email', 'placa'] as CredentialMode[]).map(opt => {
           const active = mode === opt;
           return (
@@ -171,14 +171,14 @@ export default function DynamicCredentialInput({
               key={opt}
               type="button"
               onClick={() => handleModeChange(opt)}
-              className={`relative px-3 py-1.5 text-xs sm:text-sm rounded-full transition-all duration-200 ${active ? 'text-blue-600 dark:text-blue-400 scale-[1.02]' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}
+              className={`relative px-3 py-1.5 text-xs sm:text-sm rounded-full transition-all duration-200 ${active ? 'text-brand-deep dark:text-brand-amber font-semibold scale-[1.02]' : 'text-cocoa-500 dark:text-white/60 hover:text-cocoa-900 dark:hover:text-white'}`}
               aria-pressed={active}
             >
               {active && (
                 <motion.span
                   layoutId="toggle-pill"
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  className="absolute inset-0 rounded-full bg-white dark:bg-gray-900 shadow"
+                  className="absolute inset-0 rounded-full bg-white dark:bg-ink-950 shadow"
                   style={{ zIndex: 0 }}
                 />
               )}
@@ -200,21 +200,21 @@ export default function DynamicCredentialInput({
           onChange={handleInput}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          className={`w-full px-3 py-3 pr-10 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+          className={`field-brand h-[52px] pr-11 ${
             effectiveMode === 'placa'
-              ? 'border-blue-300 dark:border-blue-500/40 dark:bg-gray-800 dark:text-white'
-              : 'border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white'
+              ? 'border-brand-amber/60'
+              : ''
           } ${isValid ? 'ring-0' : ''}`}
           placeholder={placeholder}
           animate={{
             boxShadow: focused
-              ? '0 0 0 4px rgba(59,130,246,0.35)'
+              ? '0 0 0 4px rgba(242,106,46,0.22)'
               : isValid && value
                 ? '0 0 0 3px rgba(16,185,129,0.30)'
                 : '0 0 0 0 rgba(0,0,0,0)',
             backgroundColor:
               effectiveMode === 'placa'
-                ? 'rgba(30,64,175,0.06)'
+                ? 'rgba(249,162,59,0.06)'
                 : 'rgba(0,0,0,0)',
           }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
@@ -229,7 +229,7 @@ export default function DynamicCredentialInput({
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: -6, opacity: 0 }}
                 transition={{ duration: 0.18 }}
-                className={`h-5 w-5 ${isValid ? 'text-emerald-500' : 'text-blue-500'}`}
+                className={`h-5 w-5 ${isValid ? 'text-emerald-500' : 'text-brand-orange'}`}
                 viewBox="0 0 24 24"
                 fill="currentColor"
               >
@@ -242,7 +242,7 @@ export default function DynamicCredentialInput({
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: -6, opacity: 0 }}
                 transition={{ duration: 0.18 }}
-                className={`h-5 w-5 ${isValid ? 'text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}
+                className={`h-5 w-5 ${isValid ? 'text-emerald-500' : 'text-cocoa-400 dark:text-white/40'}`}
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -288,7 +288,7 @@ export default function DynamicCredentialInput({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 2 }}
             transition={{ duration: 0.15 }}
-            className="mt-1 text-xs text-gray-500 dark:text-gray-400"
+            className="mt-1.5 text-xs text-cocoa-500 dark:text-white/50"
           >
             {helperText}
           </motion.div>
