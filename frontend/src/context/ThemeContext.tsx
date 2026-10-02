@@ -1,14 +1,23 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import type { ReactNode } from 'react';
 
 type Theme = 'light' | 'dark';
 // 'auto' = seguir la hora del día del cliente; 'light'/'dark' = elección manual.
 type ThemeMode = 'auto' | 'light' | 'dark';
 
+/** Punto (en px de viewport) desde donde nace la revelación circular. */
+export interface ThemeToggleOrigin {
+  x: number;
+  y: number;
+}
+
+const REVEAL_DURATION_MS = 500;
+
 interface ThemeContextType {
   theme: Theme;
   themeMode: ThemeMode;
-  toggleTheme: () => void;
+  toggleTheme: (origin?: ThemeToggleOrigin) => void;
   setThemeMode: (mode: ThemeMode) => void;
   isDark: boolean;
 }
@@ -107,9 +116,53 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   };
 
-  // El toggle fija una elección manual opuesta al tema visible actual.
-  const toggleTheme = () => {
-    setThemeMode(theme === 'light' ? 'dark' : 'light');
+  // El toggle fija una elección manual opuesta al tema visible actual. Con
+  // `origin` (centro del botón pulsado) el cambio se anima en toda la página.
+  const toggleTheme = (origin?: ThemeToggleOrigin) => {
+    const next: Theme = theme === 'light' ? 'dark' : 'light';
+
+    const canAnimate =
+      typeof origin?.x === 'number' &&
+      typeof document.startViewTransition === 'function' &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!origin || !canAnimate) {
+      setThemeMode(next);
+      return;
+    }
+
+    // Radio hasta la esquina más lejana: garantiza que el círculo cubra todo.
+    const endRadius = Math.hypot(
+      Math.max(origin.x, window.innerWidth - origin.x),
+      Math.max(origin.y, window.innerHeight - origin.y)
+    );
+
+    const transition = document.startViewTransition(() => {
+      // La clase se aplica ya mismo: el snapshot "nuevo" se toma al terminar
+      // este callback y el efecto que sincroniza <html> corre después.
+      document.documentElement.classList.toggle('dark', next === 'dark');
+      flushSync(() => setThemeMode(next));
+    });
+
+    transition.ready
+      .then(() => {
+        document.documentElement.animate(
+          {
+            clipPath: [
+              `circle(0px at ${origin.x}px ${origin.y}px)`,
+              `circle(${endRadius}px at ${origin.x}px ${origin.y}px)`,
+            ],
+          },
+          {
+            duration: REVEAL_DURATION_MS,
+            easing: 'ease-in-out',
+            pseudoElement: '::view-transition-new(root)',
+          }
+        );
+      })
+      .catch(() => {
+        // transición omitida/cancelada: el tema ya cambió igualmente
+      });
   };
 
   const isDark = theme === 'dark';

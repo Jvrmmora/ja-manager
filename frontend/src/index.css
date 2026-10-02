@@ -471,3 +471,11 @@
   .hero-flame__layer { animation: none; }
   .hero-flame__ember { display: none; }
 }
+
+/* Revelación circular al cambiar de tema (ver ThemeToggle): se desactiva el
+   fundido por defecto del navegador; el recorte circular se anima desde JS. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}

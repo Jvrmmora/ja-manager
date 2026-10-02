@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
+import { getElementCenter } from '../../utils/elementCenter';
+import ThemeMorphIcon from '../ThemeMorphIcon';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/auth';
 import logo from '../../assets/logos/logo.png';
@@ -41,17 +43,10 @@ const getInitials = (fullName?: string) => {
     .toUpperCase();
 };
 
-const ThemeIcon = ({ dark }: { dark: boolean }) =>
-  dark ? (
-    <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-    </svg>
-  ) : (
-    <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-    </svg>
-  );
+// Muestra el modo al que se cambia: sol si ahora es oscuro, luna si es claro.
+const ThemeIcon = ({ dark }: { dark: boolean }) => (
+  <ThemeMorphIcon dark={!dark} className="h-[18px] w-[18px]" />
+);
 
 const Wordmark = () => (
   <span className="flex flex-col leading-none text-left">
@@ -64,7 +59,10 @@ const Wordmark = () => (
   </span>
 );
 
-export default function Navbar({ onOpenContact, overHero = true }: NavbarProps) {
+export default function Navbar({
+  onOpenContact,
+  overHero = true,
+}: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -258,7 +256,9 @@ export default function Navbar({ onOpenContact, overHero = true }: NavbarProps) 
 
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <button
-                onClick={toggleTheme}
+                onClick={event =>
+                  toggleTheme(getElementCenter(event.currentTarget))
+                }
                 className="hidden sm:flex h-11 w-11 items-center justify-center rounded-full border border-white/20 text-white/80 hover:text-white hover:border-white/40 transition-colors"
                 aria-label="Cambiar tema"
               >
@@ -298,7 +298,15 @@ export default function Navbar({ onOpenContact, overHero = true }: NavbarProps) 
                 aria-label="Abrir menú"
                 aria-expanded={isMenuOpen}
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+                <svg
+                  className="w-5 h-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
                   <path d="M4 7h16M4 12h16M10 17h10" />
                 </svg>
               </button>
@@ -332,7 +340,15 @@ export default function Navbar({ onOpenContact, overHero = true }: NavbarProps) 
                   className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 text-white"
                   aria-label="Cerrar menú"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    aria-hidden="true"
+                  >
                     <path d="M6 6l12 12M18 6L6 18" />
                   </svg>
                 </button>
@@ -342,17 +358,26 @@ export default function Navbar({ onOpenContact, overHero = true }: NavbarProps) 
                 className="flex flex-col gap-1 pt-6"
                 initial="hidden"
                 animate="show"
-                variants={{ show: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } } }}
+                variants={{
+                  show: {
+                    transition: { staggerChildren: 0.06, delayChildren: 0.05 },
+                  },
+                }}
               >
                 {NAV_ITEMS.map(({ id, label }) => (
                   <motion.li
                     key={id}
-                    variants={{ hidden: { opacity: 0, x: -16 }, show: { opacity: 1, x: 0 } }}
+                    variants={{
+                      hidden: { opacity: 0, x: -16 },
+                      show: { opacity: 1, x: 0 },
+                    }}
                   >
                     <button
                       onClick={() => scrollToSection(id)}
                       className={`flex items-center gap-3 font-display text-[32px] font-semibold uppercase leading-[1.15] transition-colors ${
-                        activeSection === id ? 'text-brand-amber' : 'text-white hover:text-brand-amber'
+                        activeSection === id
+                          ? 'text-brand-amber'
+                          : 'text-white hover:text-brand-amber'
                       }`}
                     >
                       {label}
@@ -389,7 +414,9 @@ export default function Navbar({ onOpenContact, overHero = true }: NavbarProps) 
                       className="btn-outline-light h-12 text-[15px]"
                     >
                       {avatar}
-                      <span className="truncate">{getFirstName(userInfo?.fullName)}</span>
+                      <span className="truncate">
+                        {getFirstName(userInfo?.fullName)}
+                      </span>
                     </button>
                   ) : (
                     <button
@@ -415,7 +442,9 @@ export default function Navbar({ onOpenContact, overHero = true }: NavbarProps) 
                   ) : null}
                 </div>
                 <button
-                  onClick={toggleTheme}
+                  onClick={event =>
+                    toggleTheme(getElementCenter(event.currentTarget))
+                  }
                   className="btn-outline-light h-12 text-[15px]"
                 >
                   <ThemeIcon dark={theme === 'dark'} />
