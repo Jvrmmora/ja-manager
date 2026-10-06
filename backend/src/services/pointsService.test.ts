@@ -185,6 +185,25 @@ describe('pointsService.assignReferralPoints', () => {
     expect(result?.bonusTransaction.points).toBe(30);
     expect(result?.welcomeTransaction.points).toBe(15);
   });
+
+  it('es idempotente: no duplica puntos si el referido ya los recibió', async () => {
+    mockedSeason.findOne.mockResolvedValue(activeSeason as any);
+    mockedPointsTransaction.findOne
+      .mockResolvedValueOnce({ points: 30, type: 'REFERRAL_BONUS' } as any)
+      .mockResolvedValueOnce({ points: 15, type: 'REFERRAL_WELCOME' } as any);
+
+    const result = await pointsService.assignReferralPoints('ref1', 'new1');
+
+    expect(mockedPointsTransaction.create).not.toHaveBeenCalled();
+    expect(result?.bonusTransaction.points).toBe(30);
+  });
+
+  it('ignora la auto-invitación', async () => {
+    const result = await pointsService.assignReferralPoints('same', 'same');
+
+    expect(result).toBeNull();
+    expect(mockedPointsTransaction.create).not.toHaveBeenCalled();
+  });
 });
 
 describe('pointsService.getTotalPoints', () => {
