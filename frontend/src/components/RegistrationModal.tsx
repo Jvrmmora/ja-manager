@@ -238,7 +238,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       setErrors(prev => ({
         ...prev,
         referredByPlaca:
-          'Formato de placa inválido. Debe ser @MODxx### (ej: @MODJAVI001)',
+          'Formato de placa inválido. Debe ser @MODxx### (ej: @MODPRUE001)',
       }));
       return;
     }
@@ -1188,7 +1188,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         ? 'border-purple-500/50'
                         : 'border-purple-400'
                 } focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
-                placeholder="@MODJAVI001"
+                placeholder="@MODPRUE001"
               />
               {(placaValid !== null || validatingPlaca) && (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -1230,7 +1230,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
               }`}
             >
               <span className="material-symbols-rounded text-sm">info</span>
-              Si alguien te refirió, ingresa su placa (ej: @MODJAVI001)
+              Si alguien te refirió, ingresa su placa (ej: @MODPRUE001)
             </p>
           </div>
 

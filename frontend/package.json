@@ -17,7 +17,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "gen:icons": "node scripts/generate-icons.mjs",
-    "gen:og": "node scripts/generate-og-image.js"
+    "gen:og": "node scripts/generate-og-image.js",
+    "gen:og:share": "node scripts/generate-og-share-images.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

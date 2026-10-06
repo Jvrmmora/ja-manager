@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MagnifyingGlassIcon,
@@ -39,10 +39,21 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
   const [selectedYoung, setSelectedYoung] = useState<IYoung | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   // IDs de jóvenes que ya registraron asistencia hoy (para mostrar indicador y deshabilitar)
   const [presentTodayIds, setPresentTodayIds] = useState<Set<string>>(
     new Set()
   );
+
+  // El modal sigue montado aunque esté cerrado (solo no se dibuja): al abrirlo
+  // se limpia la búsqueda anterior para que no quede "pegado" el último joven.
+  useEffect(() => {
+    if (!isOpen) return;
+    setSearch('');
+    setResults([]);
+    setSelectedYoung(null);
+    setSubmitError(null);
+  }, [isOpen]);
 
   // Cargar asistencias del día al abrir el modal para marcar los que ya asistieron
   useEffect(() => {
@@ -111,8 +122,6 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
         });
         const json = await resp.json();
         const arr = json?.data?.data || [];
-        // Excluir administradores; mostrar preferentemente quienes tienen placa
-        setResults(arr.filter((y: any) => y.role_name !== 'Super Admin'));
         // Solo jóvenes (no Super Admin) CON placa activa
         setResults(
           arr.filter(
@@ -133,6 +142,12 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
 
   const disabledForm = !!errorMeta || !season || !qr;
 
+  // El buscador arranca deshabilitado mientras carga temporada y QR: enfocarlo
+  // apenas se habilita para escribir de una vez.
+  useEffect(() => {
+    if (isOpen && !disabledForm) searchInputRef.current?.focus();
+  }, [isOpen, disabledForm]);
+
   const handleSubmit = async () => {
     if (!selectedYoung) return;
     setSubmitting(true);
@@ -140,6 +155,9 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
     try {
       const id = (selectedYoung as any)._id || selectedYoung.id; // backend usa _id
       const data = await manualRegisterAttendance(id);
+      setPresentTodayIds(prev => new Set(prev).add(String(id)));
+      setSelectedYoung(null);
+      setSearch('');
       onSuccess(data);
     } catch (err: any) {
       setSubmitError(err.message || 'Error al registrar asistencia');
@@ -211,8 +229,14 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                 type="text"
                 placeholder="Nombre, placa..."
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={e => {
+                  setSearch(e.target.value);
+                  // Buscar de nuevo reemplaza al joven elegido
+                  setSelectedYoung(null);
+                  setSubmitError(null);
+                }}
                 disabled={disabledForm}
+                ref={searchInputRef}
                 className="field-brand h-12 !pl-10 text-[15px] disabled:opacity-60"
               />
             </div>
@@ -251,6 +275,13 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                     <p className="text-xs text-gray-500 dark:text-gray-300">
                       {selectedYoung.placa}
                     </p>
+                  )}
+                  {presentTodayIds.has(
+                    String((selectedYoung as any)._id || selectedYoung.id)
+                  ) && (
+                    <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                      <CheckCircleIcon className="h-3.5 w-3.5" /> Ya asistió hoy
+                    </span>
                   )}
                 </div>
               </div>

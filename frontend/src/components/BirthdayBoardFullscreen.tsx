@@ -8,6 +8,8 @@ import {
   getCurrentDateTimeColombia,
 } from '../utils/dateUtils';
 import ImageModal from './ImageModal';
+import ShareLinkButton from './ShareLinkButton';
+import { birthdayShareMessage, buildBirthdayShareUrl } from '../utils/shareUrls';
 
 interface BirthdayBoardFullscreenProps {
   isOpen: boolean;
@@ -15,6 +17,8 @@ interface BirthdayBoardFullscreenProps {
   defaultGroup?: number; // Grupo inicial (nivel)
   currentMonthOnly?: boolean; // Bloquear a mes actual (oculta selector)
   fixedGroup?: number; // Fijar grupo y ocultar selector
+  defaultMonth?: number; // Mes inicial 0-11 (enlace compartido)
+  fixedMonth?: number; // Fijar mes 0-11 y ocultar selector
 }
 
 // Vista de "tarjeta" pantalla completa con selección de mes y grupo.
@@ -26,12 +30,20 @@ const BirthdayBoardFullscreen: React.FC<BirthdayBoardFullscreenProps> = ({
   defaultGroup = 1,
   currentMonthOnly = false,
   fixedGroup,
+  defaultMonth,
+  fixedMonth,
 }) => {
+  const lockedMonth =
+    typeof fixedMonth === 'number'
+      ? fixedMonth
+      : currentMonthOnly
+        ? new Date().getMonth()
+        : undefined;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [allYoung, setAllYoung] = useState<IYoung[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<number>(
-    new Date().getMonth()
+    lockedMonth ?? defaultMonth ?? new Date().getMonth()
   );
   const [selectedGroup, setSelectedGroup] = useState<number>(
     fixedGroup ?? defaultGroup
@@ -47,9 +59,9 @@ const BirthdayBoardFullscreen: React.FC<BirthdayBoardFullscreenProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    // Lock month to current if requested
-    if (currentMonthOnly) {
-      setSelectedMonth(new Date().getMonth());
+    // Lock month if requested (mes actual o mes fijo del enlace)
+    if (typeof lockedMonth === 'number') {
+      setSelectedMonth(lockedMonth);
     }
     // Lock group if fixed
     if (typeof fixedGroup === 'number') {
@@ -224,7 +236,7 @@ const BirthdayBoardFullscreen: React.FC<BirthdayBoardFullscreenProps> = ({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {typeof fixedGroup !== 'number' && (
             <label className="flex h-12 items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.06] pl-4 pr-1.5 text-sm text-white/70">
               Grupo
@@ -242,6 +254,14 @@ const BirthdayBoardFullscreen: React.FC<BirthdayBoardFullscreenProps> = ({
               </select>
             </label>
           )}
+          <ShareLinkButton
+            url={buildBirthdayShareUrl(selectedMonth, groupNow)}
+            message={birthdayShareMessage(
+              buildBirthdayShareUrl(selectedMonth, groupNow),
+              selectedMonth
+            )}
+            title="Cumpleaños del mes — Jóvenes Modelia"
+          />
           <button
             type="button"
             onClick={onClose}
@@ -257,7 +277,7 @@ const BirthdayBoardFullscreen: React.FC<BirthdayBoardFullscreenProps> = ({
       </div>
 
       {/* Meses */}
-      {!currentMonthOnly && (
+      {typeof lockedMonth !== 'number' && (
         <div className="relative grid grid-cols-6 gap-2 px-5 pt-5 sm:px-10 lg:grid-cols-12 lg:px-14">
           {monthNames.map((m, idx) => {
             const active = idx === selectedMonth;
