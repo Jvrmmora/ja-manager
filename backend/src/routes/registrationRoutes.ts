@@ -5,7 +5,10 @@ import {
   authenticateAndAuthorize,
   authenticateToken,
 } from '../middleware/auth';
-import { registrationLimiter } from '../middleware/rateLimiter';
+import {
+  placaCheckLimiter,
+  registrationLimiter,
+} from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -24,7 +27,11 @@ const parseFormData = (req: any, res: any, next: any) => {
 
 // Rutas públicas para validaciones (sin autenticación)
 router.get('/check-email', RegistrationController.checkEmailUnique);
-router.get('/check-placa', RegistrationController.checkPlacaExists);
+router.get(
+  '/check-placa',
+  placaCheckLimiter, // evita recorrer placas consecutivas
+  RegistrationController.checkPlacaExists
+);
 
 // Ruta pública para crear solicitud de registro (sin autenticación)
 // NOTA: Ahora crea usuario Young directamente con acceso inmediato

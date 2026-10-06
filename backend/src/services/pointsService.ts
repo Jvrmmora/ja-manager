@@ -186,13 +186,19 @@ class PointsService {
   }
 
   /**
-   * Asignar puntos de referido (automático)
+   * Asignar puntos de referido (automático).
+   * Idempotente: un joven referido solo genera un REFERRAL_BONUS (para quien
+   * lo invitó) y un REFERRAL_WELCOME (para él), sin importar la temporada.
    */
   async assignReferralPoints(
     referrerId: string,
     newYoungId: string,
     seasonId?: string
   ) {
+    if (referrerId === newYoungId) {
+      return null;
+    }
+
     const season = seasonId
       ? await Season.findById(seasonId)
       : await Season.findOne({ status: 'ACTIVE' });
@@ -202,25 +208,37 @@ class PointsService {
       return null;
     }
 
+    const resolvedSeasonId = (season._id as mongoose.Types.ObjectId).toString();
+
     // Puntos para quien refirió
-    const bonusTransaction = await this.createTransaction({
-      youngId: referrerId,
-      seasonId: (season._id as mongoose.Types.ObjectId).toString(),
-      points: season.settings.referralBonusPoints,
-      type: 'REFERRAL_BONUS',
-      referredYoungId: newYoungId,
-      description: 'Bonus por invitar a un amigo',
-    });
+    const bonusTransaction =
+      (await PointsTransaction.findOne({
+        type: 'REFERRAL_BONUS',
+        referredYoungId: newYoungId,
+      })) ??
+      (await this.createTransaction({
+        youngId: referrerId,
+        seasonId: resolvedSeasonId,
+        points: season.settings.referralBonusPoints,
+        type: 'REFERRAL_BONUS',
+        referredYoungId: newYoungId,
+        description: 'Bonus por invitar a un amigo',
+      }));
 
     // Puntos de bienvenida para el nuevo joven
-    const welcomeTransaction = await this.createTransaction({
-      youngId: newYoungId,
-      seasonId: (season._id as mongoose.Types.ObjectId).toString(),
-      points: season.settings.referralWelcomePoints,
-      type: 'REFERRAL_WELCOME',
-      referredYoungId: referrerId,
-      description: 'Puntos de bienvenida',
-    });
+    const welcomeTransaction =
+      (await PointsTransaction.findOne({
+        type: 'REFERRAL_WELCOME',
+        youngId: newYoungId,
+      })) ??
+      (await this.createTransaction({
+        youngId: newYoungId,
+        seasonId: resolvedSeasonId,
+        points: season.settings.referralWelcomePoints,
+        type: 'REFERRAL_WELCOME',
+        referredYoungId: referrerId,
+        description: 'Puntos de bienvenida',
+      }));
 
     return {
       bonusTransaction,

@@ -10,12 +10,19 @@ jest.mock('./consentService', () => ({
 jest.mock('../config/cloudinary', () => ({
   uploadToCloudinary: jest.fn().mockResolvedValue('https://img/x.jpg'),
 }));
+jest.mock('./pointsService', () => ({
+  pointsService: { assignReferralPoints: jest.fn().mockResolvedValue({}) },
+}));
 
 import RegistrationRequest from '../models/RegistrationRequest';
 import Young from '../models/Young';
 import Role from '../models/Role';
+import mongoose from 'mongoose';
+import { pointsService } from './pointsService';
+import { CURRENT_POLICY_VERSION } from '../config/privacyPolicy';
 import {
   checkEmailUnique,
+  createRegistrationRequest,
   checkPlacaExists,
   generatePlacaForRegistration,
   getRegistrationRequestById,
@@ -65,15 +72,28 @@ describe('registrationService.checkEmailUnique', () => {
 describe('registrationService.checkPlacaExists', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('retorna el fullName cuando la placa existe', async () => {
-    mockedYoung.findOne.mockResolvedValue({ fullName: 'Ana' } as any);
+  it('solo revela el primer nombre (endpoint público)', async () => {
+    mockedYoung.findOne.mockResolvedValue({ fullName: '  Ana María López Ruiz ' } as any);
 
     const result = await checkPlacaExists('@MODANA001');
 
     expect(result).toEqual({
       exists: true,
       message: 'Placa encontrada',
-      data: { fullName: 'Ana' },
+      data: { firstName: 'Ana' },
+    });
+    expect(JSON.stringify(result)).not.toContain('López');
+  });
+
+  it('ignora jóvenes eliminados o marcados como spam', async () => {
+    mockedYoung.findOne.mockResolvedValue(null);
+
+    await checkPlacaExists('@MODANA001');
+
+    expect(mockedYoung.findOne).toHaveBeenCalledWith({
+      placa: '@MODANA001',
+      deletedAt: null,
+      isSpam: { $ne: true },
     });
   });
 
@@ -221,5 +241,112 @@ describe('registrationService.reviewRegistrationRequest', () => {
     if (result.approved) {
       expect(result.young.placa).toBe('@MODANA001');
     }
+  });
+});
+
+describe('registrationService.createRegistrationRequest (referidos)', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  const referrerId = new mongoose.Types.ObjectId();
+  const newYoungId = new mongoose.Types.ObjectId();
+
+  const setupMocks = () => {
+    mockedYoung.findOne
+      .mockResolvedValueOnce(null) // email libre
+      .mockResolvedValueOnce({ _id: referrerId } as any) // placa de quien invita
+      .mockResolvedValue(null); // Super Admin para la notificación
+    mockedRequest.findOne.mockResolvedValue(null);
+    mockedYoung.find.mockReturnValue({
+      select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([]) }),
+    } as any);
+    mockedRequest.find.mockReturnValue({
+      select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([]) }),
+    } as any);
+    mockedRole.findOne.mockResolvedValue({ _id: 'role1', name: 'Young role' } as any);
+    (mockedYoung as any).mockImplementation(() => ({
+      save: jest.fn().mockResolvedValue({
+        _id: newYoungId,
+        fullName: 'Daniela Rivera',
+        email: 'daniela@test.com',
+        placa: '@MODDANI001',
+      }),
+    }));
+    (mockedRequest as any).mockImplementation(() => ({
+      save: jest.fn().mockResolvedValue(undefined),
+    }));
+  };
+
+  const baseValue = {
+    fullName: 'Daniela Rivera',
+    ageRange: '19-21',
+    phone: '3001234567',
+    birthday: '2000-01-01',
+    gender: 'femenino',
+    role: 'joven adventista',
+    email: 'daniela@test.com',
+    group: 1,
+    password: 'Secreta123!',
+    policyVersion: CURRENT_POLICY_VERSION,
+  };
+
+  it('asigna puntos de referido al registrarse con la placa de quien invita', async () => {
+    setupMocks();
+
+    await createRegistrationRequest(
+      { ...baseValue, referredByPlaca: '@modzair052' },
+      undefined,
+      {} as any
+    );
+
+    expect(pointsService.assignReferralPoints).toHaveBeenCalledWith(
+      referrerId.toString(),
+      newYoungId.toString()
+    );
+  });
+
+  it('no asigna puntos de referido si no hay placa de invitación', async () => {
+    setupMocks();
+    mockedYoung.findOne.mockReset().mockResolvedValue(null);
+
+    await createRegistrationRequest(baseValue, undefined, {} as any);
+
+    expect(pointsService.assignReferralPoints).not.toHaveBeenCalled();
+  });
+
+  it('no tumba el registro si falla la asignación de puntos', async () => {
+    setupMocks();
+    (pointsService.assignReferralPoints as jest.Mock).mockRejectedValueOnce(
+      new Error('sin temporada')
+    );
+
+    const result = await createRegistrationRequest(
+      { ...baseValue, referredByPlaca: '@MODZAIR052' },
+      undefined,
+      {} as any
+    );
+
+    expect(result.placa).toMatch(/^@MOD/);
+  });
+});
+
+describe('registrationService.createRegistrationRequest (email existente)', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('no revela el nombre del dueño del email en el error', async () => {
+    mockedYoung.findOne.mockResolvedValueOnce({ fullName: 'Ana María López' } as any);
+
+    const error = await createRegistrationRequest(
+      {
+        fullName: 'Otra Persona',
+        birthday: '2000-01-01',
+        email: 'ana@test.com',
+        policyVersion: CURRENT_POLICY_VERSION,
+      },
+      undefined,
+      {} as any
+    ).catch(e => e);
+
+    expect(error.statusCode).toBe(409);
+    expect(JSON.stringify(error.details)).not.toContain('Ana');
   });
 });

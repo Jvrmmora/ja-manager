@@ -19,6 +19,7 @@ const registrationDailyAttempts = new Map<string, RateLimitEntry>();
 const landingVisitHourlyAttempts = new Map<string, RateLimitEntry>();
 const contactHourlyAttempts = new Map<string, RateLimitEntry>();
 const contactDailyAttempts = new Map<string, RateLimitEntry>();
+const placaCheckAttempts = new Map<string, RateLimitEntry>();
 
 // Configuración Birthday
 const MAX_ATTEMPTS = 5;
@@ -39,6 +40,12 @@ const REGISTRATION_DAY_MS = 24 * 60 * 60 * 1000; // 24 horas
 // Configuración Landing Metrics
 const LANDING_VISIT_MAX_HOURLY = 240;
 const LANDING_VISIT_HOUR_MS = 60 * 60 * 1000; // 1 hora
+
+// Configuración validación pública de placa (registro): el formulario consulta
+// solo cuando la placa tiene formato válido, así que 30 cubre el uso normal y
+// evita recorrer placas consecutivas para sacar la lista de nombres.
+const PLACA_CHECK_MAX = 30;
+const PLACA_CHECK_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
 
 // Configuracion Contact Form
 const CONTACT_MAX_HOURLY = 4;
@@ -335,6 +342,43 @@ export const landingVisitLimiter = (
 };
 
 /**
+ * Middleware de rate limiting para GET /registration/check-placa (público)
+ * Límite: 30 consultas por IP cada 15 minutos
+ */
+export const placaCheckLimiter = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const clientIp = getClientIp(req);
+  const { blocked, retryAfterMinutes } = hitLimit(
+    placaCheckAttempts,
+    clientIp,
+    PLACA_CHECK_MAX,
+    PLACA_CHECK_WINDOW_MS
+  );
+
+  if (blocked) {
+    logger.warn('Rate limiter: Límite de validación de placas excedido', {
+      context: 'RateLimiter',
+      method: 'placaCheckLimiter',
+      ip: clientIp,
+      remainingMinutes: retryAfterMinutes,
+    });
+
+    res.status(429).json({
+      success: false,
+      exists: false,
+      message: `Demasiadas consultas de placa. Intenta de nuevo en ${retryAfterMinutes} minutos.`,
+      retryAfter: retryAfterMinutes,
+    });
+    return;
+  }
+
+  next();
+};
+
+/**
  * Middleware de rate limiting para formulario de contacto
  * Limite: 4 intentos por hora y 12 por dia por IP
  */
@@ -451,6 +495,14 @@ function cleanupExpiredEntries(): void {
   for (const [ip, entry] of landingVisitHourlyAttempts.entries()) {
     if (now > entry.resetTime) {
       landingVisitHourlyAttempts.delete(ip);
+      cleanedCount++;
+    }
+  }
+
+  // Limpiar validaciones de placa
+  for (const [ip, entry] of placaCheckAttempts.entries()) {
+    if (now > entry.resetTime) {
+      placaCheckAttempts.delete(ip);
       cleanedCount++;
     }
   }
