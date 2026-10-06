@@ -79,6 +79,24 @@ export const ROUTES: RouteSeo[] = [
     prerender: true,
     image: `${SITE_URL}/og-attendance.jpg`,
   },
+  {
+    path: '/ranking',
+    title: 'Ranking de la temporada — Jóvenes Modelia',
+    description:
+      '¿Quién va liderando esta semana? Mira el podio, el Top 20 y en qué puesto vas tú.',
+    noindex: true,
+    prerender: true,
+    image: `${SITE_URL}/og-ranking.jpg`,
+  },
+  {
+    path: '/cumpleanos',
+    title: 'Cumpleaños del mes — Jóvenes Modelia',
+    description:
+      'Mira quiénes cumplen años este mes en Jóvenes Modelia y no olvides saludarlos.',
+    noindex: true,
+    prerender: true,
+    image: `${SITE_URL}/og-cumpleanos.jpg`,
+  },
 ];
 
 export function seoForPath(pathname: string): RouteSeo | null {

@@ -4,6 +4,7 @@ import { authService } from '../services/auth';
 import ThemeToggle from './ThemeToggle';
 import DynamicCredentialInput from './DynamicCredentialInput';
 import { useNavigate } from 'react-router-dom';
+import { safeReturnUrl } from '../utils/loginUrl';
 
 // Importar la imagen
 import logo from '../assets/logos/logo.png';
@@ -22,6 +23,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   // Leer query params para pre-rellenar placa desde QR
   const urlParams = new URLSearchParams(window.location.search);
   const placaFromQR = urlParams.get('placa') || '';
+  // Enlaces compartidos (ranking, cumpleaños): volver ahí tras iniciar sesión
+  const returnUrl = safeReturnUrl(urlParams.get('returnUrl'));
 
   const [formData, setFormData] = useState({
     username: placaFromQR,
@@ -67,6 +70,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         // Llamar callback de éxito
         if (onLoginSuccess) {
           onLoginSuccess();
+        }
+        if (returnUrl) {
+          navigate(returnUrl, { replace: true });
         }
       }
     } catch (error: any) {

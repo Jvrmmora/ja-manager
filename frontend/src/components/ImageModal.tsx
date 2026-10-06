@@ -42,7 +42,7 @@ const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageUrl, altT
         {/* Botón de cerrar */}
         <button
           onClick={onClose}
-          className="absolute -top-10 -right-10 text-white hover:text-gray-300 transition-colors z-10"
+          className="absolute -top-10 right-0 sm:-right-10 text-white hover:text-gray-300 transition-colors z-10"
           title="Cerrar (Esc)"
         >
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
