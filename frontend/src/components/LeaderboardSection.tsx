@@ -4,8 +4,9 @@ import { pointsService } from '../services/pointsService';
 import { seasonService } from '../services/seasonService';
 import type { ILeaderboardEntry, ISeason } from '../types';
 import { authService } from '../services/auth';
-import { getInitials } from '../utils/nameUtils';
 import { hasDeepChanged } from '../hooks/useDeepCompareEffect';
+import AvatarPhoto from './ui/AvatarPhoto';
+import ImageModal from './ImageModal';
 
 const LeaderboardSection: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<ILeaderboardEntry[]>([]);
@@ -17,6 +18,7 @@ const LeaderboardSection: React.FC = () => {
   const [rankChanges, setRankChanges] = useState<
     Map<string, { old: number; new: number }>
   >(new Map());
+  const [photo, setPhoto] = useState<{ url: string; name: string } | null>(null);
 
   const currentUser = authService.getUserInfo();
   const currentUserId = currentUser?.id;
@@ -198,15 +200,12 @@ const LeaderboardSection: React.FC = () => {
     className: string;
     text: string;
   }> = ({ entry, className, text }) => (
-    <span
-      className={`flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink-800 font-display text-white ${className} ${text}`}
-    >
-      {entry.profileImage ? (
-        <img src={entry.profileImage} alt={entry.youngName} className="h-full w-full object-cover" />
-      ) : (
-        getInitials(entry.youngName)
-      )}
-    </span>
+    <AvatarPhoto
+      name={entry.youngName}
+      image={entry.profileImage}
+      className={`${className} ${text}`}
+      onOpen={(url, name) => setPhoto({ url, name })}
+    />
   );
 
   const renderSlot = (rank: 1 | 2 | 3) => {
@@ -404,6 +403,15 @@ const LeaderboardSection: React.FC = () => {
             </div>
           )}
         </>
+      )}
+
+      {photo && (
+        <ImageModal
+          isOpen
+          onClose={() => setPhoto(null)}
+          imageUrl={photo.url}
+          altText={`Foto de perfil de ${photo.name}`}
+        />
       )}
     </div>
   );

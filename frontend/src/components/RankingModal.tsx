@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import FullscreenLeaderboard from './FullscreenLeaderboard';
 import SeasonStatsBar from './SeasonStatsBar';
 import LeaderboardSection from './LeaderboardSection';
+import ShareLinkButton from './ShareLinkButton';
+import { buildRankingShareUrl, rankingShareMessage } from '../utils/shareUrls';
 import type { ILeaderboardEntry } from '../types';
 
 interface RankingModalProps {
@@ -50,6 +52,11 @@ const RankingModal: React.FC<RankingModalProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <ShareLinkButton
+            url={buildRankingShareUrl()}
+            message={rankingShareMessage(buildRankingShareUrl(), seasonName)}
+            title="Ranking de la temporada — Jóvenes Modelia"
+          />
           <FullscreenLeaderboard leaderboard={leaderboard} />
           <button
             aria-label="Cerrar ranking"

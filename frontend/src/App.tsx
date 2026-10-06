@@ -11,6 +11,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import GoogleAnalytics from './components/GoogleAnalytics';
 import RouteSeo from './components/RouteSeo';
 import ConsentGate from './components/privacy/ConsentGate';
+import AppErrorBoundary from './components/AppErrorBoundary';
+import { safeReturnUrl } from './utils/loginUrl';
 
 // Lazy loading de páginas para code splitting
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -21,6 +23,8 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 const AttendanceScanPage = lazy(() => import('./pages/AttendanceScanPage'));
 const BirthdayClaimPage = lazy(() => import('./pages/BirthdayClaimPage'));
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage'));
+const RankingSharePage = lazy(() => import('./pages/RankingSharePage'));
+const BirthdaySharePage = lazy(() => import('./pages/BirthdaySharePage'));
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -48,6 +52,10 @@ function App() {
       const userInfo = authService.getUserInfo();
       if (userInfo) {
         setUserRole(userInfo.role_name);
+      } else if (!authService.isAuthenticated()) {
+        // Sesión cerrada (p. ej. token vencido en una vista compartida)
+        setIsAuthenticated(false);
+        setUserRole(null);
       }
     };
 
@@ -112,6 +120,7 @@ function App() {
       <BrowserRouter>
         <RouteSeo />
         <GoogleAnalytics />
+        <AppErrorBoundary>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Root: Landing page (public, no auth required) */}
@@ -122,11 +131,17 @@ function App() {
               path="/login"
               element={
                 isAuthenticated ? (
-                  userRole === 'Young role' ? (
-                    <Navigate to="/dashboard" replace />
-                  ) : (
-                    <Navigate to="/admin" replace />
-                  )
+                  <Navigate
+                    to={
+                      safeReturnUrl(
+                        new URLSearchParams(window.location.search).get(
+                          'returnUrl'
+                        )
+                      ) ??
+                      (userRole === 'Young role' ? '/dashboard' : '/admin')
+                    }
+                    replace
+                  />
                 ) : (
                   <Login
                     onLoginSuccess={handleLoginSuccess}
@@ -151,6 +166,14 @@ function App() {
               <Route path="/admin/landing" element={<LandingCMS />} />
             </Route>
 
+            {/* Vistas compartidas por WhatsApp (requieren sesión; tras el login vuelven aquí) */}
+            <Route
+              element={<ProtectedRoute redirectTo="/login" rememberReturn />}
+            >
+              <Route path="/ranking" element={<RankingSharePage />} />
+              <Route path="/cumpleanos" element={<BirthdaySharePage />} />
+            </Route>
+
             {/* Protected young dashboard */}
             <Route element={<ProtectedRoute redirectTo="/login" />}>
               <Route
@@ -165,6 +188,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        </AppErrorBoundary>
         {isAuthenticated && <ConsentGate />}
       </BrowserRouter>
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />

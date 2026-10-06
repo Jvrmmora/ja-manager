@@ -23,6 +23,19 @@ Tras regenerarla:
    → **Scrape Again** (WhatsApp cachea el preview viejo ~1-4 semanas).
 3. Comparte el enlace en WhatsApp para verificar.
 
+## `gen:og:share` — previews de /ranking y /cumpleanos
+
+Genera `og-ranking.jpg` y `og-cumpleanos.jpg` (1200×630), las imágenes que
+WhatsApp muestra al compartir el ranking semanal o los cumpleaños del mes.
+
+```bash
+cd frontend
+npm run gen:og:share
+```
+
+Tras regenerarlas, pasa `https://jovenesmodelia.com/ranking` y
+`https://jovenesmodelia.com/cumpleanos` por el debugger de Facebook → **Scrape Again**.
+
 ## `gen:icons` — favicons e iconos PWA
 
 ```bash
