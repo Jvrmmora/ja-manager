@@ -171,7 +171,7 @@ function RegistrationPage() {
       setPlacaValid(false);
       setErrors(prev => ({
         ...prev,
-        referredByPlaca: 'Formato inválido. Ej: @MODJAVI001',
+        referredByPlaca: 'Formato inválido. Ej: @MODPRUE001',
       }));
       return;
     }
@@ -810,7 +810,7 @@ function RegistrationPage() {
                       value={formData.referredByPlaca}
                       onChange={handleChange}
                       disabled={loading}
-                      placeholder="@MODJAVI001"
+                      placeholder="@MODPRUE001"
                       className={`field-brand h-12 font-mono text-[15px] pr-10 ${placaValid === false ? '!border-red-500' : placaValid === true ? '!border-green-500' : ''}`}
                     />
                     {(validatingPlaca || placaValid !== null) && (
@@ -850,7 +850,7 @@ function RegistrationPage() {
                     <p
                       className="mt-2 text-xs text-cocoa-500 dark:text-white/55"
                     >
-                      Si alguien te refirió, ingresa su placa (ej: @MODJAVI001)
+                      Si alguien te refirió, ingresa su placa (ej: @MODPRUE001)
                     </p>
                   )}
                 </div>
