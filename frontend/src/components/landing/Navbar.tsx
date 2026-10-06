@@ -223,14 +223,16 @@ export default function Navbar({
               <Wordmark />
             </button>
 
-            <div className="hidden lg:flex items-center gap-1 xl:gap-2">
+            {/* En iPad (1024–1279px) los 8 enlaces no caben junto a las acciones:
+                ahí se usa el menú hamburguesa. */}
+            <div className="hidden xl:flex items-center gap-1 2xl:gap-2">
               {NAV_ITEMS.map(({ id, label }) => {
                 const active = showActive && activeSection === id;
                 return (
                   <button
                     key={id}
                     onClick={() => scrollToSection(id)}
-                    className={`relative px-2.5 py-2 text-sm font-medium transition-colors ${
+                    className={`relative whitespace-nowrap px-2.5 py-2 text-sm font-medium transition-colors ${
                       active ? 'text-white' : 'text-white/70 hover:text-white'
                     }`}
                   >
@@ -247,7 +249,7 @@ export default function Navbar({
               {onOpenContact && (
                 <button
                   onClick={onOpenContact}
-                  className="px-2.5 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors"
+                  className="whitespace-nowrap px-2.5 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors"
                 >
                   Contacto
                 </button>
@@ -287,14 +289,14 @@ export default function Navbar({
 
               <button
                 onClick={() => navigate('/register')}
-                className="btn-fire h-11 px-5 text-sm"
+                className="btn-fire h-11 whitespace-nowrap px-5 text-sm"
               >
                 Únete
               </button>
 
               <button
                 onClick={() => setIsMenuOpen(true)}
-                className="lg:hidden flex h-11 w-11 items-center justify-center rounded-full border border-white/20 text-white"
+                className="xl:hidden flex h-11 w-11 items-center justify-center rounded-full border border-white/20 text-white"
                 aria-label="Abrir menú"
                 aria-expanded={isMenuOpen}
               >
@@ -319,7 +321,7 @@ export default function Navbar({
         {isMenuOpen && (
           <motion.div
             key="mobile-menu"
-            className="fixed inset-0 z-[60] lg:hidden bg-ink-950 overflow-y-auto"
+            className="fixed inset-0 z-[60] xl:hidden bg-ink-950 overflow-y-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

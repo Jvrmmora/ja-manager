@@ -79,6 +79,19 @@ export default function MeetingHoverMedia({
           active ? 'opacity-100' : 'opacity-0'
         }`}
       />
+      <span
+        aria-hidden="true"
+        className={`pointer-events-none absolute left-1/2 top-3 inline-flex h-7 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/20 bg-white/10 pl-2.5 pr-3 font-display text-[11px] uppercase tracking-[0.18em] text-white/90 shadow-[0_8px_20px_-10px_rgba(0,0,0,0.8)] backdrop-blur-md transition-all duration-300 motion-reduce:hidden ${
+          active ? '-translate-y-2 opacity-0' : 'translate-y-0 opacity-100'
+        }`}
+      >
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inset-0 rounded-full bg-brand-amber/70 motion-safe:animate-ping" />
+          <span className="relative h-2 w-2 rounded-full bg-brand-amber" />
+        </span>
+        <span className="[@media(hover:hover)]:hidden">Toca aquí</span>
+        <span className="hidden [@media(hover:hover)]:inline">Pasa el cursor</span>
+      </span>
       {children}
     </div>
   );

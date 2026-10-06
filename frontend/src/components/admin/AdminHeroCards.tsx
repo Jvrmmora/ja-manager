@@ -44,7 +44,7 @@ export const AdminQRCard: React.FC<{
   const active = qr && !isExpired(qr.expiresAt);
 
   return (
-    <div className="relative min-h-[260px] lg:h-[300px]">
+    <div className="relative h-full min-h-[260px] lg:min-h-[300px]">
       {active && (
         <span className="pointer-events-none absolute inset-0 rounded-[30px] border-2 border-brand-amber/70 motion-safe:animate-pulse-ring" />
       )}
@@ -132,7 +132,7 @@ export const AdminRankingCard: React.FC<{
   ];
 
   return (
-    <article className="relative flex min-h-[260px] flex-col gap-3.5 overflow-hidden rounded-[30px] bg-ink-900 p-6 text-white shadow-[0_30px_60px_-30px_rgba(20,11,16,0.7)] sm:p-7 lg:h-[300px]">
+    <article className="relative flex min-h-[260px] flex-col gap-3.5 overflow-hidden rounded-[30px] bg-ink-900 p-6 text-white shadow-[0_30px_60px_-30px_rgba(20,11,16,0.7)] sm:p-7 lg:min-h-[300px]">
       <div className="pointer-events-none absolute -right-28 -top-36 h-[340px] w-[340px] rounded-full bg-[radial-gradient(circle,rgba(249,162,59,.3)_0%,rgba(30,18,24,0)_65%)]" />
       <span className="relative flex items-center justify-between gap-2">
         <span className="flex items-center gap-2.5 text-sm font-semibold text-white/75">
@@ -225,7 +225,7 @@ export const AdminBirthdayCard: React.FC<{
   const upcoming = list.filter(b => b.day >= today).slice(0, 3);
 
   return (
-    <article className="flex min-h-[260px] flex-col gap-3.5 rounded-[30px] border border-sand-200 bg-white p-6 shadow-[0_20px_40px_-30px_rgba(78,15,58,0.4)] sm:p-7 lg:h-[300px] dark:border-white/10 dark:bg-ink-900">
+    <article className="flex min-h-[260px] flex-col gap-3.5 rounded-[30px] border border-sand-200 bg-white p-6 shadow-[0_20px_40px_-30px_rgba(78,15,58,0.4)] sm:p-7 lg:min-h-[300px] dark:border-white/10 dark:bg-ink-900">
       <span className="flex items-center justify-between gap-3">
         <span className="flex min-w-0 items-center gap-3.5 text-sm font-semibold text-cocoa-500 dark:text-white/65">
           <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-[#F6E1E8] text-brand-wine dark:bg-brand-wine/25 dark:text-[#F4A3C0]">
