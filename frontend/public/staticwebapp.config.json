@@ -13,7 +13,9 @@
       "/robots.txt",
       "/sitemap.xml",
       "/og-image.jpg",
-      "/og-attendance.jpg"
+      "/og-attendance.jpg",
+      "/og-ranking.jpg",
+      "/og-cumpleanos.jpg"
     ]
   },
   "routes": [
@@ -24,6 +26,8 @@
     { "route": "/register", "rewrite": "/register/index.html" },
     { "route": "/login", "rewrite": "/login/index.html" },
     { "route": "/attendance/scan", "rewrite": "/attendance/scan/index.html" },
+    { "route": "/ranking", "rewrite": "/ranking/index.html" },
+    { "route": "/cumpleanos", "rewrite": "/cumpleanos/index.html" },
     {
       "route": "/assets/*.js",
       "headers": {

@@ -69,7 +69,8 @@ const StatsCards: React.FC<StatsCardsProps> = ({ youngList }) => {
       </div>
       <div className={`${tile} border-white/10 bg-white/[0.06]`}>
         <span className="text-xs font-semibold text-white/60">Nuevos del mes</span>
-        <span className="font-display text-[32px] sm:text-[38px] font-bold leading-none text-white">
+        {/* Morado fijo en hex: brand-skin remapea text-purple-400 a rosado */}
+        <span className="font-display text-[32px] sm:text-[38px] font-bold leading-none text-[#C084FC]">
           {newThisMonth}
         </span>
       </div>

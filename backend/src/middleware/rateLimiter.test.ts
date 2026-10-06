@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { loginLimiter } from './rateLimiter';
+import { loginLimiter, placaCheckLimiter } from './rateLimiter';
 
 type MockRes = Response & {
   statusCode?: number;
@@ -60,5 +60,29 @@ describe('loginLimiter', () => {
     }
 
     expect(blocked).toBe(true);
+  });
+});
+
+describe('placaCheckLimiter', () => {
+  it('permite 30 consultas por IP y bloquea la 31 (evita recorrer placas)', () => {
+    const next = jest.fn();
+    const ip = '10.0.0.9';
+
+    for (let i = 0; i < 30; i++) {
+      const res = makeRes();
+      placaCheckLimiter(makeReq(ip, ''), res, next);
+      expect(res.status).not.toHaveBeenCalled();
+    }
+    expect(next).toHaveBeenCalledTimes(30);
+
+    const blockedRes = makeRes();
+    placaCheckLimiter(makeReq(ip, ''), blockedRes, next);
+    expect(blockedRes.status).toHaveBeenCalledWith(429);
+    expect(next).toHaveBeenCalledTimes(30);
+
+    // Otra IP no se ve afectada
+    const otherRes = makeRes();
+    placaCheckLimiter(makeReq('10.0.0.10', ''), otherRes, next);
+    expect(otherRes.status).not.toHaveBeenCalled();
   });
 });

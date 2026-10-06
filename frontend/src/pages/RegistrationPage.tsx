@@ -58,6 +58,8 @@ function RegistrationPage() {
   const [emailExists, setEmailExists] = useState(false);
   const [validatingEmail, setValidatingEmail] = useState(false);
   const [placaValid, setPlacaValid] = useState<boolean | null>(null);
+  // Primer nombre de quien invita (check-placa no expone más) para confirmar el referido
+  const [referrerName, setReferrerName] = useState<string | null>(null);
   const [validatingPlaca, setValidatingPlaca] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState<boolean | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -169,7 +171,7 @@ function RegistrationPage() {
       setPlacaValid(false);
       setErrors(prev => ({
         ...prev,
-        referredByPlaca: 'Formato inválido. Ej: @MODJAVI001',
+        referredByPlaca: 'Formato inválido. Ej: @MODPRUE001',
       }));
       return;
     }
@@ -181,6 +183,7 @@ function RegistrationPage() {
       if (res.ok) {
         const data = await res.json();
         setPlacaValid(data.exists || false);
+        setReferrerName(data.exists ? data.data?.firstName || null : null);
         setErrors(prev => {
           const e = { ...prev };
           if (!data.exists) e.referredByPlaca = 'Esta placa no existe';
@@ -807,7 +810,7 @@ function RegistrationPage() {
                       value={formData.referredByPlaca}
                       onChange={handleChange}
                       disabled={loading}
-                      placeholder="@MODJAVI001"
+                      placeholder="@MODPRUE001"
                       className={`field-brand h-12 font-mono text-[15px] pr-10 ${placaValid === false ? '!border-red-500' : placaValid === true ? '!border-green-500' : ''}`}
                     />
                     {(validatingPlaca || placaValid !== null) && (
@@ -839,11 +842,17 @@ function RegistrationPage() {
                       {errors.referredByPlaca}
                     </p>
                   )}
-                  <p
-                    className="mt-2 text-xs text-cocoa-500 dark:text-white/55"
-                  >
-                    Si alguien te refirió, ingresa su placa (ej: @MODJAVI001)
-                  </p>
+                  {placaValid === true && referrerName ? (
+                    <p className="mt-2 text-xs font-semibold text-brand-deep dark:text-brand-amber">
+                      Te invitó {referrerName} · ambos suman puntos al registrarte
+                    </p>
+                  ) : (
+                    <p
+                      className="mt-2 text-xs text-cocoa-500 dark:text-white/55"
+                    >
+                      Si alguien te refirió, ingresa su placa (ej: @MODPRUE001)
+                    </p>
+                  )}
                 </div>
 
                 {/* Consentimiento de datos personales */}

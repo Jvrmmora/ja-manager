@@ -22,6 +22,44 @@ interface AuthUser {
 }
 
 /**
+ * Asigna los puntos de referido (bonus a quien invita + bienvenida al nuevo).
+ * Nunca lanza: un fallo de puntos no debe tumbar el registro.
+ */
+async function awardReferralPoints(
+  referrerId: mongoose.Types.ObjectId,
+  newYoungId: mongoose.Types.ObjectId,
+  method: string
+): Promise<void> {
+  try {
+    const { pointsService } = await import('./pointsService');
+    const result = await pointsService.assignReferralPoints(
+      referrerId.toString(),
+      newYoungId.toString()
+    );
+
+    logger.info(
+      result
+        ? 'Puntos de referidos asignados'
+        : 'Puntos de referidos omitidos (sin temporada activa)',
+      {
+        context: 'RegistrationService',
+        method,
+        referrerId: referrerId.toString(),
+        newYoungId: newYoungId.toString(),
+      }
+    );
+  } catch (pointsError) {
+    logger.error('Error asignando puntos de referidos', {
+      context: 'RegistrationService',
+      method,
+      error: pointsError instanceof Error ? pointsError.message : 'Unknown',
+      referrerId: referrerId.toString(),
+      newYoungId: newYoungId.toString(),
+    });
+  }
+}
+
+/**
  * Genera la siguiente placa disponible revisando tanto `Young` (aprobados)
  * como `RegistrationRequest` (pendientes) para no chocar con una placa que
  * todavía no pasó a producción.
@@ -101,13 +139,24 @@ export const checkEmailUnique = async (normalizedEmail: string) => {
   return { exists: false, message: 'Email disponible' };
 };
 
+/** Solo jóvenes activos pueden invitar (ni eliminados ni marcados como spam). */
+const activeReferrerFilter = (placa: string) => ({
+  placa,
+  deletedAt: null,
+  isSpam: { $ne: true },
+});
+
+/**
+ * Endpoint público (registro sin sesión): solo revela el primer nombre para
+ * confirmar "Te invitó X", nunca el nombre completo ni otros datos.
+ */
 export const checkPlacaExists = async (normalizedPlaca: string) => {
-  const existingYoung = await Young.findOne({ placa: normalizedPlaca });
+  const existingYoung = await Young.findOne(activeReferrerFilter(normalizedPlaca));
   if (existingYoung) {
     return {
       exists: true,
       message: 'Placa encontrada',
-      data: { fullName: existingYoung.fullName },
+      data: { firstName: existingYoung.fullName.trim().split(/\s+/)[0] },
     };
   }
 
@@ -149,10 +198,10 @@ export const createRegistrationRequest = async (
     email: registrationData.email.trim().toLowerCase(),
   });
   if (existingEmail) {
+    // Sin el nombre del dueño: este endpoint es público
     throw new ConflictError('Este email ya está registrado por otro usuario', {
       field: 'email',
       value: registrationData.email,
-      existingOwner: existingEmail.fullName,
     });
   }
 
@@ -169,9 +218,9 @@ export const createRegistrationRequest = async (
 
   let referredBy: mongoose.Types.ObjectId | undefined;
   if (registrationData.referredByPlaca) {
-    const referrer = await Young.findOne({
-      placa: registrationData.referredByPlaca.toUpperCase(),
-    });
+    const referrer = await Young.findOne(
+      activeReferrerFilter(registrationData.referredByPlaca.toUpperCase())
+    );
     if (!referrer) {
       throw new NotFoundError(
         `No se encontró un usuario con la placa ${registrationData.referredByPlaca}`
@@ -257,6 +306,16 @@ export const createRegistrationRequest = async (
       method: 'createRegistrationRequest',
       error: auditError instanceof Error ? auditError.message : 'Unknown',
     });
+  }
+
+  // El registro crea la cuenta al instante, así que los puntos de referido se
+  // asignan aquí (antes solo se daban en la aprobación manual).
+  if (referredBy) {
+    await awardReferralPoints(
+      referredBy,
+      savedYoung._id as mongoose.Types.ObjectId,
+      'createRegistrationRequest'
+    );
   }
 
   logger.info('Usuario Young creado con acceso inmediato', {
@@ -558,29 +617,12 @@ export const reviewRegistrationRequest = async (
       reviewedBy: authUser.userId,
     });
 
-    if (request.referredBy) {
-      try {
-        const { pointsService } = await import('./pointsService');
-        await pointsService.assignReferralPoints(
-          (request.referredBy as mongoose.Types.ObjectId).toString(),
-          (finalYoung?._id as mongoose.Types.ObjectId).toString()
-        );
-
-        logger.info('Puntos de referidos asignados', {
-          context: 'RegistrationService',
-          method: 'reviewRegistrationRequest',
-          referrerId: (request.referredBy as mongoose.Types.ObjectId).toString(),
-          newYoungId: (finalYoung?._id as mongoose.Types.ObjectId).toString(),
-        });
-      } catch (pointsError) {
-        logger.error('Error asignando puntos de referidos', {
-          context: 'RegistrationService',
-          method: 'reviewRegistrationRequest',
-          error: pointsError instanceof Error ? pointsError.message : 'Unknown',
-          referrerId: (request.referredBy as mongoose.Types.ObjectId).toString(),
-          newYoungId: (finalYoung?._id as mongoose.Types.ObjectId).toString(),
-        });
-      }
+    if (request.referredBy && finalYoung?._id) {
+      await awardReferralPoints(
+        request.referredBy as mongoose.Types.ObjectId,
+        finalYoung._id as mongoose.Types.ObjectId,
+        'reviewRegistrationRequest'
+      );
     }
 
     if (request.email) {
