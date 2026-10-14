@@ -2,7 +2,7 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { ROUTES, SITE_URL, DEFAULT_IMAGE } from './src/seo/config';
+import { ROUTES, SECTION_ROUTES, SITE_URL, DEFAULT_IMAGE } from './src/seo/config';
 
 /**
  * Prerender ligero: genera un index.html por ruta pública con el <head> (title,
@@ -37,7 +37,7 @@ function prerenderMeta(isSsrBuild: boolean): Plugin {
       const esc = (s: string) =>
         s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
-      for (const route of ROUTES) {
+      for (const route of [...ROUTES, ...SECTION_ROUTES]) {
         if (!route.prerender) continue;
         // route.path === '/' escribe sobre el propio dist/index.html (mismo
         // template, join() ignora el segmento vacío) — así "/" queda con sus
@@ -45,7 +45,8 @@ function prerenderMeta(isSsrBuild: boolean): Plugin {
         // /login. El contenido del <body> lo hornea después
         // scripts/prerender-landing.mjs; este bloque solo toca el <head>.
 
-        const canonical = `${SITE_URL}${route.path}`;
+        const canonical = `${SITE_URL}${route.canonicalPath ?? route.path}`;
+        const ogUrl = `${SITE_URL}${route.path}`;
         const title = esc(route.title);
         const description = esc(route.description);
         const robots = route.noindex
@@ -69,7 +70,7 @@ function prerenderMeta(isSsrBuild: boolean): Plugin {
           )
           .replace(
             /<meta\s+property="og:url"\s+content="[\s\S]*?"\s*\/>/,
-            `<meta property="og:url" content="${canonical}" />`
+            `<meta property="og:url" content="${ogUrl}" />`
           )
           .replace(
             /<meta\s+property="og:title"\s+content="[\s\S]*?"\s*\/>/,
@@ -96,9 +97,18 @@ function prerenderMeta(isSsrBuild: boolean): Plugin {
             `<meta name="twitter:image" content="${image}" />`
           );
 
+        // Páginas de sección compartible: los scrapers leen el OG de arriba y
+        // las personas son llevadas de inmediato a la sección en la landing.
+        const finalHtml = route.redirectTo
+          ? html.replace(
+              /<head>/,
+              `<head>\n    <script>location.replace(${JSON.stringify(route.redirectTo)});</script>`
+            )
+          : html;
+
         const target = join(outDir, route.path.replace(/^\//, ''), 'index.html');
         mkdirSync(dirname(target), { recursive: true });
-        writeFileSync(target, html);
+        writeFileSync(target, finalHtml);
         this.info(`prerender-meta: ${route.path} -> ${target}`);
       }
 

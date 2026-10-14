@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { normalizeRichTextHtml } from '../../utils/richText';
 import Reveal from './ui/Reveal';
+import ShareSectionButton from './ShareSectionButton';
 
 interface AboutSectionProps {
   content: {
@@ -94,8 +95,9 @@ export default function AboutSection({ content }: AboutSectionProps) {
   return (
     <section
       id="about"
-      className="bg-cream dark:bg-ink-900 pt-24 pb-12 md:pt-32 md:pb-16"
+      className="relative bg-cream dark:bg-ink-900 pt-24 pb-12 md:pt-32 md:pb-16"
     >
+      <ShareSectionButton sectionId="about" topClass="top-24 md:top-32" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-14 lg:grid-cols-2 lg:gap-24 lg:items-center">
         <Reveal className="flex flex-col gap-5">
           <span className="eyebrow text-brand-deep dark:text-brand-amber">

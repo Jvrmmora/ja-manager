@@ -36,6 +36,24 @@ npm run gen:og:share
 Tras regenerarlas, pasa `https://jovenesmodelia.com/ranking` y
 `https://jovenesmodelia.com/cumpleanos` por el debugger de Facebook → **Scrape Again**.
 
+## `gen:og:sections` — previews de cada sección de la landing
+
+Genera `og-section-<id>.jpg` (1200×630) para `about`, `meetings`, `events`,
+`gallery`, `resources`, `testimonials` y `location`, cada una con su ícono
+(p. ej. el pin de mapa en Ubicación). Se usan al compartir el enlace del botón
+"copiar enlace" de cada sección.
+
+```bash
+cd frontend
+npm run gen:og:sections
+```
+
+El enlace compartido es `/s/<id>` (el `#hash` no llega a los scrapers): el build
+(`prerenderMeta` en `vite.config.ts`) escribe `dist/s/<id>/index.html` con el OG
+de la sección y una redirección a `/#<id>`. Las secciones y sus textos viven en
+`SECTION_SHARES` (`src/seo/config.ts`); si agregas una, añade también su entrada
+en este script y su ruta en `public/staticwebapp.config.json`.
+
 ## `gen:icons` — favicons e iconos PWA
 
 ```bash

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { normalizeRichTextHtml } from '../../utils/richText';
 import ImageWithFallback from './ImageWithFallback';
 import Reveal from './ui/Reveal';
+import ShareSectionButton from './ShareSectionButton';
 
 interface TestimonialMedia {
   _id: string;
@@ -194,7 +195,12 @@ export default function TestimonialsSection({
   }, [startIndex, itemsPerPage, goNext, goPrev]);
 
   return (
-    <section id="testimonials" className="bg-ink-950 px-4 sm:px-6 lg:px-8 py-24 md:py-28">
+    <section id="testimonials" className="relative bg-ink-950 px-4 sm:px-6 lg:px-8 py-24 md:py-28">
+      <ShareSectionButton
+        sectionId="testimonials"
+        topClass="top-28 md:top-32"
+        tone="dark"
+      />
       <div className="relative max-w-7xl mx-auto overflow-hidden rounded-[32px] md:rounded-[36px] border border-white/[0.08] bg-ink-900 px-5 py-12 sm:px-10 md:px-14 md:py-16">
         <div className="pointer-events-none absolute -left-52 -top-52 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,rgba(242,106,46,.22)_0%,rgba(30,18,24,0)_65%)] motion-safe:animate-ember" />
         <span className="text-fire pointer-events-none absolute right-8 top-2 font-display text-[180px] leading-none opacity-80 select-none" aria-hidden="true">
