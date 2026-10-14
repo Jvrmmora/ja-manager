@@ -1,4 +1,5 @@
 import Reveal from './ui/Reveal';
+import ShareSectionButton from './ShareSectionButton';
 
 interface LocationSectionProps {
   content: {
@@ -31,7 +32,8 @@ export default function LocationSection({ content }: LocationSectionProps) {
   const mapEmbedSrc = getMapEmbedSrc(content.mapEmbedUrl);
 
   return (
-    <section id="location" className="bg-cream dark:bg-ink-900 py-24 md:py-28">
+    <section id="location" className="relative bg-cream dark:bg-ink-900 py-24 md:py-28">
+      <ShareSectionButton sectionId="location" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-12 lg:grid-cols-[7fr_5fr] lg:gap-16 lg:items-center">
         <Reveal className="relative h-[420px] md:h-[520px] overflow-hidden rounded-[32px] border border-sand-300 bg-sand-100 shadow-[0_30px_60px_-30px_rgba(78,15,58,0.35)] dark:border-white/10 dark:bg-ink-800">
           {mapEmbedSrc ? (

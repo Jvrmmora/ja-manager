@@ -4,6 +4,7 @@ import { normalizeRichTextHtml } from '../../utils/richText';
 import Dialog from './ui/Dialog';
 import Reveal from './ui/Reveal';
 import SectionHeader from './ui/SectionHeader';
+import ShareSectionButton from './ShareSectionButton';
 
 interface ResourceMedia {
   _id: string;
@@ -116,7 +117,8 @@ export default function ResourcesSection({
     : resourcesMedia.slice(0, MAX_VISIBLE_CARDS);
 
   return (
-    <section id="resources" className="bg-cream dark:bg-ink-900 py-24 md:py-28">
+    <section id="resources" className="relative bg-cream dark:bg-ink-900 py-24 md:py-28">
+      <ShareSectionButton sectionId="resources" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader
           eyebrow="Recursos"

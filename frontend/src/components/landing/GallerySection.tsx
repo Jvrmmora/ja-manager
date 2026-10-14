@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import ImageWithFallback from './ImageWithFallback';
 import SectionHeader from './ui/SectionHeader';
+import ShareSectionButton from './ShareSectionButton';
 
 interface GalleryMedia {
   _id: string;
@@ -74,7 +75,8 @@ export default function GallerySection({
 
   if (!galleryMedia || total === 0) {
     return (
-      <section id="gallery" className="bg-ink-950 py-24 md:py-28">
+      <section id="gallery" className="relative bg-ink-950 py-24 md:py-28">
+        <ShareSectionButton sectionId="gallery" tone="dark" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionHeader
             eyebrow="Momentos"
@@ -160,7 +162,8 @@ export default function GallerySection({
   };
 
   return (
-    <section id="gallery" className="bg-ink-950 py-24 md:py-28">
+    <section id="gallery" className="relative bg-ink-950 py-24 md:py-28">
+      <ShareSectionButton sectionId="gallery" tone="dark" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader
           eyebrow="Momentos"

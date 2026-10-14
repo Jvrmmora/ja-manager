@@ -15,7 +15,8 @@
       "/og-image.jpg",
       "/og-attendance.jpg",
       "/og-ranking.jpg",
-      "/og-cumpleanos.jpg"
+      "/og-cumpleanos.jpg",
+      "/og-section-*.jpg"
     ]
   },
   "routes": [
@@ -28,6 +29,13 @@
     { "route": "/attendance/scan", "rewrite": "/attendance/scan/index.html" },
     { "route": "/ranking", "rewrite": "/ranking/index.html" },
     { "route": "/cumpleanos", "rewrite": "/cumpleanos/index.html" },
+    { "route": "/s/about", "rewrite": "/s/about/index.html" },
+    { "route": "/s/meetings", "rewrite": "/s/meetings/index.html" },
+    { "route": "/s/events", "rewrite": "/s/events/index.html" },
+    { "route": "/s/gallery", "rewrite": "/s/gallery/index.html" },
+    { "route": "/s/resources", "rewrite": "/s/resources/index.html" },
+    { "route": "/s/testimonials", "rewrite": "/s/testimonials/index.html" },
+    { "route": "/s/location", "rewrite": "/s/location/index.html" },
     {
       "route": "/assets/*.js",
       "headers": {

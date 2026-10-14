@@ -18,7 +18,8 @@
     "test": "vitest run",
     "gen:icons": "node scripts/generate-icons.mjs",
     "gen:og": "node scripts/generate-og-image.js",
-    "gen:og:share": "node scripts/generate-og-share-images.js"
+    "gen:og:share": "node scripts/generate-og-share-images.js",
+    "gen:og:sections": "node scripts/generate-og-sections.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

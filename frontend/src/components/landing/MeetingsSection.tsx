@@ -9,6 +9,7 @@ import cultoJovenPoster from '../../assets/meetings/culto-joven.webp';
 import cultoJovenVideo from '../../assets/meetings/culto-joven-hover.mp4';
 import clubesModeliaPoster from '../../assets/meetings/clubes-modelia.webp';
 import clubesModeliaVideo from '../../assets/meetings/clubes-modelia-hover.mp4';
+import ShareSectionButton from './ShareSectionButton';
 
 interface Meeting {
   _id: string;
@@ -66,7 +67,8 @@ export default function MeetingsSection({ meetings }: MeetingsSectionProps) {
     : meetings.slice(0, MAX_VISIBLE_CARDS);
 
   return (
-    <section id="meetings" className="bg-white dark:bg-ink-950 py-24 md:py-28">
+    <section id="meetings" className="relative bg-white dark:bg-ink-950 py-24 md:py-28">
+      <ShareSectionButton sectionId="meetings" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader
           eyebrow="Cada semana"

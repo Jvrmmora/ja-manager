@@ -6,7 +6,13 @@ import ToastContainer from './components/ToastContainer';
 import { useToast } from './hooks/useToast';
 import PageLoader from './components/PageLoader';
 import { authService } from './services/auth';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useParams,
+} from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import GoogleAnalytics from './components/GoogleAnalytics';
 import RouteSeo from './components/RouteSeo';
@@ -25,6 +31,13 @@ const BirthdayClaimPage = lazy(() => import('./pages/BirthdayClaimPage'));
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage'));
 const RankingSharePage = lazy(() => import('./pages/RankingSharePage'));
 const BirthdaySharePage = lazy(() => import('./pages/BirthdaySharePage'));
+
+// /s/<id> -> /#<id>: enlace compartible de una sección de la landing. En
+// producción la página prerenderizada ya redirige; esto cubre dev y fallbacks.
+const SectionShareRedirect = () => {
+  const { section } = useParams();
+  return <Navigate to={{ pathname: '/', hash: section ?? '' }} replace />;
+};
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -150,6 +163,9 @@ function App() {
                 )
               }
             />
+
+            {/* Enlaces compartibles de sección (/s/location -> /#location) */}
+            <Route path="/s/:section" element={<SectionShareRedirect />} />
 
             {/* QR Scan from external camera */}
             <Route path="/attendance/scan" element={<AttendanceScanPage />} />
