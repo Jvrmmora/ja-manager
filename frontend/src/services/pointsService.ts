@@ -4,6 +4,7 @@ import type {
   IPointsTransaction,
   IAssignPointsRequest,
   ILeaderboardEntry,
+  IPublicPointsHistory,
 } from '../types';
 
 const API_BASE = 'points';
@@ -61,6 +62,30 @@ export const pointsService = {
       transactions: result.data || [],
       total: result.count || 0,
     };
+  },
+
+  /**
+   * Historial público de un participante del ranking: de dónde salen sus
+   * puntos en la temporada (visible para cualquier joven con sesión).
+   */
+  async getPublicHistory(
+    youngId: string,
+    seasonId?: string
+  ): Promise<IPublicPointsHistory> {
+    const params = seasonId ? `?seasonId=${seasonId}` : '';
+    const response = await apiRequest(
+      `${API_BASE}/young/${youngId}/public-history${params}`,
+      { method: 'GET' }
+    );
+    const result = await response.json();
+
+    if (!response.ok || !result.success || !result.data) {
+      throw new Error(
+        result?.message || 'No se pudo cargar el historial de puntos'
+      );
+    }
+
+    return result.data;
   },
 
   /**

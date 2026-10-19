@@ -7,6 +7,7 @@ import { authService } from '../services/auth';
 import { hasDeepChanged } from '../hooks/useDeepCompareEffect';
 import AvatarPhoto from './ui/AvatarPhoto';
 import ImageModal from './ImageModal';
+import ParticipantHistoryModal from './ParticipantHistoryModal';
 
 const LeaderboardSection: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<ILeaderboardEntry[]>([]);
@@ -19,6 +20,10 @@ const LeaderboardSection: React.FC = () => {
     Map<string, { old: number; new: number }>
   >(new Map());
   const [photo, setPhoto] = useState<{ url: string; name: string } | null>(null);
+  // Participante cuyo historial de puntos se está viendo (transparencia del ranking)
+  const [historyEntry, setHistoryEntry] = useState<ILeaderboardEntry | null>(
+    null
+  );
 
   const currentUser = authService.getUserInfo();
   const currentUserId = currentUser?.id;
@@ -240,20 +245,26 @@ const LeaderboardSection: React.FC = () => {
             text={rank === 1 ? 'text-3xl' : 'text-xl'}
           />
         </span>
-        <span className="mt-2 line-clamp-2 max-w-full break-words px-1 text-center text-[13px] font-bold leading-tight text-white sm:text-sm">
+        <button
+          type="button"
+          onClick={() => setHistoryEntry(entry)}
+          title="Ver historial de puntos"
+          className="mt-2 line-clamp-2 max-w-full break-words rounded-md px-1 text-center text-[13px] font-bold leading-tight text-white underline decoration-white/25 underline-offset-4 hover:decoration-brand-amber focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber sm:text-sm"
+        >
           {entry.youngName}
           {entry.youngId === currentUserId && (
             <span className="ml-1 rounded-full bg-amber-400 px-1.5 py-0.5 text-[9px] font-extrabold text-gray-900">
               TÚ
             </span>
           )}
-        </span>
+        </button>
         <span className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white/50">
           {!isYoung && entry.group && <span>Grupo {entry.group}</span>}
           <StreakChip value={entry.streak} />
         </span>
         <div
-          className={`mt-3 flex w-full flex-col items-center justify-center rounded-t-2xl border-t bg-gradient-to-b ${c.pedestal} ${c.height}`}
+          onClick={() => setHistoryEntry(entry)}
+          className={`mt-3 flex w-full cursor-pointer flex-col items-center justify-center rounded-t-2xl border-t bg-gradient-to-b ${c.pedestal} ${c.height}`}
         >
           <span className={`font-display text-4xl font-bold leading-none sm:text-5xl ${c.number}`}>
             {rank}
@@ -321,6 +332,10 @@ const LeaderboardSection: React.FC = () => {
         </div>
       ) : (
         <>
+          <p className="m-0 text-center text-xs text-white/50">
+            Toca a cualquier participante para ver de dónde salen sus puntos.
+          </p>
+
           {getTop3().length > 0 && (
             <div className="mx-auto flex max-w-2xl items-end justify-center gap-3 pt-6 sm:gap-6">
               <AnimatePresence mode="popLayout">
@@ -351,7 +366,8 @@ const LeaderboardSection: React.FC = () => {
                     {getRest().map((entry, index) => (
                       <tr
                         key={entry.youngId}
-                        className={`border-t border-white/5 transition-colors hover:bg-white/[0.03] ${
+                        onClick={() => setHistoryEntry(entry)}
+                        className={`cursor-pointer border-t border-white/5 transition-colors hover:bg-white/[0.05] ${
                           entry.youngId === currentUserId ? 'bg-brand-amber/10' : ''
                         }`}
                       >
@@ -360,14 +376,27 @@ const LeaderboardSection: React.FC = () => {
                         </td>
                         <td className="px-2 py-3 sm:px-4">
                           <div className="flex items-center gap-3">
-                            <Avatar
-                              entry={entry}
-                              className="h-9 w-9 border border-white/10"
-                              text="text-xs"
-                            />
+                            {/* La foto abre la imagen, no el historial */}
+                            <span onClick={e => e.stopPropagation()}>
+                              <Avatar
+                                entry={entry}
+                                className="h-9 w-9 border border-white/10"
+                                text="text-xs"
+                              />
+                            </span>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                                <span className="truncate">{entry.youngName}</span>
+                                <button
+                                  type="button"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setHistoryEntry(entry);
+                                  }}
+                                  title="Ver historial de puntos"
+                                  className="truncate rounded text-left hover:text-brand-amber focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber"
+                                >
+                                  {entry.youngName}
+                                </button>
                                 {entry.youngId === currentUserId && (
                                   <span className="flex-shrink-0 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-gray-900">
                                     TÚ
@@ -403,6 +432,17 @@ const LeaderboardSection: React.FC = () => {
             </div>
           )}
         </>
+      )}
+
+      {historyEntry && (
+        <ParticipantHistoryModal
+          youngId={historyEntry.youngId}
+          youngName={historyEntry.youngName}
+          profileImage={historyEntry.profileImage}
+          seasonId={selectedSeason || undefined}
+          isCurrentUser={historyEntry.youngId === currentUserId}
+          onClose={() => setHistoryEntry(null)}
+        />
       )}
 
       {photo && (

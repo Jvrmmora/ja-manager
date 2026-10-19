@@ -266,6 +266,40 @@ export interface ILeaderboardEntry {
   streak?: number;
 }
 
+// Historial público de un participante del ranking (transparencia de puntos)
+export type PublicPointsType =
+  | 'ATTENDANCE'
+  | 'ACTIVITY'
+  | 'REFERRAL_BONUS'
+  | 'REFERRAL_WELCOME'
+  | 'BONUS'
+  | 'BIRTHDAY';
+
+export interface IPublicPointsItem {
+  id: string;
+  type: PublicPointsType;
+  points: number;
+  basePoints: number;
+  speedBonus: number;
+  minutesToScan: number | null;
+  description: string | null;
+  createdAt: string;
+}
+
+export interface IPublicPointsHistory {
+  young: { id: string; fullName: string; profileImage?: string };
+  season: { id: string; name: string };
+  total: number;
+  byType: Partial<Record<PublicPointsType, number>>;
+  attendanceCount: number;
+  streak: {
+    currentWeeks: number;
+    bestWeeks: number;
+    violetFlameAwarded: boolean;
+  };
+  items: IPublicPointsItem[];
+}
+
 // ===== Solicitudes de Registro =====
 export type RegistrationRequestStatus = 'pending' | 'approved' | 'rejected';
 

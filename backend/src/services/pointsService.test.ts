@@ -8,6 +8,7 @@ jest.mock('./streakService');
 import PointsTransaction from '../models/PointsTransaction';
 import Season from '../models/Season';
 import Young from '../models/Young';
+import Streak from '../models/Streak';
 import { updateStreakOnAttendance } from './streakService';
 import { pointsService } from './pointsService';
 
@@ -230,6 +231,91 @@ describe('pointsService.getTotalPoints', () => {
       'young1',
       ACTIVE_SEASON_ID
     );
+  });
+});
+
+describe('pointsService.getPublicHistory', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  const YOUNG_ID = '507f1f77bcf86cd799439022';
+
+  const mockHistoryQueries = (transactions: any[]) => {
+    (mockedYoung.findById as jest.Mock).mockReturnValue({
+      select: jest.fn().mockResolvedValue({
+        _id: YOUNG_ID,
+        fullName: 'Joven Prueba',
+        profileImage: null,
+      }),
+    });
+    (mockedPointsTransaction.find as jest.Mock).mockReturnValue({
+      sort: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue(transactions),
+      }),
+    });
+    (Streak.findOne as jest.Mock).mockResolvedValue(null);
+  };
+
+  it('retorna null si no hay temporada activa', async () => {
+    mockedSeason.findOne.mockResolvedValue(null);
+
+    const result = await pointsService.getPublicHistory(YOUNG_ID);
+
+    expect(result).toBeNull();
+  });
+
+  it('separa el bonus de velocidad y solo expone la descripción de actividades y bonos', async () => {
+    mockedSeason.findOne.mockResolvedValue({
+      ...activeSeason,
+      name: 'Temporada Prueba',
+    } as any);
+    mockHistoryQueries([
+      {
+        _id: 'tx1',
+        type: 'ATTENDANCE',
+        points: 60,
+        speedBonus: 20,
+        timeToScanSeconds: 125,
+        description: 'Asistencia registrada (60 pts) + ⚡ Bonus velocidad',
+        createdAt: new Date('2026-10-17T21:15:00Z'),
+      },
+      {
+        _id: 'tx2',
+        type: 'BONUS',
+        points: 100,
+        description: 'Llama Violeta - 4 sábados consecutivos',
+        createdAt: new Date('2026-10-17T21:15:00Z'),
+      },
+      {
+        _id: 'tx3',
+        type: 'REFERRAL_BONUS',
+        points: 30,
+        description: 'Bonus por invitar a un amigo',
+        referredYoungId: 'otroJoven',
+        createdAt: new Date('2026-10-05T21:15:00Z'),
+      },
+    ]);
+
+    const result = await pointsService.getPublicHistory(YOUNG_ID);
+
+    expect(result?.total).toBe(190);
+    expect(result?.attendanceCount).toBe(1);
+    expect(result?.byType).toEqual({
+      ATTENDANCE: 60,
+      BONUS: 100,
+      REFERRAL_BONUS: 30,
+    });
+    expect(result?.items[0]).toMatchObject({
+      basePoints: 40,
+      speedBonus: 20,
+      minutesToScan: 2,
+      description: null,
+    });
+    expect(result?.items[1].description).toBe(
+      'Llama Violeta - 4 sábados consecutivos'
+    );
+    // No se expone a quién invitó
+    expect(result?.items[2]).not.toHaveProperty('referredYoungId');
+    expect(result?.items[2].description).toBeNull();
   });
 });
 
