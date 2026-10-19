@@ -1778,6 +1778,81 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /points/young/{youngId}/public-history:
+    get:
+      summary: Historial público de puntos de un participante
+      description: |
+        Historial de la temporada (activa o la indicada) de un participante del ranking,
+        visible para cualquier usuario autenticado. Expone tipo, puntos, bonus de velocidad
+        y fecha de cada movimiento; no expone quién asignó ni a quién invitó.
+      tags: [Points]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: youngId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: seasonId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Historial obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      young:
+                        type: object
+                        properties:
+                          id: { type: string }
+                          fullName: { type: string }
+                          profileImage: { type: string, nullable: true }
+                      season:
+                        type: object
+                        properties:
+                          id: { type: string }
+                          name: { type: string }
+                      total: { type: integer, example: 705 }
+                      byType:
+                        type: object
+                        additionalProperties: { type: integer }
+                      attendanceCount: { type: integer, example: 12 }
+                      streak:
+                        type: object
+                        properties:
+                          currentWeeks: { type: integer }
+                          bestWeeks: { type: integer }
+                          violetFlameAwarded: { type: boolean }
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            type: { type: string, example: ATTENDANCE }
+                            points: { type: integer, example: 60 }
+                            basePoints: { type: integer, example: 40 }
+                            speedBonus: { type: integer, example: 20 }
+                            minutesToScan:
+                              { type: integer, nullable: true, example: 1 }
+                            description: { type: string, nullable: true }
+                            createdAt: { type: string, format: date-time }
+        '400':
+          description: ID no válido
+        '404':
+          description: No hay temporada o el joven no existe
   /points/young/{youngId}/history:
     get:
       summary: Obtener historial de puntos

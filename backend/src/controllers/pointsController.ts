@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import { pointsService } from '../services/pointsService';
 import PointsTransaction from '../models/PointsTransaction';
 import { captureLeaderboardSnapshot } from '../services/leaderboardSnapshotService';
@@ -165,6 +166,49 @@ export const getYoungHistory = async (
     res.status(200).json({
       success: true,
       count: history.length,
+      data: history,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Historial público de un participante del ranking (visible para cualquier joven)
+ */
+export const getYoungPublicHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { youngId } = req.params;
+    const { seasonId } = req.query;
+
+    if (
+      !mongoose.isValidObjectId(youngId) ||
+      (seasonId && !mongoose.isValidObjectId(seasonId))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de joven o temporada no válido',
+      });
+    }
+
+    const history = await pointsService.getPublicHistory(
+      youngId,
+      seasonId as string
+    );
+
+    if (!history) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontró el historial de este participante',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
       data: history,
     });
   } catch (error) {

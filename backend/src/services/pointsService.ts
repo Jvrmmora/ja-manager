@@ -286,6 +286,105 @@ class PointsService {
   }
 
   /**
+   * Historial "público" de un participante del ranking: cualquier joven
+   * autenticado puede ver de dónde salen los puntos de los demás, para que
+   * el ranking sea transparente. Solo expone lo necesario (sin IPs, sin
+   * quién asignó ni a quién invitó).
+   */
+  async getPublicHistory(youngId: string, seasonId?: string) {
+    const season = seasonId
+      ? await Season.findById(seasonId)
+      : await Season.findOne({ status: 'ACTIVE' });
+
+    if (!season) {
+      return null;
+    }
+
+    const sid = (season._id as mongoose.Types.ObjectId).toString();
+    const Young = (await import('../models/Young')).default;
+
+    const [young, transactions, streakDoc] = await Promise.all([
+      Young.findById(youngId).select('fullName profileImage'),
+      PointsTransaction.find({
+        youngId: new mongoose.Types.ObjectId(youngId),
+        seasonId: new mongoose.Types.ObjectId(sid),
+      })
+        .sort({ createdAt: -1 })
+        .lean(),
+      Streak.findOne({
+        youngId: new mongoose.Types.ObjectId(youngId),
+        seasonId: new mongoose.Types.ObjectId(sid),
+      }),
+    ]);
+
+    if (!young) {
+      return null;
+    }
+
+    const items = transactions.map((tx: any) => {
+      const speedBonus = tx.type === 'ATTENDANCE' ? tx.speedBonus || 0 : 0;
+      return {
+        id: tx._id.toString(),
+        type: tx.type as PointsTransactionType,
+        points: tx.points,
+        basePoints: tx.points - speedBonus,
+        speedBonus,
+        minutesToScan:
+          tx.type === 'ATTENDANCE' && typeof tx.timeToScanSeconds === 'number'
+            ? Math.floor(tx.timeToScanSeconds / 60)
+            : null,
+        // Solo las actividades llevan texto libre del líder; el resto se
+        // describe en el frontend según el tipo.
+        description:
+          tx.type === 'ACTIVITY' || tx.type === 'BONUS'
+            ? tx.description || null
+            : null,
+        createdAt: tx.createdAt,
+      };
+    });
+
+    const byType: Record<string, number> = {};
+    let total = 0;
+    for (const item of items) {
+      byType[item.type] = (byType[item.type] || 0) + item.points;
+      total += item.points;
+    }
+
+    let currentWeeks = streakDoc?.currentStreakWeeks || 0;
+    if (streakDoc?.lastAttendanceSaturday) {
+      const currentSaturday = getSaturdayStart(new Date());
+      const eventKeys = await getEventDateKeysBetween(
+        new Date(streakDoc.lastAttendanceSaturday),
+        currentSaturday
+      );
+      currentWeeks = computeEffectiveStreak(
+        currentWeeks,
+        streakDoc.lastAttendanceSaturday,
+        currentSaturday,
+        eventKeys
+      );
+    }
+
+    return {
+      young: {
+        id: (young._id as mongoose.Types.ObjectId).toString(),
+        fullName: young.fullName,
+        profileImage: young.profileImage,
+      },
+      season: { id: sid, name: season.name },
+      total,
+      byType,
+      attendanceCount: items.filter(i => i.type === 'ATTENDANCE').length,
+      streak: {
+        currentWeeks,
+        bestWeeks: streakDoc?.bestStreakWeeks || 0,
+        violetFlameAwarded: !!streakDoc?.violetFlameAwarded,
+      },
+      items,
+    };
+  }
+
+  /**
    * Obtener desglose de puntos por tipo
    */
   async getPointsBreakdown(youngId: string, seasonId?: string) {

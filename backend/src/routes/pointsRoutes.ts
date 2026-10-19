@@ -4,6 +4,7 @@ import {
   getYoungTotalPoints,
   getYoungPointsBreakdown,
   getYoungHistory,
+  getYoungPublicHistory,
   getAllTransactions,
   deleteTransaction,
   getLeaderboard,
@@ -28,6 +29,13 @@ router.get(
   getYoungPointsBreakdown
 );
 router.get('/young/:youngId/history', authenticateToken, getYoungHistory);
+
+// Historial público de un participante del ranking (transparencia de puntos)
+router.get(
+  '/young/:youngId/public-history',
+  authenticateToken,
+  getYoungPublicHistory
+);
 
 // Obtener ranking/leaderboard
 router.get('/leaderboard', authenticateToken, getLeaderboard);
