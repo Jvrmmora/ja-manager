@@ -96,3 +96,59 @@ export const registerAttendanceCore = async (
     points: pointsInfo,
   };
 };
+
+export interface AttendanceCalendarDay {
+  date: string; // YYYY-MM-DD (Colombia)
+  kind: 'CULTO' | 'ACTIVIDAD';
+  attendees: number;
+  qrCount: number;
+  points: number; // puntos base del QR del día (el mayor si hubo varios)
+}
+
+/**
+ * Resumen anual para el calendario de asistencias del admin: un registro
+ * por cada día con QR generado. Los sábados son "culto joven"; cualquier
+ * otro día con QR se considera "actividad".
+ */
+export const getAttendanceCalendar = async (
+  year: number
+): Promise<AttendanceCalendarDay[]> => {
+  const from = `${year}-01-01`;
+  const to = `${year}-12-31`;
+
+  const [qrDays, attendanceDays] = await Promise.all([
+    QRCodeModel.aggregate([
+      { $match: { dailyDate: { $gte: from, $lte: to } } },
+      {
+        $group: {
+          _id: '$dailyDate',
+          qrCount: { $sum: 1 },
+          points: { $max: '$points' },
+        },
+      },
+    ]),
+    AttendanceModel.aggregate([
+      { $match: { attendanceDate: { $gte: from, $lte: to } } },
+      { $group: { _id: '$attendanceDate', attendees: { $sum: 1 } } },
+    ]),
+  ]);
+
+  const attendeesByDate = new Map<string, number>(
+    attendanceDays.map((d: any) => [d._id as string, d.attendees as number])
+  );
+
+  return qrDays
+    .map((d: any) => {
+      const date = d._id as string;
+      // Mediodía UTC: el día de la semana no depende del TZ del proceso
+      const isSaturday = new Date(`${date}T12:00:00Z`).getUTCDay() === 6;
+      return {
+        date,
+        kind: isSaturday ? ('CULTO' as const) : ('ACTIVIDAD' as const),
+        attendees: attendeesByDate.get(date) || 0,
+        qrCount: d.qrCount,
+        points: d.points || 0,
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+};

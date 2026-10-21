@@ -1131,6 +1131,50 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /attendance/calendar:
+    get:
+      summary: Calendario anual de cultos y actividades
+      description: |
+        Un registro por cada día del año con QR generado. Los sábados se marcan como CULTO
+        y cualquier otro día como ACTIVIDAD, con la cantidad de asistentes. Solo Super Admin.
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: year
+          in: query
+          required: false
+          description: Año a consultar (por defecto el actual en Colombia)
+          schema:
+            type: integer
+            example: 2026
+      responses:
+        '200':
+          description: Calendario obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      year: { type: integer, example: 2026 }
+                      days:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            date: { type: string, example: '2026-10-17' }
+                            kind: { type: string, enum: [CULTO, ACTIVIDAD] }
+                            attendees: { type: integer, example: 10 }
+                            qrCount: { type: integer, example: 1 }
+                            points: { type: integer, example: 40 }
+        '400':
+          description: Año inválido
+        '403':
+          description: Solo administradores
   /attendance/date/{date}:
     get:
       summary: Obtener lista de asistencias por fecha específica

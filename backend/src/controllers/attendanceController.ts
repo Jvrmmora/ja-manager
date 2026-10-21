@@ -12,7 +12,10 @@ import {
 } from '../utils/dateUtils';
 import { pointsService } from '../services/pointsService';
 import Season from '../models/Season';
-import { registerAttendanceCore } from '../services/attendanceService';
+import {
+  registerAttendanceCore,
+  getAttendanceCalendar as buildAttendanceCalendar,
+} from '../services/attendanceService';
 
 // Escanear QR y registrar asistencia (solo jóvenes)
 export const scanQRAndRegisterAttendance = async (
@@ -471,6 +474,45 @@ export const getAttendanceStats = async (
     });
   } catch (error) {
     console.error('Error obteniendo estadísticas:', error);
+    ErrorHandler.handleError(error, req, res);
+  }
+};
+
+// Calendario anual: días con culto (sábado con QR) o actividad (otro día con QR)
+export const getAttendanceCalendar = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const isAdmin = req.user?.role_name === 'Super Admin';
+    if (!isAdmin) {
+      res.status(403).json({
+        success: false,
+        message: 'Solo los administradores pueden ver esta información',
+      });
+      return;
+    }
+
+    const currentYear = parseInt(getCurrentDateColombia().substring(0, 4));
+    const year = req.query.year ? Number(req.query.year) : currentYear;
+
+    if (!Number.isInteger(year) || year < 2020 || year > currentYear + 1) {
+      res.status(400).json({
+        success: false,
+        message: 'Año inválido',
+      });
+      return;
+    }
+
+    const days = await buildAttendanceCalendar(year);
+
+    res.status(200).json({
+      success: true,
+      message: 'Calendario de asistencias obtenido exitosamente',
+      data: { year, days },
+    });
+  } catch (error) {
+    console.error('Error obteniendo calendario de asistencias:', error);
     ErrorHandler.handleError(error, req, res);
   }
 };
