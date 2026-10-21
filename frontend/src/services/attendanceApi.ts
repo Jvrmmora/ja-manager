@@ -152,6 +152,33 @@ export const getAttendancesByDate = async (date: string): Promise<any> => {
   return result.data;
 };
 
+export interface AttendanceCalendarDay {
+  date: string; // YYYY-MM-DD
+  kind: 'CULTO' | 'ACTIVIDAD';
+  attendees: number;
+  qrCount: number;
+  points: number;
+}
+
+// Calendario anual: días con culto (sábado con QR) o actividad (otro día con QR)
+export const getAttendanceCalendar = async (
+  year: number
+): Promise<{ year: number; days: AttendanceCalendarDay[] }> => {
+  const response = await apiRequest(`attendance/calendar?year=${year}`, {
+    method: 'GET',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.message || 'Error al obtener el calendario de asistencias'
+    );
+  }
+
+  const result = await response.json();
+  return result.data;
+};
+
 // Obtener estadísticas de asistencia
 export const getAttendanceStats = async (
   startDate?: string,

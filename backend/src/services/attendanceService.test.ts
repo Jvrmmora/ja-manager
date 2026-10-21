@@ -12,7 +12,10 @@ import QRCodeModel from '../models/QRCode';
 import AttendanceModel from '../models/Attendance';
 import Young from '../models/Young';
 import { pointsService } from './pointsService';
-import { registerAttendanceCore } from './attendanceService';
+import {
+  registerAttendanceCore,
+  getAttendanceCalendar,
+} from './attendanceService';
 
 const mockedAttendance = AttendanceModel as jest.Mocked<typeof AttendanceModel>;
 const mockedQRCode = QRCodeModel as jest.Mocked<typeof QRCodeModel>;
@@ -103,5 +106,32 @@ describe('attendanceService.registerAttendanceCore', () => {
 
     expect(result.points).toBeNull();
     expect(result.attendance).toBeDefined();
+  });
+});
+
+describe('getAttendanceCalendar', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('marca los sábados con QR como culto, el resto como actividad y cruza asistentes', async () => {
+    (mockedQRCode.aggregate as jest.Mock).mockResolvedValue([
+      { _id: '2026-10-17', qrCount: 1, points: 40 }, // sábado
+      { _id: '2026-10-05', qrCount: 2, points: 10 }, // lunes
+    ]);
+    (mockedAttendance.aggregate as jest.Mock).mockResolvedValue([
+      { _id: '2026-10-17', attendees: 10 },
+    ]);
+
+    const days = await getAttendanceCalendar(2026);
+
+    expect(days).toEqual([
+      { date: '2026-10-05', kind: 'ACTIVIDAD', attendees: 0, qrCount: 2, points: 10 },
+      { date: '2026-10-17', kind: 'CULTO', attendees: 10, qrCount: 1, points: 40 },
+    ]);
+    expect(mockedQRCode.aggregate).toHaveBeenCalledWith([
+      expect.objectContaining({
+        $match: { dailyDate: { $gte: '2026-01-01', $lte: '2026-12-31' } },
+      }),
+      expect.anything(),
+    ]);
   });
 });
