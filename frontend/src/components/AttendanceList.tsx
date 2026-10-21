@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getTodayAttendances, getAttendancesByDate } from '../services/api';
 import LoadingSpinner from './LoadingSpinner';
+import AttendanceYearCalendar from './AttendanceYearCalendar';
 import { initialsOf } from './young/useYoungActions';
 import {
   getCurrentDateColombia,
@@ -170,21 +171,15 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
 
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
-      {/* Controles + estadísticas */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[250px_repeat(3,minmax(0,1fr))]">
-        <label className="flex flex-col gap-2 rounded-[20px] border border-sand-200 bg-white px-4 py-3.5 text-xs font-bold uppercase tracking-[0.08em] text-cocoa-400 dark:border-white/10 dark:bg-ink-800 dark:text-white/50">
-          Fecha
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={e => {
-              const newDate = e.target.value;
-              // Si la fecha está vacía, usar fecha actual en zona horaria de Colombia
-              setSelectedDate(newDate || getCurrentDateColombia());
-            }}
-            className="field-brand h-11 !rounded-xl !px-3 text-[15px] normal-case tracking-normal"
-          />
-        </label>
+      {/* Calendario del año: días con culto o actividad */}
+      <AttendanceYearCalendar
+        selectedDate={selectedDate}
+        onSelect={setSelectedDate}
+        refreshTrigger={refreshTrigger}
+      />
+
+      {/* Estadísticas del día seleccionado */}
+      <div className="grid gap-3 sm:grid-cols-3">
         <div className="flex flex-col justify-center gap-1.5 rounded-[20px] bg-ink-950 px-5 py-4 text-white">
           <span className="text-[13px] text-white/65">Presentes</span>
           <span className="font-display text-[44px] font-bold leading-none text-brand-amber">
@@ -215,7 +210,7 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
         <span className="text-[13px] text-cocoa-500 dark:text-white/60">
           {isToday
             ? `${formatDate(data.date)} · se actualiza automáticamente cada 30 segundos`
-            : `Mostrando asistencias del ${formatDate(selectedDate)}`}
+            : `Mostrando asistencias del ${formatDate(selectedDate)} · toca otro día en el calendario para cambiar`}
         </span>
         {data.attendances.length > 0 && (
           <span className="flex gap-2">

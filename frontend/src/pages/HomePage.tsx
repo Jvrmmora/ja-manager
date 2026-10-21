@@ -1206,8 +1206,8 @@ function HomePage() {
 
         {showAttendanceSection && (
           <AdminPanelModal
-            title="Asistencias del día"
-            subtitle="Presentes, porcentaje y exportación"
+            title="Asistencias"
+            subtitle="Calendario del año, presentes por día y exportación"
             icon={<PanelIcon d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM16 11l2 2 4-4" />}
             size="xl"
             onClose={() => setShowAttendanceSection(false)}
