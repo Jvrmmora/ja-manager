@@ -7,6 +7,7 @@ import {
   formatEventTime,
 } from '../../../utils/forms/eventFormat';
 import { normalizeRichTextHtml } from '../../../utils/richText';
+import PointsBadge from './PointsBadge';
 
 interface EventHeroProps {
   form: PublicForm;
@@ -105,12 +106,13 @@ const EventHero: React.FC<EventHeroProps> = ({ form, notice }) => {
               {form.spotsLeft === 1 ? 'Queda 1 cupo' : `Quedan ${form.spotsLeft} cupos`}
             </Chip>
           )}
-          {form.settings.pointsReward > 0 && (
-            <span className="bg-gold inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[14px] font-semibold text-ink-950">
-              <span aria-hidden="true">🔥</span>+{form.settings.pointsReward} pts al responder con tu cuenta o placa
-            </span>
-          )}
         </div>
+
+        {form.settings.pointsReward > 0 && (
+          <div className="mt-4">
+            <PointsBadge points={form.settings.pointsReward} />
+          </div>
+        )}
 
         {description && (
           <div

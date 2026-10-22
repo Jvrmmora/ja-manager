@@ -156,6 +156,8 @@ export const identifyByPlaca = async (slug: string, rawPlaca: unknown) => {
   return {
     placa,
     shortName: shortName(young.fullName),
+    // La foto ayuda a que el dueño se reconozca; no revela datos de contacto
+    profileImage: young.profileImage || null,
     masked: {
       phone: visible.includes('phone') ? maskPhone(profile.phone) : null,
       email: visible.includes('email') ? maskEmail(profile.email) : null,

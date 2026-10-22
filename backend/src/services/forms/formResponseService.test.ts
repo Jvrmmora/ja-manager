@@ -42,6 +42,7 @@ const javier = {
   phone: '3001234567',
   email: 'javier@gmail.com',
   ageRange: '22-25',
+  profileImage: 'https://img/javier.webp',
 };
 
 const attendingAnswers = { attend: 'yes', companions: 1, transport: 'own' };
@@ -90,7 +91,7 @@ describe('getPublicForm', () => {
 });
 
 describe('identifyByPlaca', () => {
-  it('solo devuelve datos enmascarados', async () => {
+  it('solo devuelve nombre corto, foto y datos enmascarados', async () => {
     mockedYoung.findOne.mockResolvedValue(javier as any);
     const data = await identifyByPlaca('bolos-abc123', ' @modjavi001 ');
 
@@ -100,6 +101,7 @@ describe('identifyByPlaca', () => {
     expect(data).toEqual({
       placa: '@MODJAVI001',
       shortName: 'Javier M.',
+      profileImage: 'https://img/javier.webp',
       masked: { phone: '••• 4567', email: 'j•••@gmail.com' },
       saved: ['fullName', 'phone', 'email'],
       missing: [],

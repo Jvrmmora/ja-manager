@@ -109,6 +109,7 @@ export interface PublicFormData {
 export interface PlacaIdentity {
   placa: string;
   shortName: string;
+  profileImage: string | null;
   masked: { phone: string | null; email: string | null };
   saved: ContactField[];
   missing: ContactField[];
