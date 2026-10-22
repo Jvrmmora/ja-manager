@@ -6,7 +6,8 @@ export type PointsTransactionType =
   | 'REFERRAL_BONUS'
   | 'REFERRAL_WELCOME'
   | 'BONUS'
-  | 'BIRTHDAY';
+  | 'BIRTHDAY'
+  | 'FORM_RESPONSE';
 
 export interface IPointsTransaction {
   id?: string;
@@ -87,6 +88,7 @@ const pointsTransactionSchema = new Schema<
           'REFERRAL_WELCOME',
           'BONUS',
           'BIRTHDAY',
+          'FORM_RESPONSE',
         ],
         message: 'Tipo de transacción no válido',
       },

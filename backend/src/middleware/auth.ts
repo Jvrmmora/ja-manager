@@ -53,6 +53,10 @@ export const SCOPES = {
 
   // Landing CMS endpoints
   'landing:manage': 'Gestionar el contenido de la landing (textos, media, reuniones)',
+
+  // Formularios / eventos
+  'forms:read': 'Ver formularios y sus respuestas',
+  'forms:manage': 'Crear, editar y publicar formularios',
 } as const;
 
 /**
@@ -113,6 +117,37 @@ export const authenticateToken = async (
       error: 'Error interno del servidor',
       message: 'Error al procesar la autenticación',
     });
+  }
+};
+
+/**
+ * Autenticación opcional para endpoints públicos que se enriquecen con
+ * sesión (p.ej. formularios: autollenado si el joven inició sesión).
+ * Si el token falta o es inválido/expirado sigue como anónimo: un token
+ * viejo en localStorage nunca debe bloquear a alguien que puede responder
+ * como invitado.
+ */
+export const optionalAuth = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return next();
+
+    const decoded = JWTService.verifyToken(token);
+    if (!decoded) return next();
+
+    const role = await Role.findById(decoded.role_id);
+    if (role) {
+      req.user = decoded;
+      req.userRole = role;
+    }
+    next();
+  } catch (error) {
+    logger.warn('optionalAuth: se continúa como anónimo', { error });
+    next();
   }
 };
 

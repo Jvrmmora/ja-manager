@@ -112,6 +112,8 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
         return 'person_add';
       case 'REFERRED_BONUS':
         return 'how_to_reg';
+      case 'FORM_RESPONSE':
+        return 'fact_check';
       default:
         return 'star';
     }
@@ -130,6 +132,8 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
         return 'Bono Referido';
       case 'REFERRED_BONUS':
         return 'Bono Referido';
+      case 'FORM_RESPONSE':
+        return 'Formulario';
       default:
         return type;
     }

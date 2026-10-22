@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { PLACA_REGEX } from './placa';
 
 const AGE_RANGE_BOUNDS: Record<string, { min: number; max: number }> = {
   '13-15': { min: 13, max: 15 },
@@ -412,7 +413,7 @@ export const partialRegistrationSchema = withBirthdayAgeRangeCheck(Joi.object({
 
   referredByPlaca: Joi.string()
     .trim()
-    .pattern(/^@MOD[A-Z]{2,4}\d{3}$/)
+    .pattern(PLACA_REGEX)
     .optional()
     .allow('', null)
     .messages({

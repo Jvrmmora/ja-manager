@@ -21,6 +21,8 @@ import landingRoutes from './routes/landingRoutes';
 import contactRoutes from './routes/contactRoutes';
 import legalRoutes from './routes/legalRoutes';
 import consentRoutes from './routes/consentRoutes';
+import formRoutes from './routes/formRoutes';
+import { registerSheetsSync } from './services/forms/sheets/sheetsSyncService';
 import { DatabaseSeeder } from './seeders/DatabaseSeeder';
 import { authenticateToken } from './middleware/auth';
 import { ensureDatabaseConnection } from './middleware/databaseCheck';
@@ -223,6 +225,10 @@ const setupRoutes = () => {
 
   // Ruta publica de contacto + listado admin protegido
   app.use('/api/contact', ensureDatabaseConnection, contactRoutes);
+
+  // Formularios de eventos: /public/:slug abierto (sesión opcional), resto admin
+  registerSheetsSync();
+  app.use('/api/forms', ensureDatabaseConnection, formRoutes);
 
   // Ruta por defecto
   app.get('/', (_req, res) => {

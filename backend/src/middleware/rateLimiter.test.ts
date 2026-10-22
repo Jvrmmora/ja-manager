@@ -1,5 +1,10 @@
 import { Request, Response } from 'express';
-import { loginLimiter, placaCheckLimiter } from './rateLimiter';
+import {
+  formIdentifyLimiter,
+  formSubmitLimiter,
+  loginLimiter,
+  placaCheckLimiter,
+} from './rateLimiter';
 
 type MockRes = Response & {
   statusCode?: number;
@@ -84,5 +89,35 @@ describe('placaCheckLimiter', () => {
     const otherRes = makeRes();
     placaCheckLimiter(makeReq('10.0.0.10', ''), otherRes, next);
     expect(otherRes.status).not.toHaveBeenCalled();
+  });
+});
+
+describe('limitadores de formularios públicos', () => {
+  it('formIdentifyLimiter bloquea la consulta 21 de una misma IP', () => {
+    const next = jest.fn();
+    for (let i = 0; i < 20; i++) {
+      formIdentifyLimiter(makeReq('10.9.0.1', ''), makeRes(), next);
+    }
+    expect(next).toHaveBeenCalledTimes(20);
+
+    const res = makeRes();
+    formIdentifyLimiter(makeReq('10.9.0.1', ''), res, next);
+    expect(res.statusCode).toBe(429);
+    expect(next).toHaveBeenCalledTimes(20);
+
+    // Otra IP no se ve afectada
+    formIdentifyLimiter(makeReq('10.9.0.2', ''), makeRes(), next);
+    expect(next).toHaveBeenCalledTimes(21);
+  });
+
+  it('formSubmitLimiter usa su propio contador', () => {
+    const next = jest.fn();
+    for (let i = 0; i < 15; i++) {
+      formSubmitLimiter(makeReq('10.9.1.1', ''), makeRes(), next);
+    }
+    const res = makeRes();
+    formSubmitLimiter(makeReq('10.9.1.1', ''), res, next);
+    expect(res.statusCode).toBe(429);
+    expect((res.body as { message: string }).message).toMatch(/envíos/);
   });
 });

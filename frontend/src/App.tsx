@@ -31,6 +31,9 @@ const BirthdayClaimPage = lazy(() => import('./pages/BirthdayClaimPage'));
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage'));
 const RankingSharePage = lazy(() => import('./pages/RankingSharePage'));
 const BirthdaySharePage = lazy(() => import('./pages/BirthdaySharePage'));
+const PublicFormPage = lazy(() => import('./pages/forms/PublicFormPage'));
+const FormsListPage = lazy(() => import('./pages/admin/FormsListPage'));
+const FormBuilderPage = lazy(() => import('./pages/admin/FormBuilderPage'));
 
 // /s/<id> -> /#<id>: enlace compartible de una sección de la landing. En
 // producción la página prerenderizada ya redirige; esto cubre dev y fallbacks.
@@ -176,10 +179,15 @@ function App() {
             {/* Public registration page - supports ?referredBy query param for referral deeplinks */}
             <Route path="/register" element={<RegistrationPage />} />
 
+            {/* Formulario público de evento (sesión opcional: autollenado si inició sesión) */}
+            <Route path="/f/:slug" element={<PublicFormPage />} />
+
             {/* Protected admin route */}
             <Route element={<ProtectedRoute redirectTo="/login" />}>
               <Route path="/admin" element={<HomePage />} />
               <Route path="/admin/landing" element={<LandingCMS />} />
+              <Route path="/admin/forms" element={<FormsListPage />} />
+              <Route path="/admin/forms/:id" element={<FormBuilderPage />} />
             </Route>
 
             {/* Vistas compartidas por WhatsApp (requieren sesión; tras el login vuelven aquí) */}

@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { IYoung } from '../types';
 import { getCurrentDateTimeColombia } from '../utils/dateUtils';
+import { PLACA_REGEX } from '../utils/placa';
 
 interface IYoungDocument extends Omit<IYoung, 'id' | '_id'>, Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -25,7 +26,7 @@ const youngSchema = new Schema<IYoungDocument>(
       sparse: true, // Permite que algunos documentos no tengan placa
       trim: true,
       match: [
-        /^@MOD[A-Z]{2,4}\d{3}$/,
+        PLACA_REGEX,
         'Formato de placa no válido. Debe ser @MODxx###, @MODxxx### o @MODxxxx### (ej: @MODJAVI001)',
       ],
     },

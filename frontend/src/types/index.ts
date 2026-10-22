@@ -207,7 +207,8 @@ export type TransactionType =
   | 'REFERRAL'
   | 'REFERRAL_BONUS'
   | 'REFERRAL_WELCOME'
-  | 'BONUS';
+  | 'BONUS'
+  | 'FORM_RESPONSE';
 
 export interface IPointsTransaction {
   id: string;
@@ -273,7 +274,8 @@ export type PublicPointsType =
   | 'REFERRAL_BONUS'
   | 'REFERRAL_WELCOME'
   | 'BONUS'
-  | 'BIRTHDAY';
+  | 'BIRTHDAY'
+  | 'FORM_RESPONSE';
 
 export interface IPublicPointsItem {
   id: string;

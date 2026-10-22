@@ -62,7 +62,8 @@ export const contentTypeValidator = (req: Request, res: Response, next: NextFunc
     const excludeContentTypeValidation = [
       '/generate-placa', // Endpoint que solo usa parámetros URL
       '/leaderboard/snapshot', // Disparado por cron externo (curl sin body ni Content-Type)
-      '/birthday/auto-assign' // Disparado por cron externo (curl sin body ni Content-Type)
+      '/birthday/auto-assign', // Disparado por cron externo (curl sin body ni Content-Type)
+      '/forms/internal/sheets-retry' // Disparado por cron externo (curl sin body ni Content-Type)
     ];
     
     const shouldExclude = excludeContentTypeValidation.some(path => 

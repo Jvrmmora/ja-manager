@@ -107,6 +107,15 @@ export const env = {
   // Secreto compartido para endpoints internos disparados por cron externo
   // (ej. GitHub Actions). Si no está definido, esos endpoints rechazan todo.
   cronSecret: process.env.CRON_SECRET || '',
+  // Google Sheets (opcional): cuenta de servicio con la que el backend escribe
+  // las respuestas de formularios. Sin ella, la sincronización queda apagada y
+  // el panel lo indica; el resto de la app funciona igual. La llave viene del
+  // JSON de la cuenta de servicio; en variables de entorno los saltos de línea
+  // suelen llegar como "\n" literal.
+  googleSheets: {
+    clientEmail: process.env.GOOGLE_SHEETS_SA_EMAIL || '',
+    privateKey: (process.env.GOOGLE_SHEETS_SA_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+  },
   // Semilla opcional del usuario Super Admin (nunca hardcodear credenciales).
   seedAdmin: {
     enabled: process.env.SEED_ADMIN_ENABLED === 'true',

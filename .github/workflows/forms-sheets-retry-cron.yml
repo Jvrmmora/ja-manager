@@ -1,0 +1,30 @@
+name: Reintento de sincronización de formularios con Google Sheets
+
+# Cada respuesta de formulario se envía a Google Sheets al instante. Si en ese
+# momento Google falla (cuota, red) o la hoja quedó desactualizada (se editaron
+# preguntas o se borró una respuesta), el backend la marca como pendiente. Este
+# workflow pide reescribir esas hojas desde la base de datos (Mongo es la
+# fuente de verdad), así que repetirlo nunca duplica filas.
+
+on:
+  schedule:
+    - cron: '17 * * * *' # cada hora
+  workflow_dispatch:
+
+jobs:
+  sheets-retry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Despertar el backend (por si estaba dormido)
+        run: |
+          curl -fsS --max-time 30 --retry 8 --retry-delay 10 --retry-all-errors \
+            https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api/health \
+            || echo "::warning::No se pudo confirmar que el backend despertó; se intenta de todas formas"
+
+      - name: Reintentar sincronización pendiente
+        run: |
+          curl -fsS --max-time 60 --retry 3 --retry-delay 15 \
+            -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api/forms/internal/sheets-retry
