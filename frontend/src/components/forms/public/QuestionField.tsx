@@ -1,7 +1,7 @@
 import React from 'react';
 import type { AnswerValue, FormQuestion } from '../../../types/forms';
 import { ErrorText, inputCls } from './ContactInputs';
-import { CheckIcon, XIcon } from './FormIcons';
+import YesNoField from './YesNoField';
 
 interface QuestionFieldProps {
   question: FormQuestion;
@@ -63,27 +63,11 @@ const QuestionField: React.FC<QuestionFieldProps> = ({ question, value, error, o
         );
       case 'yes_no':
         return (
-          <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-labelledby={`${id}-label`}>
-            {[
-              { id: 'yes', label: 'Sí', Icon: CheckIcon },
-              { id: 'no', label: 'No', Icon: XIcon },
-            ].map(option => {
-              const selected = value === option.id;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => onChange(option.id)}
-                  className={`${optionCls(selected)} h-16 justify-center text-lg font-semibold`}
-                >
-                  <option.Icon className={`h-5 w-5 ${selected ? 'text-brand-orange' : 'text-cocoa-400 dark:text-white/45'}`} />
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
+          <YesNoField
+            labelledBy={`${id}-label`}
+            value={typeof value === 'string' ? value : undefined}
+            onChange={onChange}
+          />
         );
       case 'single_choice':
         return (
