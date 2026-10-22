@@ -20,6 +20,8 @@ const landingVisitHourlyAttempts = new Map<string, RateLimitEntry>();
 const contactHourlyAttempts = new Map<string, RateLimitEntry>();
 const contactDailyAttempts = new Map<string, RateLimitEntry>();
 const placaCheckAttempts = new Map<string, RateLimitEntry>();
+const formIdentifyAttempts = new Map<string, RateLimitEntry>();
+const formSubmitAttempts = new Map<string, RateLimitEntry>();
 
 // Configuración Birthday
 const MAX_ATTEMPTS = 5;
@@ -46,6 +48,12 @@ const LANDING_VISIT_HOUR_MS = 60 * 60 * 1000; // 1 hora
 // evita recorrer placas consecutivas para sacar la lista de nombres.
 const PLACA_CHECK_MAX = 30;
 const PLACA_CHECK_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
+
+// Formularios públicos: identificar por placa revela nombre corto y datos
+// enmascarados, así que el límite es más estricto que check-placa.
+const FORM_IDENTIFY_MAX = 20;
+const FORM_SUBMIT_MAX = 15;
+const FORM_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
 
 // Configuracion Contact Form
 const CONTACT_MAX_HOURLY = 4;
@@ -379,6 +387,63 @@ export const placaCheckLimiter = (
 };
 
 /**
+ * Fábrica de limitadores simples por IP (una ventana, un máximo). Evita
+ * repetir el mismo middleware para cada endpoint público nuevo.
+ */
+function createIpLimiter(options: {
+  store: Map<string, RateLimitEntry>;
+  max: number;
+  windowMs: number;
+  name: string;
+  message: (minutes: number) => string;
+}) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const clientIp = getClientIp(req);
+    const { blocked, retryAfterMinutes } = hitLimit(
+      options.store,
+      clientIp,
+      options.max,
+      options.windowMs
+    );
+
+    if (blocked) {
+      logger.warn('Rate limiter: límite excedido', {
+        context: 'RateLimiter',
+        method: options.name,
+        ip: clientIp,
+        remainingMinutes: retryAfterMinutes,
+      });
+      res.status(429).json({
+        success: false,
+        message: options.message(retryAfterMinutes),
+        retryAfter: retryAfterMinutes,
+      });
+      return;
+    }
+
+    next();
+  };
+}
+
+/** POST /forms/public/:slug/identify — 20 por IP cada 15 minutos */
+export const formIdentifyLimiter = createIpLimiter({
+  store: formIdentifyAttempts,
+  max: FORM_IDENTIFY_MAX,
+  windowMs: FORM_WINDOW_MS,
+  name: 'formIdentifyLimiter',
+  message: m => `Demasiados intentos con placa. Intenta de nuevo en ${m} minutos.`,
+});
+
+/** POST /forms/public/:slug/responses — 15 por IP cada 15 minutos */
+export const formSubmitLimiter = createIpLimiter({
+  store: formSubmitAttempts,
+  max: FORM_SUBMIT_MAX,
+  windowMs: FORM_WINDOW_MS,
+  name: 'formSubmitLimiter',
+  message: m => `Demasiados envíos seguidos. Intenta de nuevo en ${m} minutos.`,
+});
+
+/**
  * Middleware de rate limiting para formulario de contacto
  * Limite: 4 intentos por hora y 12 por dia por IP
  */
@@ -504,6 +569,16 @@ function cleanupExpiredEntries(): void {
     if (now > entry.resetTime) {
       placaCheckAttempts.delete(ip);
       cleanedCount++;
+    }
+  }
+
+  // Limpiar formularios públicos
+  for (const store of [formIdentifyAttempts, formSubmitAttempts]) {
+    for (const [ip, entry] of store.entries()) {
+      if (now > entry.resetTime) {
+        store.delete(ip);
+        cleanedCount++;
+      }
     }
   }
 

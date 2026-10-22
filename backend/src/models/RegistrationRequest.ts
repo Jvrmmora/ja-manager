@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { PLACA_REGEX } from '../utils/placa';
 
 export interface IRegistrationRequest extends Document {
   fullName: string;
@@ -139,7 +140,7 @@ const registrationRequestSchema = new Schema<IRegistrationRequest>(
       required: false,
       trim: true,
       match: [
-        /^@MOD[A-Z]{2,4}\d{3}$/,
+        PLACA_REGEX,
         'Formato de placa no válido. Debe ser @MODxx###, @MODxxx### o @MODxxxx### (ej: @MODJAVI001)',
       ],
     },

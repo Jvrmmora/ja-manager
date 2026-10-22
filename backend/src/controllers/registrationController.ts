@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
+import { normalizePlaca, PLACA_REGEX } from '../utils/placa';
 import * as registrationService from '../services/registrationService';
 import {
   partialRegistrationSchema,
@@ -50,9 +51,8 @@ export class RegistrationController {
         return;
       }
 
-      const normalizedPlaca = placa.trim().toUpperCase();
-      const placaRegex = /^@MOD[A-Z]{2,4}\d{3}$/;
-      if (!placaRegex.test(normalizedPlaca)) {
+      const normalizedPlaca = normalizePlaca(placa);
+      if (!PLACA_REGEX.test(normalizedPlaca)) {
         res.status(400).json({
           success: false,
           exists: false,

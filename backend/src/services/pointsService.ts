@@ -333,10 +333,10 @@ class PointsService {
           tx.type === 'ATTENDANCE' && typeof tx.timeToScanSeconds === 'number'
             ? Math.floor(tx.timeToScanSeconds / 60)
             : null,
-        // Solo las actividades llevan texto libre del líder; el resto se
+        // Solo actividades y formularios llevan texto propio; el resto se
         // describe en el frontend según el tipo.
         description:
-          tx.type === 'ACTIVITY' || tx.type === 'BONUS'
+          tx.type === 'ACTIVITY' || tx.type === 'BONUS' || tx.type === 'FORM_RESPONSE'
             ? tx.description || null
             : null,
         createdAt: tx.createdAt,

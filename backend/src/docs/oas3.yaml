@@ -46,6 +46,10 @@ tags:
     description: Solicitudes de registro parcial para nuevos jóvenes (requiere aprobación del administrador)
   - name: Landing
     description: Endpoints públicos para contenido y métricas de la landing page
+  - name: Forms
+    description: |
+      Formularios de eventos tipo Google Forms. `/forms/public/*` es público (sesión opcional:
+      con token se autollenan los datos del joven); el resto requiere `forms:read` / `forms:manage`.
 
 paths:
   /health:
@@ -2309,8 +2313,344 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /forms/public/{slug}:
+    get:
+      tags: [Forms]
+      summary: Formulario público (sesión opcional)
+      description: |
+        Devuelve la definición pública y su disponibilidad (`open`, `closed`, `full`, `draft`).
+        Con token válido incluye `me` (datos propios del joven + campos obligatorios que faltan)
+        y `myResponse` si ya respondió. Un token inválido NO falla: se responde como anónimo.
+        Los borradores solo los ve quien tiene `forms:manage` (vista previa).
+      security: [{}, { bearerAuth: [] }]
+      parameters:
+        - { in: path, name: slug, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Formulario obtenido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      form: { $ref: '#/components/schemas/PublicForm' }
+                      availability: { type: string, enum: [open, closed, full, draft] }
+                      me: { type: object, nullable: true }
+                      myResponse: { type: object, nullable: true }
+        '404':
+          description: No existe o es un borrador
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /forms/public/{slug}/identify:
+    post:
+      tags: [Forms]
+      summary: Identificarse con la placa (sin sesión)
+      description: |
+        Solo revela nombre corto y datos enmascarados (`••• 4567`, `j•••@gmail.com`), qué datos
+        ya están guardados y cuáles faltan. Limitado a 20 intentos por IP cada 15 minutos.
+      parameters:
+        - { in: path, name: slug, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [placa]
+              properties:
+                placa: { type: string, example: '@MODPRUE001' }
+      responses:
+        '200':
+          description: Placa encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      placa: { type: string }
+                      shortName: { type: string, example: 'Javier M.' }
+                      masked:
+                        type: object
+                        properties:
+                          phone: { type: string, nullable: true, example: '••• 4567' }
+                          email: { type: string, nullable: true, example: 'j•••@gmail.com' }
+                      saved: { type: array, items: { type: string } }
+                      missing: { type: array, items: { type: string } }
+                      alreadyResponded: { type: boolean }
+        '400':
+          description: Formato de placa inválido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Placa no encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429':
+          description: Demasiados intentos
+
+  /forms/public/{slug}/responses:
+    post:
+      tags: [Forms]
+      summary: Enviar (o actualizar) una respuesta
+      description: |
+        Identidad: sesión > placa > invitado. Los datos guardados en el perfil ganan sobre lo
+        escrito; solo se usan los campos que faltan. Un joven tiene una sola respuesta por
+        formulario: enviar de nuevo la actualiza (200). Los invitados deben enviar
+        `acceptPolicy: true`. `saveToProfile` solo aplica con sesión.
+        Limitado a 15 envíos por IP cada 15 minutos.
+      security: [{}, { bearerAuth: [] }]
+      parameters:
+        - { in: path, name: slug, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                placa: { type: string }
+                contact:
+                  type: object
+                  additionalProperties: true
+                  example: { fullName: 'Ana Pérez', phone: '3110000000' }
+                answers:
+                  type: object
+                  additionalProperties: true
+                  example: { 'q-asistencia': 'yes', 'q-acompanantes': 1 }
+                acceptPolicy: { type: boolean }
+                saveToProfile: { type: boolean }
+      responses:
+        '201':
+          description: Respuesta creada
+        '200':
+          description: Respuesta existente actualizada
+        '400':
+          description: Validación (detalle en error.details.contact / error.details.answers)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403':
+          description: El formulario no admite invitados
+        '409':
+          description: Formulario cerrado o sin cupos
+        '429':
+          description: Demasiados envíos
+
+  /forms:
+    get:
+      tags: [Forms]
+      summary: Listar formularios (con conteo de respuestas)
+      security: [{ bearerAuth: [forms:read] }]
+      responses:
+        '200': { description: Lista de formularios }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Forms]
+      summary: Crear formulario desde plantilla
+      security: [{ bearerAuth: [forms:manage] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, example: 'Salida a bolos' }
+                template: { type: string, enum: [event, blank], default: event }
+      responses:
+        '201': { description: Formulario creado (borrador) }
+
+  /forms/cover-image:
+    post:
+      tags: [Forms]
+      summary: Subir imagen de portada (máx. 5MB)
+      security: [{ bearerAuth: [forms:manage] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '201': { description: 'URL de la imagen en data.url' }
+
+  /forms/{id}:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: string } }
+    get:
+      tags: [Forms]
+      summary: Obtener formulario completo
+      security: [{ bearerAuth: [forms:read] }]
+      responses:
+        '200': { description: Formulario }
+        '404': { description: No encontrado }
+    patch:
+      tags: [Forms]
+      summary: Guardar cambios (autosave del constructor)
+      description: |
+        Actualización parcial. En un borrador se acepta una estructura incompleta; si el
+        formulario está publicado, los cambios de estructura se validan como al publicar.
+      security: [{ bearerAuth: [forms:manage] }]
+      responses:
+        '200': { description: Formulario guardado }
+        '400': { description: 'Validación (error.details.problems)' }
+    delete:
+      tags: [Forms]
+      summary: Eliminar (borrado suave)
+      security: [{ bearerAuth: [forms:manage] }]
+      responses:
+        '200': { description: Eliminado }
+
+  /forms/{id}/status:
+    post:
+      tags: [Forms]
+      summary: Publicar, cerrar o volver a borrador
+      security: [{ bearerAuth: [forms:manage] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [DRAFT, OPEN, CLOSED] }
+      responses:
+        '200': { description: Estado actualizado }
+        '400': { description: 'No se puede publicar (error.details.problems)' }
+
+  /forms/{id}/duplicate:
+    post:
+      tags: [Forms]
+      summary: Duplicar como borrador nuevo
+      security: [{ bearerAuth: [forms:manage] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      responses:
+        '201': { description: Copia creada }
+
+  /forms/{id}/responses:
+    get:
+      tags: [Forms]
+      summary: Respuestas paginadas con filtros
+      security: [{ bearerAuth: [forms:read] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+        - { in: query, name: page, schema: { type: integer, default: 1 } }
+        - { in: query, name: limit, schema: { type: integer, default: 50, maximum: 200 } }
+        - { in: query, name: search, schema: { type: string } }
+        - { in: query, name: attending, schema: { type: string, enum: [yes, no, unknown] } }
+        - { in: query, name: kind, schema: { type: string, enum: [session, placa, guest] } }
+      responses:
+        '200': { description: 'data.items + data.pagination' }
+
+  /forms/{id}/responses/{responseId}:
+    delete:
+      tags: [Forms]
+      summary: Eliminar una respuesta (libera cupo y revierte puntos)
+      security: [{ bearerAuth: [forms:manage] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+        - { in: path, name: responseId, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Eliminada }
+
+  /forms/{id}/stats:
+    get:
+      tags: [Forms]
+      summary: Resumen (asistencia, tipo de respondedor, conteo por opción)
+      security: [{ bearerAuth: [forms:read] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Resumen }
+
+  /forms/{id}/export:
+    get:
+      tags: [Forms]
+      summary: Descargar respuestas en Excel
+      security: [{ bearerAuth: [forms:read] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Archivo .xlsx
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+
 components:
   schemas:
+    PublicForm:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        description: { type: string, description: HTML del editor (se sanitiza al mostrarlo) }
+        coverImage: { type: string, nullable: true }
+        event:
+          type: object
+          properties:
+            startsAt: { type: string, format: date-time, nullable: true }
+            endsAt: { type: string, format: date-time, nullable: true }
+            location: { type: string }
+            mapsUrl: { type: string }
+            cost: { type: number, nullable: true }
+            costNote: { type: string }
+        spotsLeft: { type: integer, nullable: true }
+        contactFields:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string, enum: [fullName, phone, email, birthday, ageRange, gender, group] }
+              mode: { type: string, enum: [required, optional] }
+        sections:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              title: { type: string }
+              showIf: { $ref: '#/components/schemas/FormCondition' }
+              questions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    type: { type: string, enum: [short_text, paragraph, single_choice, multi_choice, dropdown, yes_no, date, number] }
+                    label: { type: string }
+                    help: { type: string }
+                    required: { type: boolean }
+                    options:
+                      type: array
+                      items: { type: object, properties: { id: { type: string }, label: { type: string } } }
+                    showIf: { $ref: '#/components/schemas/FormCondition' }
+    FormCondition:
+      type: object
+      nullable: true
+      properties:
+        questionId: { type: string }
+        op: { type: string, enum: [equals, not_equals, includes] }
+        value: { type: string, description: "id de opción, o 'yes'/'no'" }
     Young:
       type: object
       required:
