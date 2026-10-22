@@ -2396,7 +2396,7 @@ paths:
       tags: [Forms]
       summary: Identificarse con la placa (sin sesión)
       description: |
-        Solo revela nombre corto y datos enmascarados (`••• 4567`, `j•••@gmail.com`), qué datos
+        Solo revela nombre corto, foto de perfil y datos enmascarados (`••• 4567`, `j•••@gmail.com`), qué datos
         ya están guardados y cuáles faltan. Limitado a 20 intentos por IP cada 15 minutos.
       parameters:
         - { in: path, name: slug, required: true, schema: { type: string } }
@@ -2423,6 +2423,7 @@ paths:
                     properties:
                       placa: { type: string }
                       shortName: { type: string, example: 'Javier M.' }
+                      profileImage: { type: string, nullable: true, description: Foto de perfil para que el dueño se reconozca }
                       masked:
                         type: object
                         properties:

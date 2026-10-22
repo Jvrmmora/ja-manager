@@ -8,6 +8,7 @@ import {
 } from '../../../utils/forms/eventFormat';
 import { buildFormShareUrl, formShareMessage } from '../../../utils/shareUrls';
 import ShareLinkButton from '../../ShareLinkButton';
+import { CalendarIcon, FlameIcon, PinIcon } from './FormIcons';
 import { statusPrimaryBtn, statusSecondaryBtn } from '../../StatusScreen';
 import { REGISTRATION_PREFILL_KEY } from '../../../utils/forms/registrationPrefill';
 
@@ -71,15 +72,25 @@ const FormSuccess: React.FC<FormSuccessProps> = ({ form, result, firstName, gues
 
       {result.pointsAwarded > 0 && (
         <p className="mx-auto mb-0 mt-4 inline-flex items-center gap-2 rounded-full bg-brand-amber/15 px-4 py-2 font-semibold text-brand-deep dark:text-brand-amber">
-          🔥 +{result.pointsAwarded} puntos por responder
+          <FlameIcon className="h-4 w-4" />+{result.pointsAwarded} puntos por responder
         </p>
       )}
 
       {going && (when || form.event.location) && (
         <div className="mx-auto mt-6 max-w-sm rounded-2xl bg-cream px-5 py-4 text-left text-sm dark:bg-white/[0.05]">
           <p className="m-0 font-semibold text-cocoa-900 dark:text-white">{form.title}</p>
-          {when && <p className="m-0 mt-1 text-cocoa-600 dark:text-white/70">🗓️ {when}</p>}
-          {form.event.location && <p className="m-0 mt-1 text-cocoa-600 dark:text-white/70">📍 {form.event.location}</p>}
+          {when && (
+            <p className="m-0 mt-1.5 flex items-center gap-2 text-cocoa-600 dark:text-white/70">
+              <CalendarIcon className="h-4 w-4 flex-shrink-0 text-brand-deep dark:text-brand-amber" />
+              {when}
+            </p>
+          )}
+          {form.event.location && (
+            <p className="m-0 mt-1.5 flex items-center gap-2 text-cocoa-600 dark:text-white/70">
+              <PinIcon className="h-4 w-4 flex-shrink-0 text-brand-deep dark:text-brand-amber" />
+              {form.event.location}
+            </p>
+          )}
         </div>
       )}
 
@@ -110,7 +121,7 @@ const FormSuccess: React.FC<FormSuccessProps> = ({ form, result, firstName, gues
         <div className="mt-6 rounded-2xl border border-dashed border-brand-orange/40 px-5 py-4 text-sm text-cocoa-600 dark:text-white/75">
           <p className="m-0">
             <strong className="text-cocoa-900 dark:text-white">Crea tu cuenta</strong> y la próxima vez solo escribes tu
-            placa: tus datos se llenan solos y ganas puntos 🎁
+            placa: tus datos se llenan solos y ganas puntos.
           </p>
           <button type="button" onClick={goRegister} className={`${statusSecondaryBtn} mt-3 h-11`}>
             Crear mi cuenta

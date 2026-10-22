@@ -9,6 +9,7 @@ import EventHero from '../../components/forms/public/EventHero';
 import IdentityStep, { type IdentityMode } from '../../components/forms/public/IdentityStep';
 import QuestionField from '../../components/forms/public/QuestionField';
 import FormSuccess from '../../components/forms/public/FormSuccess';
+import { CheckCircleIcon, EyeIcon } from '../../components/forms/public/FormIcons';
 import { useTheme } from '../../context/ThemeContext';
 import { authService } from '../../services/auth';
 import {
@@ -69,13 +70,18 @@ const isBlank = (value: unknown) => value === undefined || value === null || Str
 const cardCls =
   'rounded-[28px] border border-sand-200 bg-white p-5 shadow-[0_30px_60px_-40px_rgba(78,15,58,0.4)] dark:border-white/10 dark:bg-ink-900 sm:p-8';
 
-const Notice: React.FC<{ tone?: 'info' | 'warn'; children: React.ReactNode }> = ({ tone = 'info', children }) => (
+const Notice: React.FC<{ tone?: 'info' | 'warn'; icon?: React.ReactNode; children: React.ReactNode }> = ({
+  tone = 'info',
+  icon,
+  children,
+}) => (
   <div
-    className={`rounded-2xl px-4 py-3 text-[15px] font-medium ${
+    className={`flex items-center gap-2.5 rounded-2xl px-4 py-3 text-[15px] font-medium ${
       tone === 'warn' ? 'bg-brand-red/20 text-white' : 'bg-white/10 text-white/90'
     }`}
   >
-    {children}
+    {icon && <span className="flex-shrink-0 text-brand-amber">{icon}</span>}
+    <span>{children}</span>
   </div>
 );
 
@@ -286,7 +292,7 @@ export default function PublicFormPage() {
 
   const notice =
     availability === 'draft' ? (
-      <Notice>👀 Vista previa: este formulario aún no está publicado.</Notice>
+      <Notice icon={<EyeIcon className="h-5 w-5" />}>Vista previa: este formulario aún no está publicado.</Notice>
     ) : availability === 'closed' ? (
       <Notice tone="warn">Las inscripciones para este evento ya cerraron.</Notice>
     ) : availability === 'full' ? (
@@ -294,7 +300,9 @@ export default function PublicFormPage() {
         Se agotaron los cupos.{myResponse ? ' Aún puedes actualizar tu respuesta.' : ''}
       </Notice>
     ) : myResponse && !result ? (
-      <Notice>✅ Ya respondiste este formulario. Puedes cambiar tu respuesta cuando quieras.</Notice>
+      <Notice icon={<CheckCircleIcon className="h-5 w-5" />}>
+        Ya respondiste este formulario. Puedes cambiar tu respuesta cuando quieras.
+      </Notice>
     ) : null;
 
   const firstName =
@@ -390,7 +398,6 @@ export default function PublicFormPage() {
                       onLogout={handleLogout}
                       loginHref={buildLoginRedirect(`/f/${slug}`)}
                       policyError={mode === 'guest' ? identityError || undefined : undefined}
-                      pointsReward={myResponse ? 0 : form.settings.pointsReward}
                     />
                     {identityError && mode !== 'guest' && (
                       <p className="mb-0 mt-3 text-sm font-medium text-red-500">{identityError}</p>
