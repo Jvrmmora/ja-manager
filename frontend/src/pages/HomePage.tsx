@@ -894,6 +894,18 @@ function HomePage() {
             <div className="flex items-center gap-2 sm:gap-3">
               <button
                 type="button"
+                onClick={() => navigate('/admin/forms')}
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-sand-300 px-3 text-sm font-semibold text-cocoa-600 transition-colors hover:border-cocoa-400 sm:px-4 dark:border-white/15 dark:text-white/80"
+                aria-label="Formularios"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 3h6a1 1 0 0 1 1 1v1H8V4a1 1 0 0 1 1-1z" />
+                  <path d="M16 5h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2M9 12l2 2 4-4M9 17h6" />
+                </svg>
+                <span className="hidden sm:inline">Formularios</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => navigate('/admin/landing')}
                 className="hidden h-11 items-center gap-2 rounded-full border border-sand-300 px-4 text-sm font-semibold text-cocoa-600 transition-colors hover:border-cocoa-400 md:inline-flex dark:border-white/15 dark:text-white/80"
               >

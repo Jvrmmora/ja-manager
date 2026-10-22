@@ -28,6 +28,7 @@ const TYPE_INFO: Record<
   REFERRAL_BONUS: { label: 'Invitar amigos', icon: 'person_add', tone: 'bg-emerald-500/15 text-emerald-200' },
   REFERRAL_WELCOME: { label: 'Bienvenida (llegó invitado)', icon: 'how_to_reg', tone: 'bg-emerald-500/15 text-emerald-200' },
   ACTIVITY: { label: 'Actividades especiales', icon: 'sports_score', tone: 'bg-sky-500/15 text-sky-200' },
+  FORM_RESPONSE: { label: 'Formularios de eventos', icon: 'fact_check', tone: 'bg-brand-amber/15 text-brand-amber' },
 };
 
 const formatDay = (date: string) => {
@@ -78,6 +79,11 @@ const describeItem = (item: IPublicPointsItem): { title: string; detail: string 
       return {
         title: 'Actividad especial',
         detail: `${item.description || 'Actividad'} · asignado por un líder`,
+      };
+    case 'FORM_RESPONSE':
+      return {
+        title: 'Respondió un formulario',
+        detail: item.description?.replace(/^Formulario: /, '') || 'Confirmó su asistencia',
       };
     default:
       return { title: 'Puntos', detail: item.description || '' };
