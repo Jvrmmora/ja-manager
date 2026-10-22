@@ -42,7 +42,7 @@ export const EventEditor: React.FC<EventEditorProps> = ({ title, description, co
     <section className={`${cardCls} border-t-4 !border-t-brand-orange`}>
       <div className="relative mb-5 overflow-hidden rounded-2xl bg-ink-950">
         {coverImage ? (
-          <img src={coverImage} alt="" className="aspect-[16/6] w-full object-cover" />
+          <img src={coverImage} alt="" className="h-auto max-h-[60vh] w-full object-contain" />
         ) : (
           <div className="aspect-[16/6] w-full bg-[radial-gradient(circle_at_30%_120%,rgba(242,106,46,.55),rgba(138,28,69,.35)_45%,transparent_70%)]" />
         )}

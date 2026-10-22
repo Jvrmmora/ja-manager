@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import PageLoader from '../../components/PageLoader';
+import Seo from '../../components/Seo';
 import StatusScreen, { statusPrimaryBtn } from '../../components/StatusScreen';
 import ToastContainer from '../../components/ToastContainer';
 import AdminFormsHeader, { useAdminOnly } from '../../components/forms/admin/AdminFormsHeader';
@@ -217,6 +218,7 @@ export default function FormBuilderPage() {
 
   return (
     <div className="brand-skin min-h-screen bg-cream dark:bg-ink-950">
+      <Seo title={`${form.title || 'Formulario'} · Formularios — Jóvenes Modelia`} noindex />
       <AdminFormsHeader
         backTo="/admin/forms"
         backLabel="Volver a formularios"
