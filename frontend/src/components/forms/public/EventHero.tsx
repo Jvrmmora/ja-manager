@@ -65,7 +65,7 @@ const EventHero: React.FC<EventHeroProps> = ({ form, notice }) => {
           <img
             src={form.coverImage}
             alt=""
-            className="mb-6 aspect-[16/8] w-full rounded-[24px] object-cover shadow-[0_30px_60px_-30px_rgba(0,0,0,0.8)]"
+            className="mb-6 h-auto max-h-[70vh] w-full rounded-[24px] object-contain shadow-[0_30px_60px_-30px_rgba(0,0,0,0.8)]"
           />
         )}
 
@@ -104,6 +104,11 @@ const EventHero: React.FC<EventHeroProps> = ({ form, notice }) => {
             <Chip icon={<Icon d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />}>
               {form.spotsLeft === 1 ? 'Queda 1 cupo' : `Quedan ${form.spotsLeft} cupos`}
             </Chip>
+          )}
+          {form.settings.pointsReward > 0 && (
+            <span className="bg-gold inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[14px] font-semibold text-ink-950">
+              <span aria-hidden="true">🔥</span>+{form.settings.pointsReward} pts al responder con tu cuenta o placa
+            </span>
           )}
         </div>
 

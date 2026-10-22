@@ -390,6 +390,7 @@ export default function PublicFormPage() {
                       onLogout={handleLogout}
                       loginHref={buildLoginRedirect(`/f/${slug}`)}
                       policyError={mode === 'guest' ? identityError || undefined : undefined}
+                      pointsReward={myResponse ? 0 : form.settings.pointsReward}
                     />
                     {identityError && mode !== 'guest' && (
                       <p className="mb-0 mt-3 text-sm font-medium text-red-500">{identityError}</p>

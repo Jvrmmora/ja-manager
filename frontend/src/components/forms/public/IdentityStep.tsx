@@ -32,6 +32,8 @@ interface IdentityStepProps {
   onLogout: () => void;
   loginHref: string;
   policyError?: string | undefined;
+  /** Puntos que gana al responder con cuenta o placa (0 = no mostrar). */
+  pointsReward: number;
 }
 
 const Check = () => (
@@ -52,6 +54,14 @@ const PlacaChip: React.FC<{ placa: string }> = ({ placa }) => (
     <Lock /> {placa}
   </span>
 );
+
+const PointsNote: React.FC<{ points: number; children: React.ReactNode }> = ({ points, children }) =>
+  points > 0 ? (
+    <p className="mb-0 mt-3 flex items-center gap-2 rounded-2xl bg-brand-amber/15 px-4 py-2.5 text-sm font-medium text-cocoa-800 dark:text-white/85">
+      <span aria-hidden="true">🔥</span>
+      <span>{children}</span>
+    </p>
+  ) : null;
 
 const formatValue = (field: ContactField, value: unknown) => {
   if (field === 'gender') return value === 'masculino' ? 'Masculino' : value === 'femenino' ? 'Femenino' : '';
@@ -151,6 +161,9 @@ const IdentityStep: React.FC<IdentityStepProps> = props => {
             </span>
           }
         />
+        <PointsNote points={props.pointsReward}>
+          Ganarás <strong>+{props.pointsReward} puntos</strong> al enviar tu respuesta.
+        </PointsNote>
         {missingInputs(me.missing)}
         {me.missing.length > 0 && (
           <label className="mt-3 flex cursor-pointer items-center gap-2.5 text-sm text-cocoa-600 dark:text-white/75">
@@ -192,6 +205,11 @@ const IdentityStep: React.FC<IdentityStepProps> = props => {
             Ya tenemos una respuesta tuya. Si envías de nuevo, la actualizamos.
           </p>
         )}
+        {!placaIdentity.alreadyResponded && (
+          <PointsNote points={props.pointsReward}>
+            Ganarás <strong>+{props.pointsReward} puntos</strong> al enviar tu respuesta.
+          </PointsNote>
+        )}
         {missingInputs(placaIdentity.missing)}
       </>
     );
@@ -216,7 +234,7 @@ const IdentityStep: React.FC<IdentityStepProps> = props => {
   };
 
   const tabs: { id: IdentityMode; label: string; hint: string }[] = [
-    { id: 'placa', label: 'Tengo placa', hint: 'Más rápido' },
+    { id: 'placa', label: 'Tengo placa', hint: props.pointsReward > 0 ? `+${props.pointsReward} pts` : 'Más rápido' },
     ...(form.settings.allowGuests ? [{ id: 'guest' as const, label: 'Soy invitado', hint: 'Sin cuenta' }] : []),
   ];
   const activeTab = mode === 'guest' && form.settings.allowGuests ? 'guest' : 'placa';
@@ -317,7 +335,8 @@ const IdentityStep: React.FC<IdentityStepProps> = props => {
           <ErrorText>{props.policyError}</ErrorText>
           {form.settings.showRegisterCta && (
             <p className="mb-0 mt-4 rounded-2xl border border-dashed border-sand-300 px-4 py-3 text-sm text-cocoa-600 dark:border-white/15 dark:text-white/70">
-              💡 <strong>¿Vienes seguido?</strong> Crea tu cuenta y la próxima vez solo escribes tu placa.{' '}
+              💡 <strong>¿Vienes seguido?</strong> Crea tu cuenta y la próxima vez solo escribes tu placa
+              {props.pointsReward > 0 ? ` y ganas +${props.pointsReward} puntos` : ''}.{' '}
               <Link to="/register" className={linkCls}>
                 Registrarme
               </Link>
