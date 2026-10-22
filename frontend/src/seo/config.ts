@@ -69,6 +69,18 @@ export const ROUTES: RouteSeo[] = [
     noindex: true,
   },
   {
+    path: '/admin/landing',
+    title: 'Landing CMS — Jóvenes Modelia',
+    description: 'Editor del contenido de la landing de Jóvenes Modelia.',
+    noindex: true,
+  },
+  {
+    path: '/admin/forms',
+    title: 'Formularios — Jóvenes Modelia',
+    description: 'Formularios de eventos de Jóvenes Modelia.',
+    noindex: true,
+  },
+  {
     path: '/birthday-claim',
     title: 'Reclama tus puntos de cumpleaños — Jóvenes Modelia',
     description: 'Reclama tus puntos de cumpleaños en Jóvenes Modelia.',
