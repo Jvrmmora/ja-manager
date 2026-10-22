@@ -64,3 +64,17 @@ export const referralShareMessage = (
   `Regístrate con mi placa *${placa}*` +
   (welcomePoints ? ` y recibes ${welcomePoints} puntos de bienvenida 🎁` : ' y ganamos puntos los dos 🎁') +
   `\n\n${url}`;
+
+/** Enlace público de un formulario de evento: /f/<slug>. */
+export const buildFormShareUrl = (slug: string): string =>
+  `${SITE_ORIGIN}/f/${encodeURIComponent(slug)}`;
+
+export const formShareMessage = (
+  url: string,
+  title: string,
+  when?: string | null
+): string =>
+  `📣 *${title}*\n` +
+  (when ? `🗓️ ${when}\n` : '') +
+  '¿Vas? Confírmalo aquí, toma menos de un minuto 👇\n\n' +
+  url;

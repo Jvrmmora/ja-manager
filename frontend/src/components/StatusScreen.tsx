@@ -1,6 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import ThemeToggle from './ThemeToggle';
+import PublicTopBar from './PublicTopBar';
 import logo from '../assets/logos/logo.png';
 
 interface StatusScreenProps {
@@ -30,29 +29,9 @@ const StatusScreen: React.FC<StatusScreenProps> = ({
   actions,
   verse,
 }) => {
-  const navigate = useNavigate();
-
   return (
     <div className="flex min-h-[100dvh] flex-col bg-cream dark:bg-ink-950">
-      <div className="z-10 flex-shrink-0 border-b border-sand-200 bg-white dark:border-white/10 dark:bg-ink-950">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <button
-            onClick={() => navigate('/')}
-            className="group flex items-center gap-3"
-            aria-label="Volver al inicio"
-          >
-            <img
-              src={logo}
-              alt="JA Modelia"
-              className="h-9 w-9 object-contain transition-transform group-hover:scale-110"
-            />
-            <span className="font-display text-lg font-semibold tracking-wide text-cocoa-900 transition-colors group-hover:text-brand-deep dark:text-white dark:group-hover:text-brand-amber">
-              Jóvenes Modelia Bogotá
-            </span>
-          </button>
-          <ThemeToggle />
-        </div>
-      </div>
+      <PublicTopBar className="!z-10" />
 
       <main className="relative flex flex-1 items-center justify-center overflow-hidden px-4 py-14 sm:px-6">
         {/* Capa externa centra; la interna anima (animate-ember usa transform) */}

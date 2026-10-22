@@ -6,10 +6,10 @@ import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../hooks/useToast';
 import PhoneInput from '../components/PhoneInput';
 import LoadingSpinner from '../components/LoadingSpinner';
-import ThemeToggle from '../components/ThemeToggle';
+import PublicTopBar from '../components/PublicTopBar';
+import { REGISTRATION_PREFILL_KEY } from '../utils/forms/registrationPrefill';
 import PrivacyPolicyModal from '../components/privacy/PrivacyPolicyModal';
 import { fetchPrivacyPolicy } from '../services/consentService';
-import logo from '../assets/logos/logo.png';
 
 function calculateAge(birthday: string): number | null {
   if (!birthday) return null;
@@ -87,6 +87,24 @@ function RegistrationPage() {
     fetchPrivacyPolicy()
       .then(p => setPolicyVersion(p.currentVersion))
       .catch(() => setPolicyVersion(null));
+  }, []);
+
+  // Datos que dejó un invitado al responder un formulario (FormSuccess)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(REGISTRATION_PREFILL_KEY);
+      if (!raw) return;
+      sessionStorage.removeItem(REGISTRATION_PREFILL_KEY);
+      const prefill = JSON.parse(raw) as { fullName?: string; phone?: string; email?: string };
+      setFormData(prev => ({
+        ...prev,
+        fullName: prefill.fullName || prev.fullName,
+        phone: prefill.phone || prev.phone,
+        email: prefill.email || prev.email,
+      }));
+    } catch {
+      /* sin precarga */
+    }
   }, []);
 
   // Read referredBy from URL
@@ -342,25 +360,7 @@ function RegistrationPage() {
   return (
     <div className={`min-h-screen flex flex-col ${isDark ? 'dark' : ''}`}>
       {/* ── Top bar: same layout as Login/Landing ──────────────────────── */}
-      <div className="bg-white dark:bg-ink-950 border-b border-sand-200 dark:border-white/10 z-50 flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between py-3">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-3 group"
-            aria-label="Volver al inicio"
-          >
-            <img
-              src={logo}
-              alt="JA Modelia"
-              className="h-9 w-9 object-contain transition-transform group-hover:scale-110"
-            />
-            <span className="font-display text-lg font-semibold tracking-wide text-cocoa-900 dark:text-white group-hover:text-brand-deep dark:group-hover:text-brand-amber transition-colors">
-              Jóvenes Modelia Bogotá
-            </span>
-          </button>
-          <ThemeToggle />
-        </div>
-      </div>
+      <PublicTopBar />
 
       <div className="flex flex-1 flex-col lg:flex-row">
         {/* ── Panel de marca (móvil: franja superior) ─────────────────────── */}
