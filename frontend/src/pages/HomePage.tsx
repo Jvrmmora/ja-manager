@@ -33,6 +33,8 @@ import { seasonService } from '../services/seasonService';
 import SeasonManager from '../components/SeasonManager';
 import RegistrationRequestsManager from '../components/RegistrationRequestsManager';
 import ContactMessagesManager from '../components/ContactMessagesManager';
+import DuplicatesManager from '../components/admin/DuplicatesManager';
+import { fetchDuplicatePairs } from '../services/youngDuplicatesApi';
 import {
   apiRequest,
   apiUpload,
@@ -165,6 +167,8 @@ function HomePage() {
     useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [recentUsersCount, setRecentUsersCount] = useState(0);
+  const [showDuplicatesSection, setShowDuplicatesSection] = useState(false);
+  const [duplicatesCount, setDuplicatesCount] = useState(0);
 
   // Vista del listado de jóvenes (se recuerda la última elegida)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
@@ -746,6 +750,14 @@ function HomePage() {
   // Verificar si el usuario es Super Admin
   const isSuperAdmin = currentUser?.role_name === 'Super Admin';
 
+  // Aviso al admin: el contador se ve en el botón sin abrir la sección
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    fetchDuplicatePairs()
+      .then(pairs => setDuplicatesCount(pairs.length))
+      .catch(() => setDuplicatesCount(0));
+  }, [isSuperAdmin]);
+
   // Cargar conteo de usuarios recientes cuando se abre la sección
   useEffect(() => {
     if (showRegistrationRequestsSection && isSuperAdmin) {
@@ -996,6 +1008,21 @@ function HomePage() {
                     {recentUsersCount > 0 && (
                       <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-red px-1.5 text-[11px] font-bold text-white">
                         {recentUsersCount > 9 ? '9+' : recentUsersCount}
+                      </span>
+                    )}
+                  </button>
+                )}
+                {isSuperAdmin && (
+                  <button type="button" onClick={() => setShowDuplicatesSection(true)} className={outlineBtn}>
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    Duplicados
+                    {duplicatesCount > 0 && (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-red px-1.5 text-[11px] font-bold text-white">
+                        {duplicatesCount > 9 ? '9+' : duplicatesCount}
                       </span>
                     )}
                   </button>
@@ -1265,6 +1292,23 @@ function HomePage() {
               onShowSuccess={showSuccess}
               onShowError={showError}
               onPendingCountChange={setRecentUsersCount}
+            />
+          </AdminPanelModal>
+        )}
+
+        {showDuplicatesSection && isSuperAdmin && (
+          <AdminPanelModal
+            title="Duplicados"
+            subtitle="Posibles cuentas repetidas · solo Super Admin"
+            icon={<PanelIcon d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />}
+            size="xl"
+            onClose={() => setShowDuplicatesSection(false)}
+          >
+            <DuplicatesManager
+              onShowSuccess={showSuccess}
+              onShowError={showError}
+              onCountChange={setDuplicatesCount}
+              onMerged={() => fetchYoung(1)}
             />
           </AdminPanelModal>
         )}
