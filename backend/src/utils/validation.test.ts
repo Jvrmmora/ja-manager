@@ -4,6 +4,8 @@ import {
   createYoungSchema,
   updateYoungSchema,
   partialRegistrationSchema,
+  ageRangeFromAge,
+  withDerivedAgeRange,
 } from './validation';
 
 const FIXED_NOW = new Date('2026-09-29T12:00:00Z');
@@ -122,5 +124,36 @@ describe('partialRegistrationSchema — consistencia birthday/ageRange', () => {
     expect(error?.details[0].message).toMatch(
       /no coincide con el rango de edad seleccionado/
     );
+  });
+});
+
+describe('rango de edad automático', () => {
+  it.each([
+    [6, '13-15'],
+    [15, '13-15'],
+    [16, '16-18'],
+    [21, '19-21'],
+    [25, '22-25'],
+    [30, '26-30'],
+    [31, '30+'],
+  ])('edad %i -> %s', (age, range) => {
+    expect(ageRangeFromAge(age)).toBe(range);
+  });
+
+  it('withDerivedAgeRange pisa un rango incorrecto con el del cumpleaños', () => {
+    const out = withDerivedAgeRange({ birthday: '1995-03-10', ageRange: '13-15' });
+    expect(out.ageRange).toBe('30+');
+    const { error } = updateYoungSchema.validate(out);
+    expect(error).toBeUndefined();
+  });
+
+  it('sin cumpleaños deja el body intacto', () => {
+    const body = { ageRange: '19-21' };
+    expect(withDerivedAgeRange(body)).toBe(body);
+  });
+
+  it('update rechaza cumpleaños futuro', () => {
+    const { error } = updateYoungSchema.validate({ birthday: '2027-01-01' });
+    expect(error?.details[0].path[0]).toBe('birthday');
   });
 });

@@ -7,6 +7,7 @@ import PointsBreakdownModal from '../PointsBreakdownModal';
 import AssignPointsModal from '../AssignPointsModal';
 import WelcomeCard from '../WelcomeCard';
 import ReferralShareModal from '../ReferralShareModal';
+import YoungDetailDrawer from './YoungDetailDrawer';
 import type { YoungActions } from './useYoungActions';
 
 interface YoungActionModalsProps {
@@ -28,6 +29,13 @@ const YoungActionModals: React.FC<YoungActionModalsProps> = ({
   const m = actions.modals;
   return (
     <>
+      <YoungDetailDrawer
+        young={young}
+        actions={actions}
+        isOpen={m.showDetail}
+        onClose={() => m.setShowDetail(false)}
+      />
+
       {young.profileImage && (
         <ImageModal
           isOpen={m.showImage}

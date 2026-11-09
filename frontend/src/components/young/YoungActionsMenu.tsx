@@ -110,6 +110,9 @@ const YoungActionsMenu: React.FC<YoungActionsMenuProps> = ({
           }}
           className="fixed z-[60] w-60 rounded-2xl border border-sand-200 bg-white p-1.5 shadow-[0_24px_48px_-16px_rgba(20,11,16,0.35)] dark:border-white/10 dark:bg-ink-800"
         >
+          <button role="menuitem" type="button" className={item} onClick={run(actions.openDetail)}>
+            Ver detalles
+          </button>
           <button role="menuitem" type="button" className={item} onClick={run(actions.openPoints)}>
             Ver puntos y desglose
           </button>

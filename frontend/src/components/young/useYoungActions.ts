@@ -16,6 +16,7 @@ export const useYoungActions = (
   young: IYoung,
   { onDelete, onEdit, onYoungUpdate, onShowSuccess, onShowError }: YoungActionCallbacks
 ) => {
+  const [showDetail, setShowDetail] = useState(false);
   const [showImage, setShowImage] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -81,6 +82,7 @@ export const useYoungActions = (
   return {
     isAdmin,
     edit: () => onEdit(young),
+    openDetail: () => setShowDetail(true),
     openImage: () => young.profileImage && setShowImage(true),
     openPassword: () => setShowPassword(true),
     openDelete: () => setShowDelete(true),
@@ -93,6 +95,8 @@ export const useYoungActions = (
     isGeneratingPlaca,
     // Para YoungActionModals
     modals: {
+      showDetail,
+      setShowDetail,
       showImage,
       setShowImage,
       showPassword,
