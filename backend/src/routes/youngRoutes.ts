@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { YoungController } from '../controllers/youngController';
+import { YoungDuplicateController } from '../controllers/youngDuplicateController';
 import {
   upload,
   handleMulterError,
@@ -45,6 +46,27 @@ router.get(
   '/recent/count',
   ...authenticateAndAuthorize('young:read'),
   YoungController.getRecentUsersCount
+);
+// Duplicados y fusión (antes de la ruta genérica /:id)
+router.get(
+  '/duplicates',
+  ...authenticateAndAuthorize('young:merge'),
+  YoungDuplicateController.list
+);
+router.post(
+  '/duplicates/dismiss',
+  ...authenticateAndAuthorize('young:merge'),
+  YoungDuplicateController.dismiss
+);
+router.get(
+  '/merge/preview',
+  ...authenticateAndAuthorize('young:merge'),
+  YoungDuplicateController.preview
+);
+router.post(
+  '/merge',
+  ...authenticateAndAuthorize('young:merge'),
+  YoungDuplicateController.merge
 );
 router.get(
   '/:id',

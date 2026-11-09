@@ -23,6 +23,7 @@ export const SCOPES = {
   'young:update': 'Actualizar jóvenes',
   'young:delete': 'Eliminar jóvenes',
   'young:stats': 'Ver estadísticas de jóvenes',
+  'young:merge': 'Detectar y fusionar jóvenes duplicados',
 
   // Placa management
   'placa:generate': 'Generar placa para jóvenes',
