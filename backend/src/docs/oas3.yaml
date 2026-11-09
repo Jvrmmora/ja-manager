@@ -2357,6 +2357,74 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /young/duplicates:
+    get:
+      tags: [Young]
+      summary: Posibles jóvenes duplicados
+      description: |
+        Compara a los jóvenes activos (teléfono, correo, nombre + día y mes de cumpleaños) y omite
+        los pares marcados como personas distintas. Primero las coincidencias fuertes.
+      security: [{ bearerAuth: [young:merge] }]
+      responses:
+        '200': { description: 'data: lista de pares con motivos, actividad y cuenta sugerida' }
+        '403': { description: Sin permisos }
+
+  /young/duplicates/dismiss:
+    post:
+      tags: [Young]
+      summary: Marcar un par como personas distintas
+      security: [{ bearerAuth: [young:merge] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [youngAId, youngBId]
+              properties:
+                youngAId: { type: string }
+                youngBId: { type: string }
+      responses:
+        '200': { description: El par deja de proponerse }
+
+  /young/merge/preview:
+    get:
+      tags: [Young]
+      summary: Vista previa de una fusión (no escribe nada)
+      security: [{ bearerAuth: [young:merge] }]
+      parameters:
+        - { in: query, name: sourceId, required: true, schema: { type: string }, description: Cuenta que se da de baja }
+        - { in: query, name: targetId, required: true, schema: { type: string }, description: Cuenta que se conserva }
+      responses:
+        '200': { description: 'Qué se traslada, qué se completa, qué se descarta por repetido y los puntos resultantes' }
+        '403': { description: La cuenta origen es de administrador }
+        '404': { description: Alguna cuenta no está activa }
+
+  /young/merge:
+    post:
+      tags: [Young]
+      summary: Fusionar dos jóvenes en una transacción
+      description: |
+        Traslada el historial de `sourceId` a `targetId`. El destino conserva sus datos y solo completa
+        lo que le falta. Lo que solo puede existir una vez (asistencia del día, cumpleaños del año,
+        respuesta a un formulario…) se conserva del destino. La cuenta origen no se borra: queda dada
+        de baja, sin contraseña ni correo, y con `mergedInto` apuntando al destino.
+      security: [{ bearerAuth: [young:merge] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sourceId, targetId]
+              properties:
+                sourceId: { type: string }
+                targetId: { type: string }
+      responses:
+        '200': { description: Fusión completada }
+        '403': { description: La cuenta origen es de administrador }
+        '404': { description: Alguna cuenta no está activa }
+
   /forms/public/{slug}:
     get:
       tags: [Forms]

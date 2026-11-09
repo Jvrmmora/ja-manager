@@ -169,6 +169,11 @@ const youngSchema = new Schema<IYoungDocument>(
       required: false,
       default: false,
     },
+    // Fusión de duplicados: esta cuenta fue absorbida por `mergedInto`
+    mergedInto: { type: Schema.Types.ObjectId, ref: 'Young', default: undefined },
+    mergedAt: { type: Date, default: undefined },
+    mergedBy: { type: Schema.Types.ObjectId, ref: 'Young', default: undefined },
+    mergedEmail: { type: String, default: undefined },
     // Resumen del consentimiento de tratamiento de datos personales
     // (Ley 1581/2012). La evidencia completa vive en la colección ConsentRecord;
     // esto es solo un resumen para poder verificar rápido si falta aceptación.
