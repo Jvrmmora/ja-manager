@@ -99,48 +99,40 @@ export const avatarPhotoUrl = (url?: string | null): string | null => {
   return url;
 };
 
-/** Círculo de 118px con aro dorado: foto del joven o sus iniciales. */
+/**
+ * Círculo con aro dorado: la foto del joven o, si no tiene, sus iniciales.
+ * Sin color de fondo (ver generateBirthdayTemplate).
+ */
 const birthdayAvatar = (params: EmailParams): string => {
   const photo = avatarPhotoUrl(params.profileImage);
-  const ring =
-    'background-color:#F9A23B; border-radius:59px; width:118px; height:118px; padding:0;';
   if (photo) {
-    return `
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
-                <tr>
-                  <td align="center" valign="middle" width="118" height="118" bgcolor="#F9A23B" style="${ring}">
-                    <img src="${escapeHtml(photo)}" width="106" height="106" alt="${escapeHtml(params.toName)}" style="display:block; width:106px; height:106px; border-radius:53px; border:0; background-color:#FFF8F1;">
-                  </td>
-                </tr>
-              </table>`;
+    return `<img src="${escapeHtml(photo)}" width="104" height="104" alt="${escapeHtml(params.toName)}" style="display:block; width:104px; height:104px; border:4px solid #E07B12; border-radius:56px; margin:0 auto;">`;
   }
   const initials = escapeHtml(getInitials(params.toName));
-  return `
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
+  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
                 <tr>
-                  <td align="center" valign="middle" width="118" height="118" bgcolor="#F9A23B" style="${ring}">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
-                      <tr>
-                        <td align="center" valign="middle" width="106" height="106" bgcolor="#FFF8F1" style="width:106px; height:106px; border-radius:53px; background-color:#FFF8F1; font-family:Arial, Helvetica, sans-serif; font-size:46px; line-height:106px; font-weight:bold; color:#8A1C45;">${initials}</td>
-                      </tr>
-                    </table>
-                  </td>
+                  <td align="center" valign="middle" width="104" height="104" style="width:104px; height:104px; padding:0; border:4px solid #E07B12; border-radius:56px; font-family:Arial, Helvetica, sans-serif; font-size:44px; line-height:104px; font-weight:bold; color:#8A1C45;">${initials}</td>
                 </tr>
               </table>`;
 };
 
 /**
  * Tarjeta de cumpleaños. Maquetada con tablas y estilos inline porque Gmail
- * ignora <style> en gran parte y no carga fuentes web ni SVG: la decoración
- * (degradado, confeti y globos) viene en un JPG de fondo con color de
- * respaldo (ver frontend/scripts/generate-email-assets.mjs).
+ * ignora <style> en gran parte y no carga fuentes web ni SVG.
+ *
+ * NO define ningún color de fondo ni usa imágenes o degradados de fondo. La app
+ * de Gmail en modo oscuro invierte los colores sólidos (un bloque vino se
+ * volvía rosado) y no toca los fondos con imagen, con lo que un texto encima
+ * quedaba ilegible. Sin fondos, el cliente pone el suyo (blanco o gris oscuro)
+ * y los textos, que usan tonos que Gmail sabe invertir bien (vino, naranja y
+ * gris cálido), se leen sobre ambos. El confeti es un PNG transparente.
  */
 const generateBirthdayTemplate = (params: EmailParams): string => {
   const name = escapeHtml(firstName(params.toName));
   const points = escapeHtml(params.birthdayPoints || 100);
   const placa = params.placa ? escapeHtml(params.placa) : '';
   const ctaUrl = escapeHtml(birthdayCtaUrl(params));
-  const headerBg = `${env.frontendUrl}/email/birthday-header.jpg`;
+  const confettiUrl = `${env.frontendUrl}/email/birthday-confetti.png`;
   const year = new Date().getFullYear();
 
   return `
@@ -150,71 +142,70 @@ const generateBirthdayTemplate = (params: EmailParams): string => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <title>¡Feliz cumpleaños, ${name}!</title>
 </head>
-<body style="margin:0; padding:0; background-color:#FFF8F1;">
+<body style="margin:0; padding:0;">
   <div style="display:none; max-height:0; overflow:hidden; opacity:0;">Tienes ${points} puntos de regalo ya cargados en tu cuenta.</div>
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#FFF8F1" style="background-color:#FFF8F1;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
     <tr>
       <td align="center" style="padding:24px 12px;">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%; max-width:600px; background-color:#FFFFFF; border-radius:20px; overflow:hidden; font-family:Arial, Helvetica, sans-serif; color:#140B10;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%; max-width:600px; font-family:Arial, Helvetica, sans-serif; color:#140B10;">
 
-          <!-- Cabecera -->
+          <!-- Confeti y globos (PNG transparente) -->
           <tr>
-            <td align="center" valign="top" bgcolor="#7A1B40" background="${headerBg}" style="background-color:#7A1B40; background-image:url('${headerBg}'); background-size:cover; background-position:center; padding:40px 24px 34px;">
-              ${birthdayAvatar(params)}
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:18px auto 0;">
-                <tr>
-                  <td align="center" valign="middle" width="34" height="34" bgcolor="#FFF8F1" style="width:34px; height:34px; border-radius:10px; background-color:#FFF8F1;">
-                    <img src="${env.frontendUrl}/icon-512.png" width="26" height="26" alt="" style="display:block; width:26px; height:26px; border:0; margin:0 auto;">
-                  </td>
-                  <td style="padding-left:12px; font-size:15px; letter-spacing:4px; text-transform:uppercase; color:#FFE4C7; font-weight:bold;">Jóvenes Modelia Bogotá</td>
-                </tr>
-              </table>
-              <h1 style="margin:14px 0 0; font-size:46px; line-height:1.05; color:#FFFFFF; font-weight:bold;">¡Feliz cumpleaños!</h1>
-              <p style="margin:6px 0 0; font-size:34px; line-height:1.15; color:#F9A23B; font-weight:bold;">${name}</p>
+            <td align="center" style="padding:0; font-size:0; line-height:0;">
+              <img src="${confettiUrl}" width="600" alt="" style="display:block; width:100%; max-width:600px; height:auto; border:0;">
             </td>
           </tr>
 
-          <!-- Contenido -->
+          <!-- Saludo -->
           <tr>
-            <td style="padding:32px 40px 36px;">
-              <p style="margin:0 0 26px; font-size:17px; line-height:1.65; color:#140B10; text-align:center;">
+            <td align="center" style="padding:6px 24px 0;">
+              ${birthdayAvatar(params)}
+              <p style="margin:22px 0 0; font-size:13px; letter-spacing:4px; text-transform:uppercase; color:#8A1C45; font-weight:bold;">Jóvenes Modelia Bogotá</p>
+              <h1 style="margin:12px 0 0; font-size:46px; line-height:1.05; color:#8A1C45; font-weight:bold;">¡Feliz cumpleaños!</h1>
+              <p style="margin:6px 0 0; font-size:34px; line-height:1.15; color:#C2410F; font-weight:bold;">${name}</p>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:24px auto;">
+                <tr><td width="64" height="3" style="width:64px; height:3px; line-height:3px; font-size:0; border-top:3px solid #E07B12;">&nbsp;</td></tr>
+              </table>
+              <p style="margin:0; padding:0 16px; font-size:17px; line-height:1.65; color:#140B10;">
                 Hoy toda la familia del <strong>Ministerio Juvenil Modelia</strong> celebra tu vida. Gracias por ser parte de este grupo, ¡Dios te bendiga en este nuevo año!
               </p>
+            </td>
+          </tr>
 
-              <!-- Cupón de puntos -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;">
+          <!-- Puntos de regalo -->
+          <tr>
+            <td style="padding:28px 0 0;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td bgcolor="#F9A23B" style="background-color:#F9A23B; background-image:linear-gradient(135deg, #FFE4C7 0%, #F9A23B 100%); border-radius:18px; padding:8px;">
-                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;">
+                  <td align="center" style="padding:26px 0; border-top:1px solid #E7D3C4; border-bottom:1px solid #E7D3C4;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
                       <tr>
-                        <td align="center" style="border:2px dashed #8A1C45; border-radius:12px; padding:20px 16px;">
-                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
-                            <tr>
-                              <td valign="middle" style="padding-right:20px; font-size:78px; line-height:1; font-weight:bold; color:#8A1C45;">${points}</td>
-                              <td valign="middle" align="left">
-                                <div style="font-size:22px; line-height:1.15; font-weight:bold; color:#4E0F3A; text-transform:uppercase; letter-spacing:1px;">Puntos de regalo</div>
-                                <div style="margin-top:4px; font-size:15px; line-height:1.4; color:#4E0F3A;">Ya están en tu cuenta, esperándote.</div>
-                              </td>
-                            </tr>
-                          </table>
+                        <td valign="middle" style="padding-right:24px; font-size:84px; line-height:1; font-weight:bold; color:#C2410F;">${points}</td>
+                        <td valign="middle" align="left">
+                          <div style="font-size:22px; line-height:1.15; font-weight:bold; color:#8A1C45; text-transform:uppercase; letter-spacing:1px;">Puntos de regalo</div>
+                          <div style="margin-top:6px; font-size:15px; line-height:1.4; color:#5B4A50;">Ya están en tu cuenta, esperándote.</div>
                         </td>
                       </tr>
                     </table>
                   </td>
                 </tr>
               </table>
+            </td>
+          </tr>
 
-              <!-- Botón -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:26px;">
+          <!-- Botón (solo borde, sin relleno) -->
+          <tr>
+            <td style="padding:30px 0 0;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td align="center" bgcolor="#B3243B" style="background-color:#B3243B; background-image:linear-gradient(90deg, #C2410F 0%, #B3243B 55%, #8A1C45 100%); border-radius:14px;">
-                    <a href="${ctaUrl}" style="display:block; padding:19px 32px; font-size:19px; font-weight:bold; color:#FFFFFF; text-decoration:none;">Visitar el sitio</a>
+                  <td align="center" style="border:2px solid #8A1C45; border-radius:12px;">
+                    <a href="${ctaUrl}" style="display:block; padding:17px 32px; font-size:19px; font-weight:bold; color:#8A1C45; text-decoration:none;">Visitar el sitio</a>
                   </td>
                 </tr>
               </table>
-
               <p style="margin:16px 0 0; font-size:14px; line-height:1.5; color:#5B4A50; text-align:center;">
                 ${placa ? `Entra con tu placa <strong style="color:#8A1C45;">${placa}</strong>. ` : ''}Si ya tienes la sesión abierta, te llevamos directo a tu panel.
               </p>
@@ -223,9 +214,8 @@ const generateBirthdayTemplate = (params: EmailParams): string => {
 
           <!-- Pie -->
           <tr>
-            <td align="center" bgcolor="#4E0F3A" style="background-color:#4E0F3A; padding:22px 36px;">
-              <p style="margin:0; font-size:15px; font-weight:bold; color:#FFF8F1;">Jóvenes Modelia Bogotá</p>
-              <p style="margin:4px 0 0; font-size:13px; color:#E8D6DD;">Ministerio Juvenil Modelia · jovenesmodelia.com · ${year}</p>
+            <td align="center" style="padding:34px 0 0; font-size:13px; line-height:1.5; color:#5B4A50;">
+              Jóvenes Modelia Bogotá · Ministerio Juvenil Modelia<br>jovenesmodelia.com · ${year}
             </td>
           </tr>
 

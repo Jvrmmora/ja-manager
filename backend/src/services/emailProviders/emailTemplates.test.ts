@@ -24,7 +24,7 @@ describe('emailTemplates: tarjeta de cumpleaños', () => {
     );
   });
 
-  it('el HTML incluye nombre escapado, puntos, placa, CTA y logo estable', () => {
+  it('el HTML incluye nombre escapado, puntos, placa, CTA y confeti', () => {
     const html = buildHtml(params);
     expect(html).toContain('&lt;Vale&gt;');
     expect(html).not.toContain('<Vale>');
@@ -32,10 +32,21 @@ describe('emailTemplates: tarjeta de cumpleaños', () => {
     expect(html).toContain('Ya están en tu cuenta');
     expect(html).toContain('@MODVALE001');
     expect(html).toContain(`href="${env.frontendUrl}/login?placa=%40MODVALE001"`);
-    expect(html).toContain(`${env.frontendUrl}/icon-512.png`);
-    expect(html).toContain(`${env.frontendUrl}/email/birthday-header.jpg`);
+    expect(html).toContain(`${env.frontendUrl}/email/birthday-confetti.png`);
     expect(html).not.toContain('undefined');
     expect(html).not.toContain('yellow-river');
+  });
+
+  it('es seguro para el modo oscuro de Gmail: no define ningún fondo', () => {
+    // Gmail invierte los colores sólidos (un fondo vino se vuelve rosado) y no
+    // toca los fondos con imagen, dejando ilegible el texto encima. Sin fondos
+    // el cliente pone el suyo y los textos se leen sobre claro y oscuro.
+    for (const profileImage of [undefined, 'https://example.com/fotos/vale.jpg']) {
+      const html = buildHtml({ ...params, profileImage });
+      expect(html).not.toMatch(/background/i);
+      expect(html).not.toMatch(/bgcolor/i);
+      expect(html).not.toContain('gradient(');
+    }
   });
 
   it('saluda solo con el primer nombre', () => {
@@ -46,7 +57,7 @@ describe('emailTemplates: tarjeta de cumpleaños', () => {
 
   it('sin foto muestra las iniciales de nombre y apellido', () => {
     const html = buildHtml({ ...params, toName: 'Valentina Pérez' });
-    expect(html).toContain('>VP</td>');
+    expect(html).toMatch(/>VP<\/td>/);
     expect(html).not.toContain('<img src="https://res.cloudinary.com');
   });
 
@@ -57,7 +68,7 @@ describe('emailTemplates: tarjeta de cumpleaños', () => {
       profileImage: 'https://example.com/fotos/vale.jpg',
     });
     expect(html).toContain('src="https://example.com/fotos/vale.jpg"');
-    expect(html).toContain('width="106" height="106"');
+    expect(html).toContain('width="104" height="104"');
     expect(html).not.toContain('>VP</td>');
   });
 
