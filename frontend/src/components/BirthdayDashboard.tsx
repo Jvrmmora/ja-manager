@@ -178,7 +178,7 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
       onClick={onClose}
     >
       <div
-        className="flex max-h-[94vh] sm:max-h-[90vh] w-full sm:max-w-3xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-[30px] bg-white shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)] dark:bg-ink-900"
+        className="flex max-h-[94dvh] sm:max-h-[90dvh] w-full sm:max-w-3xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-[30px] bg-white shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)] dark:bg-ink-900"
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

@@ -298,7 +298,7 @@ const AssignPointsModal: React.FC<AssignPointsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0C0609]/75 backdrop-blur-sm">
-      <div className="bg-white dark:bg-ink-900 rounded-[28px] shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col my-auto">
+      <div className="bg-white dark:bg-ink-900 rounded-[28px] shadow-2xl w-full max-w-md max-h-[90dvh] overflow-hidden flex flex-col my-auto">
         <BrandModalHeader
           title="Asignar puntos"
           subtitle={young.fullName}

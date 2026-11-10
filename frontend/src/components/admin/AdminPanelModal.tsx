@@ -48,7 +48,7 @@ const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.32, ease: [0.2, 0.7, 0.2, 1] }}
-        className={`flex max-h-[94vh] sm:max-h-[90vh] w-full ${SIZES[size]} flex-col overflow-hidden rounded-t-[28px] sm:rounded-[30px] bg-cream dark:bg-ink-900 shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)]`}
+        className={`flex max-h-[94dvh] sm:max-h-[90dvh] w-full ${SIZES[size]} flex-col overflow-hidden rounded-t-[28px] sm:rounded-[30px] bg-cream dark:bg-ink-900 shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)]`}
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

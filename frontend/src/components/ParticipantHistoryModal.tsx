@@ -273,7 +273,7 @@ const ParticipantHistoryModal: React.FC<ParticipantHistoryModalProps> = ({
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
-        className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-t-[28px] border border-white/10 bg-ink-950 text-white shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)] sm:rounded-[28px]"
+        className="relative flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-[28px] border border-white/10 bg-ink-950 text-white shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)] sm:rounded-[28px]"
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

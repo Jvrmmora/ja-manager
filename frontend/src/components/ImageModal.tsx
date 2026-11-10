@@ -58,7 +58,7 @@ const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageUrl, altT
           <img
             src={imageUrl}
             alt={altText}
-            className="max-w-full max-h-[80vh] w-auto h-auto object-contain"
+            className="max-w-full max-h-[80dvh] w-auto h-auto object-contain"
             onLoad={(e) => {
               // Centrar la imagen después de cargar
               const img = e.target as HTMLImageElement;

@@ -200,7 +200,7 @@ const YoungForm: React.FC<YoungFormProps> = ({ isOpen, onClose, onSubmit, onShow
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#0C0609]/75 backdrop-blur-sm sm:p-4">
       <div
-        className="flex max-h-[94vh] sm:max-h-[90vh] w-full sm:max-w-xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-[30px] bg-white shadow-2xl dark:bg-ink-900"
+        className="flex max-h-[94dvh] sm:max-h-[90dvh] w-full sm:max-w-xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-[30px] bg-white shadow-2xl dark:bg-ink-900"
         role="dialog"
         aria-modal="true"
         aria-label="Registrar nuevo joven"
