@@ -44,7 +44,7 @@ export default function EventDetailModal({
       <video
         src={event.mediaUrl}
         controls
-        className="block max-h-[52vh] w-full bg-black object-contain sm:max-h-[58vh]"
+        className="block max-h-[52dvh] w-full bg-black object-contain sm:max-h-[58dvh]"
       />
     );
   } else if (event?.mediaType === 'image') {
@@ -52,7 +52,7 @@ export default function EventDetailModal({
       <img
         src={event.mediaUrl}
         alt={event.altText || event.title}
-        className="block max-h-[52vh] w-full object-contain bg-ink-950 sm:max-h-[58vh]"
+        className="block max-h-[52dvh] w-full object-contain bg-ink-950 sm:max-h-[58dvh]"
       />
     );
   } else if (event?.mediaType === 'document') {
@@ -60,7 +60,7 @@ export default function EventDetailModal({
       <iframe
         src={event.mediaUrl}
         title={event.title}
-        className="h-[58vh] w-full border-0 bg-white"
+        className="h-[58dvh] w-full border-0 bg-white"
       />
     );
   }
@@ -79,7 +79,7 @@ export default function EventDetailModal({
             role="dialog"
             aria-modal="true"
             aria-label={event.title}
-            className="relative flex max-h-[94vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] border border-white/10 bg-white shadow-[0_60px_120px_-40px_rgba(0,0,0,0.85)] dark:bg-ink-900 sm:max-h-[90vh] sm:rounded-[28px]"
+            className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] border border-white/10 bg-white shadow-[0_60px_120px_-40px_rgba(0,0,0,0.85)] dark:bg-ink-900 sm:max-h-[90dvh] sm:rounded-[28px]"
             initial={{ opacity: 0, y: 40, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.98 }}

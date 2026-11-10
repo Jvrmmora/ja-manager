@@ -44,7 +44,7 @@ export default function Dialog({
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className={`relative flex max-h-[90vh] w-full ${maxWidth} flex-col overflow-hidden rounded-[28px] border border-white/10 bg-ink-950 text-white shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)]`}
+            className={`relative flex max-h-[90dvh] w-full ${maxWidth} flex-col overflow-hidden rounded-[28px] border border-white/10 bg-ink-950 text-white shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)]`}
             initial={{ opacity: 0, y: 24, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
