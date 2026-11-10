@@ -214,11 +214,11 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
     const daysInMonth = new Date(Date.UTC(year, m + 1, 0)).getUTCDate();
     const offset = new Date(Date.UTC(year, m, 1)).getUTCDay(); // domingo = 0
     return (
-      <div className={`grid grid-cols-7 text-center ${compact ? 'gap-[3px]' : 'gap-1.5 sm:gap-2'}`}>
+      <div className={`grid grid-cols-7 text-center ${compact ? 'gap-[3px]' : 'gap-1'}`}>
         {WEEKDAYS.map((w, i) => (
           <span
             key={i}
-            className={`font-semibold ${compact ? 'text-[9px]' : 'py-1 text-xs'} ${i === 6 ? 'text-[#E8590C]' : 'text-cocoa-400 dark:text-white/40'}`}
+            className={`font-semibold ${compact ? 'text-[9px]' : 'text-[11px]'} ${i === 6 ? 'text-[#E8590C]' : 'text-cocoa-400 dark:text-white/40'}`}
           >
             {w}
           </span>
@@ -242,12 +242,12 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
               className={`flex items-center justify-center rounded-md tabular-nums transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber disabled:cursor-default disabled:opacity-30 ${
                 compact
                   ? 'aspect-square text-[10.5px]'
-                  : 'aspect-square flex-col gap-0.5 rounded-xl text-sm sm:text-base'
+                  : 'h-10 flex-col gap-0 rounded-lg text-[13px] leading-tight sm:h-11 sm:text-sm'
               } ${info ? 'font-bold hover:scale-105' : ''} ${dayStyle(info)} ${dayRing(key)}`}
             >
               {i + 1}
               {!compact && info && info.attendees > 0 && (
-                <span className="text-[10px] font-semibold leading-none opacity-90">{info.attendees}</span>
+                <span className="text-[9px] font-semibold leading-none opacity-90">{info.attendees}</span>
               )}
             </button>
           );
@@ -262,7 +262,7 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
       <div
         role="tablist"
         aria-label="Vista del calendario"
-        className="mb-3 grid grid-cols-3 gap-1 rounded-full bg-sand-100 p-1 dark:bg-white/[0.06] sm:inline-grid sm:w-72"
+        className="mb-2.5 grid grid-cols-3 gap-1 rounded-full bg-sand-100 p-1 dark:bg-white/[0.06] sm:inline-grid sm:w-64"
       >
         {VIEWS.map(v => (
           <button
@@ -271,9 +271,9 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
             role="tab"
             aria-selected={view === v.id}
             onClick={() => setView(v.id)}
-            className={`h-9 rounded-full text-[13px] font-semibold transition-colors ${
+            className={`h-8 rounded-full text-[13px] font-semibold transition-colors ${
               view === v.id
-                ? 'bg-white text-cocoa-900 shadow-sm dark:bg-ink-700 dark:text-white'
+                ? 'bg-white text-cocoa-900 shadow-sm dark:bg-brand-orange dark:text-white'
                 : 'text-cocoa-500 hover:text-cocoa-900 dark:text-white/55 dark:hover:text-white'
             }`}
           >
@@ -314,7 +314,7 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
 
       {/* Resumen del periodo */}
       {loaded && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
           <span className={chip}><b className="text-cocoa-900 dark:text-white">{summary.cultos}</b> cultos jóvenes</span>
           <span className={chip}><b className="text-cocoa-900 dark:text-white">{summary.actividades}</b> actividades</span>
           {summary.promedio > 0 && (
@@ -335,7 +335,7 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
           <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-sand-200 border-t-brand-orange dark:border-white/15" />
         </div>
       ) : view === 'mes' ? (
-        <div className="mx-auto mt-4 max-w-xl">
+        <div className="mx-auto mt-3 max-w-md">
           {renderMonthGrid(Number(cursor.slice(0, 4)), Number(cursor.slice(5, 7)) - 1, false)}
         </div>
       ) : view === 'semana' ? (
@@ -414,7 +414,7 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
 
       {/* Detalle del día (al pasar el mouse o del día seleccionado) */}
       <div
-        className="mt-4 rounded-xl bg-sand-50 px-3.5 py-2.5 text-[13px] text-cocoa-600 dark:bg-white/[0.05] dark:text-white/75"
+        className="mt-3 rounded-xl bg-sand-50 px-3.5 py-2 text-[13px] text-cocoa-600 dark:bg-white/[0.05] dark:text-white/75"
         aria-live="polite"
       >
         {describeDay(detailDate, byDate.get(detailDate))}
