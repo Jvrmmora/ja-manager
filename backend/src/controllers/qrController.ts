@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import env from '../config/env';
 import crypto from 'crypto';
 import QRCode from 'qrcode';
 import QRCodeModel from '../models/QRCode';
@@ -54,7 +55,7 @@ export const generateDailyQR = async (
     // Si existe y NO se está forzando regeneración, retornar el existente
     if (existingQR && !isExpired(existingQR.expiresAt) && !force) {
       // Generar el QR visual del código existente
-      const qrUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/attendance/scan?code=${existingQR.code}`;
+      const qrUrl = `${env.frontendUrl}/attendance/scan?code=${existingQR.code}`;
       const qrImage = await QRCode.toDataURL(qrUrl, {
         width: 512,
         margin: 4,
@@ -104,7 +105,7 @@ export const generateDailyQR = async (
     await newQR.save();
 
     // Generar imagen del QR
-    const qrUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/attendance/scan?code=${code}`;
+    const qrUrl = `${env.frontendUrl}/attendance/scan?code=${code}`;
     const qrImage = await QRCode.toDataURL(qrUrl, {
       width: 512,
       margin: 4,
@@ -152,7 +153,7 @@ export const getCurrentQR = async (
     }
 
     // Generar imagen del QR
-    const qrUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/attendance/scan?code=${currentQR.code}`;
+    const qrUrl = `${env.frontendUrl}/attendance/scan?code=${currentQR.code}`;
     const qrImage = await QRCode.toDataURL(qrUrl, {
       width: 512,
       margin: 4,

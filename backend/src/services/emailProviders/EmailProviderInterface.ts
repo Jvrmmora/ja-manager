@@ -16,8 +16,10 @@ export interface EmailParams {
   applicantName?: string;
   applicantEmail?: string;
   // Para emails de cumpleaños
-  birthdayToken?: string;
+  birthdayToken?: string; // flujo legado de reclamo manual (/birthday-claim)
   birthdayPoints?: number;
+  profileImage?: string | null; // foto del joven para el avatar de la tarjeta (si no hay, se usan iniciales)
+  birthdayCtaUrl?: string; // enlace del botón "Visitar el sitio" (por defecto /login?placa=...)
   // Para email de bienvenida: enlace al dashboard
   dashboardUrl?: string;
 }

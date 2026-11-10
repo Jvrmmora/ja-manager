@@ -12,6 +12,7 @@ import {
 import logger from '../utils/logger';
 import { uploadToCloudinary } from '../config/cloudinary';
 import { emailService } from './emailService';
+import env from '../config/env';
 import { CURRENT_POLICY_VERSION } from '../config/privacyPolicy';
 import { recordConsent } from './consentService';
 
@@ -327,9 +328,7 @@ export const createRegistrationRequest = async (
   });
 
   // Emails en background (fire-and-forget, no bloquean la respuesta al usuario).
-  const dashboardUrl =
-    process.env.FRONTEND_URL ||
-    'https://yellow-river-04315080f.3.azurestaticapps.net';
+  const dashboardUrl = env.frontendUrl;
   emailService
     .sendEmail({
       toEmail: savedYoung.email!,

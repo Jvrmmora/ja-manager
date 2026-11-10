@@ -1,10 +1,13 @@
-name: Asignación automática de puntos de cumpleaños (grupo 1)
+name: Puntos y tarjeta de cumpleaños (grupo 1)
 
-# Cada día a las 6:05am hora Bogotá asigna automáticamente los puntos de
-# cumpleaños a los jóvenes de grupo 1 que cumplen años hoy, llamando al
-# endpoint interno protegido por CRON_SECRET. El endpoint es idempotente
-# (findOneAndUpdate atómico), así que los reintentos de red son seguros y
-# nunca duplican puntos.
+# Dos veces al día (6:05am y 12:05pm hora Bogotá) asigna los puntos de
+# cumpleaños a los jóvenes de grupo 1 que cumplen años hoy y les envía la
+# tarjeta por correo (Gmail) a quienes tienen email, llamando al endpoint
+# interno protegido por CRON_SECRET. Ambos pasos son idempotentes
+# (findOneAndUpdate atómico sobre birthdayPointsClaimed y
+# birthdayEmailSentAt), así que los reintentos de red y la segunda corrida
+# son seguros: nunca duplican puntos ni correos. La corrida del mediodía
+# solo reenvía las tarjetas que fallaron en la mañana.
 #
 # El backend (Azure F1, sin "Always On") puede estar dormido si no recibió
 # tráfico recientemente, y un cold start completo (arrancar Node, reconectar
@@ -17,6 +20,7 @@ name: Asignación automática de puntos de cumpleaños (grupo 1)
 on:
   schedule:
     - cron: '5 11 * * *' # 11:05 UTC = 06:05 hora Bogotá
+    - cron: '5 17 * * *' # 17:05 UTC = 12:05 hora Bogotá (reintento de correos)
   workflow_dispatch:
 
 jobs:
@@ -30,9 +34,9 @@ jobs:
             https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api/health \
             || echo "::warning::No se pudo confirmar que el backend despertó; se intenta la asignación de todas formas"
 
-      - name: Disparar asignación automática de puntos de cumpleaños
+      - name: Asignar puntos y enviar tarjetas de cumpleaños
         run: |
-          curl -fsS --max-time 30 --retry 5 --retry-delay 15 \
+          curl -fsS --max-time 60 --retry 5 --retry-delay 15 \
             -X POST \
             -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
             https://ja-backend-d7ezd3frhscmd6ck.brazilsouth-01.azurewebsites.net/api/birthday/auto-assign

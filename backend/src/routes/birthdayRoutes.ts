@@ -4,6 +4,11 @@ import { birthdayClaimLimiter } from '../middleware/rateLimiter';
 import { requireCronSecret } from '../middleware/cronAuth';
 import { JWTService } from '../services/jwtService';
 import { pointsService } from '../services/pointsService';
+import {
+  sendPendingBirthdayCards,
+  sendBirthdayCardPreview,
+} from '../services/birthdayEmailService';
+import { emailService } from '../services/emailService';
 import Young from '../models/Young';
 import PointsTransaction from '../models/PointsTransaction';
 import logger from '../utils/logger';
@@ -14,25 +19,31 @@ const router = Router();
 /**
  * POST /api/birthday/auto-assign
  * Asigna automáticamente puntos de cumpleaños a los jóvenes de grupo 1
- * que cumplen años hoy. Disparado por un cron externo (GitHub Actions);
- * no requiere JWT de usuario, se autentica vía header x-cron-secret.
+ * que cumplen años hoy y luego les envía la tarjeta por correo (a quienes
+ * tengan email). Disparado por un cron externo (GitHub Actions) dos veces
+ * al día; ambos pasos son idempotentes, así que repetirlo es seguro.
+ * No requiere JWT de usuario, se autentica vía header x-cron-secret.
  */
 router.post(
   '/auto-assign',
   requireCronSecret,
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const result = await pointsService.assignBirthdayPointsForGroupOne();
+      const points = await pointsService.assignBirthdayPointsForGroupOne();
 
       logger.info('Asignación automática de puntos de cumpleaños ejecutada', {
         context: 'BirthdayController',
         method: 'autoAssignBirthdayPoints',
-        ...result,
+        ...points,
       });
+
+      // Los correos van después de los puntos: si fallan, los puntos ya
+      // quedaron cargados y la siguiente corrida reintenta solo el envío.
+      const emails = await sendPendingBirthdayCards();
 
       res.status(200).json({
         success: true,
-        data: result,
+        data: { points, emails },
       });
     } catch (error) {
       logger.error('Error en asignación automática de puntos de cumpleaños', {
@@ -44,6 +55,63 @@ router.post(
       res.status(500).json({
         success: false,
         message: 'Error al asignar puntos de cumpleaños automáticamente',
+        error: error instanceof Error ? error.message : 'Error desconocido',
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/birthday/test-card
+ * Envía la tarjeta de cumpleaños con datos de ejemplo al correo del admin
+ * logueado (o al `toEmail` del body) para validar Gmail y el diseño.
+ */
+router.post(
+  '/test-card',
+  authenticate('email:test'),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const sessionYoungId = req.user?.userId;
+      const admin = sessionYoungId ? await Young.findById(sessionYoungId) : null;
+      const toEmail: string | undefined = req.body?.toEmail || admin?.email || undefined;
+
+      if (!toEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
+        res.status(400).json({
+          success: false,
+          message: 'Indica un correo válido en "toEmail" o registra un email en tu perfil',
+        });
+        return;
+      }
+
+      if (!emailService.isConfigured()) {
+        res.status(503).json({
+          success: false,
+          message: 'El servicio de email no está configurado (GMAIL_USER / GMAIL_APP_PASSWORD)',
+        });
+        return;
+      }
+
+      await sendBirthdayCardPreview(
+        toEmail,
+        admin?.fullName || 'Joven de prueba',
+        admin?.placa || '@MODEJEM001',
+        admin?.profileImage
+      );
+
+      res.status(200).json({
+        success: true,
+        message: `Tarjeta de prueba enviada a ${toEmail}`,
+        data: { toEmail, provider: emailService.getProviderName() },
+      });
+    } catch (error) {
+      logger.error('Error enviando tarjeta de cumpleaños de prueba', {
+        context: 'BirthdayController',
+        method: 'testBirthdayCard',
+        error: error instanceof Error ? error.message : String(error),
+      });
+      res.status(500).json({
+        success: false,
+        message: 'Error al enviar la tarjeta de prueba',
         error: error instanceof Error ? error.message : 'Error desconocido',
       });
     }

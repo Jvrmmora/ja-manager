@@ -56,7 +56,7 @@ Node version is pinned to **20 LTS** across CI, Dockerfiles and `engines`.
 
 ### Boot sequence (`src/index.ts`)
 
-Routes are **not registered until MongoDB is connected**. `initializeApp()` does: `connectDatabase()` → assert `readyState === 1` → `DatabaseSeeder.runAllSeeders()` → `startBirthdayScheduler()` (node-cron) → `setupRoutes()` → `app.listen()`. If the DB fails, the process exits. Every route group is additionally guarded at request time by `ensureDatabaseConnection`.
+Routes are **not registered until MongoDB is connected**. `initializeApp()` does: `connectDatabase()` → assert `readyState === 1` → `DatabaseSeeder.runAllSeeders()` → `setupRoutes()` → `app.listen()`. There is no in-process scheduler: periodic jobs (birthday points + cards, leaderboard snapshot, sheets retry) are GitHub Actions crons hitting `requireCronSecret` endpoints. If the DB fails, the process exits. Every route group is additionally guarded at request time by `ensureDatabaseConnection`.
 
 `app.set('trust proxy', 1)` (behind Azure/nginx). Global middleware order: `helmet` (HSTS/noSniff/frameguard, CSP off — JSON API) → `compression` → CORS (from `CORS_ORIGIN`) → `timeoutHandler(30s)` → HTTP logging → `express.json({limit:'1mb'})` → `contentTypeValidator` → `jsonErrorHandler`. Error tail: `errorLoggingMiddleware` → `notFoundHandler` → `globalErrorHandler`. `SIGTERM`/`SIGINT` trigger graceful shutdown (close HTTP server → close Mongo); `connectDatabase` retries 5× with backoff before the process exits.
 
@@ -101,7 +101,8 @@ The whole app operates in **America/Bogota**. `src/utils/dateUtils.ts` provides 
 ### Other subsystems
 
 - **Landing CMS**: `/api/landing` (public GET, admin write). Models: `LandingContent`, `LandingMedia`, `LandingMeetings`, plus `LandingVisitMetric` / `LandingVisitSummary` for visit analytics. Edited from the `/admin/landing` SPA route.
-- **Email**: `services/emailService.ts` with pluggable providers in `services/emailProviders/` (Azure Communication Email).
+- **Email**: `services/emailService.ts` with pluggable providers in `services/emailProviders/` (Gmail SMTP via nodemailer + App Password; templates in `emailTemplates.ts`). `sendEmail` never throws; `sendEmailOrThrow` does.
+- **Birthday cards**: `services/birthdayEmailService.ts` sends the card (group 1 + email, points already loaded) with an atomic `birthdayEmailSentAt` reservation; triggered from `POST /api/birthday/auto-assign` (GitHub Actions cron, twice a day).
 - **Images**: Cloudinary, uploaded via multer memory storage (`middleware/upload.ts`, `landingUpload.ts`).
 - **Import/export**: `xlsx`-based, `/api/import` (`/template`, `/import`, `/export`).
 - **API docs**: OpenAPI served at `/api/docs` from `src/docs/oas3.yaml` (dev) or `dist/docs/oas3.yaml` (prod). Health check at `/api/health`.

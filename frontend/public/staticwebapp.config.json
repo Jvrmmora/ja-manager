@@ -16,7 +16,8 @@
       "/og-attendance.jpg",
       "/og-ranking.jpg",
       "/og-cumpleanos.jpg",
-      "/og-section-*.jpg"
+      "/og-section-*.jpg",
+      "/email/*"
     ]
   },
   "routes": [
