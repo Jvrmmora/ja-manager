@@ -131,3 +131,19 @@ export const IconAction: React.FC<{
     {children}
   </button>
 );
+
+// Clic en un espacio libre de la tarjeta/fila abre el detalle. Se ignoran los
+// clics sobre controles (botones, enlaces, menú), los que llegan desde un
+// portal (el panel de detalle) y cuando el usuario está seleccionando texto.
+export const openDetailOnBlankClick = (
+  event: React.MouseEvent<HTMLElement>,
+  actions: YoungActions
+): void => {
+  const target = event.target as HTMLElement;
+  if (!event.currentTarget.contains(target)) return;
+  if (target.closest('button, a, input, select, textarea, [role="menu"]')) {
+    return;
+  }
+  if (window.getSelection()?.toString()) return;
+  actions.openDetail();
+};
