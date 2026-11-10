@@ -439,9 +439,9 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
             <div className="pointer-events-none absolute -left-52 -top-[420px] h-[900px] w-[900px] rounded-full bg-[radial-gradient(circle,rgba(242,106,46,.28)_0%,rgba(220,51,64,.1)_40%,rgba(20,11,16,0)_68%)] motion-safe:animate-ember" />
             <div className="pointer-events-none absolute left-1/4 top-1/2 h-[700px] w-[700px] rounded-full bg-[radial-gradient(circle,rgba(138,28,69,.35)_0%,rgba(20,11,16,0)_65%)] motion-safe:animate-ember-slow" />
 
-            <div className="relative grid h-full grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(380px,38%)]">
+            <div className="relative grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_clamp(340px,32vw,640px)]">
               {/* Código */}
-              <div className="flex flex-col items-center overflow-y-auto px-6 py-6 lg:px-14 lg:py-9">
+              <div className="flex min-h-0 min-w-0 flex-col items-center overflow-y-auto px-6 py-[clamp(1rem,3vh,2.25rem)] lg:px-[clamp(2rem,4vw,5rem)]">
                 <div className="flex w-full items-center justify-between">
                   <span className="flex items-center gap-3">
                     <img src={logo} alt="" className="h-11 w-11 object-contain" />
@@ -468,28 +468,28 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
                 <motion.h1
                   initial={{ y: -20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  className="m-0 mt-2 text-center font-display text-5xl font-bold uppercase leading-[0.95] xl:text-[72px]"
+                  className="m-0 mt-2 text-center font-display text-[clamp(2.25rem,min(6vw,9vh),6rem)] font-bold uppercase leading-[0.95]"
                 >
                   Registra tu <span className="text-fire">asistencia</span>
                 </motion.h1>
 
-                <div className="mt-7 flex flex-1 flex-col items-center justify-center gap-9 pb-4 xl:flex-row xl:gap-12">
+                <div className="mt-[clamp(1rem,3vh,2rem)] flex min-h-0 flex-1 flex-col items-center justify-center gap-[clamp(1rem,3vh,2.25rem)] pb-2 xl:flex-row xl:gap-[clamp(2rem,3.5vw,4rem)]">
                   <motion.div
                     initial={{ scale: 0.6, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.2 }}
-                    className="relative rounded-[36px] bg-white p-7 shadow-[0_40px_100px_-30px_rgba(242,106,46,0.6)]"
+                    className="relative shrink-0 rounded-[clamp(1.5rem,3vh,2.25rem)] bg-white p-[clamp(1rem,2.4vh,1.75rem)] shadow-[0_40px_100px_-30px_rgba(242,106,46,0.6)]"
                   >
                     <BrandCorners size="lg" />
                     <span className="pointer-events-none absolute inset-x-7 h-[3px] rounded bg-[linear-gradient(90deg,rgba(249,162,59,0),#F9A23B,rgba(249,162,59,0))] shadow-[0_0_18px_2px_rgba(249,162,59,0.6)] motion-safe:animate-scan-line" />
                     <img
                       src={qrData.qrImage}
                       alt="Código QR de Asistencia"
-                      className="h-72 w-72 rounded-2xl [image-rendering:pixelated] lg:h-[min(46vh,440px)] lg:w-[min(46vh,440px)] xl:h-[min(60vh,600px)] xl:w-[min(60vh,600px)]"
+                      className="h-[min(36vh,70vw)] w-[min(36vh,70vw)] rounded-2xl [image-rendering:pixelated] xl:h-[min(56vh,34vw)] xl:w-[min(56vh,34vw)]"
                     />
                   </motion.div>
 
-                  <div className="flex w-full max-w-[300px] flex-col gap-[18px]">
+                  <div className="flex w-full max-w-[300px] shrink-0 flex-col gap-[clamp(0.75rem,2vh,1.125rem)] xl:w-[clamp(220px,17vw,360px)] xl:max-w-none">
                     {qrCode.speedBonusEnabled && (
                       <LiveBonusDisplay
                         maxBonus={maxBonus}
@@ -512,14 +512,14 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
               </div>
 
               {/* Asistentes en vivo */}
-              <div className="hidden flex-col border-l border-white/10 bg-ink-900/90 lg:flex">
-                <div className="flex items-end justify-between gap-4 border-b border-white/10 px-9 pb-5 pt-8">
+              <div className="hidden min-h-0 min-w-0 flex-col border-l border-white/10 bg-ink-900/90 lg:flex">
+                <div className="flex shrink-0 items-end justify-between gap-4 border-b border-white/10 px-[clamp(1.25rem,2.4vw,2.5rem)] pb-[clamp(0.75rem,2vh,1.25rem)] pt-[clamp(1rem,3vh,2rem)]">
                   <span className="flex flex-col gap-2">
                     <span className="flex items-center gap-2.5 text-[13px] font-bold uppercase tracking-[0.16em] text-emerald-400">
                       <span className="h-[9px] w-[9px] rounded-full bg-emerald-400 motion-safe:animate-glow-green" />
                       En vivo
                     </span>
-                    <span className="font-display text-[32px] font-semibold uppercase leading-none">
+                    <span className="font-display text-[clamp(1.5rem,2.2vw,2.5rem)] font-semibold uppercase leading-none">
                       Asistentes registrados
                     </span>
                   </span>
@@ -527,12 +527,12 @@ const QRGenerator: React.FC<QRGeneratorProps> = ({ onSuccess, onError }) => {
                     key={attendanceCount}
                     initial={{ scale: 1.25 }}
                     animate={{ scale: 1 }}
-                    className="bg-[linear-gradient(135deg,#FDE68A,#F9A23B,#DC3340)] bg-clip-text font-display text-[80px] font-bold leading-[0.85] text-transparent"
+                    className="shrink-0 bg-[linear-gradient(135deg,#FDE68A,#F9A23B,#DC3340)] bg-clip-text font-display text-[clamp(3rem,min(5.5vw,9vh),6rem)] font-bold leading-[0.85] text-transparent"
                   >
                     {attendanceCount}
                   </motion.span>
                 </div>
-                <div className="flex-1 space-y-3 overflow-y-auto px-7 py-5">
+                <div className="min-h-0 flex-1 space-y-2.5 overflow-x-hidden overflow-y-auto overscroll-contain px-[clamp(1rem,2vw,1.75rem)] py-4">
                   <AnimatePresence>
                     {liveAttendances.map((attendance, index) => (
                       <motion.div
