@@ -16,6 +16,8 @@ interface ParticipantHistoryModalProps {
   seasonId?: string | undefined;
   isCurrentUser?: boolean;
   onClose: () => void;
+  /** Sin overlay ni encabezado: para incrustarlo en el panel de detalle */
+  embedded?: boolean;
 }
 
 const TYPE_INFO: Record<
@@ -99,6 +101,7 @@ const ParticipantHistoryModal: React.FC<ParticipantHistoryModalProps> = ({
   seasonId,
   isCurrentUser = false,
   onClose,
+  embedded = false,
 }) => {
   const [history, setHistory] = useState<IPublicPointsHistory | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -117,10 +120,11 @@ const ParticipantHistoryModal: React.FC<ParticipantHistoryModalProps> = ({
   }, [youngId, seasonId]);
 
   useEffect(() => {
+    if (embedded) return; // el panel padre maneja Escape
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, embedded]);
 
   const breakdown = history
     ? (Object.entries(history.byType) as [PublicPointsType, number][])
@@ -138,50 +142,8 @@ const ParticipantHistoryModal: React.FC<ParticipantHistoryModalProps> = ({
     else groups.push({ day, items: [item] });
   });
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-[#0C0609]/80 backdrop-blur-sm sm:items-center sm:p-4"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
-        className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-t-[28px] border border-white/10 bg-ink-950 text-white shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)] sm:rounded-[28px]"
-        onClick={e => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Historial de puntos de ${youngName}`}
-      >
-        <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <AvatarPhoto name={youngName} image={profileImage} className="h-11 w-11 border border-white/10 text-sm" />
-            <div className="min-w-0">
-              <h2 className="m-0 truncate font-display text-xl font-semibold uppercase leading-tight">
-                {youngName}
-                {isCurrentUser && (
-                  <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 align-middle font-sans text-[10px] font-extrabold text-gray-900">
-                    TÚ
-                  </span>
-                )}
-              </h2>
-              <p className="m-0 text-[13px] text-white/55">
-                Historial de puntos{history ? ` · ${history.season.name}` : ''}
-              </p>
-            </div>
-          </div>
-          <button
-            aria-label="Cerrar historial"
-            onClick={onClose}
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:border-white/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5 [scrollbar-color:rgba(255,255,255,0.2)_transparent]">
+  const content = (
+    <>
           {error ? (
             <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm text-red-300">
               {error}
@@ -293,6 +255,60 @@ const ParticipantHistoryModal: React.FC<ParticipantHistoryModalProps> = ({
               </p>
             </>
           )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="space-y-6 rounded-2xl bg-ink-950 p-4 text-white">{content}</div>
+    );
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-[#0C0609]/80 backdrop-blur-sm sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
+        className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-t-[28px] border border-white/10 bg-ink-950 text-white shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)] sm:rounded-[28px]"
+        onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Historial de puntos de ${youngName}`}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <AvatarPhoto name={youngName} image={profileImage} className="h-11 w-11 border border-white/10 text-sm" />
+            <div className="min-w-0">
+              <h2 className="m-0 truncate font-display text-xl font-semibold uppercase leading-tight">
+                {youngName}
+                {isCurrentUser && (
+                  <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 align-middle font-sans text-[10px] font-extrabold text-gray-900">
+                    TÚ
+                  </span>
+                )}
+              </h2>
+              <p className="m-0 text-[13px] text-white/55">
+                Historial de puntos{history ? ` · ${history.season.name}` : ''}
+              </p>
+            </div>
+          </div>
+          <button
+            aria-label="Cerrar historial"
+            onClick={onClose}
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:border-white/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5 [scrollbar-color:rgba(255,255,255,0.2)_transparent]">
+          {content}
         </div>
       </motion.div>
     </div>,
