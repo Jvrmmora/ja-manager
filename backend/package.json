@@ -15,7 +15,8 @@
     "start": "node dist/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:ci": "jest --ci --runInBand",
+    "test:ci": "jest --ci --runInBand && npm run test:tz",
+    "test:tz": "for tz in UTC America/Bogota America/Los_Angeles Asia/Tokyo; do TZ=$tz jest --ci src/utils/dateUtils.test.ts src/models/Young.test.ts || exit 1; done",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix"
   },

@@ -3,6 +3,9 @@ import {
   isSaturdayColombia,
   getStartOfWeekColombia,
   getEndOfWeekColombia,
+  getBirthdayCalendarParts,
+  isBirthdayToday,
+  isWithinBirthdayClaimWindow,
 } from './dateUtils';
 
 describe('dateUtils (zona America/Bogota)', () => {
@@ -34,5 +37,79 @@ describe('dateUtils (zona America/Bogota)', () => {
     expect(diffDays).toBe(6);
     expect(end.getDay()).toBe(6);
     expect(end.getHours()).toBe(23);
+  });
+});
+
+describe('cumpleaños: el día calendario no depende de la zona del servidor', () => {
+  // La zona horaria del proceso la fija quien corre los tests: `npm run test:tz`
+  // repite esta suite con TZ=UTC, America/Bogota, America/Los_Angeles y
+  // Asia/Tokyo (cambiar process.env.TZ desde dentro de Jest no tiene efecto).
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  // Los cumpleaños reales se guardan a las 00:00 UTC (Excel) o a las 05:00 UTC
+  // (formulario, medianoche de Bogotá). Ambos son "10 de noviembre".
+  const GUARDADOS_EL_10_NOV = [
+    '2007-11-10T00:00:00.000Z',
+    '2007-11-10T05:00:00.000Z',
+  ];
+
+  describe('getBirthdayCalendarParts', () => {
+    it('lee el mismo día calendario sea cual sea la zona del servidor', () => {
+      for (const guardado of GUARDADOS_EL_10_NOV) {
+        const esperado = { year: 2007, month: 10, day: 10 }; // noviembre (0-indexed)
+        expect(getBirthdayCalendarParts(guardado)).toEqual(esperado);
+        expect(getBirthdayCalendarParts(new Date(guardado))).toEqual(esperado);
+      }
+    });
+  });
+
+  describe('isBirthdayToday', () => {
+    // [instante simulado en UTC, ¿es hoy el 10 de nov. en Bogotá?]
+    const INSTANTES: Array<[string, boolean, string]> = [
+      ['2026-11-10T17:00:00.000Z', true, 'mediodía del 10 en Bogotá'],
+      ['2026-11-10T05:00:00.000Z', true, 'justo a medianoche del 10 en Bogotá'],
+      ['2026-11-11T04:59:00.000Z', true, '23:59 del 10 en Bogotá'],
+      ['2026-11-10T04:59:00.000Z', false, '23:59 del 9 en Bogotá'],
+      ['2026-11-11T05:00:00.000Z', false, 'medianoche del 11 en Bogotá'],
+    ];
+
+    it.each(INSTANTES)('%s -> %s (%s)', (instante, esHoy) => {
+      jest.useFakeTimers().setSystemTime(new Date(instante));
+      for (const guardado of GUARDADOS_EL_10_NOV) {
+        expect(isBirthdayToday(guardado)).toBe(esHoy);
+      }
+    });
+
+    it('no confunde el día anterior ni el siguiente', () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-11-10T17:00:00.000Z'));
+      expect(isBirthdayToday('2007-11-09T00:00:00.000Z')).toBe(false);
+      expect(isBirthdayToday('2007-11-11T00:00:00.000Z')).toBe(false);
+      expect(isBirthdayToday('2007-11-11T05:00:00.000Z')).toBe(false);
+    });
+  });
+
+  describe('isWithinBirthdayClaimWindow', () => {
+    it('el día del cumpleaños entra a la ventana', () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-11-10T17:00:00.000Z'));
+      for (const guardado of GUARDADOS_EL_10_NOV) {
+        expect(isWithinBirthdayClaimWindow(guardado, null)).toBe(true);
+      }
+    });
+
+    it('el día anterior al cumpleaños todavía no puede reclamar', () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-11-09T17:00:00.000Z'));
+      for (const guardado of GUARDADOS_EL_10_NOV) {
+        expect(isWithinBirthdayClaimWindow(guardado, null)).toBe(false);
+      }
+    });
+
+    it('la ventana dura 10 días después del cumpleaños', () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-11-20T17:00:00.000Z'));
+      expect(isWithinBirthdayClaimWindow('2007-11-10T00:00:00.000Z', null)).toBe(true);
+      jest.setSystemTime(new Date('2026-11-21T17:00:00.000Z'));
+      expect(isWithinBirthdayClaimWindow('2007-11-10T00:00:00.000Z', null)).toBe(false);
+    });
   });
 });
