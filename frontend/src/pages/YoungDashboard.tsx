@@ -310,7 +310,8 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
       <SeasonDataUpdater activeSeason={activeSeason} />
       <div className="brand-skin min-h-screen bg-cream dark:bg-ink-950">
         {/* Header */}
-        <header className="bg-white dark:bg-ink-950 border-b border-sand-200 dark:border-white/10">
+        {/* Siempre oscuro (como la landing): la clase `dark` fuerza las variantes dark: del header */}
+        <header className="dark bg-ink-950 border-b border-white/10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16 lg:h-[72px]">
               <button
@@ -335,7 +336,7 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
               </button>
 
               <div className="flex items-center gap-2 sm:gap-3">
-                <ThemeToggle />
+                <ThemeToggle onDark />
                 <ProfileDropdown
                   onChangePassword={handleOpenChangePassword}
                   onOpenProfile={handleOpenProfile}
