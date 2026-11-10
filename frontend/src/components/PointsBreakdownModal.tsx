@@ -13,8 +13,6 @@ interface PointsBreakdownModalProps {
   onClose: () => void;
   isAdmin?: boolean;
   onAssignPoints?: () => void;
-  /** Sin overlay ni encabezado: para incrustarlo en una pestaña (drawer de detalle) */
-  embedded?: boolean;
 }
 
 type StreakWeek = {
@@ -37,7 +35,6 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
   onClose,
   isAdmin = false,
   onAssignPoints,
-  embedded = false,
 }) => {
   const [breakdown, setBreakdown] = useState<BreakdownWithStreak | null>(null);
   const [transactions, setTransactions] = useState<IPointsTransaction[]>([]);
@@ -176,22 +173,9 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      className={
-        embedded
-          ? ''
-          : 'fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm'
-      }
-    >
-      <div
-        className={
-          embedded
-            ? 'flex flex-col'
-            : 'bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col'
-        }
-      >
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        {!embedded && (
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-4">
             {/* Foto del joven */}
@@ -246,12 +230,9 @@ const PointsBreakdownModal: React.FC<PointsBreakdownModalProps> = ({
             </button>
           </div>
         </div>
-        )}
 
         {/* Content */}
-        <div
-          className={`space-y-6 ${embedded ? '' : 'flex-1 overflow-y-auto p-6'}`}
-        >
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { IYoung } from '../../types';
-import PointsBreakdownModal from '../PointsBreakdownModal';
+import ParticipantHistoryModal from '../ParticipantHistoryModal';
 import { formatBirthdayWithYear } from '../../utils/dateUtils';
+import { getGroupColor } from './useYoungActions';
 import { capitalizeRole, type YoungActions } from './useYoungActions';
 import { YoungAvatar, PlacaChip } from './YoungBits';
 
@@ -32,6 +33,19 @@ const Field: React.FC<{ label: string; children: React.ReactNode }> = ({
 const actionBtn =
   'inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-sand-200 bg-white px-4 text-sm font-semibold text-cocoa-900 transition-colors hover:border-[#F4B58C] hover:text-brand-deep dark:border-white/10 dark:bg-ink-800 dark:text-white dark:hover:text-brand-amber';
 
+const sectionTitle =
+  'm-0 mb-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-brand-deep dark:text-brand-amber';
+const rowCard =
+  'flex items-center gap-3 rounded-2xl border border-sand-200 px-3.5 py-2.5 dark:border-white/10';
+const linkBtn =
+  'flex-shrink-0 rounded-full border border-sand-200 px-3 py-1.5 text-xs font-semibold text-brand-deep transition-colors hover:border-[#F4B58C] dark:border-white/10 dark:text-brand-amber';
+
+// Partes (año, mes, día) de una fecha YYYY-MM-DD sin sufrir corrimiento de zona horaria
+const dateParts = (value: Date | string | undefined) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value ?? ''));
+  return m ? { y: +m[1]!, mo: +m[2]!, d: +m[3]! } : null;
+};
+
 // Panel lateral con todo el detalle de un joven (vista admin).
 const YoungDetailDrawer: React.FC<YoungDetailDrawerProps> = ({
   young,
@@ -55,6 +69,28 @@ const YoungDetailDrawer: React.FC<YoungDetailDrawerProps> = ({
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+
+  const bd = dateParts(young.birthday);
+  const today = new Date();
+  let age: number | null = null;
+  let birthdayHint = '';
+  if (bd) {
+    age = today.getFullYear() - bd.y;
+    const passed =
+      today.getMonth() + 1 > bd.mo ||
+      (today.getMonth() + 1 === bd.mo && today.getDate() >= bd.d);
+    if (!passed) age -= 1;
+    const next = new Date(today.getFullYear(), bd.mo - 1, bd.d);
+    if (!passed) next.setFullYear(today.getFullYear());
+    else if (today.getMonth() + 1 !== bd.mo || today.getDate() !== bd.d)
+      next.setFullYear(today.getFullYear() + 1);
+    const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const days = Math.round((next.getTime() - startToday.getTime()) / 86400000);
+    birthdayHint =
+      days === 0 ? '🎂 ¡Hoy cumple años!' : days <= 30 ? `Cumple en ${days} día${days === 1 ? '' : 's'}` : '';
+  }
+  const phoneDigits = (young.phone || '').replace(/\D/g, '');
+  const whatsappUrl = phoneDigits ? `https://wa.me/${phoneDigits}` : '';
 
   // Cierra el panel y ejecuta la acción (que abre su propio modal)
   const run = (fn: () => void) => () => {
@@ -123,26 +159,100 @@ const YoungDetailDrawer: React.FC<YoungDetailDrawerProps> = ({
         <div className="flex-1 overflow-y-auto p-5">
           {tab === 'resumen' ? (
             <div className="space-y-6">
-              <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-4">
-                <Field label="Teléfono">{young.phone}</Field>
-                <Field label="Email">{young.email}</Field>
-                <Field label="Cumpleaños">
-                  {young.birthday ? formatBirthdayWithYear(young.birthday) : ''}
-                </Field>
-                <Field label="Rango de edad">
-                  {young.ageRange ? `${young.ageRange} años` : ''}
-                </Field>
-                <Field label="Género">
-                  {young.gender
-                    ? young.gender.charAt(0).toUpperCase() + young.gender.slice(1)
-                    : ''}
-                </Field>
-                <Field label="Puntos (temporada)">★ {young.totalPoints ?? 0}</Field>
-              </dl>
-              <div>
-                <p className="m-0 mb-2 text-[11px] font-semibold uppercase tracking-wide text-cocoa-400 dark:text-white/45">
-                  Habilidades
-                </p>
+              {/* Datos clave */}
+              <div className="grid grid-cols-3 gap-2.5">
+                <div className="rounded-2xl border border-sand-200 bg-sand-50 p-3 text-center dark:border-white/10 dark:bg-white/[0.05]">
+                  <div className="font-display text-3xl font-bold leading-none text-brand-ember dark:text-brand-amber">
+                    {young.totalPoints ?? 0}
+                  </div>
+                  <div className="mt-1 text-[11px] text-cocoa-500 dark:text-white/55">puntos</div>
+                </div>
+                <div className="rounded-2xl border border-sand-200 bg-sand-50 p-3 text-center dark:border-white/10 dark:bg-white/[0.05]">
+                  <div className="font-display text-3xl font-bold leading-none text-cocoa-900 dark:text-white">
+                    {age ?? '—'}
+                  </div>
+                  <div className="mt-1 text-[11px] text-cocoa-500 dark:text-white/55">
+                    años{young.ageRange ? ` · ${young.ageRange}` : ''}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-sand-200 bg-sand-50 p-3 text-center dark:border-white/10 dark:bg-white/[0.05]">
+                  <div className="flex items-center justify-center gap-1.5 font-display text-3xl font-bold leading-none text-cocoa-900 dark:text-white">
+                    {young.group ? (
+                      <>
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: getGroupColor(young.group) }}
+                        />
+                        {young.group}
+                      </>
+                    ) : (
+                      '—'
+                    )}
+                  </div>
+                  <div className="mt-1 text-[11px] text-cocoa-500 dark:text-white/55">grupo</div>
+                </div>
+              </div>
+
+              {/* Contacto */}
+              <section>
+                <h3 className={sectionTitle}>Contacto</h3>
+                <div className="space-y-2">
+                  <div className={rowCard}>
+                    <div className="min-w-0 flex-1">
+                      <p className="m-0 text-[11px] text-cocoa-400 dark:text-white/45">Teléfono</p>
+                      <p className="m-0 truncate text-sm font-medium text-cocoa-900 dark:text-white">
+                        {young.phone || '—'}
+                      </p>
+                    </div>
+                    {whatsappUrl && (
+                      <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className={linkBtn}>
+                        WhatsApp
+                      </a>
+                    )}
+                  </div>
+                  <div className={rowCard}>
+                    <div className="min-w-0 flex-1">
+                      <p className="m-0 text-[11px] text-cocoa-400 dark:text-white/45">Email</p>
+                      <p className="m-0 truncate text-sm font-medium text-cocoa-900 dark:text-white">
+                        {young.email || '—'}
+                      </p>
+                    </div>
+                    {young.email && (
+                      <a href={`mailto:${young.email}`} className={linkBtn}>
+                        Escribir
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* Datos personales */}
+              <section>
+                <h3 className={sectionTitle}>Datos personales</h3>
+                <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-4 rounded-2xl border border-sand-200 p-4 dark:border-white/10">
+                  <Field label="Cumpleaños">
+                    {young.birthday ? formatBirthdayWithYear(young.birthday) : ''}
+                    {birthdayHint && (
+                      <span className="mt-0.5 block text-xs font-medium text-brand-deep dark:text-brand-amber">
+                        {birthdayHint}
+                      </span>
+                    )}
+                  </Field>
+                  <Field label="Género">
+                    {young.gender
+                      ? young.gender.charAt(0).toUpperCase() + young.gender.slice(1)
+                      : ''}
+                  </Field>
+                  <Field label="Rol">{capitalizeRole(young.role)}</Field>
+                  <Field label="En el grupo desde">
+                    {young.createdAt ? formatBirthdayWithYear(young.createdAt) : ''}
+                  </Field>
+                </dl>
+              </section>
+
+              {/* Habilidades */}
+              <section>
+                <h3 className={sectionTitle}>Habilidades</h3>
                 {young.skills?.length ? (
                   <div className="flex flex-wrap gap-2">
                     {young.skills.map(skill => (
@@ -155,18 +265,19 @@ const YoungDetailDrawer: React.FC<YoungDetailDrawerProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <p className="m-0 text-sm text-cocoa-400 dark:text-white/45">—</p>
+                  <p className="m-0 text-sm text-cocoa-400 dark:text-white/45">
+                    Aún no tiene habilidades registradas.
+                  </p>
                 )}
-              </div>
+              </section>
             </div>
           ) : (
-            <PointsBreakdownModal
-              young={young}
-              isOpen
-              embedded
+            <ParticipantHistoryModal
+              youngId={young.id || ''}
+              youngName={young.fullName}
+              profileImage={young.profileImage}
               onClose={onClose}
-              isAdmin={actions.isAdmin}
-              onAssignPoints={() => actions.openAssignPoints()}
+              embedded
             />
           )}
         </div>
