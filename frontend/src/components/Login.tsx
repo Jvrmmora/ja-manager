@@ -5,6 +5,7 @@ import ThemeToggle from './ThemeToggle';
 import DynamicCredentialInput from './DynamicCredentialInput';
 import { useNavigate } from 'react-router-dom';
 import { safeReturnUrl } from '../utils/loginUrl';
+import { SESSION_EXPIRED_FLAG } from '../services/httpClient';
 
 // Importar la imagen
 import logo from '../assets/logos/logo.png';
@@ -31,7 +32,14 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     password: '',
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => {
+    // Aviso cuando el backend invalidó la sesión (token vencido o inválido)
+    if (sessionStorage.getItem(SESSION_EXPIRED_FLAG)) {
+      sessionStorage.removeItem(SESSION_EXPIRED_FLAG);
+      return 'Tu sesión expiró. Inicia sesión de nuevo.';
+    }
+    return '';
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [isCredentialValid, setIsCredentialValid] = useState(false);
 
