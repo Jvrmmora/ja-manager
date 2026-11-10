@@ -157,6 +157,13 @@ const youngSchema = new Schema<IYoungDocument>(
       required: false,
       default: null,
     },
+    // Fecha del último envío de la tarjeta de cumpleaños por correo
+    // (reserva atómica: evita enviarla dos veces el mismo año)
+    birthdayEmailSentAt: {
+      type: Date,
+      required: false,
+      default: null,
+    },
     // Soft delete: fecha de eliminación
     deletedAt: {
       type: Date,

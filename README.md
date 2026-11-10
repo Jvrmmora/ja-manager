@@ -54,7 +54,7 @@
 
 ## Cómo funciona
 
-Un monorepo con dos paquetes independientes: una SPA React que habla con una API REST de Express sobre MongoDB. Las imágenes van a Cloudinary y el correo sale por Azure Communication Services.
+Un monorepo con dos paquetes independientes: una SPA React que habla con una API REST de Express sobre MongoDB. Las imágenes van a Cloudinary y el correo sale por Gmail (SMTP con contraseña de aplicación).
 
 ```mermaid
 flowchart LR
@@ -62,7 +62,7 @@ flowchart LR
     F -->|"HTTPS JSON + JWT"| B["Backend<br/>Express + TypeScript"]
     B --> M[("MongoDB")]
     B --> C["Cloudinary<br/>imágenes"]
-    B --> E["Azure Email<br/>correo"]
+    B --> E["Gmail SMTP<br/>correo"]
     G["GitHub Actions<br/>cron"] -->|"CRON_SECRET"| B
     B --> S["Scheduler<br/>node-cron"]
 ```
@@ -92,13 +92,13 @@ Todo el negocio de fechas (ventanas de asistencia, cumpleaños, cortes semanales
 
 ## Requisitos
 
-| Qué                                             | Para qué                                | Costo              |
-| ----------------------------------------------- | --------------------------------------- | ------------------ |
-| Node.js 20 LTS y npm                            | Correr backend y frontend               | Gratis             |
-| MongoDB (local, Docker o Atlas)                 | Base de datos                           | Gratis (Atlas M0)  |
-| Cuenta en [Cloudinary](https://cloudinary.com/) | Fotos de perfil y galería de la landing | Gratis (plan free) |
-| Docker + Docker Compose (opcional)              | Levantar todo en contenedores           | Gratis             |
-| Azure Communication Email (opcional)            | Envío de correos                        | De pago por uso    |
+| Qué                                                  | Para qué                                  | Costo              |
+| ---------------------------------------------------- | ----------------------------------------- | ------------------ |
+| Node.js 20 LTS y npm                                 | Correr backend y frontend                 | Gratis             |
+| MongoDB (local, Docker o Atlas)                      | Base de datos                             | Gratis (Atlas M0)  |
+| Cuenta en [Cloudinary](https://cloudinary.com/)      | Fotos de perfil y galería de la landing   | Gratis (plan free) |
+| Docker + Docker Compose (opcional)                   | Levantar todo en contenedores             | Gratis             |
+| Cuenta Gmail con contraseña de aplicación (opcional) | Envío de correos (bienvenida, cumpleaños) | Gratis             |
 
 Cloudinary es obligatorio al arrancar el backend (se valida al iniciar), aunque solo lo uses para subir imágenes. Para una prueba local sin subir fotos sirven valores de relleno (ver [Probarlo en local](#probarlo-en-local)).
 
@@ -106,17 +106,19 @@ Cloudinary es obligatorio al arrancar el backend (se valida al iniciar), aunque 
 
 El backend **valida las variables al arrancar** (`backend/src/config/env.ts`) y se detiene con un mensaje claro si falta alguna obligatoria o si el secreto es débil. Copia `backend/.env.example` a `backend/.env`.
 
-| Variable                                             | ¿Obligatoria? | Descripción / de dónde sale                                                                               |
-| ---------------------------------------------------- | :-----------: | --------------------------------------------------------------------------------------------------------- |
-| `MONGODB_URI`                                        |      Sí       | Cadena de conexión de MongoDB.                                                                            |
-| `JWT_SECRET`                                         |      Sí       | Mínimo 32 caracteres aleatorios (ver comando abajo).                                                      |
-| `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET` |      Sí       | Panel de Cloudinary → _Dashboard_ → _API Keys_.                                                           |
-| `PORT`                                               |      No       | Puerto del API. En `.env.example` es `4500`; si no se define, el código usa `5000`.                       |
-| `CORS_ORIGIN`                                        | En producción | Orígenes permitidos separados por coma.                                                                   |
-| `TOKEN_ALGORITHM` / `TOKEN_EXP`                      |      No       | `HS256` y `7d` por defecto.                                                                               |
-| `CRON_SECRET`                                        |      No       | Secreto compartido con los workflows de GitHub Actions; sin él los endpoints cron rechazan toda petición. |
-| `SEED_ADMIN_ENABLED` / `_EMAIL` / `_PASSWORD`        |      No       | Crea el usuario Super Admin inicial solo si `SEED_ADMIN_ENABLED=true` y hay correo y contraseña.          |
-| `LOG_LEVEL` / `DB_DEBUG`                             |      No       | Nivel de log de winston y log de queries de Mongoose.                                                     |
+| Variable                                                | ¿Obligatoria? | Descripción / de dónde sale                                                                               |
+| ------------------------------------------------------- | :-----------: | --------------------------------------------------------------------------------------------------------- |
+| `MONGODB_URI`                                           |      Sí       | Cadena de conexión de MongoDB.                                                                            |
+| `JWT_SECRET`                                            |      Sí       | Mínimo 32 caracteres aleatorios (ver comando abajo).                                                      |
+| `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET`    |      Sí       | Panel de Cloudinary → _Dashboard_ → _API Keys_.                                                           |
+| `PORT`                                                  |      No       | Puerto del API. En `.env.example` es `4500`; si no se define, el código usa `5000`.                       |
+| `CORS_ORIGIN`                                           | En producción | Orígenes permitidos separados por coma.                                                                   |
+| `TOKEN_ALGORITHM` / `TOKEN_EXP`                         |      No       | `HS256` y `7d` por defecto.                                                                               |
+| `CRON_SECRET`                                           |      No       | Secreto compartido con los workflows de GitHub Actions; sin él los endpoints cron rechazan toda petición. |
+| `SEED_ADMIN_ENABLED` / `_EMAIL` / `_PASSWORD`           |      No       | Crea el usuario Super Admin inicial solo si `SEED_ADMIN_ENABLED=true` y hay correo y contraseña.          |
+| `GMAIL_USER` / `GMAIL_APP_PASSWORD` / `EMAIL_FROM_NAME` |      No       | Cuenta Gmail y contraseña de aplicación para enviar correos; sin ellas no se envía nada.                  |
+| `FRONTEND_URL`                                          |      No       | URL pública del frontend para los enlaces de correos y QR (`https://www.jovenesmodelia.com` por defecto). |
+| `LOG_LEVEL` / `DB_DEBUG`                                |      No       | Nivel de log de winston y log de queries de Mongoose.                                                     |
 
 Frontend (`frontend/.env.development`): `VITE_API_URL` (debe terminar en `/api`) y, opcionalmente, `VITE_GA_MEASUREMENT_ID`.
 

@@ -28,6 +28,7 @@ export interface IYoung {
   first_login?: boolean;
   referredBy?: string; // ID del joven que lo refirió
   birthdayPointsClaimed?: Date | null; // Fecha de última reclamación de puntos de cumpleaños
+  birthdayEmailSentAt?: Date | null; // Fecha del último envío de la tarjeta de cumpleaños
   totalPoints?: number; // ✅ Puntos totales (calculado, no persistido)
   deletedAt?: Date | null; // Soft delete: fecha de eliminación
   isSpam?: boolean; // Flag para marcar como spam

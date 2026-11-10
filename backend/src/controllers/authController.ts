@@ -340,14 +340,11 @@ export class AuthController {
       return res.status(503).json({
         success: false,
         message: 'El servicio de email no está configurado',
-        error: 'Azure Communication Services no está configurado correctamente',
+        error: 'Gmail no está configurado correctamente',
         details: {
           configured: false,
-          provider: 'Azure Communication Services',
-          requiredEnvVars: [
-            'AZURE_COMMUNICATION_CONNECTION_STRING',
-            'AZURE_COMMUNICATION_FROM_EMAIL',
-          ],
+          provider: emailService.getProviderName(),
+          requiredEnvVars: ['GMAIL_USER', 'GMAIL_APP_PASSWORD'],
         },
       });
     }
@@ -361,10 +358,10 @@ export class AuthController {
       <h2>Email de Prueba</h2>
       <p>Este es un correo de prueba enviado desde la plataforma Youth Management.</p>
       <p><strong>Enviado por:</strong> ${user.fullName} (${user.username})</p>
-      <p><strong>Fecha:</strong> ${new Date().toLocaleString('es-ES', { timeZone: 'America/Mexico_City' })}</p>
+      <p><strong>Fecha:</strong> ${new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })}</p>
       <hr>
       <p style="color: #666; font-size: 12px;">
-        Si recibiste este email, significa que la configuración de Azure Communication Services está funcionando correctamente.
+        Si recibiste este email, significa que la configuración de Gmail está funcionando correctamente.
       </p>
     `;
 
@@ -397,7 +394,7 @@ export class AuthController {
             fullName: user.fullName,
             username: user.username,
           },
-          provider: 'Azure Communication Services',
+          provider: emailService.getProviderName(),
         },
       });
     } catch (error) {

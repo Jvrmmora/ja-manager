@@ -127,7 +127,7 @@ servidores ubicados fuera de Colombia:
 
 - Alojamiento de la aplicación e infraestructura: Microsoft Azure.
 - Almacenamiento de imágenes: Cloudinary.
-- Envío de correos electrónicos transaccionales: Azure Communication Services.
+- Envío de correos electrónicos transaccionales: Gmail (Google LLC).
 - Analítica de uso del sitio: Google Analytics.
 
 Estos proveedores tratan los datos únicamente siguiendo las instrucciones del

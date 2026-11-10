@@ -67,6 +67,27 @@ const CLOUDINARY_API_SECRET = requireVar(
   process.env.CLOUDINARY_API_SECRET
 );
 
+// Correo (Gmail SMTP con contraseña de aplicación). Opcional: sin estas
+// variables el servicio de email queda apagado y el resto de la app funciona.
+const GMAIL_USER = (process.env.GMAIL_USER || '').trim();
+const GMAIL_APP_PASSWORD = (process.env.GMAIL_APP_PASSWORD || '')
+  // Google muestra la contraseña de aplicación con espacios; se aceptan.
+  .replace(/\s+/g, '');
+if ((GMAIL_USER && !GMAIL_APP_PASSWORD) || (!GMAIL_USER && GMAIL_APP_PASSWORD)) {
+  warnings.push(
+    'GMAIL_USER y GMAIL_APP_PASSWORD deben definirse juntos: el envío de correos queda deshabilitado.'
+  );
+} else if (isProduction && !GMAIL_USER) {
+  warnings.push(
+    'GMAIL_USER/GMAIL_APP_PASSWORD no están definidos: no se enviarán correos (bienvenida, cumpleaños, etc.).'
+  );
+}
+
+// URL pública del frontend: se usa en enlaces de correos y en los QR.
+const FRONTEND_URL = (
+  process.env.FRONTEND_URL || 'https://www.jovenesmodelia.com'
+).replace(/\/+$/, '');
+
 if (isProduction && !CORS_ORIGIN) {
   warnings.push(
     'CORS_ORIGIN no está definido en producción: se usará la lista de orígenes de desarrollo (localhost).'
@@ -104,6 +125,12 @@ export const env = {
     apiSecret: CLOUDINARY_API_SECRET,
   },
   dbDebug: process.env.DB_DEBUG === 'true',
+  frontendUrl: FRONTEND_URL,
+  email: {
+    user: GMAIL_USER,
+    appPassword: GMAIL_USER && GMAIL_APP_PASSWORD ? GMAIL_APP_PASSWORD : '',
+    fromName: process.env.EMAIL_FROM_NAME || 'Jóvenes Modelia',
+  },
   // Secreto compartido para endpoints internos disparados por cron externo
   // (ej. GitHub Actions). Si no está definido, esos endpoints rechazan todo.
   cronSecret: process.env.CRON_SECRET || '',
