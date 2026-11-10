@@ -27,7 +27,7 @@ const RankingModal: React.FC<RankingModalProps> = ({
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.2, 0.7, 0.2, 1] }}
-      className="dark relative h-[94vh] sm:h-auto sm:max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-t-[28px] sm:rounded-[32px] border border-white/10 bg-ink-950 text-white shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)]"
+      className="dark relative h-[94dvh] sm:h-auto sm:max-h-[90dvh] w-full max-w-6xl overflow-y-auto rounded-t-[28px] sm:rounded-[32px] border border-white/10 bg-ink-950 text-white shadow-[0_60px_120px_-40px_rgba(0,0,0,0.8)]"
       onClick={e => e.stopPropagation()}
       role="dialog"
       aria-modal="true"

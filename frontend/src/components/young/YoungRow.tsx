@@ -9,7 +9,12 @@ import {
 } from './useYoungActions';
 import YoungActionModals from './YoungActionModals';
 import YoungActionsMenu from './YoungActionsMenu';
-import { YoungAvatar, PlacaChip, IconAction } from './YoungBits';
+import {
+  YoungAvatar,
+  PlacaChip,
+  IconAction,
+  openDetailOnBlankClick,
+} from './YoungBits';
 import { ICONS } from './icons';
 
 // Columnas de la tabla (se comparten con el encabezado de HomePage)
@@ -30,7 +35,10 @@ const YoungRow: React.FC<YoungRowProps> = ({
   const actions = useYoungActions(young, callbacks);
 
   return (
-    <div className="group flex min-h-[66px] items-center gap-3 border-b border-sand-100 px-3.5 py-2.5 transition-colors last:border-b-0 hover:bg-cream sm:px-5 dark:border-white/5 dark:hover:bg-white/[0.03] md:py-2">
+    <>
+    <div
+      onClick={event => openDetailOnBlankClick(event, actions)}
+      className="group flex min-h-[66px] cursor-pointer items-center gap-3 border-b border-sand-100 px-3.5 py-2.5 transition-colors last:border-b-0 hover:bg-cream sm:px-5 dark:border-white/5 dark:hover:bg-white/[0.03] md:py-2">
       <div className={`flex min-w-0 flex-1 items-center gap-3 ${YOUNG_ROW_GRID}`}>
         {/* Joven */}
         <div className="flex min-w-0 items-center gap-3">
@@ -103,7 +111,8 @@ const YoungRow: React.FC<YoungRowProps> = ({
       <div className="md:hidden">
         <YoungActionsMenu young={young} actions={actions} buttonClassName="h-11 w-11 rounded-xl" />
       </div>
-
+    </div>
+      {/* Fuera de la fila: así los clics dentro de los modales no abren el detalle */}
       <YoungActionModals
         young={young}
         actions={actions}
@@ -111,7 +120,7 @@ const YoungRow: React.FC<YoungRowProps> = ({
         onShowSuccess={callbacks.onShowSuccess}
         onShowError={callbacks.onShowError}
       />
-    </div>
+    </>
   );
 };
 

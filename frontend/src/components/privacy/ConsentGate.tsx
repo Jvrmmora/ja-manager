@@ -95,7 +95,7 @@ export default function ConsentGate() {
 
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-gray-900/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90dvh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center gap-3 mb-4">
             <img src={logo} alt="" className="h-9 w-9 object-contain" />

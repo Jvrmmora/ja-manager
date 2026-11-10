@@ -270,11 +270,11 @@ export default function Navbar({
               {isAuthenticated ? (
                 <button
                   onClick={() => navigate(homePath)}
-                  className="hidden sm:inline-flex items-center gap-2 rounded-full border border-white/20 pl-1.5 pr-3.5 py-1.5 text-sm font-semibold text-white hover:border-white/40 transition-colors"
+                  className="inline-flex h-11 items-center gap-2 rounded-full border border-white/20 pl-1.5 pr-3 sm:pr-3.5 text-sm font-semibold text-white hover:border-white/40 transition-colors"
                   aria-label="Ir a mi panel"
                 >
                   {avatar}
-                  <span className="truncate max-w-[120px]">
+                  <span className="truncate max-w-[72px] sm:max-w-[120px]">
                     {getFirstName(userInfo?.fullName)}
                   </span>
                 </button>
@@ -287,12 +287,14 @@ export default function Navbar({
                 </button>
               )}
 
-              <button
-                onClick={() => navigate('/register')}
-                className="btn-fire h-11 whitespace-nowrap px-5 text-sm"
-              >
-                Únete
-              </button>
+              {!isAuthenticated && (
+                <button
+                  onClick={() => navigate('/register')}
+                  className="btn-fire h-11 whitespace-nowrap px-5 text-sm"
+                >
+                  Únete
+                </button>
+              )}
 
               <button
                 onClick={() => setIsMenuOpen(true)}
@@ -397,15 +399,17 @@ export default function Navbar({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.45 }}
               >
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    navigate('/register');
-                  }}
-                  className="btn-fire h-14 text-base"
-                >
-                  Únete a nosotros
-                </button>
+                {!isAuthenticated && (
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigate('/register');
+                    }}
+                    className="btn-fire h-14 text-base"
+                  >
+                    Únete a nosotros
+                  </button>
+                )}
                 <div className="grid grid-cols-2 gap-2.5">
                   {isAuthenticated ? (
                     <button

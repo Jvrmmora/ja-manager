@@ -645,7 +645,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       <div
         className={`${
           isDark ? 'bg-gray-800' : 'bg-white'
-        } rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto`}
+        } rounded-lg shadow-xl max-w-lg w-full max-h-[90dvh] overflow-y-auto`}
       >
         {/* Header */}
         <div

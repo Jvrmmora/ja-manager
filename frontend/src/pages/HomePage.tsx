@@ -801,7 +801,8 @@ function HomePage() {
       <SeasonDataUpdater activeSeason={activeSeason} />
       <div className="brand-skin min-h-screen bg-cream dark:bg-ink-950">
         {/* Header */}
-        <header className="border-b border-sand-200 bg-white dark:border-white/10 dark:bg-ink-950">
+        {/* Siempre oscuro (como la landing): la clase `dark` fuerza las variantes dark: del header */}
+        <header className="dark border-b border-white/10 bg-ink-950">
           <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:h-[72px] lg:px-8">
             <div className="flex items-center gap-3">
               <button
@@ -848,7 +849,7 @@ function HomePage() {
                 </svg>
                 Landing CMS
               </button>
-              <ThemeToggle />
+              <ThemeToggle onDark />
               <ProfileDropdown onOpenProfile={handleOpenProfile} />
             </div>
           </div>

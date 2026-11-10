@@ -9,7 +9,11 @@ import {
 } from './young/useYoungActions';
 import YoungActionModals from './young/YoungActionModals';
 import YoungActionsMenu from './young/YoungActionsMenu';
-import { YoungAvatar, PlacaChip } from './young/YoungBits';
+import {
+  YoungAvatar,
+  PlacaChip,
+  openDetailOnBlankClick,
+} from './young/YoungBits';
 
 interface YoungCardProps extends YoungActionCallbacks {
   young: IYoung;
@@ -26,7 +30,9 @@ const YoungCard: React.FC<YoungCardProps> = ({
 
   return (
     <>
-    <article className="flex flex-col gap-4 rounded-[20px] border border-sand-200 bg-white p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_48px_-28px_rgba(78,15,58,0.45)] dark:border-white/10 dark:bg-ink-900">
+    <article
+      onClick={event => openDetailOnBlankClick(event, actions)}
+      className="cursor-pointer flex flex-col gap-4 rounded-[20px] border border-sand-200 bg-white p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_48px_-28px_rgba(78,15,58,0.45)] dark:border-white/10 dark:bg-ink-900">
       <div className="flex items-start gap-3.5">
         <YoungAvatar young={young} size={48} onOpenImage={actions.openImage} />
         <div className="min-w-0 flex-1">

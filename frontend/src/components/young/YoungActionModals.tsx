@@ -67,7 +67,7 @@ const YoungActionModals: React.FC<YoungActionModalsProps> = ({
           onClick={() => m.setShowWelcome(false)}
         >
           <div
-            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            className="relative w-full max-w-lg max-h-[90dvh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <button

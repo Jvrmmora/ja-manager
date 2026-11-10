@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { IYoung } from '../../types';
 import ParticipantHistoryModal from '../ParticipantHistoryModal';
@@ -68,6 +68,50 @@ const YoungDetailDrawer: React.FC<YoungDetailDrawerProps> = ({
     return () => document.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
+  // Bloquea el scroll de la página de atrás mientras el panel está abierto
+  useEffect(() => {
+    if (!isOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isOpen]);
+
+  // Arrastrar hacia abajo el asa/encabezado cierra la hoja (solo en móvil,
+  // donde el panel es una hoja inferior)
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setDragY(0);
+      setDragging(false);
+      dragStart.current = null;
+    }
+  }, [isOpen]);
+
+  const onDragStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (window.matchMedia('(min-width: 640px)').matches) return;
+    if ((e.target as HTMLElement).closest('button, a')) return;
+    dragStart.current = e.clientY;
+    setDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onDragMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStart.current === null) return;
+    setDragY(Math.max(0, e.clientY - dragStart.current));
+  };
+  const onDragEnd = () => {
+    if (dragStart.current === null) return;
+    const shouldClose = dragY > 120;
+    dragStart.current = null;
+    setDragging(false);
+    setDragY(0);
+    if (shouldClose) onClose();
+  };
+
   if (!isOpen) return null;
 
   const bd = dateParts(young.birthday);
@@ -99,16 +143,29 @@ const YoungDetailDrawer: React.FC<YoungDetailDrawerProps> = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[55] flex justify-end bg-[#0C0609]/60 backdrop-blur-[2px]" onClick={onClose}>
+    <div className="fixed inset-0 z-[55] flex items-end justify-end bg-[#0C0609]/60 backdrop-blur-[2px] sm:items-stretch" onClick={onClose}>
       <aside
         role="dialog"
         aria-modal="true"
         aria-label={`Detalle de ${young.fullName}`}
         onClick={e => e.stopPropagation()}
-        className="flex h-full w-full max-w-[480px] flex-col bg-white shadow-2xl dark:bg-ink-900"
+        style={{
+          transform: dragY ? `translateY(${dragY}px)` : undefined,
+          transition: dragging ? 'none' : 'transform 200ms ease-out',
+        }}
+        className="flex h-[92dvh] w-full flex-col overflow-hidden rounded-t-[28px] bg-white shadow-2xl sm:h-full sm:max-w-[480px] sm:rounded-none dark:bg-ink-900"
       >
+        {/* Zona de arrastre (móvil): asa + encabezado. Arrastrar hacia abajo cierra la hoja */}
+        <div
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+          className="flex-shrink-0 touch-none sm:touch-auto"
+        >
+        <div className="mx-auto mt-2.5 h-1.5 w-10 cursor-grab rounded-full bg-sand-200 sm:hidden dark:bg-white/20" aria-hidden="true" />
         {/* Encabezado */}
-        <div className="flex items-start gap-4 border-b border-sand-100 p-5 dark:border-white/10">
+        <div className="flex items-start gap-3 border-b border-sand-100 p-4 sm:gap-4 sm:p-5 dark:border-white/10">
           <YoungAvatar young={young} size={64} ring onOpenImage={actions.openImage} />
           <div className="min-w-0 flex-1">
             <h2 className="m-0 truncate text-lg font-bold text-cocoa-900 dark:text-white" title={young.fullName}>
@@ -124,12 +181,13 @@ const YoungDetailDrawer: React.FC<YoungDetailDrawerProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-sand-200 text-cocoa-500 hover:border-[#F4B58C] dark:border-white/10 dark:text-white/70"
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-sand-200 text-cocoa-500 hover:border-[#F4B58C] dark:border-white/10 dark:text-white/70"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
           </button>
+        </div>
         </div>
 
         {/* Pestañas */}
@@ -156,7 +214,7 @@ const YoungDetailDrawer: React.FC<YoungDetailDrawerProps> = ({
         </div>
 
         {/* Contenido */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-5">
           {tab === 'resumen' ? (
             <div className="space-y-6">
               {/* Datos clave */}

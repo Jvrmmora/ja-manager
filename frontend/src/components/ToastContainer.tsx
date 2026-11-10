@@ -15,9 +15,11 @@ const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onRemoveToast }
       {toasts.map((toast, index) => (
         <div
           key={toast.id}
-          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50"
-          style={{ 
-            bottom: `${16 + (index * 70)}px` // Stack toasts vertically
+          // z por encima de cualquier modal, panel o pantalla completa (hasta z-[9999])
+          className="fixed bottom-4 left-1/2 z-[10000] -translate-x-1/2 transform"
+          style={{
+            // Apilados verticalmente, respetando el área segura del móvil
+            bottom: `calc(${16 + index * 70}px + env(safe-area-inset-bottom))`,
           }}
         >
           <Toast

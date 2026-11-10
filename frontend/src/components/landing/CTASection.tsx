@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../../services/auth';
 import { normalizeRichTextHtml } from '../../utils/richText';
 import { normalizeWhatsAppUrl } from '../../utils/whatsapp';
 import logo from '../../assets/logos/logo.png';
@@ -22,6 +23,10 @@ export default function CTASection({
   onOpenContact,
 }: CTASectionProps) {
   const navigate = useNavigate();
+  const userInfo = authService.getUserInfo();
+  const isAuthenticated = authService.isAuthenticated() && !!userInfo;
+  const homePath =
+    userInfo?.role_name === 'Young role' ? '/dashboard' : '/admin';
   const finalWhatsAppUrl = normalizeWhatsAppUrl(whatsappUrl);
 
   return (
@@ -49,10 +54,12 @@ export default function CTASection({
           />
           <div className="relative flex flex-col sm:flex-row flex-wrap gap-3.5 pt-2">
             <button
-              onClick={() => navigate('/register')}
+              onClick={() => navigate(isAuthenticated ? homePath : '/register')}
               className="inline-flex h-14 items-center justify-center gap-2.5 rounded-full bg-white px-8 text-base font-bold text-brand-wine transition-transform duration-300 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40"
             >
-              {secondaryLabel || 'Registrarme Ahora'}
+              {isAuthenticated
+                ? 'Ir a mi panel'
+                : secondaryLabel || 'Registrarme Ahora'}
               <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
