@@ -6,6 +6,7 @@ import {
   updateYoungSchema,
   querySchema,
   resetPasswordSchema,
+  withDerivedAgeRange,
 } from '../utils/validation';
 import { ApiResponse, PaginatedResponse, IYoung } from '../types';
 import { asyncHandler, ValidationError } from '../utils/errorHandler';
@@ -85,9 +86,13 @@ export class YoungController {
   // Crear un nuevo joven
   static createYoung = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
-      const { error, value } = createYoungSchema.validate(req.body);
+      const { error, value } = createYoungSchema.validate(
+        withDerivedAgeRange(req.body)
+      );
       if (error) {
-        throw new ValidationError(error.details[0].message);
+        throw new ValidationError(error.details[0].message, {
+          field: String(error.details[0].path[0] ?? ''),
+        });
       }
 
       const savedYoung = await youngService.createYoung(value, req.file);
@@ -105,10 +110,14 @@ export class YoungController {
     async (req: Request, res: Response): Promise<void> => {
       const { id } = req.params;
       const authUser = (req as any).user;
-      const { error, value } = updateYoungSchema.validate(req.body);
+      const { error, value } = updateYoungSchema.validate(
+        withDerivedAgeRange(req.body)
+      );
 
       if (error) {
-        throw new ValidationError(error.details[0].message);
+        throw new ValidationError(error.details[0].message, {
+          field: String(error.details[0].path[0] ?? ''),
+        });
       }
 
       logger.info('Actualizando joven', {

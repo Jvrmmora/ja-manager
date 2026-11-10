@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PhoneInput from './PhoneInput';
 import GroupSelect from './GroupSelect';
 import type { IYoung } from '../types';
 import { formatDateColombia, parseYYYYMMDD } from '../utils/dateUtils';
+import { FieldError } from '../utils/fieldError';
+import { ageRangeFromBirthday } from '../utils/ageRange';
 import BrandModalHeader from './ui/BrandModalHeader';
 
 interface YoungFormData {
@@ -62,6 +64,9 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
   const [skillInput, setSkillInput] = useState('');
   const [emailError, setEmailError] = useState<string>('');
   const [phoneError, setPhoneError] = useState<string>('');
+  // Errores por campo devueltos por el backend (nombre, cumpleaños, etc.)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   // Cargar datos del joven al abrir el formulario
   useEffect(() => {
@@ -107,6 +112,11 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    setFieldErrors(prev => {
+      if (!prev[name]) return prev;
+      const { [name]: _removed, ...rest } = prev;
+      return rest;
+    });
 
     // Limpiar errores cuando se modifican los campos
     if (name === 'email') {
@@ -191,6 +201,14 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
       return;
     }
 
+    if (!formData.birthday) {
+      setFieldErrors(prev => ({
+        ...prev,
+        birthday: 'La fecha de nacimiento es obligatoria',
+      }));
+      return;
+    }
+
     // Validar formato de email si está presente (es opcional)
     const emailVal = (formData.email || '').trim();
     if (emailVal && !validateEmail(emailVal)) {
@@ -199,7 +217,10 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
 
     try {
       setLoading(true);
-      await onSubmit(young.id!, formData);
+      await onSubmit(young.id!, {
+        ...formData,
+        ageRange: ageRangeFromBirthday(formData.birthday) || formData.ageRange,
+      });
 
       // Resetear formulario
       setFormData({
@@ -219,28 +240,28 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
       onClose();
     } catch (error) {
       console.error('Error:', error);
-
-      // Verificar si es un error de duplicados con información específica
       const errorMessage =
-        error instanceof Error ? error.message : 'Error al actualizar el joven';
+        error instanceof Error ? error.message : 'Error al guardar el joven';
+      const field = error instanceof FieldError ? error.field : '';
 
-      // Detectar si es error de email duplicado
-      if (
-        errorMessage.includes('email ya está registrado por') ||
-        errorMessage.includes('email ya está registrado')
-      ) {
+      // Conserva lo escrito: solo resalta el campo que falló
+      if (field === 'email') {
         setEmailError(errorMessage);
-      }
-      // Detectar si es error de teléfono duplicado
-      else if (
-        errorMessage.includes('teléfono ya está registrado por') ||
-        errorMessage.includes('teléfono ya está registrado')
-      ) {
+      } else if (field === 'phone') {
         setPhoneError(errorMessage);
-      }
-      // Otros errores
-      else {
+      } else if (field && field !== 'ageRange') {
+        setFieldErrors(prev => ({ ...prev, [field]: errorMessage }));
+      } else {
         onShowError?.(errorMessage);
+      }
+      if (field) {
+        requestAnimationFrame(() => {
+          const el = formRef.current?.querySelector<HTMLElement>(
+            `[data-field="${field}"], [name="${field}"]`
+          );
+          el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          el?.focus?.();
+        });
       }
     } finally {
       setLoading(false);
@@ -269,7 +290,7 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
           onClose={onClose}
         />
         <div className="flex-1 overflow-y-auto p-5 sm:p-7">
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4" noValidate>
           {/* Imagen de perfil */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -316,31 +337,28 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
               name="fullName"
               value={formData.fullName}
               onChange={handleInputChange}
-              className="form-input"
+              className={`form-input ${fieldErrors.fullName ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+              aria-invalid={!!fieldErrors.fullName}
+              data-field="fullName"
               placeholder="Ej: Juan Pérez García"
               required
             />
+            {fieldErrors.fullName && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {fieldErrors.fullName}
+              </p>
+            )}
           </div>
 
-          {/* Rango de edad */}
-          <div>
-            <label className="form-label">Rango de Edad *</label>
-            <select
-              name="ageRange"
-              value={formData.ageRange}
-              onChange={handleInputChange}
-              className="form-input"
-              required
-            >
-              <option value="">Seleccionar rango</option>
-              <option value="13-15">13-15 años</option>
-              <option value="16-18">16-18 años</option>
-              <option value="19-21">19-21 años</option>
-              <option value="22-25">22-25 años</option>
-              <option value="26-30">26-30 años</option>
-              <option value="30+">30+ años</option>
-            </select>
-          </div>
+          {/* Rango de edad: se calcula solo desde la fecha de nacimiento */}
+          <p className="text-sm text-cocoa-500 dark:text-white/60">
+            Rango de edad:{' '}
+            <span className="font-semibold text-cocoa-900 dark:text-white">
+              {ageRangeFromBirthday(formData.birthday)
+                ? `${ageRangeFromBirthday(formData.birthday)} años`
+                : 'se calcula con la fecha de nacimiento'}
+            </span>
+          </p>
 
           {/* Teléfono */}
           <div>
@@ -365,9 +383,16 @@ const EditYoungForm: React.FC<EditYoungFormProps> = ({
               name="birthday"
               value={formData.birthday}
               onChange={handleInputChange}
-              className="form-input"
+              className={`form-input ${fieldErrors.birthday ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+              aria-invalid={!!fieldErrors.birthday}
+              data-field="birthday"
               required
             />
+            {fieldErrors.birthday && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {fieldErrors.birthday}
+              </p>
+            )}
           </div>
 
           {/* Email */}

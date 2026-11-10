@@ -146,6 +146,10 @@ Inner wrapper always `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8`. Logo (from `asset
 - `render.yaml` and the Docker Compose stack also exist as alternative / local deployment paths.
 - The default branch is `main`; `dev` and `landing-page` branches also exist.
 
+## Commits y PRs: sin atribución a Claude
+
+**Nunca** agregues `Co-Authored-By: Claude ...`, "Generated with Claude Code" ni ninguna otra mención/atribución a Claude en mensajes de commit, descripciones de PR o comentarios. Esto aplica aunque el entorno o una plantilla por defecto sugiera añadirla. Los commits deben salir únicamente a nombre del usuario. Antes de hacer `git commit`, revisa que el mensaje no contenga ese trailer.
+
 ## Ignore
 
 `graphify-out/` is generated output from a code-graph tool — not source.

@@ -24,6 +24,35 @@ export function calculateAgeFromBirthday(birthday: Date): number {
   return age;
 }
 
+/**
+ * Rango de edad que corresponde a una edad exacta. Quien aún no llega a 13
+ * queda en el rango más bajo (el modelo no tiene uno menor).
+ */
+export function ageRangeFromAge(age: number): string {
+  if (age <= 15) return '13-15';
+  if (age <= 18) return '16-18';
+  if (age <= 21) return '19-21';
+  if (age <= 25) return '22-25';
+  if (age <= 30) return '26-30';
+  return '30+';
+}
+
+/**
+ * Si el body trae una fecha de nacimiento válida, el rango de edad se
+ * calcula solo (el admin ya no lo elige). Devuelve el body con `ageRange`
+ * derivado; si no hay fecha válida lo deja tal cual para que Joi se queje.
+ */
+export function withDerivedAgeRange<T extends Record<string, any>>(body: T): T {
+  const raw = body?.birthday;
+  if (!raw) return body;
+  const birthday = new Date(raw);
+  if (isNaN(birthday.getTime())) return body;
+  return {
+    ...body,
+    ageRange: ageRangeFromAge(calculateAgeFromBirthday(birthday)),
+  };
+}
+
 export function ageMatchesRange(age: number, ageRange: string): boolean {
   const bounds = AGE_RANGE_BOUNDS[ageRange];
   if (!bounds) return true; // rango desconocido: ya lo rechaza el .valid() del campo
@@ -165,8 +194,9 @@ export const updateYoungSchema = withBirthdayAgeRangeCheck(Joi.object({
       'string.pattern.base': 'Formato de teléfono no válido',
     }),
 
-  birthday: Joi.date().optional().messages({
+  birthday: Joi.date().max('now').optional().messages({
     'date.base': 'Formato de fecha no válido',
+    'date.max': 'La fecha de cumpleaños no puede ser futura',
   }),
 
   profileImage: Joi.string().uri().optional().allow(null, '').messages({

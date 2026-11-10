@@ -82,6 +82,9 @@ const YoungRow: React.FC<YoungRowProps> = ({
         </span>
         {/* Acciones */}
         <span className="hidden items-center justify-end gap-1.5 opacity-70 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 md:flex">
+          <IconAction label="Ver detalles" onClick={actions.openDetail}>
+            {ICONS.eye}
+          </IconAction>
           {young.placa && (
             <IconAction label="Tarjeta de bienvenida" onClick={actions.openWelcome}>
               {ICONS.image}

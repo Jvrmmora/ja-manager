@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import YoungForm from '../components/YoungForm';
 import EditYoungForm from '../components/EditYoungForm';
+import { errorFromResponse } from '../utils/fieldError';
 import YoungCard from '../components/YoungCard';
 import FilterBar from '../components/FilterBar';
 import BirthdayDashboard from '../components/BirthdayDashboard';
@@ -505,44 +506,7 @@ function HomePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-
-        // Manejo específico para errores de duplicación con información detallada
-        if (
-          response.status === 409 &&
-          errorData.error?.details?.field === 'email'
-        ) {
-          const existingOwner = errorData.error?.details?.existingOwner;
-          const message = existingOwner
-            ? `Este email ya está registrado por ${existingOwner}. Por favor, usa un email diferente.`
-            : 'Este email ya está registrado por otro usuario. Por favor, usa un email diferente.';
-          throw new Error(message);
-        }
-        if (
-          response.status === 409 &&
-          errorData.error?.details?.field === 'phone'
-        ) {
-          const existingOwner = errorData.error?.details?.existingOwner;
-          const message = existingOwner
-            ? `Este teléfono ya está registrado por ${existingOwner}. Por favor, usa un teléfono diferente.`
-            : 'Este teléfono ya está registrado por otro usuario. Por favor, usa un teléfono diferente.';
-          throw new Error(message);
-        }
-        if (
-          response.status === 409 &&
-          errorData.error?.details?.field === 'placa'
-        ) {
-          const existingOwner = errorData.error?.details?.existingOwner;
-          const message = existingOwner
-            ? `Esta placa ya está registrada por ${existingOwner}.`
-            : 'Esta placa ya está registrada por otro usuario.';
-          throw new Error(message);
-        }
-
-        throw new Error(
-          errorData.error?.message ||
-            errorData.message ||
-            'Error al guardar el joven'
-        );
+        throw errorFromResponse(response.status, errorData, 'Error al guardar el joven');
       }
 
       await response.json();
@@ -555,11 +519,8 @@ function HomePage() {
       showSuccess('¡Joven registrado exitosamente!');
     } catch (err) {
       console.error('❌ Error al crear joven:', err);
-      showError(
-        err instanceof Error
-          ? err.message
-          : 'Error desconocido al crear el joven'
-      );
+      // El formulario muestra el error en su campo y conserva lo escrito
+      throw err;
     }
   };
 
@@ -594,44 +555,7 @@ function HomePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-
-        // Manejo específico para errores de duplicación con información detallada
-        if (
-          response.status === 409 &&
-          errorData.error?.details?.field === 'email'
-        ) {
-          const existingOwner = errorData.error?.details?.existingOwner;
-          const message = existingOwner
-            ? `Este email ya está registrado por ${existingOwner}. Por favor, usa un email diferente.`
-            : 'Este email ya está registrado por otro usuario. Por favor, usa un email diferente.';
-          throw new Error(message);
-        }
-        if (
-          response.status === 409 &&
-          errorData.error?.details?.field === 'phone'
-        ) {
-          const existingOwner = errorData.error?.details?.existingOwner;
-          const message = existingOwner
-            ? `Este teléfono ya está registrado por ${existingOwner}. Por favor, usa un teléfono diferente.`
-            : 'Este teléfono ya está registrado por otro usuario. Por favor, usa un teléfono diferente.';
-          throw new Error(message);
-        }
-        if (
-          response.status === 409 &&
-          errorData.error?.details?.field === 'placa'
-        ) {
-          const existingOwner = errorData.error?.details?.existingOwner;
-          const message = existingOwner
-            ? `Esta placa ya está registrada por ${existingOwner}.`
-            : 'Esta placa ya está registrada por otro usuario.';
-          throw new Error(message);
-        }
-
-        throw new Error(
-          errorData.error?.message ||
-            errorData.message ||
-            'Error al actualizar el joven'
-        );
+        throw errorFromResponse(response.status, errorData, 'Error al actualizar el joven');
       }
 
       await response.json();
@@ -645,11 +569,8 @@ function HomePage() {
       showSuccess('¡Joven actualizado exitosamente!');
     } catch (err) {
       console.error('❌ Error al actualizar joven:', err);
-      showError(
-        err instanceof Error
-          ? err.message
-          : 'Error desconocido al actualizar el joven'
-      );
+      // El formulario muestra el error en su campo y conserva lo escrito
+      throw err;
     }
   };
 
