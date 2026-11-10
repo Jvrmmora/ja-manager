@@ -74,7 +74,9 @@ router.post(
       // Verificar token de cumpleaños
       const tokenData = JWTService.verifyBirthdayToken(birthdayToken);
       if (!tokenData) {
-        res.status(401).json({
+        // 400 y no 401: la sesión es válida, solo el token de cumpleaños no
+        // (un 401 haría que el frontend cierre la sesión del usuario).
+        res.status(400).json({
           success: false,
           message: 'Token de cumpleaños inválido o expirado',
         });

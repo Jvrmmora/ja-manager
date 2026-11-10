@@ -91,7 +91,9 @@ export const authenticateToken = async (
 
     const decoded = JWTService.verifyToken(token);
     if (!decoded) {
-      return res.status(403).json({
+      // 401: la sesión ya no es válida (el frontend la cierra). 403 queda
+      // reservado para "autenticado pero sin permisos".
+      return res.status(401).json({
         success: false,
         error: 'Token inválido',
         message: 'El token proporcionado no es válido o ha expirado',
@@ -101,7 +103,7 @@ export const authenticateToken = async (
     // Obtener el rol del usuario
     const role = await Role.findById(decoded.role_id);
     if (!role) {
-      return res.status(403).json({
+      return res.status(401).json({
         success: false,
         error: 'Rol no encontrado',
         message: 'El rol del usuario no existe en el sistema',

@@ -6,7 +6,8 @@ jest.mock('../services/jwtService', () => ({
 import { Request, Response } from 'express';
 import Role from '../models/Role';
 import { JWTService } from '../services/jwtService';
-import { optionalAuth } from './auth';
+import mongoose from 'mongoose';
+import { authenticateToken, optionalAuth, requireScope } from './auth';
 
 const mockedRole = Role as jest.Mocked<typeof Role>;
 const mockedVerify = JWTService.verifyToken as jest.Mock;
@@ -54,5 +55,48 @@ describe('optionalAuth', () => {
     await optionalAuth(req, {} as Response, next);
     expect(next).toHaveBeenCalled();
     expect(req.user).toBeUndefined();
+  });
+});
+
+describe('authenticateToken: 401 sesión muerta, 403 solo sin permisos', () => {
+  const makeRes = () => {
+    const res: any = {};
+    res.status = jest.fn().mockReturnValue(res);
+    res.json = jest.fn().mockReturnValue(res);
+    return res as Response & { status: jest.Mock; json: jest.Mock };
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (mongoose.connection as any).readyState = 1;
+  });
+
+  it('token inválido o vencido responde 401', async () => {
+    mockedVerify.mockReturnValue(null);
+    const res = makeRes();
+    const next = jest.fn();
+    await authenticateToken(makeReq('Bearer viejo'), res, next);
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('rol inexistente responde 401', async () => {
+    mockedVerify.mockReturnValue({ userId: 'y1', role_id: 'r1' });
+    mockedRole.findById.mockResolvedValue(null as any);
+    const res = makeRes();
+    await authenticateToken(makeReq('Bearer bueno'), res, jest.fn());
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('sesión válida pero sin scope responde 403 (no cierra sesión)', () => {
+    const req = {
+      user: { userId: 'y1' },
+      userRole: { scopes: ['young:read'] },
+    } as unknown as Request;
+    const res = makeRes();
+    const next = jest.fn();
+    requireScope('young:update')(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).not.toHaveBeenCalled();
   });
 });

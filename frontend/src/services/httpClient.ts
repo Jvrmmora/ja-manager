@@ -33,6 +33,31 @@ export const buildApiUrl = (endpoint: string): string => {
   return `${API_BASE_URL}/${cleanEndpoint}`;
 };
 
+// Endpoints donde un 401 no significa "sesión vencida": en login es
+// credencial incorrecta y en logout el token ya puede estar vencido.
+const SESSION_EXEMPT_ENDPOINTS = ['auth/login', 'auth/logout'];
+
+export const SESSION_EXPIRED_FLAG = 'sessionExpired';
+
+// El backend responde 401 cuando el token es inválido/vencido o su rol ya no
+// existe (403 es solo "sin permisos"). En ese caso la sesión local está muerta:
+// se limpia y se avisa a la app para que redirija a /login.
+const handleSessionExpired = (
+  endpoint: string,
+  response: Response,
+  tokenSent: string | null
+): void => {
+  if (response.status !== 401 || !tokenSent) return;
+  const path = endpoint.replace(/^\//, '').split('?')[0];
+  if (SESSION_EXEMPT_ENDPOINTS.includes(path)) return;
+  // Si ya cambió el token (otra petición limpió o hubo un login nuevo), ignorar.
+  if (getAuthToken() !== tokenSent) return;
+
+  removeAuthToken();
+  sessionStorage.setItem(SESSION_EXPIRED_FLAG, '1');
+  window.dispatchEvent(new Event('userInfoUpdated'));
+};
+
 // Función helper para hacer fetch con la URL base configurada
 export const apiRequest = async (
   endpoint: string,
@@ -53,10 +78,12 @@ export const apiRequest = async (
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  return fetch(url, {
+  const response = await fetch(url, {
     ...options,
     headers,
   });
+  handleSessionExpired(endpoint, response, token);
+  return response;
 };
 
 // Función helper para hacer fetch con archivos (multipart/form-data)
@@ -79,12 +106,14 @@ export const apiUpload = async (
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  return fetch(url, {
+  const response = await fetch(url, {
     method: 'POST',
     headers,
     body: formData,
     ...options,
   });
+  handleSessionExpired(endpoint, response, token);
+  return response;
 };
 
 // Función para debug - verificar estado de autenticación (solo en desarrollo,
