@@ -49,6 +49,11 @@ describe('emailTemplates: tarjeta de cumpleaños', () => {
     }
   });
 
+  it('si el confeti no carga, el hueco no crece más que la franja', () => {
+    const html = buildHtml(params);
+    expect(html).toMatch(/birthday-confetti\.png"[^>]*height="110"[^>]*max-height:110px/);
+  });
+
   it('saluda solo con el primer nombre', () => {
     const html = buildHtml({ ...params, toName: 'Valentina Pérez' });
     expect(html).toContain('>Valentina</p>');

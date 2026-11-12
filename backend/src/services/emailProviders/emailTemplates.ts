@@ -152,10 +152,10 @@ const generateBirthdayTemplate = (params: EmailParams): string => {
       <td align="center" style="padding:24px 12px;">
         <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%; max-width:600px; font-family:Arial, Helvetica, sans-serif; color:#140B10;">
 
-          <!-- Confeti y globos (PNG transparente) -->
+          <!-- Confeti y globos (PNG transparente). max-height: si la imagen no carga, el hueco no pasa de 110px -->
           <tr>
             <td align="center" style="padding:0; font-size:0; line-height:0;">
-              <img src="${confettiUrl}" width="600" alt="" style="display:block; width:100%; max-width:600px; height:auto; border:0;">
+              <img src="${confettiUrl}" width="600" height="110" alt="" style="display:block; width:100%; max-width:600px; height:auto; max-height:110px; border:0;">
             </td>
           </tr>
 
