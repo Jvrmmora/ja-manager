@@ -298,6 +298,41 @@ export const isSaturdayColombia = (date: Date | string): boolean => {
 };
 
 /**
+ * Día calendario de un cumpleaños: año, mes (0-11) y día, leídos en UTC.
+ *
+ * Los cumpleaños se guardan como una fecha sin hora: unos a las 00:00 UTC
+ * (importación de Excel) y otros a las 05:00 UTC (medianoche de Bogotá, desde
+ * el formulario). En ambos casos los componentes UTC dan el día correcto, y
+ * es la misma lectura que hace el frontend (la parte YYYY-MM-DD del ISO).
+ * No usar getMonth()/getDate() ni formatear en America/Bogota: los primeros
+ * leen la zona del servidor y lo segundo corre un día atrás las fechas
+ * guardadas a las 00:00 UTC.
+ */
+export const getBirthdayCalendarParts = (
+  birthday: Date | string
+): { year: number; month: number; day: number } => {
+  const birthDate = typeof birthday === 'string' ? new Date(birthday) : birthday;
+  return {
+    year: birthDate.getUTCFullYear(),
+    month: birthDate.getUTCMonth(),
+    day: birthDate.getUTCDate(),
+  };
+};
+
+/**
+ * ¿El cumpleaños cae hoy (día de Colombia)? Independiente de la zona horaria
+ * del servidor: `now` ya viene en hora de Colombia y el cumpleaños se lee como
+ * día calendario.
+ */
+export const isBirthdayToday = (
+  birthday: Date | string,
+  now: Date = getCurrentDateTimeColombia()
+): boolean => {
+  const { month, day } = getBirthdayCalendarParts(birthday);
+  return now.getMonth() === month && now.getDate() === day;
+};
+
+/**
  * Valida si el joven está dentro de la ventana de reclamación de puntos de cumpleaños
  * Reglas:
  * - Solo pueden reclamar en su día de cumpleaños o después
@@ -310,26 +345,8 @@ export const isWithinBirthdayClaimWindow = (
   claimedDate?: Date | string | null
 ): boolean => {
   const today = getCurrentDateTimeColombia();
-  const birthDate =
-    typeof birthday === 'string' ? new Date(birthday) : birthday;
-
-  // Extraer mes y día del cumpleaños en la zona horaria de Colombia. No usar
-  // birthDate.getMonth()/getDate() directamente: esos leen la hora local del
-  // proceso (UTC en CI, America/Bogota en Docker), y para una fecha guardada
-  // como medianoche UTC eso puede leer el día anterior o siguiente según
-  // dónde corra el proceso, haciendo la validación no determinista.
-  const birthFormatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: COLOMBIA_TIMEZONE,
-    month: '2-digit',
-    day: '2-digit',
-  });
-  const birthParts = birthFormatter.formatToParts(birthDate);
-  const birthMonth =
-    parseInt(birthParts.find(part => part.type === 'month')?.value || '0') -
-    1;
-  const birthDay = parseInt(
-    birthParts.find(part => part.type === 'day')?.value || '0'
-  );
+  // Día calendario del cumpleaños (ver getBirthdayCalendarParts).
+  const { month: birthMonth, day: birthDay } = getBirthdayCalendarParts(birthday);
 
   // Extraer mes, día y año actual
   const currentMonth = today.getMonth();

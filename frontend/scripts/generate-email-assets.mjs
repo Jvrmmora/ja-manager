@@ -1,9 +1,13 @@
 // Genera las imágenes que usan los correos transaccionales del backend.
 // Gmail y la mayoría de clientes de correo no muestran SVG, así que la
-// decoración (degradado + confeti + globos) se hornea en un JPG que el
-// backend referencia como fondo de la cabecera de la tarjeta de cumpleaños.
+// decoración (confeti y globos) se exporta a un PNG.
 //
-// Uso: npm run gen:email  (escribe public/email/birthday-header.jpg)
+// Es un PNG TRANSPARENTE y sin colores claros: el correo de cumpleaños no
+// define ningún fondo, porque en el modo oscuro de la app de Gmail los colores
+// sólidos se invierten (un fondo vino se volvía rosado). Así la franja se ve
+// igual sobre el blanco del modo claro y sobre el gris del modo oscuro.
+//
+// Uso: npm run gen:email  (escribe public/email/birthday-confetti.png)
 import sharp from 'sharp';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -12,27 +16,27 @@ import path from 'node:path';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.resolve(here, '../public/email');
 
-// Lienzo lógico de 600x340 (ancho del correo); se exporta a 2x para pantallas retina.
+// Lienzo lógico de 600x110 (ancho del correo); se exporta a 2x para pantallas retina.
 const W = 600;
-const H = 340;
+const H = 110;
 const SCALE = 2;
 
+// Gris cálido de la cuerda de los globos: se distingue en blanco y en oscuro.
+const STRING = '#9A8E92';
+
 const confetti = [
-  ['rect', 46, 38, 14, 6, '#F9A23B', 25],
-  ['rect', 120, 92, 12, 5, '#FFE4C7', -30],
-  ['circle', 84, 176, 5, '#F26A2E'],
-  ['rect', 30, 236, 14, 6, '#FFE4C7', 60],
-  ['circle', 168, 40, 4, '#FFE4C7'],
-  ['rect', 214, 70, 12, 5, '#F9A23B', -50],
-  ['circle', 260, 22, 5, '#F26A2E'],
-  ['rect', 340, 30, 14, 6, '#FFE4C7', 40],
-  ['circle', 396, 84, 4, '#F9A23B'],
-  ['rect', 452, 44, 12, 5, '#F26A2E', -20],
-  ['circle', 520, 110, 5, '#FFE4C7'],
-  ['rect', 560, 170, 14, 6, '#F9A23B', 70],
-  ['circle', 498, 232, 4, '#F26A2E'],
-  ['rect', 548, 260, 12, 5, '#FFE4C7', -40],
-  ['circle', 64, 290, 4, '#F9A23B'],
+  ['rect', 150, 22, 14, 6, '#F9A23B', 25],
+  ['circle', 196, 58, 4, '#DC3340'],
+  ['rect', 238, 86, 12, 5, '#F472B6', -30],
+  ['circle', 272, 24, 5, '#F26A2E'],
+  ['rect', 318, 60, 14, 6, '#F9A23B', 40],
+  ['circle', 354, 26, 4, '#F472B6'],
+  ['rect', 392, 90, 12, 5, '#F26A2E', -45],
+  ['circle', 430, 50, 5, '#F9A23B'],
+  ['rect', 120, 88, 12, 5, '#DC3340', 55],
+  ['circle', 462, 96, 3.5, '#F472B6'],
+  ['rect', 570, 12, 12, 5, '#F26A2E', 60],
+  ['circle', 14, 14, 4, '#F9A23B'],
 ]
   .map(item => {
     if (item[0] === 'circle') {
@@ -46,29 +50,23 @@ const confetti = [
 
 const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${W * SCALE}" height="${H * SCALE}" viewBox="0 0 ${W} ${H}">
-  <defs>
-    <linearGradient id="bg" x1="0.33" y1="0" x2="0.67" y2="1">
-      <stop offset="0" stop-color="#4E0F3A"/>
-      <stop offset="0.6" stop-color="#8A1C45"/>
-      <stop offset="1" stop-color="#B3243B"/>
-    </linearGradient>
-  </defs>
-  <rect width="${W}" height="${H}" fill="url(#bg)"/>
   ${confetti}
-  <line x1="40" y1="140" x2="62" y2="206" stroke="#FFE4C7" stroke-width="1.5"/>
-  <ellipse cx="38" cy="112" rx="24" ry="30" fill="#F9A23B"/>
-  <ellipse cx="30" cy="102" rx="6" ry="9" fill="#FFFFFF" opacity="0.35"/>
-  <line x1="566" y1="120" x2="540" y2="196" stroke="#FFE4C7" stroke-width="1.5"/>
-  <ellipse cx="568" cy="92" rx="22" ry="28" fill="#F26A2E"/>
-  <ellipse cx="560" cy="82" rx="5" ry="8" fill="#FFFFFF" opacity="0.35"/>
-  <line x1="522" y1="150" x2="540" y2="206" stroke="#FFE4C7" stroke-width="1.5"/>
-  <ellipse cx="516" cy="126" rx="18" ry="23" fill="#FFE4C7"/>
+  <line x1="52" y1="62" x2="64" y2="108" stroke="${STRING}" stroke-width="1.5"/>
+  <ellipse cx="50" cy="36" rx="22" ry="28" fill="#F9A23B"/>
+  <ellipse cx="43" cy="27" rx="5" ry="8" fill="#FFFFFF" opacity="0.4"/>
+  <line x1="98" y1="72" x2="90" y2="108" stroke="${STRING}" stroke-width="1.5"/>
+  <ellipse cx="100" cy="52" rx="16" ry="20" fill="#DC3340"/>
+  <line x1="548" y1="62" x2="536" y2="108" stroke="${STRING}" stroke-width="1.5"/>
+  <ellipse cx="550" cy="36" rx="22" ry="28" fill="#F26A2E"/>
+  <ellipse cx="543" cy="27" rx="5" ry="8" fill="#FFFFFF" opacity="0.4"/>
+  <line x1="502" y1="72" x2="510" y2="108" stroke="${STRING}" stroke-width="1.5"/>
+  <ellipse cx="500" cy="52" rx="16" ry="20" fill="#F472B6"/>
 </svg>`;
 
 await mkdir(outDir, { recursive: true });
-const out = path.join(outDir, 'birthday-header.jpg');
+const out = path.join(outDir, 'birthday-confetti.png');
 await sharp(Buffer.from(svg))
-  .jpeg({ quality: 88, mozjpeg: true })
+  .png({ compressionLevel: 9, palette: true })
   .toFile(out);
 
-console.log(`Generado ${path.relative(process.cwd(), out)} (${W * SCALE}x${H * SCALE})`);
+console.log(`Generado ${path.relative(process.cwd(), out)} (${W * SCALE}x${H * SCALE}, transparente)`);

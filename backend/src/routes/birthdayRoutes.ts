@@ -12,7 +12,10 @@ import { emailService } from '../services/emailService';
 import Young from '../models/Young';
 import PointsTransaction from '../models/PointsTransaction';
 import logger from '../utils/logger';
-import { getCurrentDateTimeColombia } from '../utils/dateUtils';
+import {
+  getCurrentDateTimeColombia,
+  getBirthdayCalendarParts,
+} from '../utils/dateUtils';
 
 const router = Router();
 
@@ -289,15 +292,16 @@ router.get(
       // Calcular próximos cumpleaños
       const upcomingBirthdays = allYoung
         .map(young => {
-          const birthDate = new Date(young.birthday!);
-          const nextBirthday = new Date(
-            currentYear,
-            birthDate.getMonth(),
-            birthDate.getDate()
+          const birth = getBirthdayCalendarParts(young.birthday!);
+          const startOfToday = new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            today.getDate()
           );
+          const nextBirthday = new Date(currentYear, birth.month, birth.day);
 
-          // Si ya pasó este año, usar el próximo año
-          if (nextBirthday < today) {
+          // Si ya pasó este año (hoy cuenta como "hoy"), usar el próximo año
+          if (nextBirthday < startOfToday) {
             nextBirthday.setFullYear(currentYear + 1);
           }
 

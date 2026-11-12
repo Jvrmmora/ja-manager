@@ -1,7 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { IYoung } from '../types';
-import { getCurrentDateTimeColombia } from '../utils/dateUtils';
+import {
+  getCurrentDateTimeColombia,
+  getBirthdayCalendarParts,
+  isBirthdayToday,
+} from '../utils/dateUtils';
 import { PLACA_REGEX } from '../utils/placa';
 
 interface IYoungDocument extends Omit<IYoung, 'id' | '_id'>, Document {
@@ -273,14 +277,11 @@ youngSchema.methods.generatePlaca = function (): string {
 // Método para obtener la edad actual usando zona horaria de Colombia
 youngSchema.methods.getCurrentAge = function (): number {
   const today = getCurrentDateTimeColombia();
-  const birthDate = new Date(this.birthday);
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
+  const birth = getBirthdayCalendarParts(this.birthday);
+  let age = today.getFullYear() - birth.year;
+  const monthDiff = today.getMonth() - birth.month;
 
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && today.getDate() < birthDate.getDate())
-  ) {
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.day)) {
     age--;
   }
 
@@ -289,12 +290,7 @@ youngSchema.methods.getCurrentAge = function (): number {
 
 // Método para verificar si es cumpleaños hoy usando zona horaria de Colombia
 youngSchema.methods.isBirthdayToday = function (): boolean {
-  const today = getCurrentDateTimeColombia();
-  const birthDate = new Date(this.birthday);
-  return (
-    today.getMonth() === birthDate.getMonth() &&
-    today.getDate() === birthDate.getDate()
-  );
+  return isBirthdayToday(this.birthday);
 };
 
 // Transform para mapear _id a id en las respuestas JSON
