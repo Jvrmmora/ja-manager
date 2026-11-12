@@ -11,6 +11,7 @@ import type { AdminForm, FormResponseItem, FormStats, RespondentKind } from '../
 import { CONTACT_LABELS } from '../public/ContactInputs';
 import { omitKey } from '../../../utils/forms/omitKey';
 import { cardCls, outlineBtn } from './formStatus';
+import RespondentAvatar from './RespondentAvatar';
 
 const KIND_LABEL: Record<RespondentKind, string> = { session: 'Joven', placa: 'Joven (placa)', guest: 'Invitado' };
 
@@ -29,17 +30,35 @@ interface ResponsesTabProps {
   onNotify: (message: string) => void;
   /** Tarjeta de Google Sheets (fase de integración). */
   sheetsSlot?: React.ReactNode;
+  /** Avisa el total de respuestas (para mostrarlo en la pestaña). */
+  onCountChange?: (total: number) => void;
 }
 
 const StatTile: React.FC<{ label: string; value: React.ReactNode; tone?: string }> = ({ label, value, tone }) => (
-  <div className="rounded-2xl border border-sand-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-ink-900">
-    <p className={`m-0 font-display text-3xl font-semibold ${tone ?? 'text-cocoa-900 dark:text-white'}`}>{value}</p>
-    <p className="m-0 text-xs font-medium uppercase tracking-wider text-cocoa-500 dark:text-white/55">{label}</p>
+  <div className="min-w-0 rounded-2xl border border-sand-200 bg-white px-3 py-3 dark:border-white/10 dark:bg-ink-900 sm:px-4">
+    <p className={`m-0 font-display text-2xl font-semibold leading-none sm:text-3xl ${tone ?? 'text-cocoa-900 dark:text-white'}`}>{value}</p>
+    <p className="m-0 mt-1.5 text-[11px] font-medium uppercase leading-tight tracking-wider text-cocoa-500 dark:text-white/55 sm:text-xs">{label}</p>
   </div>
 );
 
+/** Estado de asistencia de una respuesta (solo si el formulario cuenta asistencia). */
+const AttendanceBadge: React.FC<{ attending: boolean | null }> = ({ attending }) => {
+  if (attending === null) return null;
+  return (
+    <span
+      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+        attending
+          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300'
+          : 'bg-brand-red/10 text-brand-red dark:bg-brand-red/20 dark:text-red-300'
+      }`}
+    >
+      {attending ? 'Asistirá' : 'No asistirá'}
+    </span>
+  );
+};
+
 /** Respuestas: resumen tipo Google Forms + tabla filtrable + Excel. */
-const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sheetsSlot }) => {
+const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sheetsSlot, onCountChange }) => {
   const [stats, setStats] = useState<FormStats | null>(null);
   const [items, setItems] = useState<FormResponseItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -58,13 +77,14 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
     try {
       const [statsData, list] = await Promise.all([getFormStats(form.id), listFormResponses(form.id, filters)]);
       setStats(statsData);
+      onCountChange?.(statsData.total);
       setItems(list.items);
       setTotal(list.pagination.total);
       setPages(list.pagination.pages || 1);
     } catch (error) {
       onError(error instanceof Error ? error.message : 'No se pudieron cargar las respuestas');
     }
-  }, [form.id, filters, onError]);
+  }, [form.id, filters, onError, onCountChange]);
 
   useEffect(() => {
     load();
@@ -159,13 +179,13 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
           <h2 className="m-0 font-display text-xl font-semibold uppercase text-cocoa-900 dark:text-white">
             Personas <span className="text-cocoa-400">({total})</span>
           </h2>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <input
               type="search"
               value={search}
               placeholder="Buscar nombre, teléfono, placa…"
               onChange={e => setSearch(e.target.value)}
-              className="field-brand h-10 w-full text-sm sm:w-64"
+              className="field-brand col-span-2 h-10 w-full text-sm sm:w-64"
             />
             {hasAttendance && (
               <select
@@ -175,7 +195,7 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
                   const rest = omitKey(filters, 'attending');
                   setFilters(e.target.value ? { ...rest, page: 1, attending: e.target.value as 'yes' | 'no' } : { ...rest, page: 1 });
                 }}
-                className="field-brand h-10 w-auto text-sm"
+                className="field-brand h-10 w-full min-w-0 text-sm sm:w-auto"
               >
                 <option value="">Todos</option>
                 <option value="yes">Asistirán</option>
@@ -189,7 +209,7 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
                 const rest = omitKey(filters, 'kind');
                 setFilters(e.target.value ? { ...rest, page: 1, kind: e.target.value as RespondentKind } : { ...rest, page: 1 });
               }}
-              className="field-brand h-10 w-auto text-sm"
+              className={`field-brand h-10 w-full min-w-0 text-sm sm:w-auto ${hasAttendance ? '' : 'col-span-2'}`}
             >
               <option value="">Jóvenes e invitados</option>
               <option value="session">Jóvenes (sesión)</option>
@@ -198,7 +218,7 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
             </select>
             <button
               type="button"
-              className={outlineBtn}
+              className={`${outlineBtn} col-span-2 sm:col-span-1`}
               disabled={downloading || total === 0}
               onClick={async () => {
                 setDownloading(true);
@@ -231,11 +251,9 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
                   onClick={() => setSelected(item)}
                   className="flex w-full items-center gap-3 rounded-xl px-2 py-3 text-left transition-colors hover:bg-sand-50 dark:hover:bg-white/[0.04]"
                 >
-                  <span
-                    aria-hidden="true"
-                    className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${
-                      item.attending === true ? 'bg-emerald-500' : item.attending === false ? 'bg-brand-red' : 'bg-sand-300'
-                    }`}
+                  <RespondentAvatar
+                    name={String(item.respondent.contact.fullName ?? '')}
+                    photoUrl={item.respondent.profileImage}
                   />
                   <div className="min-w-0 flex-1">
                     <p className="m-0 truncate font-semibold text-cocoa-900 dark:text-white">
@@ -247,7 +265,10 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
                       {item.respondent.contact.phone ? ` · ${item.respondent.contact.phone}` : ''}
                     </p>
                   </div>
-                  <span className="hidden text-xs text-cocoa-400 sm:block">{formatDateTime(item.createdAt)}</span>
+                  <div className="flex flex-shrink-0 flex-col items-end gap-1">
+                    {hasAttendance && <AttendanceBadge attending={item.attending} />}
+                    <span className="text-[11px] text-cocoa-400 dark:text-white/45">{formatDateTime(item.createdAt)}</span>
+                  </div>
                 </button>
               </li>
             ))}
@@ -272,11 +293,16 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
       {/* Detalle */}
       {selected && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/50" role="dialog" aria-modal="true" onClick={() => setSelected(null)}>
-          <aside className="h-full w-full max-w-md overflow-y-auto bg-white p-6 dark:bg-ink-900" onClick={e => e.stopPropagation()}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
+          <aside className="h-full w-full max-w-md overflow-y-auto bg-white p-5 dark:bg-ink-900 sm:p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start gap-3">
+              <RespondentAvatar
+                size="lg"
+                name={String(selected.respondent.contact.fullName ?? '')}
+                photoUrl={selected.respondent.profileImage}
+              />
+              <div className="min-w-0 flex-1">
                 <p className="eyebrow m-0 text-brand-deep dark:text-brand-amber">{KIND_LABEL[selected.respondent.kind]}</p>
-                <h3 className="m-0 mt-1 font-display text-2xl font-semibold uppercase text-cocoa-900 dark:text-white">
+                <h3 className="m-0 mt-1 break-words font-display text-2xl font-semibold uppercase leading-tight text-cocoa-900 dark:text-white">
                   {String(selected.respondent.contact.fullName ?? 'Sin nombre')}
                 </h3>
                 <p className="m-0 text-sm text-cocoa-500 dark:text-white/55">
@@ -284,7 +310,7 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
                   {selected.updatedAt !== selected.createdAt ? ` · editada ${formatDateTime(selected.updatedAt)}` : ''}
                 </p>
               </div>
-              <button type="button" aria-label="Cerrar" onClick={() => setSelected(null)} className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-sand-100 dark:hover:bg-white/10">
+              <button type="button" aria-label="Cerrar" onClick={() => setSelected(null)} className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full hover:bg-sand-100 dark:hover:bg-white/10">
                 ✕
               </button>
             </div>

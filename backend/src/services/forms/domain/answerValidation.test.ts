@@ -75,3 +75,38 @@ describe('validateAnswers', () => {
     expect(validateAnswers(form, { d: '2026-10-25', t: 'abc' }).errors).toEqual({});
   });
 });
+
+describe('validateAnswers según quién responde', () => {
+  const formWithReferral = (required: boolean) => {
+    const form = bowlingForm();
+    form.sections[0].questions.push({
+      id: 'referral',
+      type: 'short_text',
+      label: '¿Quién te invitó o cómo te enteraste?',
+      required,
+      audience: 'guests',
+    });
+    return form;
+  };
+
+  it('al invitado se le exige la pregunta obligatoria solo para invitados', () => {
+    const { errors } = validateAnswers(formWithReferral(true), { attend: 'no' }, 'guest');
+    expect(errors).toEqual({ referral: 'Esta pregunta es obligatoria' });
+  });
+
+  it('al joven registrado no se le exige ni se le guarda', () => {
+    const { answers, errors } = validateAnswers(
+      formWithReferral(true),
+      { attend: 'no', referral: 'intento colarla' },
+      'member'
+    );
+    expect(errors).toEqual({});
+    expect(answers).toEqual({ attend: 'no' });
+  });
+
+  it('sin viewer no se filtra por audiencia', () => {
+    const { answers } = validateAnswers(formWithReferral(false), { attend: 'no', referral: 'Juan' });
+    expect(answers.referral).toBe('Juan');
+  });
+});
+

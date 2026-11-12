@@ -149,8 +149,8 @@ export default function PublicFormPage() {
   }, [slug, data, answers, contact, mode, placaIdentity, result]);
 
   const visibility = useMemo(
-    () => resolveVisibility(data?.form.sections ?? [], answers),
-    [data, answers]
+    () => resolveVisibility(data?.form.sections ?? [], answers, mode === 'guest' ? 'guest' : 'member'),
+    [data, answers, mode]
   );
   const steps = visibility.sections.filter(section => section.questions.length > 0);
   const lastStep = Math.max(0, steps.length - 1);

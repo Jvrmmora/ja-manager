@@ -1,4 +1,4 @@
-import { evaluateCondition, resolveVisibility } from './conditions';
+import { evaluateCondition, isVisibleToViewer, resolveVisibility } from './conditions';
 import { bowlingForm } from './__fixtures__/bowlingForm';
 
 describe('evaluateCondition', () => {
@@ -45,3 +45,50 @@ describe('resolveVisibility', () => {
     expect(effectiveAnswers).toEqual({ attend: 'no' });
   });
 });
+
+describe('audiencia (quién responde)', () => {
+  const withReferral = () => {
+    const form = bowlingForm();
+    form.sections[0].questions.push({
+      id: 'referral',
+      type: 'short_text',
+      label: '¿Quién te invitó o cómo te enteraste?',
+      required: false,
+      audience: 'guests',
+    });
+    return form;
+  };
+
+  it('isVisibleToViewer: sin audiencia o "all" ven todos; sin viewer no se filtra', () => {
+    expect(isVisibleToViewer(undefined, 'guest')).toBe(true);
+    expect(isVisibleToViewer('all', 'member')).toBe(true);
+    expect(isVisibleToViewer('guests', undefined)).toBe(true);
+    expect(isVisibleToViewer('guests', 'guest')).toBe(true);
+    expect(isVisibleToViewer('guests', 'member')).toBe(false);
+    expect(isVisibleToViewer('members', 'member')).toBe(true);
+    expect(isVisibleToViewer('members', 'guest')).toBe(false);
+  });
+
+  it('una pregunta solo para invitados no la ve un joven registrado', () => {
+    const answers = { attend: 'yes', referral: 'Me invitó Juan' };
+    const guest = resolveVisibility(withReferral(), answers, 'guest');
+    const member = resolveVisibility(withReferral(), answers, 'member');
+    expect(guest.visibleQuestionIds.has('referral')).toBe(true);
+    expect(guest.effectiveAnswers.referral).toBe('Me invitó Juan');
+    expect(member.visibleQuestionIds.has('referral')).toBe(false);
+    expect(member.effectiveAnswers.referral).toBeUndefined();
+  });
+
+  it('se combina con showIf: el invitado que no asiste tampoco la ve', () => {
+    const form = withReferral();
+    form.sections[0].questions[form.sections[0].questions.length - 1].showIf = {
+      questionId: 'attend',
+      op: 'equals',
+      value: 'yes',
+    };
+    expect(resolveVisibility(form, { attend: 'no' }, 'guest').visibleQuestionIds.has('referral')).toBe(false);
+    expect(resolveVisibility(form, { attend: 'yes' }, 'guest').visibleQuestionIds.has('referral')).toBe(true);
+    expect(resolveVisibility(form, { attend: 'yes' }, 'member').visibleQuestionIds.has('referral')).toBe(false);
+  });
+});
+

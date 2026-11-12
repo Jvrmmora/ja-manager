@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import {
+  AUDIENCES,
   CONDITION_OPS,
   CONTACT_FIELDS,
   CONTACT_FIELD_MODES,
@@ -103,6 +104,7 @@ const questionSchema = new Schema(
       ),
       default: undefined,
     },
+    audience: { type: String, enum: AUDIENCES, default: 'all' },
     showIf: { type: conditionSchema, default: null },
   },
   { _id: false }

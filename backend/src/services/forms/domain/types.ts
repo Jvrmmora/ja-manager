@@ -38,6 +38,18 @@ export interface FormOption {
   label: string;
 }
 
+/**
+ * Quién ve una pregunta, según quién responde:
+ * - 'guests': invitados (sin sesión ni placa; no están en la base de datos).
+ * - 'members': jóvenes registrados (con sesión o placa).
+ * Se combina con `showIf`: la pregunta debe cumplir ambas cosas.
+ */
+export const AUDIENCES = ['all', 'guests', 'members'] as const;
+export type Audience = (typeof AUDIENCES)[number];
+
+/** Quién está respondiendo, a efectos de visibilidad de preguntas. */
+export type Viewer = 'guest' | 'member';
+
 export interface FormQuestion {
   id: string;
   type: QuestionType;
@@ -46,6 +58,8 @@ export interface FormQuestion {
   required: boolean;
   options?: FormOption[];
   validation?: { min?: number; max?: number; maxLength?: number };
+  /** Ausente = 'all' (los formularios anteriores a este campo siguen igual). */
+  audience?: Audience;
   showIf?: FormCondition | null;
 }
 

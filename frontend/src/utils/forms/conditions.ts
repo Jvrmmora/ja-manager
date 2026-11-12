@@ -1,4 +1,4 @@
-import type { AnswerMap, FormCondition, FormQuestion, FormSection } from '../../types/forms';
+import type { Audience, AnswerMap, FormCondition, FormQuestion, FormSection, Viewer } from '../../types/forms';
 
 /*
  * Espejo de backend/src/services/forms/domain/conditions.ts. El servidor es
@@ -21,6 +21,12 @@ export const evaluateCondition = (condition: FormCondition, answers: AnswerMap):
   return condition.op === 'not_equals' ? !matches : matches;
 };
 
+/** ¿Le corresponde esta pregunta a quien responde? Sin `viewer` no se filtra (vista previa). */
+export const isVisibleToViewer = (audience: Audience | undefined, viewer: Viewer | undefined): boolean => {
+  if (!viewer || !audience || audience === 'all') return true;
+  return audience === (viewer === 'guest' ? 'guests' : 'members');
+};
+
 export interface Visibility {
   sections: FormSection[];
   questionIds: Set<string>;
@@ -28,7 +34,11 @@ export interface Visibility {
 }
 
 /** Secciones y preguntas visibles para las respuestas actuales. */
-export const resolveVisibility = (sections: FormSection[], answers: AnswerMap): Visibility => {
+export const resolveVisibility = (
+  sections: FormSection[],
+  answers: AnswerMap,
+  viewer?: Viewer
+): Visibility => {
   const visibleSections: FormSection[] = [];
   const questionIds = new Set<string>();
   const effectiveAnswers: AnswerMap = {};
@@ -36,6 +46,7 @@ export const resolveVisibility = (sections: FormSection[], answers: AnswerMap): 
   for (const section of sections) {
     if (section.showIf && !evaluateCondition(section.showIf, effectiveAnswers)) continue;
     const questions = section.questions.filter(question => {
+      if (!isVisibleToViewer(question.audience, viewer)) return false;
       if (question.showIf && !evaluateCondition(question.showIf, effectiveAnswers)) return false;
       questionIds.add(question.id);
       if (!isEmpty(answers[question.id])) effectiveAnswers[question.id] = answers[question.id];

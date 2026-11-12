@@ -1,5 +1,6 @@
 import Joi from 'joi';
 import {
+  AUDIENCES,
   CONDITION_OPS,
   CONTACT_FIELDS,
   CONTACT_FIELD_MODES,
@@ -37,6 +38,7 @@ const question = Joi.object({
     max: Joi.number().optional(),
     maxLength: Joi.number().integer().min(1).max(3000).optional(),
   }).optional(),
+  audience: Joi.string().valid(...AUDIENCES).default('all'),
   showIf: condition.optional(),
 });
 

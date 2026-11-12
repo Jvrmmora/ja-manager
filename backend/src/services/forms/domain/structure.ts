@@ -1,4 +1,4 @@
-import { CHOICE_TYPES, FormCondition, FormDefinition, FormQuestion } from './types';
+import { Audience, CHOICE_TYPES, FormCondition, FormDefinition, FormQuestion } from './types';
 
 /**
  * Reglas que debe cumplir un formulario para poder publicarse. Un borrador
@@ -11,7 +11,7 @@ export const validateFormStructure = (form: FormDefinition): string[] => {
   const seenSections = new Set<string>();
   let position = 0;
 
-  const checkCondition = (condition: FormCondition, where: string) => {
+  const checkCondition = (condition: FormCondition, where: string, audience?: Audience) => {
     const source = seenQuestions.get(condition.questionId);
     if (!source) {
       problems.push(`${where}: la condición debe depender de una pregunta anterior`);
@@ -25,6 +25,11 @@ export const validateFormStructure = (form: FormDefinition): string[] => {
       source.type === 'yes_no' ? ['yes', 'no'] : (source.options || []).map(o => o.id);
     if (!valid.includes(condition.value)) {
       problems.push(`${where}: la condición usa una opción que ya no existe`);
+    }
+    // Un origen visible solo para una audiencia deja sin efecto a quien no la comparte
+    const sourceAudience = source.audience ?? 'all';
+    if (audience && sourceAudience !== 'all' && (audience ?? 'all') !== sourceAudience) {
+      problems.push(`${where}: depende de una pregunta que solo ve otra audiencia`);
     }
   };
 
@@ -52,7 +57,7 @@ export const validateFormStructure = (form: FormDefinition): string[] => {
       }
 
       // La condición se valida ANTES de registrar la pregunta: no puede depender de sí misma
-      if (question.showIf) checkCondition(question.showIf, where);
+      if (question.showIf) checkCondition(question.showIf, where, question.audience ?? 'all');
       seenQuestions.set(question.id, question);
     });
   });
@@ -63,6 +68,8 @@ export const validateFormStructure = (form: FormDefinition): string[] => {
     const attendance = seenQuestions.get(form.attendanceQuestionId);
     if (!attendance || attendance.type !== 'yes_no') {
       problems.push('La pregunta de asistencia debe ser una pregunta Sí/No del formulario');
+    } else if (attendance.audience && attendance.audience !== 'all') {
+      problems.push('La pregunta de asistencia debe verla todo el mundo (invitados y jóvenes)');
     }
   }
 

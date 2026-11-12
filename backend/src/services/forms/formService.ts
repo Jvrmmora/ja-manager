@@ -2,6 +2,7 @@ import * as xlsx from 'xlsx';
 import mongoose from 'mongoose';
 import Form, { FormStatus, IFormDocument } from '../../models/Form';
 import FormResponse from '../../models/FormResponse';
+import Young from '../../models/Young';
 import { pointsService } from '../pointsService';
 import { uploadLandingMediaToCloudinary } from '../../config/cloudinary';
 import logger from '../../utils/logger';
@@ -192,8 +193,25 @@ export const listResponses = async (id: string, query: ResponseListQuery) => {
     FormResponse.countDocuments(filter),
   ]);
 
+  // La respuesta guarda solo el youngId: la foto se toma del perfil actual (los invitados no tienen)
+  const youngIds = items.map(item => item.respondent.youngId).filter(Boolean);
+  const photos = youngIds.length
+    ? await Young.find({ _id: { $in: youngIds } }).select('profileImage').lean()
+    : [];
+  const photoById = new Map(photos.map(young => [String(young._id), young.profileImage || null]));
+
   return {
-    items: items.map(item => item.toJSON()),
+    items: items.map(item => {
+      const json = item.toJSON() as any;
+      const youngId = item.respondent.youngId;
+      return {
+        ...json,
+        respondent: {
+          ...json.respondent,
+          profileImage: youngId ? photoById.get(String(youngId)) ?? null : null,
+        },
+      };
+    }),
     pagination: { page, limit, total, pages: Math.ceil(total / limit) },
   };
 };

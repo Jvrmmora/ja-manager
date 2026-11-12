@@ -1,5 +1,6 @@
 jest.mock('../../models/Form');
 jest.mock('../../models/FormResponse');
+jest.mock('../../models/Young');
 jest.mock('../pointsService', () => ({
   pointsService: { deleteTransaction: jest.fn().mockResolvedValue(undefined) },
 }));
@@ -9,6 +10,7 @@ jest.mock('../../config/cloudinary', () => ({
 
 import Form from '../../models/Form';
 import FormResponse from '../../models/FormResponse';
+import Young from '../../models/Young';
 import { pointsService } from '../pointsService';
 import {
   buildResponseTable,
@@ -16,6 +18,7 @@ import {
   deleteResponse,
   duplicateForm,
   getFormStats,
+  listResponses,
   setFormStatus,
   updateForm,
 } from './formService';
@@ -23,6 +26,7 @@ import { bowlingForm } from './domain/__fixtures__/bowlingForm';
 
 const mockedForm = Form as jest.Mocked<typeof Form>;
 const mockedResponse = FormResponse as jest.Mocked<typeof FormResponse>;
+const mockedYoung = Young as jest.Mocked<typeof Young>;
 
 const FORM_ID = '64b7f0f0f0f0f0f0f0f0f0f0';
 const RESP_ID = '64b7f0f0f0f0f0f0f0f0f0f1';
@@ -164,6 +168,48 @@ describe('getFormStats', () => {
       { id: 'hotdog', label: 'Perro caliente', count: 0 },
       { id: 'veg', label: 'Vegetariano', count: 1 },
     ]);
+  });
+});
+
+describe('listResponses', () => {
+  const item = (respondent: Record<string, unknown>) => ({
+    toJSON: () => ({ id: 'r', respondent, answers: {} }),
+    respondent,
+  });
+
+  it('agrega la foto del perfil a los jóvenes; los invitados quedan sin foto', async () => {
+    mockedForm.findOne.mockResolvedValue(makeFormDoc());
+    const chain: any = {
+      sort: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockResolvedValue([
+        item({ kind: 'session', youngId: 'y1', contact: { fullName: 'Javier Montaño' } }),
+        item({ kind: 'placa', youngId: 'y2', contact: { fullName: 'Sin Foto' } }),
+        item({ kind: 'guest', youngId: null, contact: { fullName: 'Ana Pérez' } }),
+      ]),
+    };
+    (mockedResponse.find as jest.Mock).mockReturnValue(chain);
+    (mockedResponse.countDocuments as jest.Mock).mockResolvedValue(3);
+    (mockedYoung.find as jest.Mock).mockReturnValue(leanResult([
+      { _id: 'y1', profileImage: 'https://img/javier.webp' },
+      { _id: 'y2' },
+    ]));
+
+    const { items, pagination } = await listResponses(FORM_ID, {});
+    expect(items.map((i: any) => i.respondent.profileImage)).toEqual(['https://img/javier.webp', null, null]);
+    expect(pagination.total).toBe(3);
+  });
+
+  it('sin jóvenes en la página no consulta perfiles', async () => {
+    mockedForm.findOne.mockResolvedValue(makeFormDoc());
+    (mockedResponse.find as jest.Mock).mockReturnValue({
+      sort: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockResolvedValue([item({ kind: 'guest', youngId: null, contact: {} })]),
+    });
+    (mockedResponse.countDocuments as jest.Mock).mockResolvedValue(1);
+    await listResponses(FORM_ID, {});
+    expect(mockedYoung.find).not.toHaveBeenCalled();
   });
 });
 
