@@ -49,4 +49,34 @@ describe('validateFormStructure', () => {
       expect.arrayContaining(['El formulario necesita al menos una sección', 'El formulario necesita al menos una pregunta'])
     );
   });
+
+  it('la pregunta de asistencia no puede estar limitada a una audiencia', () => {
+    const form = bowlingForm();
+    form.sections[0].questions[0].audience = 'guests';
+    const problems = validateFormStructure(form);
+    expect(problems.some(p => p.includes('asistencia') && p.includes('todo el mundo'))).toBe(true);
+  });
+
+  it('una pregunta no puede depender de otra que solo ve otra audiencia', () => {
+    const form = bowlingForm();
+    form.sections[0].questions[0].audience = undefined;
+    form.sections[0].questions.splice(1, 0, {
+      id: 'how',
+      type: 'single_choice',
+      label: '¿Cómo te enteraste?',
+      required: false,
+      audience: 'guests',
+      options: [
+        { id: 'friend', label: 'Un amigo' },
+        { id: 'social', label: 'Redes' },
+      ],
+    });
+    // "companions" es para todos pero depende de "how" (solo invitados)
+    form.sections[0].questions[2].showIf = { questionId: 'how', op: 'equals', value: 'friend' };
+    expect(validateFormStructure(form).some(p => p.includes('otra audiencia'))).toBe(true);
+
+    // Si ambas son para invitados, es coherente
+    form.sections[0].questions[2].audience = 'guests';
+    expect(validateFormStructure(form).some(p => p.includes('otra audiencia'))).toBe(false);
+  });
 });

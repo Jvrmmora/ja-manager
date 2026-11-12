@@ -139,6 +139,47 @@ describe('submitResponse', () => {
     expect(lastCreated().consentAcceptedAt).toBeInstanceOf(Date);
   });
 
+  describe('pregunta solo para invitados ("¿quién te invitó?")', () => {
+    const formWithReferral = () => {
+      const base = bowlingForm();
+      base.sections[0].questions.push({
+        id: 'referral',
+        type: 'short_text',
+        label: '¿Quién te invitó o cómo te enteraste?',
+        required: true,
+        audience: 'guests',
+      });
+      return makeForm({ sections: base.sections });
+    };
+    const guestPayload = {
+      contact: { fullName: 'Ana Pérez', phone: '3110000000' },
+      acceptPolicy: true,
+    };
+
+    it('al invitado se la exige y se guarda su respuesta', async () => {
+      mockedForm.findOne.mockResolvedValue(formWithReferral() as any);
+      await expect(
+        submitResponse('bolos-abc123', { ...guestPayload, answers: attendingAnswers })
+      ).rejects.toMatchObject({ details: { answers: { referral: 'Esta pregunta es obligatoria' } } });
+
+      await submitResponse('bolos-abc123', {
+        ...guestPayload,
+        answers: { ...attendingAnswers, referral: 'Me invitó Juan' },
+      });
+      expect(lastCreated().answers.referral).toBe('Me invitó Juan');
+    });
+
+    it('al joven con placa ni se la exige ni se guarda aunque la manden', async () => {
+      mockedForm.findOne.mockResolvedValue(formWithReferral() as any);
+      mockedYoung.findOne.mockResolvedValue(javier as any);
+      await submitResponse('bolos-abc123', {
+        placa: '@MODJAVI001',
+        answers: { ...attendingAnswers, referral: 'intento colarla' },
+      });
+      expect(lastCreated().answers).not.toHaveProperty('referral');
+    });
+  });
+
   it('no admite invitados si el formulario es solo para jóvenes', async () => {
     mockedForm.findOne.mockResolvedValue(
       makeForm({ settings: { allowGuests: false, pointsReward: 0 } }) as any

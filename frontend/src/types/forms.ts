@@ -23,6 +23,12 @@ export interface FormOption {
   label: string;
 }
 
+/** Quién ve la pregunta: todos, solo invitados (sin sesión ni placa) o solo jóvenes registrados. */
+export type Audience = 'all' | 'guests' | 'members';
+
+/** Quién está respondiendo, a efectos de visibilidad de preguntas. */
+export type Viewer = 'guest' | 'member';
+
 export interface FormQuestion {
   id: string;
   type: QuestionType;
@@ -31,6 +37,8 @@ export interface FormQuestion {
   required: boolean;
   options?: FormOption[];
   validation?: { min?: number; max?: number; maxLength?: number };
+  /** Ausente = 'all'. Se combina con showIf: la pregunta debe cumplir ambas. */
+  audience?: Audience;
   showIf?: FormCondition | null;
 }
 
@@ -187,6 +195,8 @@ export interface FormResponseItem {
     youngId: string | null;
     placa: string | null;
     contact: Partial<Record<ContactField, string | number>>;
+    /** Foto del perfil actual del joven (null para invitados o sin foto). */
+    profileImage?: string | null;
   };
   answers: AnswerMap;
   attending: boolean | null;

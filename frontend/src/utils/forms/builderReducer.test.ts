@@ -116,4 +116,49 @@ describe('builderReducer', () => {
     expect(conditionSources(base().sections, 'pickup').map(q => q.id)).toEqual(['attend', 'transport']);
     expect(conditionSources(base().sections, 's2').map(q => q.id)).toEqual(['attend', 'transport']);
   });
+
+  describe('audiencia', () => {
+    const withGuestQuestion = (): BuilderState => {
+      const state = base();
+      state.sections[0].questions.splice(1, 0, {
+        id: 'how',
+        type: 'single_choice',
+        label: '¿Cómo te enteraste?',
+        required: false,
+        audience: 'guests',
+        options: [
+          { id: 'friend', label: 'Un amigo' },
+          { id: 'social', label: 'Redes' },
+        ],
+      });
+      return state;
+    };
+
+    it('conditionSources no ofrece un origen de otra audiencia', () => {
+      // "transport" es para todos: no puede depender de "how" (solo invitados)
+      expect(conditionSources(withGuestQuestion().sections, 'transport').map(q => q.id)).toEqual(['attend']);
+    });
+
+    it('limitar una pregunta a una audiencia limpia las condiciones que dependían de ella', () => {
+      const state = withGuestQuestion();
+      state.sections[0].questions.find(q => q.id === 'how')!.audience = 'all';
+      state.sections[0].questions.find(q => q.id === 'pickup')!.showIf = {
+        questionId: 'how',
+        op: 'equals',
+        value: 'friend',
+      };
+      const next = builderReducer(state, { type: 'updateQuestion', questionId: 'how', patch: { audience: 'guests' } });
+      expect(next.sections[0].questions.find(q => q.id === 'pickup')!.showIf).toBeNull();
+    });
+
+    it('la pregunta de asistencia vuelve a ser para todos al marcarla', () => {
+      const state = withGuestQuestion();
+      state.attendanceQuestionId = null;
+      state.sections[0].questions.find(q => q.id === 'attend')!.audience = 'guests';
+      const next = builderReducer(state, { type: 'setAttendanceQuestion', questionId: 'attend' });
+      expect(next.attendanceQuestionId).toBe('attend');
+      expect(next.sections[0].questions.find(q => q.id === 'attend')!.audience).toBe('all');
+    });
+  });
 });
+

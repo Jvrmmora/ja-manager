@@ -278,7 +278,11 @@ export const submitResponse = async (
   // 2) Datos de contacto + respuestas
   const profile = young ? toContactProfile(young) : null;
   const contact = resolveContact(form.contactFields, profile, payload.contact || {});
-  const answers = validateAnswers(form, payload.answers || {});
+  const answers = validateAnswers(
+    form,
+    payload.answers || {},
+    kind === 'guest' ? 'guest' : 'member'
+  );
   if (Object.keys(contact.errors).length || Object.keys(answers.errors).length) {
     throw new ValidationError('Revisa los campos marcados', {
       contact: contact.errors,

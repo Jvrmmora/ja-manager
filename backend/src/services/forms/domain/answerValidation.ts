@@ -1,5 +1,5 @@
 import { resolveVisibility, flattenQuestions } from './conditions';
-import { AnswerMap, AnswerValue, FormDefinition, FormQuestion } from './types';
+import { AnswerMap, AnswerValue, FormDefinition, FormQuestion, Viewer } from './types';
 
 const DEFAULT_MAX_LENGTH: Partial<Record<FormQuestion['type'], number>> = {
   short_text: 300,
@@ -76,12 +76,14 @@ export interface AnswerValidationResult {
 
 /**
  * Valida las respuestas contra el esquema del formulario:
- * - descarta respuestas a preguntas inexistentes u ocultas por condiciones,
+ * - descarta respuestas a preguntas inexistentes, ocultas por condiciones o
+ *   que no son para quien responde (audiencia),
  * - exige las obligatorias solo si están visibles.
  */
 export const validateAnswers = (
   form: Pick<FormDefinition, 'sections'>,
-  raw: Record<string, unknown>
+  raw: Record<string, unknown>,
+  viewer?: Viewer
 ): AnswerValidationResult => {
   const parsed: AnswerMap = {};
   const errors: Record<string, string> = {};
@@ -96,7 +98,7 @@ export const validateAnswers = (
   }
 
   // 2) quedarnos solo con lo visible y exigir obligatorias visibles
-  const { visibleQuestionIds, effectiveAnswers } = resolveVisibility(form, parsed);
+  const { visibleQuestionIds, effectiveAnswers } = resolveVisibility(form, parsed, viewer);
 
   for (const question of flattenQuestions(form)) {
     if (!visibleQuestionIds.has(question.id)) {

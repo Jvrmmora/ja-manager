@@ -1,4 +1,23 @@
-import { AnswerMap, FormCondition, FormDefinition, FormQuestion } from './types';
+import {
+  Audience,
+  AnswerMap,
+  FormCondition,
+  FormDefinition,
+  FormQuestion,
+  Viewer,
+} from './types';
+
+/**
+ * ¿Le corresponde esta pregunta a quien responde? Sin `viewer` no se filtra
+ * por audiencia (vista previa del administrador).
+ */
+export const isVisibleToViewer = (
+  audience: Audience | undefined,
+  viewer: Viewer | undefined
+): boolean => {
+  if (!viewer || !audience || audience === 'all') return true;
+  return audience === (viewer === 'guest' ? 'guests' : 'members');
+};
 
 /**
  * Una condición solo se cumple si la pregunta de origen tiene respuesta.
@@ -38,11 +57,13 @@ export interface VisibilityResult {
  * Recorre el formulario en orden. Las condiciones solo pueden apuntar a
  * preguntas anteriores (lo garantiza validateFormStructure), así que una sola
  * pasada basta y no hay ciclos posibles: si el origen está oculto, su
- * respuesta no cuenta y la condición dependiente tampoco se cumple.
+ * respuesta no cuenta y la condición dependiente tampoco se cumple. Lo mismo
+ * pasa con las preguntas que no son para quien responde (audiencia).
  */
 export const resolveVisibility = (
   form: Pick<FormDefinition, 'sections'>,
-  answers: AnswerMap
+  answers: AnswerMap,
+  viewer?: Viewer
 ): VisibilityResult => {
   const visibleSectionIds = new Set<string>();
   const visibleQuestionIds = new Set<string>();
@@ -55,6 +76,7 @@ export const resolveVisibility = (
     visibleSectionIds.add(section.id);
 
     for (const question of section.questions) {
+      if (!isVisibleToViewer(question.audience, viewer)) continue;
       if (question.showIf && !evaluateCondition(question.showIf, effectiveAnswers)) {
         continue;
       }

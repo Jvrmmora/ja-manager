@@ -69,15 +69,26 @@ const mapQuestions = (sections: FormSection[], fn: (q: FormQuestion) => FormQues
   sections.map(section => ({ ...section, questions: section.questions.map(fn) }));
 
 /**
+ * Una pregunta solo puede depender de otra que ve la misma gente: si el origen
+ * es solo para invitados, el destino tiene que serlo también (si no, jóvenes
+ * registrados quedarían con una condición que nunca se cumple).
+ */
+const audienceCompatible = (source: FormQuestion, target: FormQuestion): boolean => {
+  const sourceAudience = source.audience ?? 'all';
+  return sourceAudience === 'all' || (target.audience ?? 'all') === sourceAudience;
+};
+
+/**
  * Quita condiciones que ya no tienen sentido: origen borrado, opción borrada,
  * origen sin opciones o que quedó DESPUÉS (solo se condiciona a lo anterior).
  */
 const pruneConditions = (state: BuilderState): BuilderState => {
   const earlier = new Map<string, FormQuestion>();
-  const valid = (condition?: FormCondition | null): FormCondition | null => {
+  const valid = (condition?: FormCondition | null, target?: FormQuestion): FormCondition | null => {
     if (!condition) return null;
     const source = earlier.get(condition.questionId);
     if (!source || !CHOICE_TYPES.includes(source.type)) return null;
+    if (target && !audienceCompatible(source, target)) return null;
     const values = source.type === 'yes_no' ? ['yes', 'no'] : (source.options || []).map(o => o.id);
     return values.includes(condition.value) ? condition : null;
   };
@@ -85,7 +96,7 @@ const pruneConditions = (state: BuilderState): BuilderState => {
   const sections = state.sections.map(section => {
     const sectionShowIf = valid(section.showIf);
     const questions = section.questions.map(q => {
-      const next = { ...q, showIf: valid(q.showIf) };
+      const next = { ...q, showIf: valid(q.showIf, q) };
       earlier.set(q.id, q);
       return next;
     });
@@ -95,7 +106,10 @@ const pruneConditions = (state: BuilderState): BuilderState => {
   const attendance = state.attendanceQuestionId ? earlier.get(state.attendanceQuestionId) : undefined;
   return {
     ...state,
-    attendanceQuestionId: attendance?.type === 'yes_no' ? state.attendanceQuestionId : null,
+    attendanceQuestionId:
+      attendance?.type === 'yes_no' && (attendance.audience ?? 'all') === 'all'
+        ? state.attendanceQuestionId
+        : null,
     sections,
   };
 };
@@ -149,11 +163,14 @@ export const builderReducer = (state: BuilderState, action: BuilderAction): Buil
       };
     }
 
-    case 'updateQuestion':
-      return {
+    case 'updateQuestion': {
+      const next = {
         ...state,
         sections: mapQuestions(state.sections, q => (q.id === action.questionId ? { ...q, ...action.patch } : q)),
       };
+      // Cambiar la audiencia puede dejar sin sentido condiciones que dependen de esta pregunta
+      return 'audience' in action.patch ? pruneConditions(next) : next;
+    }
 
     case 'changeQuestionType': {
       const next = mapQuestions(state.sections, q => {
@@ -275,7 +292,14 @@ export const builderReducer = (state: BuilderState, action: BuilderAction): Buil
     }
 
     case 'setAttendanceQuestion':
-      return pruneConditions({ ...state, attendanceQuestionId: action.questionId });
+      // La pregunta de asistencia la responde todo el mundo
+      return pruneConditions({
+        ...state,
+        attendanceQuestionId: action.questionId,
+        sections: action.questionId
+          ? mapQuestions(state.sections, q => (q.id === action.questionId ? { ...q, audience: 'all' } : q))
+          : state.sections,
+      });
 
     default:
       return state;
@@ -284,12 +308,15 @@ export const builderReducer = (state: BuilderState, action: BuilderAction): Buil
 
 /** Preguntas anteriores a `questionId` que pueden usarse como condición. */
 export const conditionSources = (sections: FormSection[], beforeId: string): FormQuestion[] => {
+  const target = sections.flatMap(s => s.questions).find(q => q.id === beforeId);
   const result: FormQuestion[] = [];
   for (const section of sections) {
     if (section.id === beforeId) return result;
     for (const question of section.questions) {
       if (question.id === beforeId) return result;
-      if (CHOICE_TYPES.includes(question.type)) result.push(question);
+      if (CHOICE_TYPES.includes(question.type) && (!target || audienceCompatible(question, target))) {
+        result.push(question);
+      }
     }
   }
   return result;

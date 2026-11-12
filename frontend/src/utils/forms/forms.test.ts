@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateCondition, resolveVisibility, validateSection } from './conditions';
+import { evaluateCondition, isVisibleToViewer, resolveVisibility, validateSection } from './conditions';
 import {
   buildGoogleCalendarUrl,
   buildMapsUrl,
@@ -78,6 +78,41 @@ describe('condiciones (espejo del backend)', () => {
   it('valida obligatorias visibles y rangos numéricos', () => {
     const [s1] = resolveVisibility(sections, { attend: 'yes', companions: 9 }).sections;
     expect(validateSection(s1, { attend: 'yes', companions: 9 })).toEqual({ companions: 'Máximo 5' });
+  });
+});
+
+describe('audiencia: quién responde (espejo del backend)', () => {
+  const withReferral = (): FormSection[] => [
+    {
+      ...sections[0],
+      questions: [
+        ...sections[0].questions,
+        {
+          id: 'referral',
+          type: 'short_text',
+          label: '¿Quién te invitó o cómo te enteraste?',
+          required: false,
+          audience: 'guests',
+        },
+      ],
+    },
+  ];
+
+  it('isVisibleToViewer: sin viewer no se filtra', () => {
+    expect(isVisibleToViewer('guests', undefined)).toBe(true);
+    expect(isVisibleToViewer(undefined, 'member')).toBe(true);
+    expect(isVisibleToViewer('guests', 'member')).toBe(false);
+    expect(isVisibleToViewer('members', 'guest')).toBe(false);
+  });
+
+  it('una pregunta solo para invitados no la ve un joven registrado', () => {
+    const answers = { attend: 'yes', referral: 'Me invitó Juan' };
+    const guest = resolveVisibility(withReferral(), answers, 'guest');
+    const member = resolveVisibility(withReferral(), answers, 'member');
+    expect(guest.questionIds.has('referral')).toBe(true);
+    expect(guest.effectiveAnswers.referral).toBe('Me invitó Juan');
+    expect(member.questionIds.has('referral')).toBe(false);
+    expect(member.effectiveAnswers.referral).toBeUndefined();
   });
 });
 

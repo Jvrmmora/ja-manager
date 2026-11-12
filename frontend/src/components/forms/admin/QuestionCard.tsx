@@ -1,5 +1,5 @@
 import React from 'react';
-import type { FormCondition, FormQuestion, FormSection, QuestionType } from '../../../types/forms';
+import type { Audience, FormCondition, FormQuestion, FormSection, QuestionType } from '../../../types/forms';
 import { conditionSources, type BuilderAction } from '../../../utils/forms/builderReducer';
 import { omitKey } from '../../../utils/forms/omitKey';
 
@@ -12,6 +12,12 @@ export const QUESTION_TYPE_META: Record<QuestionType, { label: string; icon: str
   paragraph: { label: 'Párrafo', icon: '¶' },
   number: { label: 'Número', icon: '#' },
   date: { label: 'Fecha', icon: '📅' },
+};
+
+const AUDIENCE_LABELS: Record<Audience, string> = {
+  all: 'Todos',
+  guests: 'Solo invitados',
+  members: 'Solo jóvenes registrados',
 };
 
 const OPTION_TYPES: QuestionType[] = ['single_choice', 'multi_choice', 'dropdown'];
@@ -197,6 +203,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
               {meta.label}
               {question.options?.length ? ` · ${question.options.map(o => o.label).join(', ')}` : ''}
             </p>
+            {question.audience && question.audience !== 'all' && (
+              <p className="m-0 mt-1 text-xs font-medium text-brand-deep dark:text-brand-amber">
+                👥 {AUDIENCE_LABELS[question.audience]}
+              </p>
+            )}
             {question.showIf && (
               <p className="m-0 mt-1 text-xs font-medium text-brand-deep dark:text-brand-amber">
                 ↳ Se muestra {describeCondition(question.showIf, sections)}
@@ -313,6 +324,30 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           />
         </div>
       )}
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <label htmlFor={`audience-${question.id}`} className="text-sm font-semibold text-cocoa-700 dark:text-white/80">
+          ¿Quién la ve?
+        </label>
+        <select
+          id={`audience-${question.id}`}
+          value={question.audience ?? 'all'}
+          disabled={isAttendance}
+          onChange={e => update({ audience: e.target.value as Audience })}
+          className={`${smallInput} w-auto min-w-[14rem] disabled:opacity-60`}
+        >
+          {Object.entries(AUDIENCE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <p className="m-0 basis-full text-xs text-cocoa-400 dark:text-white/45">
+          {isAttendance
+            ? 'La pregunta de asistencia la responde todo el mundo.'
+            : 'Los invitados son quienes responden sin sesión ni placa. Se combina con «Mostrar solo si…».'}
+        </p>
+      </div>
 
       <div className="mt-4">
         <ConditionEditor
