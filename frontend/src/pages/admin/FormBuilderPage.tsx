@@ -12,7 +12,7 @@ import SheetsCard from '../../components/forms/admin/SheetsCard';
 import { SettingsTab, SharePanel } from '../../components/forms/admin/SettingsTab';
 import { STATUS_META, outlineBtn } from '../../components/forms/admin/formStatus';
 import { useToast } from '../../hooks/useToast';
-import { FormsApiError, getForm, setFormStatus, updateForm, type FormPatch } from '../../services/formsApi';
+import { FormsApiError, getForm, getFormStats, setFormStatus, updateForm, type FormPatch } from '../../services/formsApi';
 import type { AdminForm, FormSheets, FormStatus } from '../../types/forms';
 import { builderReducer, type BuilderAction, type BuilderState } from '../../utils/forms/builderReducer';
 import '../../brand-skin.css';
@@ -51,6 +51,7 @@ export default function FormBuilderPage() {
   const [saveState, setSaveState] = useState<SaveState>('saved');
   const [problems, setProblems] = useState<string[]>([]);
   const [changingStatus, setChangingStatus] = useState(false);
+  const [responseCount, setResponseCount] = useState<number | null>(null);
 
   const formRef = useRef<AdminForm | null>(null);
   const pendingKeys = useRef<Set<PatchKey>>(new Set());
@@ -66,6 +67,10 @@ export default function FormBuilderPage() {
         setForm(loaded);
       })
       .catch(() => setNotFound(true));
+    // El número de la pestaña «Respuestas» debe verse sin tener que abrirla
+    getFormStats(id)
+      .then(stats => setResponseCount(stats.total))
+      .catch(() => undefined);
   }, [id]);
 
   const flush = useCallback(async (): Promise<boolean> => {
@@ -275,13 +280,22 @@ export default function FormBuilderPage() {
                 flush();
                 setTab(t.id);
               }}
-              className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-all ${
+              className={`flex-1 whitespace-nowrap rounded-full px-2 py-2.5 text-[13px] font-semibold transition-all sm:px-4 sm:text-sm ${
                 tab === t.id
                   ? 'bg-ink-950 text-white dark:bg-white dark:text-ink-950'
                   : 'text-cocoa-600 hover:bg-white dark:text-white/65 dark:hover:bg-white/10'
               }`}
             >
               {t.label}
+              {t.id === 'responses' && responseCount !== null && (
+                <span
+                  className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] font-bold ${
+                    tab === t.id ? 'bg-brand-orange/15 text-brand-deep dark:bg-ink-950/10 dark:text-ink-950' : 'bg-sand-200 text-cocoa-600 dark:bg-white/10 dark:text-white/70'
+                  }`}
+                >
+                  {responseCount}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -341,6 +355,7 @@ export default function FormBuilderPage() {
               form={form}
               onError={showError}
               onNotify={notify}
+              onCountChange={setResponseCount}
               sheetsSlot={<SheetsCard form={form} onSheetsChange={handleSheetsChange} onError={showError} onNotify={notify} />}
             />
           </div>
