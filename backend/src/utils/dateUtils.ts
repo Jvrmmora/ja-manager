@@ -34,7 +34,9 @@ export const getCurrentDateTimeColombia = (): Date => {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false,
+    // h23 y no hour12:false: en Node 20 hour12:false devuelve "24" a medianoche
+    // y new Date(y, m, d, 24) salta al día siguiente (toda la primera hora del día).
+    hourCycle: 'h23',
   });
 
   const parts = formatter.formatToParts(now);
