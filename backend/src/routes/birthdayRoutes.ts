@@ -32,13 +32,31 @@ router.post(
   requireCronSecret,
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const points = await pointsService.assignBirthdayPointsForGroupOne();
-
-      logger.info('Asignación automática de puntos de cumpleaños ejecutada', {
-        context: 'BirthdayController',
-        method: 'autoAssignBirthdayPoints',
-        ...points,
-      });
+      // Puntos y correos son independientes: si no hay temporada activa (o la
+      // asignación falla), las tarjetas se envían igual.
+      let points: Awaited<
+        ReturnType<typeof pointsService.assignBirthdayPointsForGroupOne>
+      > | null = null;
+      let pointsError: string | null = null;
+      try {
+        points = await pointsService.assignBirthdayPointsForGroupOne();
+        logger.info('Asignación automática de puntos de cumpleaños ejecutada', {
+          context: 'BirthdayController',
+          method: 'autoAssignBirthdayPoints',
+          ...points,
+        });
+      } catch (pointsErr) {
+        pointsError =
+          pointsErr instanceof Error ? pointsErr.message : String(pointsErr);
+        logger.warn(
+          'No se asignaron puntos de cumpleaños; se envían las tarjetas igual',
+          {
+            context: 'BirthdayController',
+            method: 'autoAssignBirthdayPoints',
+            error: pointsError,
+          }
+        );
+      }
 
       // Los correos van después de los puntos: si fallan, los puntos ya
       // quedaron cargados y la siguiente corrida reintenta solo el envío.
@@ -46,7 +64,7 @@ router.post(
 
       res.status(200).json({
         success: true,
-        data: { points, emails },
+        data: { points, pointsError, emails },
       });
     } catch (error) {
       logger.error('Error en asignación automática de puntos de cumpleaños', {

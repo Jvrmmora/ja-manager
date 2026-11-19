@@ -101,6 +101,14 @@ describe('emailTemplates: tarjeta de cumpleaños', () => {
     expect(text).toContain('@MODVALE001');
   });
 
+  it('sin puntos no muestra la línea de puntos en asunto, html ni texto', () => {
+    const p = { ...params, birthdayPoints: undefined };
+    expect(buildSubject(p)).not.toContain('puntos');
+    expect(buildHtml(p)).not.toContain('Puntos de regalo');
+    expect(buildHtml(p)).toContain('Visitar el sitio');
+    expect(buildText(p)).not.toContain('puntos de regalo');
+  });
+
   it('usa los puntos de la temporada si vienen distintos de 100', () => {
     expect(buildHtml({ ...params, birthdayPoints: 150 })).toContain('150 puntos de regalo');
   });
