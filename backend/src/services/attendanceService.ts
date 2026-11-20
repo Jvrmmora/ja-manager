@@ -110,12 +110,10 @@ export interface AttendanceCalendarDay {
  * por cada día con QR generado. Los sábados son "culto joven"; cualquier
  * otro día con QR se considera "actividad".
  */
-export const getAttendanceCalendar = async (
-  year: number
+export const getAttendanceDaysInRange = async (
+  from: string,
+  to: string
 ): Promise<AttendanceCalendarDay[]> => {
-  const from = `${year}-01-01`;
-  const to = `${year}-12-31`;
-
   const [qrDays, attendanceDays] = await Promise.all([
     QRCodeModel.aggregate([
       { $match: { dailyDate: { $gte: from, $lte: to } } },
@@ -152,3 +150,8 @@ export const getAttendanceCalendar = async (
     })
     .sort((a, b) => a.date.localeCompare(b.date));
 };
+
+export const getAttendanceCalendar = async (
+  year: number
+): Promise<AttendanceCalendarDay[]> =>
+  getAttendanceDaysInRange(`${year}-01-01`, `${year}-12-31`);
