@@ -217,7 +217,13 @@ export const AdminBirthdayCard: React.FC<{
 
   const list = useMemo(() => {
     return youngList
-      .filter(y => y.birthday && birthdayDate(y.birthday).getMonth() === month)
+      // Solo Grupo 1: igual que el modal "Ver cumpleaños" y el ranking
+      .filter(
+        y =>
+          y.group === 1 &&
+          y.birthday &&
+          birthdayDate(y.birthday).getMonth() === month
+      )
       .map(y => ({ young: y, day: birthdayDate(y.birthday).getDate() }))
       .sort((a, b) => a.day - b.day);
   }, [youngList, month]);
