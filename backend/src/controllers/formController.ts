@@ -5,9 +5,12 @@ import { asyncHandler, ValidationError } from '../utils/errorHandler';
 import {
   createFormSchema,
   formStatusSchema,
+  manualResponseSchema,
   responseListQuerySchema,
   updateFormSchema,
 } from '../utils/formValidation';
+import { getClientIp } from '../middleware/rateLimiter';
+import { previewYoungForForm, submitResponse, SubmitPayload } from '../services/forms/formResponseService';
 import * as formService from '../services/forms/formService';
 import * as sheetsSync from '../services/forms/sheets/sheetsSyncService';
 import logger from '../utils/logger';
@@ -75,6 +78,30 @@ export class FormController {
   static stats = asyncHandler(async (req: Request, res: Response) => {
     const data = await formService.getFormStats(req.params.id);
     res.json({ success: true, message: 'Resumen obtenido', data });
+  });
+
+  static previewYoung = asyncHandler(async (req: Request, res: Response) => {
+    const data = await previewYoungForForm(req.params.id, req.params.youngId);
+    res.json({ success: true, message: 'Datos del joven', data });
+  });
+
+  static createManualResponse = asyncHandler(async (req: Request, res: Response) => {
+    const { error, value } = manualResponseSchema.validate(req.body, { stripUnknown: true });
+    if (error) throw new ValidationError(error.details[0].message);
+    const form = await formService.getFormOrFail(req.params.id);
+    const { youngId, contact, answers } = value;
+    const data = await submitResponse(
+      form.slug,
+      { contact, answers } as SubmitPayload,
+      { userId: req.user!.userId, scopes: req.userRole?.scopes || [] },
+      { ip: getClientIp(req) },
+      youngId ? { youngId } : { guest: true }
+    );
+    res.status(data.updated ? 200 : 201).json({
+      success: true,
+      message: data.updated ? 'Respuesta actualizada' : 'Respuesta registrada',
+      data,
+    });
   });
 
   static deleteResponse = asyncHandler(async (req: Request, res: Response) => {

@@ -11,6 +11,7 @@ import type { AdminForm, FormResponseItem, FormStats, RespondentKind } from '../
 import { CONTACT_LABELS } from '../public/ContactInputs';
 import { omitKey } from '../../../utils/forms/omitKey';
 import { cardCls, outlineBtn } from './formStatus';
+import ManualResponseModal from './ManualResponseModal';
 import RespondentAvatar from './RespondentAvatar';
 
 const KIND_LABEL: Record<RespondentKind, string> = { session: 'Joven', placa: 'Joven (placa)', guest: 'Invitado' };
@@ -69,6 +70,7 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
   const [toDelete, setToDelete] = useState<FormResponseItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   const questions = useMemo(() => form.sections.flatMap(s => s.questions), [form.sections]);
   const contactFields = form.contactFields.filter(c => c.mode !== 'hidden').map(c => c.field);
@@ -216,6 +218,9 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
               <option value="placa">Jóvenes (placa)</option>
               <option value="guest">Invitados</option>
             </select>
+            <button type="button" className={`${outlineBtn} col-span-2 sm:col-span-1`} onClick={() => setAdding(true)}>
+              + Agregar respuesta
+            </button>
             <button
               type="button"
               className={`${outlineBtn} col-span-2 sm:col-span-1`}
@@ -289,6 +294,17 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
           </div>
         )}
       </section>
+
+      {adding && (
+        <ManualResponseModal
+          form={form}
+          onClose={() => setAdding(false)}
+          onSaved={message => {
+            onNotify(message);
+            load();
+          }}
+        />
+      )}
 
       {/* Detalle */}
       {selected && (

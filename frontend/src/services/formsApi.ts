@@ -2,6 +2,7 @@ import { apiRequest, apiUpload, buildApiUrl, getAuthToken } from './httpClient';
 import type {
   AdminForm,
   AnswerMap,
+  ContactField,
   ContactValues,
   FormListItem,
   FormResponseItem,
@@ -138,6 +139,26 @@ export const getFormStats = async (id: string) => parse<FormStats>(await apiRequ
 
 export const deleteFormResponse = async (id: string, responseId: string) =>
   parse<null>(await apiRequest(`forms/${id}/responses/${responseId}`, { method: 'DELETE' }));
+
+export interface YoungPreview {
+  youngId: string;
+  fullName: string;
+  placa: string | null;
+  profileImage: string | null;
+  saved: ContactField[];
+  missing: ContactField[];
+  response: { answers: AnswerMap } | null;
+}
+
+/** Admin: datos del joven para registrarle una respuesta a mano. */
+export const previewYoungForForm = async (formId: string, youngId: string) =>
+  parse<YoungPreview>(await apiRequest(`forms/${formId}/young/${youngId}`));
+
+/** Admin: registra (o actualiza) la respuesta de un joven existente o de un invitado. */
+export const createManualResponse = async (
+  formId: string,
+  payload: { youngId: string; contact: ContactValues; answers: AnswerMap } | { guest: true; contact: ContactValues; answers: AnswerMap }
+) => parse<SubmitResult>(await apiRequest(`forms/${formId}/responses`, json('POST', payload)));
 
 /** Descarga el Excel (blob) y dispara la descarga en el navegador. */
 export const downloadFormResponsesXlsx = async (id: string, filename: string) => {
