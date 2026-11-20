@@ -25,6 +25,9 @@ export interface BirthdayRow {
   month: number;
   day: number;
   origin: string;
+  /** Solo jóvenes registrados (grupo 1). */
+  placa?: string;
+  profileImage?: string;
 }
 
 export interface BirthdayMonthGroup {
@@ -173,12 +176,19 @@ export const loadBirthdayRows = async (formId?: string | null): Promise<Birthday
     role_name: { $ne: 'Super Admin' },
     birthday: { $exists: true, $ne: null },
   })
-    .select('fullName birthday')
+    .select('fullName birthday placa profileImage')
     .lean();
 
   for (const young of youngs) {
     const { month, day } = getBirthdayCalendarParts(young.birthday as Date);
-    rows.push({ name: young.fullName, month, day, origin: ORIGIN_GRUPO1 });
+    rows.push({
+      name: young.fullName,
+      month,
+      day,
+      origin: ORIGIN_GRUPO1,
+      ...(young.placa ? { placa: young.placa } : {}),
+      ...(young.profileImage ? { profileImage: young.profileImage } : {}),
+    });
   }
 
   // Invitados del formulario (quienes no confirmaron asistencia quedan fuera).
