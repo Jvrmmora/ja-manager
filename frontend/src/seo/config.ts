@@ -106,9 +106,10 @@ export const ROUTES: RouteSeo[] = [
   },
   {
     path: '/cumpleanos',
-    title: 'Cumpleaños del mes — Jóvenes Modelia',
+    // Sirve igual para ?mes= y ?semestre=: la vista previa de WhatsApp no cambia por enlace
+    title: 'Cumpleaños — Jóvenes Modelia',
     description:
-      'Mira quiénes cumplen años este mes en Jóvenes Modelia y no olvides saludarlos.',
+      'Mira quiénes cumplen años en Jóvenes Modelia, por mes o por semestre, y no olvides saludarlos.',
     noindex: true,
     prerender: true,
     image: `${SITE_URL}/og-cumpleanos.jpg`,

@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildBirthdayShareUrl,
+  buildBirthdaySemesterShareUrl,
   buildReferralUrl,
   referralShareMessage,
   buildRankingShareUrl,
   birthdayShareMessage,
+  birthdaySemesterShareMessage,
   parseGroupParam,
   parseMonthParam,
+  parseSemesterParam,
   rankingShareMessage,
 } from './shareUrls';
 import { buildLoginRedirect, safeReturnUrl } from './loginUrl';
@@ -27,6 +30,15 @@ describe('enlaces para compartir', () => {
     expect(rankingShareMessage('U')).toMatch(/U$/);
     expect(birthdayShareMessage('U', 9)).toContain('Octubre');
   });
+
+  it('cumpleaños por semestre usa ?semestre=1|2', () => {
+    expect(buildBirthdaySemesterShareUrl(2, 1)).toBe(
+      'https://www.jovenesmodelia.com/cumpleanos?semestre=2&grupo=1'
+    );
+    expect(birthdaySemesterShareMessage('U', 1)).toContain('entre enero y junio');
+    expect(birthdaySemesterShareMessage('U', 2)).toContain('entre julio y diciembre');
+    expect(birthdaySemesterShareMessage('U', 2)).toMatch(/U$/);
+  });
 });
 
 describe('parámetros de la vista de cumpleaños', () => {
@@ -42,6 +54,14 @@ describe('parámetros de la vista de cumpleaños', () => {
     expect(parseGroupParam('0')).toBeNull();
     expect(parseGroupParam('6')).toBeNull();
     expect(parseGroupParam('3')).toBe(3);
+  });
+
+  it('solo acepta los semestres 1 y 2', () => {
+    expect(parseSemesterParam('1')).toBe(1);
+    expect(parseSemesterParam('2')).toBe(2);
+    expect(parseSemesterParam(null)).toBeNull();
+    expect(parseSemesterParam('3')).toBeNull();
+    expect(parseSemesterParam('abc')).toBeNull();
   });
 });
 

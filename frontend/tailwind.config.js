@@ -95,6 +95,11 @@ export default {
           '0%, 100%': { top: '12%' },
           '50%': { top: '84%' },
         },
+        // Tarjeta de quien cumple hoy en la cinta de cumpleaños
+        'glow-gold': {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(253,230,138,0), 0 30px 70px -30px rgba(249,162,59,.8)' },
+          '50%': { boxShadow: '0 0 0 8px rgba(253,230,138,.14), 0 30px 80px -20px rgba(249,162,59,1)' },
+        },
       },
       animation: {
         ember: 'ember 12s ease-in-out infinite',
@@ -106,6 +111,7 @@ export default {
         'dot-pulse': 'dot-pulse 2.2s ease-out infinite',
         sheen: 'sheen 3.6s ease-in-out infinite',
         'scan-line': 'scan-line 2.6s ease-in-out infinite',
+        'glow-gold': 'glow-gold 2.4s ease-in-out infinite',
       },
     },
   },
