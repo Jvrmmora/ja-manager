@@ -22,6 +22,7 @@ import contactRoutes from './routes/contactRoutes';
 import legalRoutes from './routes/legalRoutes';
 import consentRoutes from './routes/consentRoutes';
 import formRoutes from './routes/formRoutes';
+import birthdayReportRoutes from './routes/birthdayReportRoutes';
 import { registerSheetsSync } from './services/forms/sheets/sheetsSyncService';
 import { DatabaseSeeder } from './seeders/DatabaseSeeder';
 import { authenticateToken } from './middleware/auth';
@@ -229,6 +230,9 @@ const setupRoutes = () => {
   // Formularios de eventos: /public/:slug abierto (sesión opcional), resto admin
   registerSheetsSync();
   app.use('/api/forms', ensureDatabaseConnection, formRoutes);
+
+  // Reporte de cumpleaños por semestre (grupo 1 + invitados), solo admin
+  app.use('/api/birthday-report', ensureDatabaseConnection, birthdayReportRoutes);
 
   // Ruta por defecto
   app.get('/', (_req, res) => {
