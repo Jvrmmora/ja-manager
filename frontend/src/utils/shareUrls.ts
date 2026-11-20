@@ -1,4 +1,5 @@
 import { SITE_ORIGIN } from './loginUrl';
+import type { Semester } from './birthdayPeriods';
 
 export const MONTH_NAMES = [
   'Enero',
@@ -34,6 +35,21 @@ export const birthdayShareMessage = (url: string, monthIndex: number): string =>
   `🎂 *¡Feliz cumpleaños a los que celebran en ${MONTH_NAMES[monthIndex]}!*\n` +
   'Mira quiénes son y no olvides saludarlos 🎉👇\n\n' +
   url;
+
+/** Enlace a los cumpleaños de un semestre: /cumpleanos?semestre=2&grupo=1. */
+export const buildBirthdaySemesterShareUrl = (semester: Semester, group: number): string =>
+  `${SITE_ORIGIN}/cumpleanos?semestre=${semester}&grupo=${group}`;
+
+export const birthdaySemesterShareMessage = (url: string, semester: Semester): string =>
+  `🎂 *¡Feliz cumpleaños a los que celebran entre ${
+    semester === 1 ? 'enero y junio' : 'julio y diciembre'
+  }!*\n` +
+  'Mira quiénes son y no olvides saludarlos 🎉👇\n\n' +
+  url;
+
+/** Lee ?semestre=1|2; null si falta o es inválido. */
+export const parseSemesterParam = (value: string | null): Semester | null =>
+  value === '1' ? 1 : value === '2' ? 2 : null;
 
 /** Lee ?mes=1-12 → índice 0-11; null si falta o es inválido. */
 export const parseMonthParam = (value: string | null): number | null => {

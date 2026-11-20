@@ -1,6 +1,8 @@
 import { apiRequest } from './httpClient';
+import type { Semester } from '../utils/birthdayPeriods';
 
-export type Semester = 1 | 2;
+// Un solo tipo de semestre para el reporte y la vista de cumpleaños
+export type { Semester };
 
 export interface BirthdayRow {
   name: string;
