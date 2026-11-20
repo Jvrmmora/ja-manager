@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { IYoung } from '../types';
 import BrandModalHeader, { headerActionCls } from './ui/BrandModalHeader';
 import { getGroupColor, initialsOf } from './young/useYoungActions';
@@ -24,6 +25,7 @@ const BirthdayDashboard: React.FC<BirthdayDashboardProps> = ({
   youngList,
   onOpenStats,
 }) => {
+  const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState<number>(
     getCurrentMonthColombia()
   );
@@ -204,6 +206,12 @@ Que Dios siga guiando tu vida y llenándola de bendiciones.
                   <span className="hidden md:inline">Estadísticas</span>
                 </button>
               )}
+              <button type="button" onClick={() => navigate('/admin/birthday-report')} className={headerActionCls} aria-label="Reporte por semestre">
+                <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6" />
+                </svg>
+                <span className="hidden md:inline">Reporte</span>
+              </button>
               <button type="button" onClick={() => setShowFullscreenBoard(true)} className={headerActionCls} aria-label="Pantalla completa">
                 <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
