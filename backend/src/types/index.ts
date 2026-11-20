@@ -110,6 +110,7 @@ export interface PaginationQuery {
   gender?: string;
   role?: string;
   groups?: string[] | string;
+  faltantes?: string[] | string;
   sortBy?:
     | 'fullName'
     | 'birthday'

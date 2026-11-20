@@ -1,3 +1,4 @@
+import { getSeasonAttendanceStats } from '../services/attendanceStatsService';
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import QRCodeModel from '../models/QRCode';
@@ -513,6 +514,40 @@ export const getAttendanceCalendar = async (
     });
   } catch (error) {
     console.error('Error obteniendo calendario de asistencias:', error);
+    ErrorHandler.handleError(error, req, res);
+  }
+};
+
+// Estadísticas de asistencia por temporada (la activa por defecto)
+export const getSeasonStats = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (req.user?.role_name !== 'Super Admin') {
+      res.status(403).json({
+        success: false,
+        message: 'Solo los administradores pueden ver esta información',
+      });
+      return;
+    }
+
+    const seasonId =
+      typeof req.query.seasonId === 'string' && req.query.seasonId
+        ? req.query.seasonId
+        : undefined;
+    if (seasonId && !/^[a-f\d]{24}$/i.test(seasonId)) {
+      res.status(400).json({ success: false, message: 'Temporada inválida' });
+      return;
+    }
+
+    const data = await getSeasonAttendanceStats(seasonId);
+    res.status(200).json({
+      success: true,
+      message: 'Estadísticas de la temporada obtenidas exitosamente',
+      data,
+    });
+  } catch (error) {
     ErrorHandler.handleError(error, req, res);
   }
 };

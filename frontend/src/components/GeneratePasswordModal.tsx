@@ -99,7 +99,7 @@ const GeneratePasswordModal: React.FC<GeneratePasswordModalProps> = ({
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0C0609]/75 p-4 backdrop-blur-sm">
       <div
-        className="w-full max-w-md overflow-hidden rounded-[28px] bg-white shadow-[0_50px_100px_-40px_rgba(0,0,0,0.8)] dark:bg-ink-900"
+        className="w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-[28px] bg-white shadow-[0_50px_100px_-40px_rgba(0,0,0,0.8)] dark:bg-ink-900"
         role="dialog"
         aria-modal="true"
         aria-label="Generar nueva contraseña"

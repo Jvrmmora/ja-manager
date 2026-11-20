@@ -38,7 +38,8 @@ export const buildYoungListFilters = ({
   gender,
   role,
   groups,
-}: Partial<PaginationQuery>): Record<string, any> => {
+  faltantes,
+}: Partial<PaginationQuery>, rankedIds?: unknown[]): Record<string, any> => {
   const filters: Record<string, any> = {};
 
   if (search && search.trim() !== '') {
@@ -90,7 +91,38 @@ export const buildYoungListFilters = ({
     filters.group = { $in: groupsArray.map(g => parseInt(g, 10)) };
   }
 
+  // Perfiles incompletos: cada opción se suma con AND
+  const missing = faltantes
+    ? Array.isArray(faltantes)
+      ? faltantes
+      : [faltantes]
+    : [];
+  const and: Record<string, any>[] = [];
+  const isEmpty = (field: string) => ({
+    $or: [{ [field]: { $exists: false } }, { [field]: null }, { [field]: '' }],
+  });
+  if (missing.includes('foto')) and.push(isEmpty('profileImage'));
+  if (missing.includes('placa')) and.push(isEmpty('placa'));
+  if (missing.includes('ranking')) {
+    // Fuera del ranking: elegibles (grupo 1, no Super Admin) sin puntos en la temporada
+    and.push({
+      group: 1,
+      role_name: { $ne: 'Super Admin' },
+      _id: { $nin: rankedIds ?? [] },
+    });
+  }
+  if (and.length > 0) filters.$and = and;
+
   return filters;
+};
+
+/** IDs de jóvenes con al menos una transacción en la temporada activa (los que cuenta el ranking). */
+const getRankedYoungIds = async (): Promise<unknown[]> => {
+  const season = await Season.findOne({ status: 'ACTIVE' }).lean();
+  if (!season) return [];
+  return PointsTransaction.distinct('youngId', {
+    seasonId: (season as any)._id,
+  });
 };
 
 export const listYoung = async (query: PaginationQuery) => {
@@ -101,7 +133,13 @@ export const listYoung = async (query: PaginationQuery) => {
     sortOrder,
   } = query;
 
-  const filters = buildYoungListFilters(query);
+  const wantsRanking = ([] as string[])
+    .concat((query.faltantes as string[] | string | undefined) ?? [])
+    .includes('ranking');
+  const filters = buildYoungListFilters(
+    query,
+    wantsRanking ? await getRankedYoungIds() : undefined
+  );
 
   const sort: Record<string, 1 | -1> = {};
   sort[sortBy || 'fullName'] = sortOrder === 'desc' ? -1 : 1;

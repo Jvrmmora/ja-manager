@@ -208,3 +208,95 @@ export const getAttendanceStats = async (
   const result = await response.json();
   return result.data;
 };
+
+export interface SeasonStatRecord {
+  date: string; // YYYY-MM-DD
+  attendees: number;
+}
+
+export interface SeasonAttendanceStats {
+  season: {
+    id: string;
+    name: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+  };
+  summary: {
+    cultos: number;
+    actividades: number;
+    eventos: number;
+    totalAsistentes: number;
+    promedioCulto: number;
+    tendencia: number | null;
+  };
+  records: {
+    cultoMax: SeasonStatRecord | null;
+    cultoMin: SeasonStatRecord | null;
+    actividadMax: SeasonStatRecord | null;
+    actividadMin: SeasonStatRecord | null;
+  };
+  cultosSeries: SeasonStatRecord[];
+  months: {
+    month: string; // YYYY-MM
+    attendees: number;
+    eventos: number;
+    cultos: number;
+    actividades: number;
+  }[];
+  topMonths: { asistencia: string | null; actividades: string | null };
+  split: {
+    cultos: { eventos: number; attendees: number };
+    actividades: { eventos: number; attendees: number };
+  };
+  constancia: {
+    activos: number;
+    constantes: number;
+    porcentaje: number;
+    umbral: number;
+    top: {
+      id: string;
+      fullName: string;
+      profileImage?: string;
+      asistencias: number;
+      cultos: number;
+    }[];
+  };
+  enRiesgo: {
+    total: number;
+    racha: number;
+    items: {
+      id: string;
+      fullName: string;
+      profileImage?: string;
+      streak: number;
+    }[];
+  };
+  alcance: {
+    activos: number;
+    asistieron: number;
+    sinAsistir: number;
+    porcentaje: number;
+  };
+  nuevos: { total: number; porMes: { month: string; count: number }[] };
+}
+
+// Estadísticas de asistencia de una temporada (la activa si no se indica)
+export const getSeasonAttendanceStats = async (
+  seasonId?: string
+): Promise<SeasonAttendanceStats> => {
+  const query = seasonId ? `?seasonId=${encodeURIComponent(seasonId)}` : '';
+  const response = await apiRequest(`attendance/season-stats${query}`, {
+    method: 'GET',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.message || 'Error al obtener las estadísticas de la temporada'
+    );
+  }
+
+  const result = await response.json();
+  return result.data;
+};

@@ -8,6 +8,7 @@ import {
   getAttendancesByDate,
   getAttendanceStats,
   getAttendanceCalendar,
+  getSeasonStats,
 } from '../controllers/attendanceController';
 
 const router = express.Router();
@@ -27,6 +28,9 @@ router.get('/date/:date', authenticateToken, getAttendancesByDate);
 
 // Calendario anual de cultos y actividades (solo administradores)
 router.get('/calendar', authenticateToken, getAttendanceCalendar);
+
+// Estadísticas de una temporada (solo administradores)
+router.get('/season-stats', authenticateToken, getSeasonStats);
 
 // Obtener estadísticas de asistencia (solo administradores)
 router.get('/stats', authenticateToken, getAttendanceStats);

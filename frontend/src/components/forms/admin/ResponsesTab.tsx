@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import ConfirmDangerModal from '../../ui/ConfirmDangerModal';
 import {
   deleteFormResponse,
@@ -108,6 +109,15 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
     if (question.options) return labelOf(String(value));
     return String(value);
   };
+
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !toDelete) setSelected(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selected, toDelete]);
 
   const handleDelete = async () => {
     if (!toDelete) return;
@@ -307,10 +317,11 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
       )}
 
       {/* Detalle */}
-      {selected && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/50" role="dialog" aria-modal="true" onClick={() => setSelected(null)}>
-          <aside className="h-full w-full max-w-md overflow-y-auto bg-white p-5 dark:bg-ink-900 sm:p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-start gap-3">
+      {selected && createPortal(
+        <div className="fixed inset-0 z-[70] flex justify-end bg-black/50" role="dialog" aria-modal="true" aria-label="Detalle de la respuesta" onClick={() => setSelected(null)}>
+          <aside className="flex h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-white dark:bg-ink-900" onClick={e => e.stopPropagation()}>
+            {/* Cabecera fija: el botón de cerrar siempre queda a la vista, también en móvil */}
+            <div className="flex flex-shrink-0 items-start gap-3 border-b border-sand-100 bg-white px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] dark:border-white/10 dark:bg-ink-900 sm:px-6">
               <RespondentAvatar
                 size="lg"
                 name={String(selected.respondent.contact.fullName ?? '')}
@@ -318,7 +329,7 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
               />
               <div className="min-w-0 flex-1">
                 <p className="eyebrow m-0 text-brand-deep dark:text-brand-amber">{KIND_LABEL[selected.respondent.kind]}</p>
-                <h3 className="m-0 mt-1 break-words font-display text-2xl font-semibold uppercase leading-tight text-cocoa-900 dark:text-white">
+                <h3 className="m-0 mt-1 break-words font-display text-xl font-semibold uppercase leading-tight text-cocoa-900 dark:text-white sm:text-2xl">
                   {String(selected.respondent.contact.fullName ?? 'Sin nombre')}
                 </h3>
                 <p className="m-0 text-sm text-cocoa-500 dark:text-white/55">
@@ -326,11 +337,20 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
                   {selected.updatedAt !== selected.createdAt ? ` · editada ${formatDateTime(selected.updatedAt)}` : ''}
                 </p>
               </div>
-              <button type="button" aria-label="Cerrar" onClick={() => setSelected(null)} className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full hover:bg-sand-100 dark:hover:bg-white/10">
-                ✕
+              <button
+                type="button"
+                aria-label="Cerrar"
+                autoFocus
+                onClick={() => setSelected(null)}
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-sand-300 text-cocoa-700 transition-colors hover:bg-sand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange dark:border-white/20 dark:text-white dark:hover:bg-white/10"
+              >
+                <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
               </button>
             </div>
 
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6">
             <dl className="mt-6 space-y-3">
               {selected.respondent.placa && (
                 <div>
@@ -362,8 +382,10 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({ form, onError, onNotify, sh
             >
               Eliminar esta respuesta
             </button>
+            </div>
           </aside>
-        </div>
+        </div>,
+        document.body
       )}
 
       <ConfirmDangerModal

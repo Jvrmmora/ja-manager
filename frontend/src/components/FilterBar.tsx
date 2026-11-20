@@ -32,6 +32,12 @@ const SORT_OPTIONS: Array<[string, string]> = [
   ['updatedAt', 'Última actualización'],
 ];
 
+const MISSING_OPTIONS: Array<[string, string, string]> = [
+  ['foto', 'Sin foto', 'Jóvenes sin foto de perfil'],
+  ['placa', 'Sin placa', 'Jóvenes sin placa asignada'],
+  ['ranking', 'Fuera del ranking', 'Grupo 1 sin puntos en la temporada activa'],
+];
+
 const selectCls =
   'field-brand h-11 !rounded-xl !px-3 text-sm normal-case tracking-normal';
 const labelCls =
@@ -81,6 +87,18 @@ const FilterBar: React.FC<FilterBarProps> = ({
     });
   };
 
+  const toggleMissing = (value: string) => {
+    const current = filters.faltantes || [];
+    const next = current.includes(value)
+      ? current.filter(v => v !== value)
+      : [...current, value];
+    onFiltersChange({
+      ...filters,
+      faltantes: next.length > 0 ? next : undefined,
+      page: 1,
+    });
+  };
+
   const clearFilters = () => {
     const cleared: PaginationQuery = {
       page: 1,
@@ -110,7 +128,12 @@ const FilterBar: React.FC<FilterBarProps> = ({
           : `${filters.groups.length} grupos`,
     });
   }
-  const panelCount = chips.filter(c => c.key !== 'search').length;
+  const missingChips = (filters.faltantes || []).map(v => ({
+    value: v,
+    label: MISSING_OPTIONS.find(([k]) => k === v)?.[1] || v,
+  }));
+  const panelCount =
+    chips.filter(c => c.key !== 'search').length + missingChips.length;
   const sortLabel =
     (SORT_OPTIONS.find(([v]) => v === (filters.sortBy || 'fullName'))?.[1] ||
       'Nombre') + (filters.sortOrder === 'desc' ? ' · Z–A' : ' · A–Z');
@@ -234,10 +257,42 @@ const FilterBar: React.FC<FilterBarProps> = ({
               className="w-full normal-case tracking-normal"
             />
           </div>
+          <fieldset className="col-span-full m-0 min-w-0 border-0 border-t border-sand-200 p-0 pt-3 dark:border-white/10">
+            <legend className="float-left mb-2 w-full text-xs font-bold uppercase tracking-[0.06em] text-cocoa-400 dark:text-white/50">
+              Perfil incompleto
+            </legend>
+            <div className="flex clear-both flex-wrap gap-2">
+              {MISSING_OPTIONS.map(([value, label, hint]) => {
+                const on = (filters.faltantes || []).includes(value);
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="checkbox"
+                    aria-checked={on}
+                    title={hint}
+                    onClick={() => toggleMissing(value)}
+                    className={`inline-flex h-10 items-center gap-1.5 rounded-full border-[1.5px] px-4 text-sm font-semibold transition-colors ${
+                      on
+                        ? 'border-brand-orange bg-brand-orange/10 text-[#9A3412] dark:text-brand-amber'
+                        : 'border-sand-300 bg-white text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-ink-800 dark:text-white/80'
+                    }`}
+                  >
+                    {on && (
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M5 12l5 5 9-10" />
+                      </svg>
+                    )}
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
         </div>
       )}
 
-      {chips.length > 0 && (
+      {(chips.length > 0 || missingChips.length > 0) && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[13px] text-cocoa-400 dark:text-white/50">Activos:</span>
           {chips.map(chip => (
@@ -250,6 +305,20 @@ const FilterBar: React.FC<FilterBarProps> = ({
                 onFiltersChange(next);
               }}
               className="inline-flex h-[30px] items-center gap-1.5 rounded-full border border-[#F6D6B8] bg-sand-50 pl-3 pr-2 text-[13px] font-semibold capitalize text-[#9A3412] transition-colors hover:border-[#F4B58C] dark:border-brand-orange/30 dark:bg-brand-orange/10 dark:text-brand-amber"
+              aria-label={`Quitar filtro ${chip.label}`}
+            >
+              {chip.label}
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          ))}
+          {missingChips.map(chip => (
+            <button
+              key={`falta-${chip.value}`}
+              type="button"
+              onClick={() => toggleMissing(chip.value)}
+              className="inline-flex h-[30px] items-center gap-1.5 rounded-full border border-[#F6D6B8] bg-sand-50 pl-3 pr-2 text-[13px] font-semibold text-[#9A3412] transition-colors hover:border-[#F4B58C] dark:border-brand-orange/30 dark:bg-brand-orange/10 dark:text-brand-amber"
               aria-label={`Quitar filtro ${chip.label}`}
             >
               {chip.label}

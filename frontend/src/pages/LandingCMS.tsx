@@ -2140,7 +2140,7 @@ export default function LandingCMSPage() {
                 onClick={() => setEditingMedia(null)}
               >
                 <div
-                  className="w-full max-w-2xl overflow-hidden rounded-[28px] bg-white shadow-2xl dark:bg-ink-900"
+                  className="w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-[28px] bg-white shadow-2xl dark:bg-ink-900"
                   onClick={e => e.stopPropagation()}
                   role="dialog"
                   aria-modal="true"

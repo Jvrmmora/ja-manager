@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getTodayAttendances, getAttendancesByDate } from '../services/api';
 import LoadingSpinner from './LoadingSpinner';
 import AttendanceYearCalendar from './AttendanceYearCalendar';
+import AttendanceStatsPanel from './AttendanceStatsPanel';
 import { initialsOf } from './young/useYoungActions';
 import {
   getCurrentDateColombia,
@@ -24,6 +25,7 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [fullscreenData, setFullscreenData] = useState<any>(null); // Datos estáticos para pantalla completa
   const [selectedDate, setSelectedDate] = useState(() => {
     // Fecha actual en formato YYYY-MM-DD en zona horaria de Colombia
@@ -171,75 +173,95 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
 
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
-      {/* Calendario del año: días con culto o actividad */}
-      <AttendanceYearCalendar
-        selectedDate={selectedDate}
-        onSelect={setSelectedDate}
-        refreshTrigger={refreshTrigger}
-      />
+      {/* Calendario + resumen del día: dos columnas en escritorio, apilado en móvil */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-start">
+        <AttendanceYearCalendar
+          selectedDate={selectedDate}
+          onSelect={setSelectedDate}
+          refreshTrigger={refreshTrigger}
+        />
 
-      {/* Estadísticas del día seleccionado */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="flex flex-col justify-center gap-1.5 rounded-[20px] bg-ink-950 px-5 py-4 text-white">
-          <span className="text-[13px] text-white/65">Presentes</span>
-          <span className="font-display text-[44px] font-bold leading-none text-brand-amber">
-            {data.stats.totalPresent}
-          </span>
-        </div>
-        <div className="flex flex-col justify-center gap-1.5 rounded-[20px] border border-sand-200 bg-white px-5 py-4 dark:border-white/10 dark:bg-ink-800">
-          <span className="text-[13px] text-cocoa-500 dark:text-white/60">Jóvenes activos</span>
-          <span className="font-display text-[44px] font-bold leading-none text-cocoa-900 dark:text-white">
-            {data.stats.totalYoung}
-          </span>
-        </div>
-        <div className="flex flex-col justify-center gap-2 rounded-[20px] border border-sand-200 bg-white px-5 py-4 dark:border-white/10 dark:bg-ink-800">
-          <span className="flex items-baseline justify-between text-[13px] text-cocoa-500 dark:text-white/60">
-            Asistencia
-            <strong className="font-display text-[22px] text-brand-ember dark:text-brand-amber">{percentage}%</strong>
-          </span>
-          <span className="block h-2.5 overflow-hidden rounded-full bg-sand-50 dark:bg-white/10">
-            <span
-              className="block h-full rounded-full bg-[linear-gradient(90deg,#F9A23B,#DC3340,#8A1C45)]"
-              style={{ width: `${Math.min(100, percentage)}%` }}
-            />
-          </span>
-        </div>
-      </div>
+        <aside
+          className="flex flex-col gap-3 rounded-[22px] border border-sand-200 bg-white p-4 dark:border-white/10 dark:bg-ink-800 sm:p-5 lg:sticky lg:top-2"
+          aria-label="Resumen del día seleccionado"
+        >
+          <div className="flex flex-col gap-0.5">
+            <span className="eyebrow text-[11px] text-brand-deep dark:text-brand-amber">
+              {isToday ? 'Hoy' : 'Día seleccionado'}
+            </span>
+            <h3 className="m-0 font-display text-xl font-semibold leading-tight text-cocoa-900 first-letter:uppercase dark:text-white sm:text-2xl">
+              {formatDate(data.date)}
+            </h3>
+            <span className="text-xs text-cocoa-500 dark:text-white/55">
+              {isToday
+                ? 'Se actualiza automáticamente cada 30 segundos'
+                : 'Toca otro día en el calendario para cambiar'}
+            </span>
+          </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-[13px] text-cocoa-500 dark:text-white/60">
-          {isToday
-            ? `${formatDate(data.date)} · se actualiza automáticamente cada 30 segundos`
-            : `Mostrando asistencias del ${formatDate(selectedDate)} · toca otro día en el calendario para cambiar`}
-        </span>
-        {data.attendances.length > 0 && (
-          <span className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                // Capturar datos estáticos al abrir pantalla completa
-                setFullscreenData(JSON.parse(JSON.stringify(data)));
-                setIsFullscreen(true);
-              }}
-              className="inline-flex h-10 items-center gap-2 rounded-full border border-sand-300 bg-white px-4 text-[13px] font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-ink-800 dark:text-white/80"
-            >
-              <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
-              </svg>
-              Pantalla completa
-            </button>
-            <button
-              type="button"
-              onClick={exportToCSV}
-              className="inline-flex h-10 items-center gap-2 rounded-full border border-sand-300 bg-white px-4 text-[13px] font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-ink-800 dark:text-white/80"
-            >
-              <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-              </svg>
-              Exportar CSV
-            </button>
-          </span>
-        )}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 flex items-end justify-between gap-3 rounded-[18px] bg-ink-950 px-5 py-4 text-white">
+              <span className="text-[13px] text-white/65">Presentes</span>
+              <span className="font-display text-[48px] font-bold leading-none text-brand-amber">
+                {data.stats.totalPresent}
+              </span>
+            </div>
+            <div className="flex flex-col justify-center gap-1 rounded-[18px] border border-sand-200 px-4 py-3 dark:border-white/10">
+              <span className="text-xs text-cocoa-500 dark:text-white/60">Jóvenes activos</span>
+              <span className="font-display text-[32px] font-bold leading-none text-cocoa-900 dark:text-white">
+                {data.stats.totalYoung}
+              </span>
+            </div>
+            <div className="flex flex-col justify-center gap-2 rounded-[18px] border border-sand-200 px-4 py-3 dark:border-white/10">
+              <span className="flex items-baseline justify-between text-xs text-cocoa-500 dark:text-white/60">
+                Asistencia
+                <strong className="font-display text-xl text-brand-ember dark:text-brand-amber">{percentage}%</strong>
+              </span>
+              <span className="block h-2.5 overflow-hidden rounded-full bg-sand-50 dark:bg-white/10">
+                <span
+                  className="block h-full rounded-full bg-[linear-gradient(90deg,#F9A23B,#DC3340,#8A1C45)]"
+                  style={{ width: `${Math.min(100, percentage)}%` }}
+                />
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowStats(true)}
+            className="btn-fire inline-flex h-12 w-full items-center justify-center gap-2 text-sm"
+          >
+            <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+            </svg>
+            Estadísticas de la temporada
+          </button>
+
+          {data.attendances.length > 0 && (
+            <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => {
+                  // Capturar datos estáticos al abrir pantalla completa
+                  setFullscreenData(JSON.parse(JSON.stringify(data)));
+                  setIsFullscreen(true);
+                }}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-sand-300 bg-white px-4 text-[13px] font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-ink-800 dark:text-white/80"
+              >
+                <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
+                </svg>
+                Pantalla completa
+              </button>
+              <button type="button" onClick={exportToCSV} className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-sand-300 bg-white px-4 text-[13px] font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:bg-ink-800 dark:text-white/80">
+                <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                </svg>
+                Exportar CSV
+              </button>
+            </div>
+          )}
+        </aside>
       </div>
 
       {/* Lista */}
@@ -311,6 +333,8 @@ const AttendanceList: React.FC<AttendanceListProps> = ({
           </p>
         </div>
       )}
+
+      <AttendanceStatsPanel isOpen={showStats} onClose={() => setShowStats(false)} />
 
       {/* Modo proyector (portal: evita quedar atrapado en paneles con transform) */}
       {createPortal(
