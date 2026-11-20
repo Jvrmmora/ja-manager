@@ -30,6 +30,19 @@ export interface CreatePointsTransactionDTO {
   assignedBy?: string;
 }
 
+
+/**
+ * Quiénes pueden aparecer en el ranking: solo jóvenes del grupo 1, activos
+ * (no borrados) y que no sean Super Admin. Los jóvenes de otros grupos
+ * conservan sus puntos, pero no se muestran hasta que pasen al grupo 1.
+ * Se aplica sobre el documento unido como `young`.
+ */
+const RANKING_ELIGIBLE_MATCH = {
+  'young.group': 1,
+  'young.deletedAt': null,
+  'young.role_name': { $ne: 'Super Admin' },
+};
+
 class PointsService {
   /**
    * Crear una nueva transacción de puntos
@@ -614,6 +627,7 @@ class PointsService {
         },
       },
       { $unwind: '$young' },
+      { $match: RANKING_ELIGIBLE_MATCH },
       // Traer racha vigente
       {
         $lookup: {
@@ -796,6 +810,7 @@ class PointsService {
         },
       },
       { $unwind: '$young' },
+      { $match: RANKING_ELIGIBLE_MATCH },
       // Traer racha vigente
       {
         $lookup: {

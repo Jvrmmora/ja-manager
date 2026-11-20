@@ -1,5 +1,6 @@
 jest.mock('../models/Young');
 jest.mock('../models/Season');
+jest.mock('../models/PointsTransaction');
 jest.mock('./emailService', () => ({
   emailService: {
     isConfigured: jest.fn().mockReturnValue(true),
@@ -10,6 +11,7 @@ jest.mock('./emailService', () => ({
 
 import Young from '../models/Young';
 import Season from '../models/Season';
+import PointsTransaction from '../models/PointsTransaction';
 import { emailService } from './emailService';
 import env from '../config/env';
 import {
@@ -19,6 +21,16 @@ import {
 
 const mockedYoung = Young as jest.Mocked<typeof Young>;
 const mockedSeason = Season as jest.Mocked<typeof Season>;
+const mockedTx = PointsTransaction as jest.Mocked<typeof PointsTransaction>;
+
+// findOne(...).sort(...).select(...) → resuelve a la transacción (o null)
+const mockBirthdayTx = (points: number | null) => {
+  const chain: any = {
+    sort: jest.fn().mockReturnThis(),
+    select: jest.fn().mockResolvedValue(points === null ? null : { points }),
+  };
+  mockedTx.findOne.mockReturnValue(chain);
+};
 const mockedSend = emailService.sendEmailOrThrow as jest.Mock;
 const mockedConfigured = emailService.isConfigured as jest.Mock;
 
@@ -45,6 +57,7 @@ beforeEach(() => {
     settings: { birthdayBonusPoints: 100 },
   } as any);
   mockedYoung.updateOne.mockResolvedValue({} as any);
+  mockBirthdayTx(100);
 });
 
 describe('buildBirthdayCtaUrl', () => {
@@ -67,7 +80,7 @@ describe('sendPendingBirthdayCards', () => {
     expect(mockedYoung.find).not.toHaveBeenCalled();
   });
 
-  it('filtra grupo 1 con email, activos y con puntos del año', async () => {
+  it('filtra grupo 1 con email y activos, sin exigir puntos reclamados ni temporada', async () => {
     mockedYoung.find.mockResolvedValue([] as any);
     await sendPendingBirthdayCards();
     const filter = (mockedYoung.find.mock.calls as any[])[0][0];
@@ -75,13 +88,12 @@ describe('sendPendingBirthdayCards', () => {
     expect(filter.email).toEqual({ $nin: [null, ''] });
     expect(filter.deletedAt).toBeNull();
     expect(filter.isSpam).toEqual({ $ne: true });
-    expect(filter.birthdayPointsClaimed.$gte.getFullYear()).toBe(thisYear);
+    expect(filter.birthdayPointsClaimed).toBeUndefined();
+    expect(mockedSeason.findOne).not.toHaveBeenCalled();
   });
 
-  it('reserva antes de enviar y envía la tarjeta con placa y puntos de la temporada', async () => {
-    mockedSeason.findOne.mockResolvedValue({
-      settings: { birthdayBonusPoints: 150 },
-    } as any);
+  it('reserva antes de enviar y envía la tarjeta con placa y los puntos reales de la transacción', async () => {
+    mockBirthdayTx(150);
     mockedYoung.find.mockResolvedValue([makeYoung()] as any);
     mockedYoung.findOneAndUpdate.mockResolvedValue(makeYoung() as any);
 
@@ -168,5 +180,31 @@ describe('sendPendingBirthdayCards', () => {
     expect(result.sent).toBe(1);
     expect(result.failed).toHaveLength(1);
     expect(mockedSend).toHaveBeenCalledTimes(2);
+  });
+
+  it('sin temporada activa envía la tarjeta igual, con los puntos de la transacción ya cargada', async () => {
+    mockedSeason.findOne.mockResolvedValue(null as any);
+    mockBirthdayTx(100);
+    mockedYoung.find.mockResolvedValue([makeYoung()] as any);
+    mockedYoung.findOneAndUpdate.mockResolvedValue(makeYoung() as any);
+
+    const result = await sendPendingBirthdayCards();
+
+    expect(result.sent).toBe(1);
+    expect(mockedSend).toHaveBeenCalledWith(
+      expect.objectContaining({ birthdayPoints: 100 })
+    );
+  });
+
+  it('sin transacción de cumpleaños envía la tarjeta sin puntos', async () => {
+    mockBirthdayTx(null);
+    mockedYoung.find.mockResolvedValue([makeYoung()] as any);
+    mockedYoung.findOneAndUpdate.mockResolvedValue(makeYoung() as any);
+
+    const result = await sendPendingBirthdayCards();
+
+    expect(result.sent).toBe(1);
+    const sent = mockedSend.mock.calls[0][0];
+    expect(sent).not.toHaveProperty('birthdayPoints');
   });
 });

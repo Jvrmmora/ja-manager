@@ -302,7 +302,7 @@ const YoungDetailDrawer: React.FC<YoungDetailDrawerProps> = ({
                       : ''}
                   </Field>
                   <Field label="Rol">{capitalizeRole(young.role)}</Field>
-                  <Field label="En el grupo desde">
+                  <Field label="Fecha de registro">
                     {young.createdAt ? formatBirthdayWithYear(young.createdAt) : ''}
                   </Field>
                 </dl>

@@ -1,6 +1,7 @@
 import env from '../config/env';
 import Young from '../models/Young';
 import Season from '../models/Season';
+import PointsTransaction from '../models/PointsTransaction';
 import { emailService } from './emailService';
 import { getCurrentDateTimeColombia } from '../utils/dateUtils';
 import logger from '../utils/logger';
@@ -20,8 +21,13 @@ export const buildBirthdayCtaUrl = (placa?: string | null): string =>
 
 /**
  * Envía la tarjeta de cumpleaños por correo a los jóvenes de grupo 1 que
- * cumplen años hoy, tienen email y ya tienen los puntos del año cargados
- * (ver pointsService.assignBirthdayPointsForGroupOne, que corre antes).
+ * cumplen años hoy y tienen email. Es independiente de la temporada: aunque
+ * no haya una activa, la tarjeta sale igual.
+ *
+ * La línea de "puntos de regalo" solo se muestra si el joven tiene una
+ * transacción BIRTHDAY de este año (de la temporada activa o de una ya
+ * cerrada) y usa los puntos reales de esa transacción. Sin transacción, la
+ * tarjeta sale solo con el saludo y el botón.
  *
  * Idempotente: reserva `birthdayEmailSentAt` con un findOneAndUpdate atómico
  * ANTES de enviar, así ni un reintento de curl ni la segunda corrida diaria
@@ -46,9 +52,6 @@ export const sendPendingBirthdayCards = async (): Promise<BirthdayCardsResult> =
     return result;
   }
 
-  const activeSeason = await Season.findOne({ status: 'ACTIVE' });
-  const birthdayPoints = activeSeason?.settings?.birthdayBonusPoints || 100;
-
   const now = getCurrentDateTimeColombia();
   const startOfYear = new Date(now.getFullYear(), 0, 1);
 
@@ -59,8 +62,6 @@ export const sendPendingBirthdayCards = async (): Promise<BirthdayCardsResult> =
     deletedAt: null,
     isSpam: { $ne: true },
     mergedInto: { $in: [null, undefined] },
-    // Solo quien ya tiene los puntos de este año cargados
-    birthdayPointsClaimed: { $gte: startOfYear },
   });
 
   const todaysBirthdays = candidates.filter(young => young.isBirthdayToday());
@@ -71,6 +72,16 @@ export const sendPendingBirthdayCards = async (): Promise<BirthdayCardsResult> =
     const previousSentAt = young.birthdayEmailSentAt ?? null;
 
     try {
+      // Puntos reales ya cargados este año (si los hay), de cualquier temporada.
+      const birthdayTx = await PointsTransaction.findOne({
+        youngId: young._id,
+        type: 'BIRTHDAY',
+        createdAt: { $gte: startOfYear },
+      })
+        .sort({ createdAt: -1 })
+        .select('points');
+      const birthdayPoints: number | undefined = birthdayTx?.points;
+
       // Reserva atómica: solo gana un intento por año.
       const reserved = await Young.findOneAndUpdate(
         {
@@ -92,11 +103,13 @@ export const sendPendingBirthdayCards = async (): Promise<BirthdayCardsResult> =
         await emailService.sendEmailOrThrow({
           toEmail: young.email as string,
           toName: young.fullName,
-          message: `¡Feliz cumpleaños ${young.fullName}! Tienes ${birthdayPoints} puntos de regalo.`,
+          message: birthdayPoints
+            ? `¡Feliz cumpleaños ${young.fullName}! Tienes ${birthdayPoints} puntos de regalo.`
+            : `¡Feliz cumpleaños ${young.fullName}!`,
           type: 'birthday',
           placa: young.placa || undefined,
           profileImage: young.profileImage,
-          birthdayPoints,
+          ...(birthdayPoints ? { birthdayPoints } : {}),
           birthdayCtaUrl: buildBirthdayCtaUrl(young.placa),
         });
         result.sent++;

@@ -32,7 +32,9 @@ export const buildSubject = (params: EmailParams): string => {
     case 'rejection':
       return `Solicitud de Registro - Actualización`;
     case 'birthday':
-      return `¡Feliz cumpleaños, ${firstName(params.toName)}! Tienes ${params.birthdayPoints || 100} puntos de regalo`;
+      return params.birthdayPoints
+        ? `¡Feliz cumpleaños, ${firstName(params.toName)}! Tienes ${params.birthdayPoints} puntos de regalo`
+        : `¡Feliz cumpleaños, ${firstName(params.toName)}!`;
     case 'welcome':
       return `¡Bienvenido a JA Manager! - Cuenta creada exitosamente`;
     case 'new_user_notification':
@@ -53,14 +55,15 @@ const birthdayCtaUrl = (params: EmailParams): string =>
     : `${env.frontendUrl}/login`);
 
 const generateBirthdayText = (params: EmailParams): string => {
-  const points = params.birthdayPoints || 100;
+  const points = params.birthdayPoints;
   const lines = [
     `¡Feliz cumpleaños, ${firstName(params.toName)}!`,
     '',
     'Desde el Ministerio Juvenil Modelia te enviamos un fuerte abrazo y nuestros mejores deseos en este día tan especial. Que Dios siga guiando tu vida y llenándola de bendiciones.',
     '',
-    `Tienes ${points} puntos de regalo. Ya están cargados en tu cuenta: súmalos al ranking de esta temporada.`,
-    '',
+    ...(points
+      ? [`Tienes ${points} puntos de regalo. Ya están cargados en tu cuenta.`, '']
+      : []),
     `Visita el sitio: ${birthdayCtaUrl(params)}`,
   ];
   if (params.placa) {
@@ -129,7 +132,8 @@ const birthdayAvatar = (params: EmailParams): string => {
  */
 const generateBirthdayTemplate = (params: EmailParams): string => {
   const name = escapeHtml(firstName(params.toName));
-  const points = escapeHtml(params.birthdayPoints || 100);
+  const hasPoints = !!params.birthdayPoints;
+  const points = escapeHtml(params.birthdayPoints || 0);
   const placa = params.placa ? escapeHtml(params.placa) : '';
   const ctaUrl = escapeHtml(birthdayCtaUrl(params));
   const confettiUrl = `${env.frontendUrl}/email/birthday-confetti.png`;
@@ -146,7 +150,7 @@ const generateBirthdayTemplate = (params: EmailParams): string => {
   <title>¡Feliz cumpleaños, ${name}!</title>
 </head>
 <body style="margin:0; padding:0;">
-  <div style="display:none; max-height:0; overflow:hidden; opacity:0;">Tienes ${points} puntos de regalo ya cargados en tu cuenta.</div>
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0;">${hasPoints ? `Tienes ${points} puntos de regalo ya cargados en tu cuenta.` : `Hoy toda la familia del Ministerio Juvenil Modelia celebra tu vida.`}</div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
     <tr>
       <td align="center" style="padding:24px 12px;">
@@ -175,7 +179,7 @@ const generateBirthdayTemplate = (params: EmailParams): string => {
             </td>
           </tr>
 
-          <!-- Puntos de regalo -->
+          ${hasPoints ? `          <!-- Puntos de regalo -->
           <tr>
             <td style="padding:28px 0 0;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
@@ -194,7 +198,7 @@ const generateBirthdayTemplate = (params: EmailParams): string => {
                 </tr>
               </table>
             </td>
-          </tr>
+          </tr>` : ''}
 
           <!-- Botón (solo borde, sin relleno) -->
           <tr>
