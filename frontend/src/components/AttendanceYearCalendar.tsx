@@ -97,6 +97,8 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
   const [byYear, setByYear] = useState<Record<number, AttendanceCalendarDay[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
+  // Solo móvil: el calendario empieza colapsado (en ≥sm siempre se ve)
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Rango visible → años que hay que tener cargados
   const range = useMemo(() => {
@@ -192,8 +194,6 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
   };
 
   const detailDate = hovered ?? selectedDate;
-  const chip =
-    'inline-flex h-8 items-center gap-1.5 rounded-full border border-sand-200 bg-white px-3 text-xs text-cocoa-600 dark:border-white/10 dark:bg-ink-800 dark:text-white/70';
   const navBtn =
     'flex h-9 w-9 items-center justify-center rounded-full border border-sand-300 text-cocoa-600 hover:border-cocoa-400 disabled:opacity-30 dark:border-white/15 dark:text-white/80';
 
@@ -241,9 +241,9 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
               aria-pressed={key === selectedDate}
               className={`flex items-center justify-center rounded-md tabular-nums transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber disabled:cursor-default disabled:opacity-30 ${
                 compact
-                  ? 'aspect-square text-[10.5px]'
-                  : 'h-10 flex-col gap-0 rounded-lg text-[13px] leading-tight sm:h-11 sm:text-sm'
-              } ${info ? 'font-bold hover:scale-105' : ''} ${dayStyle(info)} ${dayRing(key)}`}
+                  ? 'aspect-square min-w-0 text-[11px] leading-none'
+                  : 'h-11 flex-col gap-0 rounded-lg text-sm leading-tight sm:h-14 sm:text-base'
+              } ${info ? (compact ? 'font-bold' : 'font-bold hover:scale-105') : ''} ${dayStyle(info)} ${dayRing(key)}`}
             >
               {i + 1}
               {!compact && info && info.attendees > 0 && (
@@ -258,11 +258,47 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
 
   return (
     <div className="rounded-[22px] border border-sand-200 bg-white p-4 sm:p-5 dark:border-white/10 dark:bg-ink-800">
+      {/* Barra móvil: día seleccionado + expandir/colapsar el calendario */}
+      <div className="flex items-center gap-2 sm:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(o => !o)}
+          aria-expanded={mobileOpen}
+          aria-controls="asistencias-calendario"
+          className="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-2xl border border-sand-300 px-3.5 text-left dark:border-white/15"
+        >
+          <svg className="h-5 w-5 flex-shrink-0 text-brand-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="16" rx="3" />
+            <path d="M3 10h18M8 3v4M16 3v4" />
+          </svg>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold text-cocoa-900 dark:text-white">
+              {formatLong(selectedDate || today)}
+            </span>
+            <span className="block text-[11px] text-cocoa-500 dark:text-white/55">
+              {mobileOpen ? 'Ocultar calendario' : 'Mostrar calendario'}
+            </span>
+          </span>
+          <svg className={`h-4 w-4 flex-shrink-0 text-cocoa-500 transition-transform dark:text-white/60 ${mobileOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={goToday}
+          className="inline-flex h-12 flex-shrink-0 items-center rounded-2xl border border-sand-300 px-4 text-[13px] font-semibold text-cocoa-600 dark:border-white/15 dark:text-white/80"
+        >
+          Hoy
+        </button>
+      </div>
+
+      <div id="asistencias-calendario" className={`${mobileOpen ? 'mt-4' : 'hidden'} sm:mt-0 sm:block`}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       {/* Selector de vista */}
       <div
         role="tablist"
         aria-label="Vista del calendario"
-        className="mb-2.5 grid grid-cols-3 gap-1 rounded-full bg-sand-100 p-1 dark:bg-white/[0.06] sm:inline-grid sm:w-64"
+        className="grid grid-cols-3 gap-1 rounded-full bg-sand-100 p-1 dark:bg-white/[0.06] sm:order-2 sm:inline-grid sm:w-64"
       >
         {VIEWS.map(v => (
           <button
@@ -282,9 +318,8 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
         ))}
       </div>
 
-      {/* Navegación del periodo + leyenda */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+      {/* Navegación del periodo */}
+        <div className="flex items-center gap-2 sm:order-1">
           <button type="button" onClick={() => step(-1)} aria-label="Periodo anterior" className={navBtn}>‹</button>
           <span className="min-w-[120px] text-center font-display text-xl font-bold text-cocoa-900 dark:text-white sm:text-2xl">
             {title}
@@ -293,35 +328,34 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
           <button
             type="button"
             onClick={goToday}
-            className="ml-1 inline-flex h-9 items-center rounded-full border border-sand-300 px-3.5 text-[13px] font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:text-white/80"
+            className="ml-1 hidden h-9 items-center rounded-full sm:inline-flex border border-sand-300 px-3.5 text-[13px] font-semibold text-cocoa-600 hover:border-cocoa-400 dark:border-white/15 dark:text-white/80"
           >
             Hoy
           </button>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-cocoa-500 dark:text-white/60">
-          {(['CULTO', 'ACTIVIDAD'] as const).map(k => (
-            <span key={k} className="inline-flex items-center gap-1.5">
-              <span className={`h-3 w-3 rounded ${KIND_STYLE[k].swatch}`} />
-              {KIND_STYLE[k].label}
-            </span>
-          ))}
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded border-2 border-cocoa-400 dark:border-white/50" />
-            QR sin asistentes
-          </span>
         </div>
       </div>
 
       {/* Resumen del periodo */}
       {loaded && (
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          <span className={chip}><b className="text-cocoa-900 dark:text-white">{summary.cultos}</b> cultos jóvenes</span>
-          <span className={chip}><b className="text-cocoa-900 dark:text-white">{summary.actividades}</b> actividades</span>
-          {summary.promedio > 0 && (
-            <span className={chip}><b className="text-cocoa-900 dark:text-white">{summary.promedio}</b> por culto (promedio)</span>
-          )}
+        <div className="mt-4 rounded-2xl bg-sand-50 dark:bg-white/[0.05]">
+          <dl className="m-0 grid grid-cols-3 divide-x divide-sand-200 dark:divide-white/10">
+            {[
+              [summary.cultos, 'cultos jóvenes'],
+              [summary.actividades, 'actividades'],
+              [summary.promedio, 'por culto (prom.)'],
+            ].map(([n, label]) => (
+              <div key={label} className="flex flex-col items-center px-2 py-2.5 text-center">
+                <dd className="m-0 font-display text-2xl font-bold leading-none text-cocoa-900 dark:text-white">{n}</dd>
+                <dt className="mt-1 text-[11px] leading-tight text-cocoa-500 dark:text-white/60">{label}</dt>
+              </div>
+            ))}
+          </dl>
           {summary.mejor && summary.mejor.attendees > 0 && (
-            <button type="button" onClick={() => onSelect(summary.mejor!.date)} className={`${chip} hover:border-cocoa-400`}>
+            <button
+              type="button"
+              onClick={() => onSelect(summary.mejor!.date)}
+              className="w-full border-t border-sand-200 px-3 py-2 text-center text-xs text-cocoa-600 hover:text-cocoa-900 dark:border-white/10 dark:text-white/70"
+            >
               Récord: <b className="text-cocoa-900 dark:text-white">{summary.mejor.attendees}</b> el {formatLong(summary.mejor.date).toLowerCase()}
             </button>
           )}
@@ -335,7 +369,7 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
           <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-sand-200 border-t-brand-orange dark:border-white/15" />
         </div>
       ) : view === 'mes' ? (
-        <div className="mx-auto mt-3 max-w-md">
+        <div className="mx-auto mt-4 w-full max-w-xl">
           {renderMonthGrid(Number(cursor.slice(0, 4)), Number(cursor.slice(5, 7)) - 1, false)}
         </div>
       ) : view === 'semana' ? (
@@ -385,7 +419,7 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
           })}
         </ul>
       ) : (
-        <div className="mt-4 grid grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3">
           {MONTHS.map((monthName, m) => {
             const year = Number(cursor.slice(0, 4));
             const monthEvents = inRange.filter(d => Number(d.date.slice(5, 7)) === m + 1).length;
@@ -412,12 +446,26 @@ const AttendanceYearCalendar: React.FC<AttendanceYearCalendarProps> = ({
         </div>
       )}
 
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-cocoa-500 dark:text-white/60">
+        {(['CULTO', 'ACTIVIDAD'] as const).map(k => (
+          <span key={k} className="inline-flex items-center gap-1.5">
+            <span className={`h-3 w-3 rounded ${KIND_STYLE[k].swatch}`} />
+            {KIND_STYLE[k].label}
+          </span>
+        ))}
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded border-2 border-cocoa-400 dark:border-white/50" />
+          QR sin asistentes
+        </span>
+      </div>
+
       {/* Detalle del día (al pasar el mouse o del día seleccionado) */}
       <div
         className="mt-3 rounded-xl bg-sand-50 px-3.5 py-2 text-[13px] text-cocoa-600 dark:bg-white/[0.05] dark:text-white/75"
         aria-live="polite"
       >
         {describeDay(detailDate, byDate.get(detailDate))}
+      </div>
       </div>
     </div>
   );
