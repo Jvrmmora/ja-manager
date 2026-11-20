@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import PageLoader from '../../components/PageLoader';
 import ToastContainer from '../../components/ToastContainer';
+import RespondentAvatar from '../../components/forms/admin/RespondentAvatar';
 import AdminFormsHeader, { useAdminOnly } from '../../components/forms/admin/AdminFormsHeader';
 import { outlineBtn } from '../../components/forms/admin/formStatus';
 import { useToast } from '../../hooks/useToast';
@@ -36,6 +37,35 @@ const pad = (n: number) => String(n).padStart(2, '0');
 const inputCls =
   'h-11 rounded-xl border border-sand-300 bg-white px-3 text-sm text-cocoa-900 dark:border-white/15 dark:bg-ink-900 dark:text-white';
 
+const normalize = (text: string) =>
+  text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+/** Resalta la búsqueda dentro del nombre sin importar tildes ni mayúsculas. */
+const Highlight = ({ text, term }: { text: string; term: string }) => {
+  if (!term) return <>{text}</>;
+  // NFD puede cambiar el largo; se compara letra por letra para conservar los índices.
+  const plain = Array.from(text).map(ch => normalize(ch));
+  const flat = plain.join('');
+  const index = flat.indexOf(term);
+  if (index < 0) return <>{text}</>;
+  let start = 0;
+  let acc = 0;
+  while (start < plain.length && acc + plain[start].length <= index) acc += plain[start++].length;
+  let end = start;
+  while (end < plain.length && acc < index + term.length) acc += plain[end++].length;
+  const chars = Array.from(text);
+  return (
+    <>
+      {chars.slice(0, start).join('')}
+      <mark className="rounded bg-brand-amber/60 px-0.5 text-inherit">{chars.slice(start, end).join('')}</mark>
+      {chars.slice(end).join('')}
+    </>
+  );
+};
+
 /** /admin/birthday-report — cumpleaños del semestre: grupo 1 + invitados del formulario + manuales. */
 export default function BirthdayReportPage() {
   useAdminOnly();
@@ -47,6 +77,15 @@ export default function BirthdayReportPage() {
   const [report, setReport] = useState<BirthdayReport | null>(null);
   const [guests, setGuests] = useState<BirthdayGuest[]>([]);
   const [downloading, setDownloading] = useState(false);
+  const [search, setSearch] = useState('');
+  const term = normalize(search.trim());
+  const matches = useMemo(
+    () =>
+      term && report
+        ? report.groups.reduce((sum, g) => sum + g.rows.filter(r => normalize(r.name).includes(term)).length, 0)
+        : 0,
+    [report, term]
+  );
 
   const [name, setName] = useState('');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -157,10 +196,10 @@ export default function BirthdayReportPage() {
         </div>
       </section>
 
-      <main className="relative mx-auto -mt-12 grid max-w-7xl gap-6 px-4 pb-16 sm:px-6 lg:grid-cols-[1fr_360px] lg:px-8">
+      <main className="relative mx-auto -mt-12 grid max-w-7xl gap-6 px-4 [&>*]:min-w-0 pb-16 sm:px-6 lg:grid-cols-[1fr_360px] lg:px-8">
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-sand-200 bg-white p-4 dark:border-white/10 dark:bg-ink-900">
-            <div className="flex gap-2" role="group" aria-label="Semestre">
+          <div className="flex flex-col gap-3 rounded-3xl border border-sand-200 bg-white p-4 dark:border-white/10 dark:bg-ink-900 sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Semestre">
               {([1, 2] as Semester[]).map(value => (
                 <button
                   key={value}
@@ -173,7 +212,7 @@ export default function BirthdayReportPage() {
                 </button>
               ))}
             </div>
-            <label className="ml-auto flex items-center gap-2 text-sm text-cocoa-600 dark:text-white/70">
+            <label className="flex flex-col gap-1 text-sm sm:ml-auto sm:flex-row sm:items-center sm:gap-2 text-cocoa-600 dark:text-white/70">
               Invitados de
               <select value={formId} onChange={e => setFormId(e.target.value)} className={inputCls}>
                 <option value="">(ningún formulario)</option>
@@ -186,6 +225,25 @@ export default function BirthdayReportPage() {
             </label>
           </div>
 
+          <div className="rounded-3xl border border-sand-200 bg-white p-4 dark:border-white/10 dark:bg-ink-900">
+            <input
+              type="search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar un nombre para resaltarlo…"
+              aria-label="Buscar nombre"
+              className={`${inputCls} w-full`}
+            />
+            {term && report && (
+              <p
+                role="status"
+                className={`m-0 mt-2 text-sm font-semibold ${matches ? 'text-emerald-600 dark:text-emerald-400' : 'text-brand-red'}`}
+              >
+                {matches ? `Sí está · ${matches} coincidencia${matches === 1 ? '' : 's'}` : 'No está en este reporte'}
+              </p>
+            )}
+          </div>
+
           {!report ? (
             <p className="text-cocoa-500 dark:text-white/60">Generando reporte…</p>
           ) : (
@@ -196,7 +254,7 @@ export default function BirthdayReportPage() {
               {report.groups.map(group => (
                 <section
                   key={group.month}
-                  className="rounded-3xl border border-sand-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900"
+                  className="rounded-3xl border border-sand-200 bg-white p-3 dark:border-white/10 dark:bg-ink-900 sm:p-5"
                 >
                   <h2 className="m-0 font-display text-xl font-semibold uppercase text-cocoa-900 dark:text-white">
                     {group.label} <span className="text-cocoa-400">({group.rows.length})</span>
@@ -204,15 +262,32 @@ export default function BirthdayReportPage() {
                   {group.rows.length === 0 ? (
                     <p className="m-0 mt-2 text-sm text-cocoa-400 dark:text-white/40">Sin cumpleaños este mes.</p>
                   ) : (
-                    <ul className="m-0 mt-3 list-none divide-y divide-sand-100 p-0 dark:divide-white/5">
+                    <ul className="m-0 mt-3 list-none space-y-1 p-0">
                       {group.rows.map(row => (
-                        <li key={`${row.name}-${row.day}`} className="flex items-center gap-3 py-2 text-sm">
-                          <span className="w-12 font-display text-cocoa-500 dark:text-white/60">
+                        <li
+                          key={`${row.name}-${row.day}`}
+                          className={`flex items-center gap-3 rounded-xl px-2 py-2.5 text-sm ${
+                            term && normalize(row.name).includes(term) ? 'bg-brand-amber/15 ring-1 ring-brand-amber/50' : ''
+                          }`}
+                        >
+                          <RespondentAvatar name={row.name} photoUrl={row.profileImage} />
+                          <div className="min-w-0 flex-1">
+                            <p className="m-0 break-words font-medium text-cocoa-900 dark:text-white">
+                              <Highlight text={row.name} term={term} />
+                            </p>
+                            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                              {row.placa && (
+                                <span className="rounded-full bg-brand-red/10 px-2 py-0.5 font-mono text-brand-red">
+                                  {row.placa}
+                                </span>
+                              )}
+                              <span className="rounded-full bg-sand-100 px-2 py-0.5 text-cocoa-600 dark:bg-white/10 dark:text-white/70">
+                                {row.origin}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="flex-shrink-0 rounded-lg bg-sand-100 px-2 py-1 font-display text-cocoa-700 dark:bg-white/10 dark:text-white/80">
                             {pad(row.day)}/{pad(row.month + 1)}
-                          </span>
-                          <span className="flex-1 text-cocoa-900 dark:text-white">{row.name}</span>
-                          <span className="rounded-full bg-sand-100 px-2.5 py-0.5 text-xs text-cocoa-600 dark:bg-white/10 dark:text-white/70">
-                            {row.origin}
                           </span>
                         </li>
                       ))}

@@ -8,6 +8,9 @@ export interface BirthdayRow {
   month: number;
   day: number;
   origin: string;
+  /** Solo jóvenes registrados: placa y foto de la base de datos. */
+  placa?: string;
+  profileImage?: string;
 }
 
 export interface BirthdayMonthGroup {
