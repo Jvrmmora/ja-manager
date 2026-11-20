@@ -49,6 +49,23 @@ describe('buildYoungListFilters', () => {
     expect(filters.group).toEqual({ $in: [1, 3] });
   });
 
+  it('faltantes foto y placa agregan condiciones AND de campo vacío', () => {
+    const filters = buildYoungListFilters({ faltantes: ['foto', 'placa'] });
+    expect(filters.$and).toHaveLength(2);
+    expect(filters.$and[0].$or).toEqual(
+      expect.arrayContaining([{ profileImage: null }, { profileImage: '' }])
+    );
+  });
+
+  it('faltantes ranking limita a grupo 1 sin Super Admin y excluye los del ranking', () => {
+    const filters = buildYoungListFilters({ faltantes: 'ranking' }, ['a', 'b']);
+    expect(filters.$and[0]).toEqual({
+      group: 1,
+      role_name: { $ne: 'Super Admin' },
+      _id: { $nin: ['a', 'b'] },
+    });
+  });
+
   it('ignora ageRange/gender/role vacíos', () => {
     const filters = buildYoungListFilters({
       ageRange: '',

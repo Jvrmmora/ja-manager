@@ -59,6 +59,7 @@ export interface PaginationQuery {
   gender?: string;
   role?: string;
   groups?: string[] | undefined; // Array de grupos para filtrar (1-5)
+  faltantes?: string[] | undefined; // 'foto' | 'placa' | 'ranking'
   sortBy?:
     | 'fullName'
     | 'birthday'

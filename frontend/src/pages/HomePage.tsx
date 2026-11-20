@@ -328,6 +328,11 @@ function HomePage() {
             params.append('groups', group);
           });
         }
+        if (activeFilters.faltantes && activeFilters.faltantes.length > 0) {
+          activeFilters.faltantes.forEach(f => {
+            params.append('faltantes', f);
+          });
+        }
         if (activeFilters.sortBy) {
           params.append('sortBy', activeFilters.sortBy);
         }

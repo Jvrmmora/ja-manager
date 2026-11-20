@@ -294,6 +294,13 @@ export const querySchema = Joi.object({
     )
     .default('fullName'),
   sortOrder: Joi.string().valid('asc', 'desc').default('asc'),
+  // Perfiles incompletos: 'foto' | 'placa' | 'ranking' (se combinan con AND)
+  faltantes: Joi.alternatives()
+    .try(
+      Joi.array().items(Joi.string().valid('foto', 'placa', 'ranking')),
+      Joi.string().valid('foto', 'placa', 'ranking')
+    )
+    .optional(),
   groups: Joi.alternatives()
     .try(
       Joi.array().items(Joi.string().valid('1', '2', '3', '4', '5')),
