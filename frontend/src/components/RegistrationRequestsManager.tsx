@@ -455,7 +455,7 @@ const RegistrationRequestsManager: React.FC<
       {/* Modal para eliminar usuario */}
       {showDeleteModal && deletingRequest && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-[#0C0609]/75 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[28px] bg-white shadow-2xl dark:bg-ink-900" role="alertdialog" aria-modal="true" aria-label="Eliminar usuario">
+          <div className="w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-[28px] bg-white shadow-2xl dark:bg-ink-900" role="alertdialog" aria-modal="true" aria-label="Eliminar usuario">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="m-0 font-display text-2xl font-semibold uppercase text-cocoa-900 dark:text-white">

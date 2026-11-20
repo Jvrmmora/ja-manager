@@ -28,7 +28,7 @@ const BrandModalHeader: React.FC<BrandModalHeaderProps> = ({
   iconTone = 'fire',
   onClose,
   actions,
-  sticky = false,
+  sticky = true,
   compact = false,
 }) => (
   <div

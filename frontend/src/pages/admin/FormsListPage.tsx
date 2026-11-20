@@ -213,7 +213,7 @@ export default function FormsListPage() {
 
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-lg overflow-hidden rounded-t-3xl bg-white dark:bg-ink-900 sm:rounded-3xl">
+          <div className="max-h-[100dvh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-3xl bg-white dark:bg-ink-900 sm:max-h-[calc(100dvh-2rem)] sm:rounded-3xl">
             <BrandModalHeader
               title="Nuevo formulario"
               subtitle="Después podrás cambiar todo"

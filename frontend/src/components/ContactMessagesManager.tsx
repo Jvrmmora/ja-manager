@@ -324,7 +324,7 @@ export default function ContactMessagesManager({
               className="fixed inset-0 z-[61] flex items-center justify-center p-4 pointer-events-none"
             >
               <div
-                className="pointer-events-auto w-full max-w-xl overflow-hidden rounded-[28px] bg-white shadow-2xl dark:bg-ink-900"
+                className="pointer-events-auto w-full max-w-xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-[28px] bg-white shadow-2xl dark:bg-ink-900"
                 role="dialog"
                 aria-modal="true"
                 aria-label="Detalle del mensaje"
