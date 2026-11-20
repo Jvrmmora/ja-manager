@@ -46,6 +46,8 @@ router.post('/:id/duplicate', ...canManage, FormController.duplicate);
 router.get('/:id/responses', ...canRead, FormController.listResponses);
 router.get('/:id/stats', ...canRead, FormController.stats);
 router.get('/:id/export', ...canRead, FormController.exportXlsx);
+router.get('/:id/young/:youngId', ...canManage, FormController.previewYoung);
+router.post('/:id/responses', ...canManage, FormController.createManualResponse);
 router.delete('/:id/responses/:responseId', ...canManage, FormController.deleteResponse);
 
 router.put('/:id/sheets', ...canManage, FormController.connectSheets);

@@ -39,6 +39,12 @@ export interface Requester {
   scopes?: string[];
 }
 
+/**
+ * Identidad elegida por un administrador al registrar una respuesta a mano.
+ * Con ella se ignora la sesión del admin como "quien responde".
+ */
+export type ManualIdentity = { youngId: string } | { guest: true };
+
 export interface SubmitPayload {
   placa?: string;
   contact?: Record<string, unknown>;
@@ -168,6 +174,31 @@ export const identifyByPlaca = async (slug: string, rawPlaca: unknown) => {
   };
 };
 
+/**
+ * Vista previa de un joven para que el admin registre su respuesta: datos
+ * completos (el admin ya los ve en su panel), qué falta y su respuesta previa.
+ */
+export const previewYoungForForm = async (formId: string, youngId: string) => {
+  const form = await Form.findById(formId);
+  if (!form) throw new NotFoundError('Formulario');
+  const young = await Young.findOne({ _id: youngId, ...activeYoungFilter });
+  if (!young) throw new NotFoundError('Joven');
+
+  const profile = toContactProfile(young);
+  const previous = await findYoungResponse(form._id, young._id);
+  return {
+    youngId: String(young._id),
+    fullName: young.fullName,
+    placa: young.placa || null,
+    profileImage: young.profileImage || null,
+    saved: form.contactFields
+      .filter(c => c.mode !== 'hidden' && profile[c.field] !== undefined)
+      .map(c => c.field),
+    missing: missingProfileFields(form.contactFields, profile),
+    response: previous ? { answers: previous.answers } : null,
+  };
+};
+
 const attendanceFrom = (form: IFormDocument, answers: Record<string, unknown>) => {
   const id = form.attendanceQuestionId;
   if (!id || answers[id] === undefined) return null;
@@ -244,7 +275,8 @@ export const submitResponse = async (
   slug: string,
   payload: SubmitPayload,
   requester?: Requester,
-  meta: { ip?: string } = {}
+  meta: { ip?: string } = {},
+  manual?: ManualIdentity
 ) => {
   const form = await findFormBySlug(slug, requester);
   const availability = getAvailability(form);
@@ -254,7 +286,16 @@ export const submitResponse = async (
   // 1) ¿Quién responde?
   let kind: RespondentKind = 'guest';
   let young: any = null;
-  if (requester) {
+  if (manual) {
+    if ('youngId' in manual) {
+      young = await Young.findOne({ _id: manual.youngId, ...activeYoungFilter });
+      if (!young) throw new NotFoundError('Joven');
+      kind = 'placa';
+    } else if (!form.settings.allowGuests) {
+      throw new ForbiddenError('Este formulario es solo para jóvenes registrados');
+    }
+    // Invitado manual: el admin registra los datos, no hay consentimiento que aceptar
+  } else if (requester) {
     young = await Young.findOne({ _id: requester.userId, ...activeYoungFilter });
     if (!young) throw new UnauthorizedError('Tu sesión no es válida, vuelve a iniciar sesión');
     kind = 'session';
@@ -330,7 +371,7 @@ export const submitResponse = async (
         },
         answers: answers.answers,
         attending,
-        consentAcceptedAt: kind === 'guest' ? new Date() : null,
+        consentAcceptedAt: kind === 'guest' && !manual ? new Date() : null,
         sheetsSync: { status: sheetsPending ? 'pending' : 'skipped', attempts: 0 },
         ipHash: hashIp(meta.ip),
       });

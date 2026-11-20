@@ -119,6 +119,15 @@ export const submitResponseSchema = Joi.object({
   saveToProfile: Joi.boolean().optional(),
 });
 
+/** Respuesta registrada por el admin: un joven existente o un invitado. */
+export const manualResponseSchema = Joi.object({
+  youngId: Joi.string().hex().length(24).optional(),
+  guest: Joi.boolean().valid(true).optional(),
+  contact: submitResponseSchema.extract('contact'),
+  answers: submitResponseSchema.extract('answers'),
+})
+  .xor('youngId', 'guest');
+
 export const responseListQuerySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(200).default(50),
