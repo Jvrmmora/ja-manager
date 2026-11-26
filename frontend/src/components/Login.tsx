@@ -194,12 +194,25 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               />
 
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-semibold text-cocoa-700 dark:text-white/85 mb-2"
-                >
-                  Contraseña
-                </label>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-semibold text-cocoa-700 dark:text-white/85"
+                  >
+                    Contraseña
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate('/forgot-password', {
+                        state: { identifier: formData.username },
+                      })
+                    }
+                    className="inline-flex min-h-[44px] items-center text-sm font-semibold text-brand-deep hover:text-brand-wine hover:underline dark:text-brand-amber transition-colors"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     id="password"

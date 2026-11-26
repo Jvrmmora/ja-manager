@@ -29,6 +29,7 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 const AttendanceScanPage = lazy(() => import('./pages/AttendanceScanPage'));
 const BirthdayClaimPage = lazy(() => import('./pages/BirthdayClaimPage'));
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const RankingSharePage = lazy(() => import('./pages/RankingSharePage'));
 const BirthdaySharePage = lazy(() => import('./pages/BirthdaySharePage'));
 const PublicFormPage = lazy(() => import('./pages/forms/PublicFormPage'));
@@ -164,6 +165,21 @@ function App() {
                     onLoginSuccess={handleLoginSuccess}
                     showToast={showToast}
                   />
+                )
+              }
+            />
+
+            {/* Recuperación de contraseña por correo (pública; con sesión redirige como /login) */}
+            <Route
+              path="/forgot-password"
+              element={
+                isAuthenticated ? (
+                  <Navigate
+                    to={userRole === 'Young role' ? '/dashboard' : '/admin'}
+                    replace
+                  />
+                ) : (
+                  <ForgotPasswordPage />
                 )
               }
             />
