@@ -148,6 +148,13 @@ const youngSchema = new Schema<IYoungDocument>(
       type: Boolean,
       default: false,
     },
+    // Se fija al restablecer la contraseña con el código por correo: la
+    // autenticación rechaza (401) los tokens emitidos antes de esta fecha.
+    passwordChangedAt: {
+      type: Date,
+      required: false,
+      default: undefined,
+    },
     // Nuevo campo: ID del joven que lo refirió (sistema de referidos)
     referredBy: {
       type: Schema.Types.ObjectId,

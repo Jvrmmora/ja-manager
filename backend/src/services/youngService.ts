@@ -18,6 +18,7 @@ import {
 } from '../utils/errorHandler';
 import logger from '../utils/logger';
 import { getCurrentMonthColombia } from '../utils/dateUtils';
+import { NEW_PASSWORD_REGEX, NEW_PASSWORD_MESSAGE } from '../utils/passwordPolicy';
 
 interface AuthUser {
   userId: string;
@@ -550,18 +551,13 @@ export const generatePlaca = async (id: string) => {
   };
 };
 
-const NEW_PASSWORD_REGEX =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&._\-+=]{8,50}$/;
-
 export const resetPassword = async (
   id: string,
   { current_password, new_password }: { current_password?: string; new_password: string },
   authUser: AuthUser
 ) => {
   if (!NEW_PASSWORD_REGEX.test(new_password)) {
-    throw new ValidationError(
-      'La nueva contraseña debe tener entre 8-50 caracteres, incluir al menos una mayúscula, una minúscula y un número. Caracteres especiales permitidos: @$!%*?&._-+='
-    );
+    throw new ValidationError(NEW_PASSWORD_MESSAGE);
   }
 
   const young = await YoungRepository.findByIdActive(id);

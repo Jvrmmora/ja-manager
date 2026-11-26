@@ -123,7 +123,7 @@ describe('emailTemplates: plantillas heredadas', () => {
       type: 'welcome',
       placa: '@MODANAX001',
     });
-    expect(html).toContain(`href="${env.frontendUrl}"`);
+    expect(html).toContain(`href="${env.frontendUrl}/login?placa=%40MODANAX001"`);
     expect(html).toContain(`${env.frontendUrl}/icon-512.png`);
     expect(html).not.toContain('yellow-river');
   });
@@ -136,6 +136,8 @@ describe('emailTemplates: plantillas heredadas', () => {
       'birthday',
       'welcome',
       'new_user_notification',
+      'password_reset',
+      'password_changed',
     ] as const;
     for (const type of types) {
       const p = { toEmail: 'a@b.com', toName: 'Ana', message: 'msg', type };
@@ -176,5 +178,78 @@ describe('avatarPhotoUrl', () => {
     expect(avatarPhotoUrl(null)).toBeNull();
     expect(avatarPhotoUrl('')).toBeNull();
     expect(avatarPhotoUrl('data:image/png;base64,AAAA')).toBeNull();
+  });
+});
+
+describe('emailTemplates: recuperación de contraseña', () => {
+  const reset = {
+    toEmail: 'vale@example.com',
+    toName: 'Valentina Pérez',
+    message: 'x',
+    type: 'password_reset' as const,
+    resetCode: '482915',
+    expiresInMinutes: 10,
+  };
+
+  it('el asunto NO incluye el código (se vería en notificaciones)', () => {
+    const subject = buildSubject(reset);
+    expect(subject).toMatch(/restablecer/i);
+    expect(subject).not.toContain('482915');
+  });
+
+  it('el HTML trae el código, el vencimiento, la advertencia y ningún enlace', () => {
+    const html = buildHtml(reset);
+    expect(html).toContain('482915');
+    expect(html).toContain('Vence en 10 minutos');
+    expect(html).toContain('No compartas este código');
+    expect(html).toContain('Hola, <strong>Valentina</strong>');
+    expect(html).not.toContain('<a ');
+  });
+
+  it('el texto plano trae el código y el vencimiento', () => {
+    const text = buildText(reset);
+    expect(text).toContain('482915');
+    expect(text).toContain('10 minutos');
+  });
+
+  it('escapa el nombre', () => {
+    const html = buildHtml({ ...reset, toName: '<img src=x onerror=1> Ana' });
+    expect(html).not.toContain('<img src=x');
+  });
+
+  it('contraseña cambiada: cuenta, fecha en hora de Bogotá y enlace al login', () => {
+    const p = {
+      toEmail: 'vale@example.com',
+      toName: 'Valentina Pérez',
+      message: 'x',
+      type: 'password_changed' as const,
+      placa: '@MODVALE014',
+      changedAt: '2026-11-17T22:42:00.000Z', // 5:42 p. m. en Bogotá
+    };
+    const html = buildHtml(p);
+    expect(html).toContain('@MODVALE014');
+    expect(html).toContain('5:42');
+    expect(html).toContain(`href="${env.frontendUrl}/login"`);
+    expect(html).toContain('¿No fuiste tú?');
+    expect(buildSubject(p)).toBe('Tu contraseña fue cambiada');
+    expect(buildText(p)).toContain('@MODVALE014');
+  });
+
+  it('aviso al admin: datos del joven con iniciales y enlace al panel real (/admin)', () => {
+    const p = {
+      toEmail: 'admin@example.com',
+      toName: 'Admin',
+      message: 'x',
+      type: 'new_user_notification' as const,
+      applicantName: 'Valentina Pérez Gómez',
+      applicantEmail: 'valentina@correo.com',
+      placa: '@MODVALE014',
+    };
+    const html = buildHtml(p);
+    expect(html).toContain('Valentina Pérez Gómez');
+    expect(html).toContain('valentina@correo.com');
+    expect(html).toContain('>VG<');
+    expect(html).toContain(`href="${env.frontendUrl}/admin"`);
+    expect(html).not.toContain('recent-users');
   });
 });

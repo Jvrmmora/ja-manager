@@ -13,8 +13,95 @@ import {
 import { emailService } from '../services/emailService';
 import { CURRENT_POLICY_VERSION } from '../config/privacyPolicy';
 import { needsConsent } from '../services/consentService';
+import {
+  requestPasswordReset,
+  verifyResetCode,
+  resetPassword as resetPasswordWithToken,
+  RESET_CODE_TTL_MS,
+  RESET_COOLDOWN_MS,
+} from '../services/passwordResetService';
+import { getClientIp } from '../middleware/rateLimiter';
 
 export class AuthController {
+  /**
+   * Recuperación de contraseña, paso 1: pide el código por correo.
+   * Siempre responde lo mismo (exista o no la cuenta) para no revelarla.
+   */
+  static forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+    const identifier =
+      typeof req.body?.identifier === 'string' ? req.body.identifier : '';
+    if (!identifier.trim()) {
+      throw new ValidationError('Escribe tu correo o tu placa.');
+    }
+
+    // El correo se envía en segundo plano: así la respuesta tarda lo mismo
+    // exista o no la cuenta.
+    await requestPasswordReset(identifier, getClientIp(req));
+
+    res.json({
+      success: true,
+      message:
+        'Si existe una cuenta con ese dato, enviamos un código de 6 dígitos al correo registrado.',
+      data: {
+        codeLength: 6,
+        expiresInMinutes: RESET_CODE_TTL_MS / 60000,
+        resendAfterSeconds: RESET_COOLDOWN_MS / 1000,
+      },
+    });
+  });
+
+  /**
+   * Recuperación de contraseña, paso 2: verifica el código y entrega el
+   * token de un solo uso para fijar la contraseña nueva.
+   */
+  static verifyResetCode = asyncHandler(async (req: Request, res: Response) => {
+    const identifier =
+      typeof req.body?.identifier === 'string' ? req.body.identifier : '';
+    const code = typeof req.body?.code === 'string' ? req.body.code : '';
+    if (!identifier.trim() || !code.trim()) {
+      throw new ValidationError('Faltan el correo o placa y el código.');
+    }
+
+    const { resetToken, expiresInSeconds } = await verifyResetCode(
+      identifier,
+      code
+    );
+
+    res.json({
+      success: true,
+      message: 'Código verificado.',
+      data: { resetToken, expiresInSeconds },
+    });
+  });
+
+  /**
+   * Recuperación de contraseña, paso 3: fija la contraseña nueva y cierra
+   * las sesiones anteriores.
+   */
+  static resetPassword = asyncHandler(async (req: Request, res: Response) => {
+    const resetToken =
+      typeof req.body?.resetToken === 'string' ? req.body.resetToken : '';
+    const newPassword =
+      typeof req.body?.newPassword === 'string' ? req.body.newPassword : '';
+    const confirmPassword = req.body?.confirmPassword;
+
+    if (!resetToken || !newPassword) {
+      throw new ValidationError('Faltan el token y la contraseña nueva.');
+    }
+    if (typeof confirmPassword === 'string' && confirmPassword !== newPassword) {
+      throw new ValidationError('Las contraseñas no coinciden.');
+    }
+
+    await resetPasswordWithToken(resetToken, newPassword);
+
+    res.json({
+      success: true,
+      message:
+        'Contraseña actualizada. Cerramos tus sesiones abiertas: inicia sesión con la nueva.',
+      data: {},
+    });
+  });
+
   /**
    * Login de usuario
    */
@@ -41,6 +128,16 @@ export class AuthController {
 
     if (!user) {
       authLogger.login(username, false, { reason: 'user_not_found' });
+      throw new AuthenticationError('Usuario o contraseña incorrectos');
+    }
+
+    // Las cuentas eliminadas (soft delete) o marcadas como spam no pueden
+    // entrar. Mismo mensaje que una credencial incorrecta: no revela el estado.
+    if (user.deletedAt || user.isSpam) {
+      authLogger.login(username, false, {
+        reason: user.deletedAt ? 'account_deleted' : 'account_spam',
+        userId: user._id,
+      });
       throw new AuthenticationError('Usuario o contraseña incorrectos');
     }
 

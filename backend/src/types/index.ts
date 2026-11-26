@@ -26,6 +26,9 @@ export interface IYoung {
   email: string;
   skills: string[];
   first_login?: boolean;
+  // Última vez que se restableció la contraseña por el flujo "olvidé mi
+  // contraseña". Los tokens emitidos antes de esta fecha dejan de valer.
+  passwordChangedAt?: Date;
   referredBy?: string; // ID del joven que lo refirió
   birthdayPointsClaimed?: Date | null; // Fecha de última reclamación de puntos de cumpleaños
   birthdayEmailSentAt?: Date | null; // Fecha del último envío de la tarjeta de cumpleaños
@@ -65,6 +68,7 @@ export interface IAuthUser {
   role_id: string;
   role_name: string;
   exp?: number; // Timestamp Unix de expiración (estándar JWT)
+  iat?: number; // Timestamp Unix de emisión (lo agrega jsonwebtoken)
   expiresAt?: string; // ISO string legible de expiración
 }
 
