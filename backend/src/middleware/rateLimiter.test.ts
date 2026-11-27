@@ -1,9 +1,12 @@
 import { Request, Response } from 'express';
 import {
   formIdentifyLimiter,
+  forgotPasswordLimiter,
   formSubmitLimiter,
   loginLimiter,
   placaCheckLimiter,
+  resetPasswordLimiter,
+  verifyResetCodeLimiter,
 } from './rateLimiter';
 
 type MockRes = Response & {
@@ -119,5 +122,62 @@ describe('limitadores de formularios públicos', () => {
     formSubmitLimiter(makeReq('10.9.1.1', ''), res, next);
     expect(res.statusCode).toBe(429);
     expect((res.body as { message: string }).message).toMatch(/envíos/);
+  });
+});
+
+describe('limiters de recuperación de contraseña', () => {
+  const reqFor = (ip: string, identifier?: string): Request =>
+    ({
+      headers: { 'x-forwarded-for': ip },
+      body: identifier === undefined ? {} : { identifier },
+      ip,
+      socket: { remoteAddress: ip },
+    }) as unknown as Request;
+
+  it('forgot-password: máximo 5 solicitudes por correo/placa (aunque cambie la IP)', () => {
+    const next = jest.fn();
+    for (let i = 0; i < 5; i++) {
+      forgotPasswordLimiter(reqFor(`20.0.0.${i}`, 'Victima@Example.com'), makeRes(), next);
+    }
+    expect(next).toHaveBeenCalledTimes(5);
+
+    const blocked = makeRes();
+    forgotPasswordLimiter(reqFor('20.0.0.99', ' victima@example.com '), blocked, next);
+    expect(blocked.statusCode).toBe(429);
+    expect(next).toHaveBeenCalledTimes(5);
+  });
+
+  it('forgot-password: máximo 10 por IP aunque cambie el identificador', () => {
+    const next = jest.fn();
+    for (let i = 0; i < 10; i++) {
+      forgotPasswordLimiter(reqFor('21.0.0.1', `u${i}@example.com`), makeRes(), next);
+    }
+    expect(next).toHaveBeenCalledTimes(10);
+
+    const blocked = makeRes();
+    forgotPasswordLimiter(reqFor('21.0.0.1', 'otro@example.com'), blocked, next);
+    expect(blocked.statusCode).toBe(429);
+  });
+
+  it('verify-reset-code: 10 intentos por correo/placa y luego 429 con minutos de espera', () => {
+    const next = jest.fn();
+    for (let i = 0; i < 10; i++) {
+      verifyResetCodeLimiter(reqFor(`22.0.0.${i}`, 'objetivo@example.com'), makeRes(), next);
+    }
+    const blocked = makeRes();
+    verifyResetCodeLimiter(reqFor('22.0.0.200', 'objetivo@example.com'), blocked, next);
+    expect(blocked.statusCode).toBe(429);
+    expect((blocked.body as any).retryAfter).toBeGreaterThan(0);
+  });
+
+  it('reset-password: 20 por IP cada 15 minutos', () => {
+    const next = jest.fn();
+    for (let i = 0; i < 20; i++) {
+      resetPasswordLimiter(reqFor('23.0.0.1'), makeRes(), next);
+    }
+    expect(next).toHaveBeenCalledTimes(20);
+    const blocked = makeRes();
+    resetPasswordLimiter(reqFor('23.0.0.1'), blocked, next);
+    expect(blocked.statusCode).toBe(429);
   });
 });

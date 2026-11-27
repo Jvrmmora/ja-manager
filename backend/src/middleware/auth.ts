@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { JWTService } from '../services/jwtService';
 import Role from '../models/Role';
+import Young from '../models/Young';
 import { IAuthUser } from '../types';
 import logger from '../utils/logger';
 
@@ -61,6 +62,35 @@ export const SCOPES = {
 } as const;
 
 /**
+ * Indica por qué un token todavía vigente ya no debe aceptarse, o null si sigue
+ * siendo válido:
+ *  - `account_disabled`: la cuenta se eliminó (soft delete) o es spam.
+ *  - `password_changed`: la contraseña se restableció después de emitir el token
+ *    (`iat` anterior a `passwordChangedAt`).
+ * Una consulta liviana por petición (solo 3 campos del joven).
+ */
+export const getSessionRevocation = async (
+  decoded: IAuthUser
+): Promise<'account_disabled' | 'password_changed' | null> => {
+  if (!decoded.userId || !mongoose.isValidObjectId(decoded.userId)) return null;
+
+  const young = await Young.findById(decoded.userId)
+    .select('passwordChangedAt deletedAt isSpam')
+    .lean();
+  if (!young) return null;
+
+  if (young.deletedAt || young.isSpam) return 'account_disabled';
+
+  if (young.passwordChangedAt) {
+    const changedAtSeconds = Math.floor(
+      new Date(young.passwordChangedAt).getTime() / 1000
+    );
+    if ((decoded.iat ?? 0) < changedAtSeconds) return 'password_changed';
+  }
+  return null;
+};
+
+/**
  * Middleware para verificar el token JWT
  */
 export const authenticateToken = async (
@@ -110,6 +140,23 @@ export const authenticateToken = async (
       });
     }
 
+    // La sesión muere si la cuenta se eliminó o se marcó como spam, o si la
+    // contraseña se restableció después de emitir este token.
+    const revoked = await getSessionRevocation(decoded);
+    if (revoked) {
+      logger.info('Sesión rechazada', {
+        context: 'Auth',
+        method: 'authenticateToken',
+        userId: decoded.userId,
+        reason: revoked,
+      });
+      return res.status(401).json({
+        success: false,
+        error: 'Sesión no válida',
+        message: 'Tu sesión ya no es válida. Inicia sesión de nuevo.',
+      });
+    }
+
     req.user = decoded;
     req.userRole = role;
     next();
@@ -143,7 +190,7 @@ export const optionalAuth = async (
     if (!decoded) return next();
 
     const role = await Role.findById(decoded.role_id);
-    if (role) {
+    if (role && !(await getSessionRevocation(decoded))) {
       req.user = decoded;
       req.userRole = role;
     }

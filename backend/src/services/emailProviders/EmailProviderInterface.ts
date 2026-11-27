@@ -9,7 +9,9 @@ export interface EmailParams {
     | 'rejection'
     | 'birthday'
     | 'welcome'
-    | 'new_user_notification';
+    | 'new_user_notification'
+    | 'password_reset'
+    | 'password_changed';
   placa?: string;
   rejectionReason?: string;
   // Para emails de solicitud de registro: información del solicitante
@@ -22,6 +24,11 @@ export interface EmailParams {
   birthdayCtaUrl?: string; // enlace del botón "Visitar el sitio" (por defecto /login?placa=...)
   // Para email de bienvenida: enlace al dashboard
   dashboardUrl?: string;
+  // Para el código de recuperación de contraseña (password_reset)
+  resetCode?: string; // 6 dígitos
+  expiresInMinutes?: number;
+  // Para el aviso de contraseña cambiada (password_changed): fecha ISO del cambio
+  changedAt?: string;
 }
 
 export interface EmailProvider {

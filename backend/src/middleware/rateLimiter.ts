@@ -22,6 +22,12 @@ const contactDailyAttempts = new Map<string, RateLimitEntry>();
 const placaCheckAttempts = new Map<string, RateLimitEntry>();
 const formIdentifyAttempts = new Map<string, RateLimitEntry>();
 const formSubmitAttempts = new Map<string, RateLimitEntry>();
+// Recuperación de contraseña
+const forgotIpAttempts = new Map<string, RateLimitEntry>();
+const forgotIdAttempts = new Map<string, RateLimitEntry>();
+const verifyResetIpAttempts = new Map<string, RateLimitEntry>();
+const verifyResetIdAttempts = new Map<string, RateLimitEntry>();
+const resetPasswordIpAttempts = new Map<string, RateLimitEntry>();
 
 // Configuración Birthday
 const MAX_ATTEMPTS = 5;
@@ -60,6 +66,15 @@ const CONTACT_MAX_HOURLY = 4;
 const CONTACT_MAX_DAILY = 12;
 const CONTACT_HOUR_MS = 60 * 60 * 1000; // 1 hora
 const CONTACT_DAY_MS = 24 * 60 * 60 * 1000; // 24 horas
+
+// Recuperación de contraseña (los topes por cuenta viven además en MongoDB)
+const FORGOT_MAX_PER_IP = 10; // solicitudes de código por IP
+const FORGOT_MAX_PER_ID = 5; // solicitudes por correo/placa
+const FORGOT_WINDOW_MS = 60 * 60 * 1000; // 1 hora
+const VERIFY_RESET_MAX_PER_IP = 20;
+const VERIFY_RESET_MAX_PER_ID = 10;
+const RESET_PASSWORD_MAX_PER_IP = 20;
+const RESET_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
 
 /**
  * Incrementa el contador de una clave en un mapa con ventana deslizante simple.
@@ -443,6 +458,93 @@ export const formSubmitLimiter = createIpLimiter({
   message: m => `Demasiados envíos seguidos. Intenta de nuevo en ${m} minutos.`,
 });
 
+/** Identificador (correo o placa) normalizado para usarlo como clave. */
+const identifierKey = (req: Request): string => {
+  const raw =
+    typeof req.body?.identifier === 'string' ? req.body.identifier : '';
+  return raw.trim().toLowerCase().slice(0, 120) || 'unknown';
+};
+
+/**
+ * Limiter por IP y por identificador (correo/placa), para los pasos de la
+ * recuperación de contraseña. Responde 429 con los minutos de espera.
+ */
+function createIpAndIdLimiter(options: {
+  ipStore: Map<string, RateLimitEntry>;
+  ipMax: number;
+  idStore?: Map<string, RateLimitEntry>;
+  idMax?: number;
+  windowMs: number;
+  name: string;
+  message: (minutes: number) => string;
+}) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const clientIp = getClientIp(req);
+    const ip = hitLimit(options.ipStore, clientIp, options.ipMax, options.windowMs);
+    const id = options.idStore
+      ? hitLimit(
+          options.idStore,
+          identifierKey(req),
+          options.idMax ?? options.ipMax,
+          options.windowMs
+        )
+      : { blocked: false, retryAfterMinutes: 0 };
+
+    if (ip.blocked || id.blocked) {
+      const retryAfter = Math.max(ip.retryAfterMinutes, id.retryAfterMinutes);
+      logger.warn('Rate limiter: límite excedido', {
+        context: 'RateLimiter',
+        method: options.name,
+        ip: clientIp,
+        by: ip.blocked ? 'ip' : 'identifier',
+        remainingMinutes: retryAfter,
+      });
+      res.status(429).json({
+        success: false,
+        message: options.message(retryAfter),
+        retryAfter,
+      });
+      return;
+    }
+
+    next();
+  };
+}
+
+/** POST /auth/forgot-password — 10 por IP y 5 por correo/placa cada hora */
+export const forgotPasswordLimiter = createIpAndIdLimiter({
+  ipStore: forgotIpAttempts,
+  ipMax: FORGOT_MAX_PER_IP,
+  idStore: forgotIdAttempts,
+  idMax: FORGOT_MAX_PER_ID,
+  windowMs: FORGOT_WINDOW_MS,
+  name: 'forgotPasswordLimiter',
+  message: m =>
+    `Pediste muchos códigos seguidos. Intenta de nuevo en ${m} minutos.`,
+});
+
+/** POST /auth/verify-reset-code — 20 por IP y 10 por correo/placa cada 15 min */
+export const verifyResetCodeLimiter = createIpAndIdLimiter({
+  ipStore: verifyResetIpAttempts,
+  ipMax: VERIFY_RESET_MAX_PER_IP,
+  idStore: verifyResetIdAttempts,
+  idMax: VERIFY_RESET_MAX_PER_ID,
+  windowMs: RESET_WINDOW_MS,
+  name: 'verifyResetCodeLimiter',
+  message: m =>
+    `Demasiados intentos con el código. Intenta de nuevo en ${m} minutos.`,
+});
+
+/** POST /auth/reset-password — 20 por IP cada 15 minutos */
+export const resetPasswordLimiter = createIpAndIdLimiter({
+  ipStore: resetPasswordIpAttempts,
+  ipMax: RESET_PASSWORD_MAX_PER_IP,
+  windowMs: RESET_WINDOW_MS,
+  name: 'resetPasswordLimiter',
+  message: m =>
+    `Demasiados intentos al cambiar la contraseña. Intenta de nuevo en ${m} minutos.`,
+});
+
 /**
  * Middleware de rate limiting para formulario de contacto
  * Limite: 4 intentos por hora y 12 por dia por IP
@@ -569,6 +671,22 @@ function cleanupExpiredEntries(): void {
     if (now > entry.resetTime) {
       placaCheckAttempts.delete(ip);
       cleanedCount++;
+    }
+  }
+
+  // Limpiar recuperación de contraseña
+  for (const store of [
+    forgotIpAttempts,
+    forgotIdAttempts,
+    verifyResetIpAttempts,
+    verifyResetIdAttempts,
+    resetPasswordIpAttempts,
+  ]) {
+    for (const [key, entry] of store.entries()) {
+      if (now > entry.resetTime) {
+        store.delete(key);
+        cleanedCount++;
+      }
     }
   }
 

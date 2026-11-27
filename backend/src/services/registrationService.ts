@@ -346,19 +346,36 @@ export const createRegistrationRequest = async (
       });
     });
 
-  Young.findOne({ role_name: 'Super Admin' })
-    .then(superAdmin => {
-      if (superAdmin && superAdmin.email) {
-        return emailService.sendEmail({
-          toEmail: superAdmin.email,
-          toName: superAdmin.fullName,
-          message: `Nuevo usuario registrado: ${savedYoung.fullName}`,
-          type: 'new_user_notification',
-          placa: savedYoung.placa,
-          applicantName: savedYoung.fullName,
-          applicantEmail: savedYoung.email || '',
-        });
-      }
+  // Aviso a TODOS los Super Admin con correo (antes solo al primero que
+  // encontraba la base). Sin repetir direcciones.
+  Young.find({
+    role_name: 'Super Admin',
+    deletedAt: null,
+    isSpam: { $ne: true },
+  })
+    .select('email fullName')
+    .lean()
+    .then(admins => {
+      const sent = new Set<string>();
+      const notifications = (admins || [])
+        .filter(admin => {
+          const email = (admin.email || '').trim().toLowerCase();
+          if (!email || sent.has(email)) return false;
+          sent.add(email);
+          return true;
+        })
+        .map(admin =>
+          emailService.sendEmail({
+            toEmail: admin.email as string,
+            toName: admin.fullName,
+            message: `Nuevo usuario registrado: ${savedYoung.fullName}`,
+            type: 'new_user_notification',
+            placa: savedYoung.placa,
+            applicantName: savedYoung.fullName,
+            applicantEmail: savedYoung.email || '',
+          })
+        );
+      return Promise.all(notifications);
     })
     .catch((emailError: any) => {
       logger.error('Error enviando notificación al admin', {

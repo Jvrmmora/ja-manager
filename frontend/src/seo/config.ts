@@ -57,6 +57,13 @@ export const ROUTES: RouteSeo[] = [
     prerender: true,
   },
   {
+    path: '/forgot-password',
+    title: 'Recuperar contraseña — Jóvenes Modelia',
+    description:
+      'Recupera el acceso a tu cuenta de Jóvenes Modelia con un código de verificación enviado a tu correo.',
+    noindex: true,
+  },
+  {
     path: '/dashboard',
     title: 'Mi panel — Jóvenes Modelia',
     description: 'Panel personal de miembros de Jóvenes Modelia.',

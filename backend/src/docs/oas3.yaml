@@ -181,6 +181,110 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /auth/forgot-password:
+    post:
+      summary: Recuperar contraseña, paso 1 (pedir código)
+      description: |
+        Envía un código de 6 dígitos al correo registrado de la cuenta (identificada
+        por correo o placa). **Siempre responde 200 con el mismo mensaje**, exista o no
+        la cuenta, para no revelarla. El código vence en 10 minutos; hay 60 s de espera
+        entre envíos y máximo 3 códigos por hora por cuenta (los envíos que superan un
+        tope se omiten en silencio). Responde 503 si el envío de correos no está configurado.
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier]
+              properties:
+                identifier:
+                  type: string
+                  description: Correo o placa del usuario
+                  example: '@MODVALE014'
+      responses:
+        '200':
+          description: Solicitud recibida (no confirma que la cuenta exista)
+          content:
+            application/json:
+              example:
+                success: true
+                message: 'Si existe una cuenta con ese dato, enviamos un código de 6 dígitos al correo registrado.'
+                data: { codeLength: 6, expiresInMinutes: 10, resendAfterSeconds: 60 }
+        '400':
+          description: Falta el identificador
+        '429':
+          description: Demasiadas solicitudes (por IP o por correo/placa)
+        '503':
+          description: El envío de correos no está disponible (details.code EMAIL_UNAVAILABLE)
+
+  /auth/verify-reset-code:
+    post:
+      summary: Recuperar contraseña, paso 2 (verificar código)
+      description: |
+        Valida el código. Máximo 5 intentos por código; al agotarlos se invalida.
+        Si es correcto, el código se consume y se entrega un `resetToken` de un solo
+        uso (vence en 10 minutos) para el paso 3. Los errores traen `error.details.code`:
+        `RESET_CODE_INVALID` (con `attemptsLeft`), `RESET_CODE_EXPIRED`,
+        `RESET_TOO_MANY_ATTEMPTS`.
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, code]
+              properties:
+                identifier: { type: string, example: '@MODVALE014' }
+                code: { type: string, pattern: '^[0-9]{6}$', example: '482915' }
+      responses:
+        '200':
+          description: Código verificado
+          content:
+            application/json:
+              example:
+                success: true
+                message: 'Código verificado.'
+                data: { resetToken: '<64 caracteres hexadecimales>', expiresInSeconds: 600 }
+        '400':
+          description: Código incorrecto, vencido o con intentos agotados
+        '429':
+          description: Demasiados intentos (por IP o por correo/placa)
+
+  /auth/reset-password:
+    post:
+      summary: Recuperar contraseña, paso 3 (nueva contraseña)
+      description: |
+        Fija la contraseña nueva con el `resetToken` del paso 2 (de un solo uso). La
+        contraseña debe tener 8-50 caracteres con mayúscula, minúscula y número, y no
+        puede ser igual a la actual. Al guardar se registra `passwordChangedAt`: **todas
+        las sesiones emitidas antes quedan inválidas (401)**, y se envía un correo de
+        aviso. Errores con `error.details.code`: `RESET_TOKEN_INVALID`, `RESET_PASSWORD_SAME`.
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resetToken, newPassword]
+              properties:
+                resetToken: { type: string }
+                newPassword: { type: string, format: password }
+                confirmPassword:
+                  type: string
+                  format: password
+                  description: Opcional; si viene debe ser igual a newPassword
+      responses:
+        '200':
+          description: Contraseña actualizada y sesiones anteriores cerradas
+        '400':
+          description: Token inválido o vencido, contraseña que no cumple la política o igual a la actual
+        '429':
+          description: Demasiados intentos
+
   /auth/profile:
     get:
       summary: Obtener perfil del usuario autenticado
