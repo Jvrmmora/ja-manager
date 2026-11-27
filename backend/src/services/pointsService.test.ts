@@ -344,6 +344,7 @@ describe('pointsService.deleteTransaction', () => {
 
 describe('pointsService.claimBirthdayPoints', () => {
   beforeEach(() => jest.clearAllMocks());
+  afterEach(() => jest.useRealTimers());
 
   it('lanza error si el joven no existe', async () => {
     mockedYoung.findById.mockResolvedValue(null);
@@ -375,12 +376,14 @@ describe('pointsService.claimBirthdayPoints', () => {
   });
 
   it('registra los puntos de cumpleaños cuando está dentro de la ventana', async () => {
-    const today = new Date();
+    // 7:30 p. m. del 26 en Bogotá, cuando en UTC ya es 27. El cumpleaños es una
+    // fecha sin hora, así que no puede construirse a partir del instante actual.
+    jest.useFakeTimers({ now: new Date('2026-11-27T00:30:00Z') });
     const save = jest.fn().mockResolvedValue(undefined);
     const young: any = {
       _id: 'young1',
       fullName: 'Ana',
-      birthday: today,
+      birthday: new Date('2000-11-26T00:00:00Z'),
       birthdayPointsClaimed: null,
       save,
     };
