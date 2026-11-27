@@ -9,6 +9,7 @@ import logo from '../../assets/logos/logo.png';
 
 const NAV_ITEMS = [
   { id: 'about', label: 'Quiénes Somos' },
+  { id: 'season', label: 'Temporadas' },
   { id: 'meetings', label: 'Reuniones' },
   { id: 'events', label: 'Eventos' },
   { id: 'gallery', label: 'Galería' },

@@ -95,6 +95,28 @@ export default {
           '0%, 100%': { top: '12%' },
           '50%': { top: '84%' },
         },
+        // Landing · temporadas: escaneo del QR y llama
+        'qr-sweep': {
+          from: { top: '6px' },
+          to: { top: '136px' },
+        },
+        pop: {
+          from: { transform: 'scale(.4)', opacity: '0' },
+          to: { transform: 'scale(1)', opacity: '1' },
+        },
+        burst: {
+          from: { transform: 'scale(.1) translateY(60px)', opacity: '0' },
+          to: { transform: 'scale(1) translateY(0)', opacity: '1' },
+        },
+        flicker: {
+          '0%, 100%': { transform: 'scale(1) rotate(-2deg)' },
+          '50%': { transform: 'scale(1.09, 1.15) rotate(3deg)' },
+        },
+        spark: {
+          '0%': { transform: 'translateY(0) scale(1)', opacity: '0' },
+          '20%': { opacity: '1' },
+          '100%': { transform: 'translateY(-150px) scale(.3)', opacity: '0' },
+        },
         // Tarjeta de quien cumple hoy en la cinta de cumpleaños
         'glow-gold': {
           '0%, 100%': { boxShadow: '0 0 0 0 rgba(253,230,138,0), 0 30px 70px -30px rgba(249,162,59,.8)' },
@@ -112,6 +134,11 @@ export default {
         sheen: 'sheen 3.6s ease-in-out infinite',
         'scan-line': 'scan-line 2.6s ease-in-out infinite',
         'glow-gold': 'glow-gold 2.4s ease-in-out infinite',
+        'qr-sweep': 'qr-sweep 1.1s ease-in-out infinite alternate',
+        pop: 'pop .45s cubic-bezier(.2,1.6,.4,1) both',
+        burst: 'burst .8s cubic-bezier(.2,1.5,.4,1) both',
+        flicker: 'flicker 1s ease-in-out infinite',
+        spark: 'spark 1.6s ease-out infinite',
       },
     },
   },
