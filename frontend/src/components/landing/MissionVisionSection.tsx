@@ -45,7 +45,7 @@ export default function MissionVisionSection({
   return (
     <section
       id="mission"
-      className="bg-cream dark:bg-ink-900 pt-8 pb-24 md:pb-32"
+      className="bg-cream dark:bg-ink-900 pt-24 pb-24 md:pt-32 md:pb-32"
     >
       <h2 className="sr-only">Nuestra Misión y Visión</h2>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-5 md:grid-cols-2 md:gap-6">

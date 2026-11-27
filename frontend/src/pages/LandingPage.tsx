@@ -5,6 +5,7 @@ import PageLoader from '../components/PageLoader';
 import Navbar from '../components/landing/Navbar.tsx';
 import HeroSection from '../components/landing/HeroSection.tsx';
 import AboutSection from '../components/landing/AboutSection.tsx';
+import SeasonSection from '../components/landing/SeasonSection';
 import MissionVisionSection from '../components/landing/MissionVisionSection.tsx';
 import ValuesSection from '../components/landing/ValuesSection.tsx';
 import MeetingsSection from '../components/landing/MeetingsSection.tsx';
@@ -435,6 +436,9 @@ export default function LandingPage({
 
         {/* About Section */}
         {isSectionVisible('about') && <AboutSection content={content} />}
+
+        {/* Temporadas: fija, no depende del CMS */}
+        <SeasonSection />
 
         {/* Mission & Vision Section */}
         {isSectionVisible('mission') && (
