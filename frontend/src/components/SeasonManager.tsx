@@ -1,8 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { seasonService } from '../services/seasonService';
 import type { ISeason } from '../types';
 import SeasonModal from './SeasonModal';
 import SeasonDeleteConfirmModal from './SeasonDeleteConfirmModal';
+import SeasonConfirmModal from './SeasonConfirmModal';
+import PageLoader from './PageLoader';
+import {
+  launchImmersive,
+  cancelImmersive,
+  type PremiacionLaunch,
+} from '../features/premiacion/launch';
+
+const PremiacionOverlay = lazy(() => import('./premiacion/PremiacionOverlay'));
 
 interface SeasonManagerProps {
   onShowSuccess?: (message: string) => void;
@@ -20,6 +29,16 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingSeason, setDeletingSeason] = useState<ISeason | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [pending, setPending] = useState<{
+    action: 'finalize' | 'activate';
+    season: ISeason;
+  } | null>(null);
+  const [premiere, setPremiere] = useState<{
+    id: string;
+    launch: PremiacionLaunch;
+  } | null>(null);
+
+  const activeSeason = seasons.find(s => s.status === 'ACTIVE');
 
   useEffect(() => {
     loadSeasons();
@@ -79,9 +98,29 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
       await seasonService.activate(season.id);
       onShowSuccess?.(`Temporada "${season.name}" activada exitosamente`);
       await loadSeasons();
+      setPending(null);
     } catch (error: any) {
       console.error('Error activating season:', error);
       onShowError?.(error.message || 'Error al activar la temporada');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleFinalize = async (season: ISeason) => {
+    // Antes de cualquier await: sonido y pantalla completa exigen el clic
+    const launch = launchImmersive();
+    try {
+      setActionLoading(season.id);
+      await seasonService.complete(season.id);
+      onShowSuccess?.(`Temporada "${season.name}" finalizada`);
+      setPending(null);
+      setPremiere({ id: season.id, launch });
+      await loadSeasons();
+    } catch (error: any) {
+      cancelImmersive(launch);
+      console.error('Error finalizing season:', error);
+      onShowError?.(error.message || 'Error al finalizar la temporada');
     } finally {
       setActionLoading(null);
     }
@@ -181,11 +220,36 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
                   {formatDate(season.startDate)} – {formatDate(season.endDate)}
                 </span>
                 <span>{getStatusBadge(season, dark)}</span>
-                <span className="flex gap-1.5 sm:justify-end">
-                  {!season.isActive && season.status !== 'COMPLETED' && (
+                <span className="flex flex-wrap gap-1.5 sm:justify-end">
+                  {season.status === 'ACTIVE' && (
                     <button
                       type="button"
-                      onClick={() => handleActivate(season)}
+                      onClick={() => setPending({ action: 'finalize', season })}
+                      disabled={actionLoading === season.id}
+                      className="btn-fire h-9 px-4 text-xs"
+                    >
+                      Finalizar
+                    </button>
+                  )}
+                  {season.status === 'COMPLETED' && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPremiere({ id: season.id, launch: launchImmersive() })
+                      }
+                      className="btn-fire h-9 px-4 text-xs"
+                    >
+                      Ver premiación
+                    </button>
+                  )}
+                  {season.status === 'UPCOMING' && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        activeSeason
+                          ? setPending({ action: 'activate', season })
+                          : handleActivate(season)
+                      }
                       disabled={actionLoading === season.id}
                       className={iconBtn(dark)}
                       title="Activar temporada"
@@ -211,17 +275,19 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
                       <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
                     </svg>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(season)}
-                    className={`${iconBtn(dark)} hover:!border-red-300 hover:!text-red-500`}
-                    title="Eliminar temporada"
-                    aria-label="Eliminar temporada"
-                  >
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
-                    </svg>
-                  </button>
+                  {season.status === 'UPCOMING' && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(season)}
+                      className={`${iconBtn(dark)} hover:!border-red-300 hover:!text-red-500`}
+                      title="Eliminar temporada"
+                      aria-label="Eliminar temporada"
+                    >
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
+                      </svg>
+                    </button>
+                  )}
                 </span>
               </div>
             );
@@ -255,11 +321,41 @@ const SeasonManager: React.FC<SeasonManagerProps> = ({
         }}
         onConfirm={confirmDelete}
         seasonName={deletingSeason?.name || 'esta temporada'}
-        isActive={
-          !!(deletingSeason?.status === 'ACTIVE' || deletingSeason?.isActive)
-        }
         loading={!!actionLoading}
       />
+
+      {pending && (
+        <SeasonConfirmModal
+          title={
+            pending.action === 'finalize'
+              ? 'Finalizar temporada'
+              : 'Activar temporada'
+          }
+          message={
+            pending.action === 'finalize'
+              ? `Se cerrará "${pending.season.name}" y se guardarán el podio y el Bonus constancia. Los puntos, rachas y asistencias se conservan. No se puede reactivar.`
+              : `"${activeSeason?.name}" se finalizará y guardará su premiación (no se borra ningún dato), y se activará "${pending.season.name}".`
+          }
+          confirmLabel={pending.action === 'finalize' ? 'Finalizar' : 'Activar'}
+          loading={!!actionLoading}
+          onConfirm={() =>
+            pending.action === 'finalize'
+              ? handleFinalize(pending.season)
+              : handleActivate(pending.season)
+          }
+          onClose={() => setPending(null)}
+        />
+      )}
+
+      {premiere && (
+        <Suspense fallback={<PageLoader />}>
+          <PremiacionOverlay
+            seasonId={premiere.id}
+            launch={premiere.launch}
+            onClose={() => setPremiere(null)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

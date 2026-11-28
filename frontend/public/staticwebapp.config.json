@@ -4,7 +4,7 @@
     "exclude": [
       "/images/*.{png,jpg,gif,ico,svg,webp}",
       "/css/*",
-      "/assets/*.{js,css,png,jpg,gif,svg,webp,woff,woff2}",
+      "/assets/*.{js,css,png,jpg,gif,svg,webp,woff,woff2,mp3,mp4}",
       "/api/*",
       "/manifest.json",
       "/favicon*",
@@ -72,6 +72,8 @@
     ".css": "text/css",
     ".html": "text/html",
     ".svg": "image/svg+xml",
+    ".mp3": "audio/mpeg",
+    ".mp4": "video/mp4",
     ".webmanifest": "application/manifest+json",
     ".woff": "font/woff",
     ".woff2": "font/woff2"

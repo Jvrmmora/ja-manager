@@ -37,7 +37,7 @@ export interface CreatePointsTransactionDTO {
  * conservan sus puntos, pero no se muestran hasta que pasen al grupo 1.
  * Se aplica sobre el documento unido como `young`.
  */
-const RANKING_ELIGIBLE_MATCH = {
+export const RANKING_ELIGIBLE_MATCH = {
   'young.group': 1,
   'young.deletedAt': null,
   'young.role_name': { $ne: 'Super Admin' },

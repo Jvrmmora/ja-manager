@@ -1,5 +1,62 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+/** Cifras de la temporada para el resumen de la premiación */
+export interface ISeasonPersonStats {
+  attendanceCount: number;
+  attendancePercent: number;
+  bestStreakWeeks: number;
+  totalPoints: number;
+  points: {
+    attendance: number;
+    activity: number;
+    referrals: number;
+    forms: number;
+    birthday: number;
+    bonus: number;
+  };
+  referrals: number;
+  activities: number;
+  forms: number;
+  earlyArrivals: number;
+  earlyPoints: number;
+  streakBonus: boolean; // premio por 4 sábados consecutivos
+}
+
+export interface ISeasonPodiumEntry {
+  place: number;
+  youngId: mongoose.Types.ObjectId | string;
+  name: string;
+  profileImage?: string;
+  totalPoints: number;
+  streak: number;
+  stats?: ISeasonPersonStats;
+}
+
+export interface ISeasonConstancyWinner {
+  youngId: mongoose.Types.ObjectId | string;
+  name: string;
+  profileImage?: string;
+  bestStreakWeeks: number;
+  attendanceCount: number;
+  stats?: ISeasonPersonStats;
+}
+
+/**
+ * Foto del cierre de una temporada. Guarda nombre y foto del momento para que
+ * el histórico no cambie si el joven edita su perfil o se elimina.
+ */
+export interface ISeasonResults {
+  finalizedAt: Date;
+  finalizedBy?: mongoose.Types.ObjectId | string;
+  totalParticipants: number;
+  totalDays?: number; // días con asistencia registrada en la temporada
+  podium: ISeasonPodiumEntry[];
+  constancy: {
+    bestStreakWeeks: number;
+    winners: ISeasonConstancyWinner[];
+  };
+}
+
 export interface ISeason {
   id?: string;
   name: string;
@@ -20,6 +77,7 @@ export interface ISeason {
     streakLostAfterDays: number;
     birthdayBonusPoints: number;
   };
+  results?: ISeasonResults;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -27,12 +85,76 @@ export interface ISeason {
 export interface ISeasonDocument extends Omit<ISeason, 'id'>, Document {
   isInProgress(): boolean;
   activate(): Promise<void>;
-  complete(): Promise<void>;
 }
 
 interface ISeasonModel extends mongoose.Model<ISeasonDocument> {
   getActiveSeason(): Promise<ISeasonDocument | null>;
 }
+
+const num = { type: Number, default: 0 };
+const personStatsSchema = new Schema(
+  {
+    attendanceCount: num,
+    attendancePercent: num,
+    bestStreakWeeks: num,
+    totalPoints: num,
+    points: {
+      attendance: num,
+      activity: num,
+      referrals: num,
+      forms: num,
+      birthday: num,
+      bonus: num,
+    },
+    referrals: num,
+    activities: num,
+    forms: num,
+    earlyArrivals: num,
+    earlyPoints: num,
+    streakBonus: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
+const podiumEntrySchema = new Schema(
+  {
+    place: { type: Number, required: true, min: 1, max: 3 },
+    youngId: { type: Schema.Types.ObjectId, ref: 'Young', required: true },
+    name: { type: String, required: true },
+    profileImage: { type: String },
+    totalPoints: { type: Number, required: true },
+    streak: { type: Number, required: true, default: 0 },
+    stats: { type: personStatsSchema },
+  },
+  { _id: false }
+);
+
+const constancyWinnerSchema = new Schema(
+  {
+    youngId: { type: Schema.Types.ObjectId, ref: 'Young', required: true },
+    name: { type: String, required: true },
+    profileImage: { type: String },
+    bestStreakWeeks: { type: Number, required: true },
+    attendanceCount: { type: Number, required: true, default: 0 },
+    stats: { type: personStatsSchema },
+  },
+  { _id: false }
+);
+
+const seasonResultsSchema = new Schema(
+  {
+    finalizedAt: { type: Date, required: true },
+    finalizedBy: { type: Schema.Types.ObjectId, ref: 'Young' },
+    totalParticipants: { type: Number, required: true, default: 0 },
+    totalDays: { type: Number, default: 0 },
+    podium: { type: [podiumEntrySchema], default: [] },
+    constancy: {
+      bestStreakWeeks: { type: Number, required: true, default: 0 },
+      winners: { type: [constancyWinnerSchema], default: [] },
+    },
+  },
+  { _id: false }
+);
 
 const seasonSchema = new Schema<ISeasonDocument, ISeasonModel>(
   {
@@ -122,6 +244,9 @@ const seasonSchema = new Schema<ISeasonDocument, ISeasonModel>(
         min: [1, 'Los puntos de cumpleaños deben ser al menos 1'],
       },
     },
+    // Oculto por defecto: los GET de temporadas son públicos y esto lleva
+    // nombres y fotos. Se pide explícitamente con select('+results').
+    results: { type: seasonResultsSchema, select: false },
   },
   {
     timestamps: true,
@@ -180,23 +305,10 @@ seasonSchema.methods.isInProgress = function () {
   return this.startDate <= now && this.endDate >= now;
 };
 
-// Método para activar la temporada
+// Método para activar la temporada. La temporada que estuviera activa debe
+// finalizarse antes con seasonResultsService para congelar su resultado.
 seasonSchema.methods.activate = async function () {
-  const Season = mongoose.model<ISeasonDocument>('Season');
-
-  // Desactivar cualquier otra temporada activa
-  await Season.updateMany(
-    { status: 'ACTIVE', _id: { $ne: this._id } },
-    { status: 'COMPLETED' }
-  );
-
   this.status = 'ACTIVE';
-  await this.save();
-};
-
-// Método para finalizar la temporada
-seasonSchema.methods.complete = async function () {
-  this.status = 'COMPLETED';
   await this.save();
 };
 

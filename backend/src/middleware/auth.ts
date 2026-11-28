@@ -56,6 +56,9 @@ export const SCOPES = {
   // Landing CMS endpoints
   'landing:manage': 'Gestionar el contenido de la landing (textos, media, reuniones)',
 
+  // Temporadas
+  'season:manage': 'Crear, editar, activar, finalizar y eliminar temporadas',
+
   // Formularios / eventos
   'forms:read': 'Ver formularios y sus respuestas',
   'forms:manage': 'Crear, editar y publicar formularios',

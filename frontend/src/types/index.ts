@@ -162,6 +162,57 @@ export interface ISeason {
   updatedAt?: string | Date;
 }
 
+export interface ISeasonPersonStats {
+  attendanceCount: number;
+  attendancePercent: number;
+  bestStreakWeeks: number;
+  totalPoints: number;
+  points: {
+    attendance: number;
+    activity: number;
+    referrals: number;
+    forms: number;
+    birthday: number;
+    bonus: number;
+  };
+  referrals: number;
+  activities: number;
+  forms: number;
+  earlyArrivals: number;
+  earlyPoints: number;
+  streakBonus: boolean;
+}
+
+// Resultado congelado al finalizar una temporada (premiación)
+export interface ISeasonResultsData {
+  season: Pick<ISeason, 'id' | 'name' | 'startDate' | 'endDate'>;
+  results: {
+    finalizedAt: string;
+    totalParticipants: number;
+    totalDays?: number;
+    podium: {
+      place: number;
+      youngId: string;
+      name: string;
+      profileImage?: string;
+      totalPoints: number;
+      streak: number;
+      stats?: ISeasonPersonStats;
+    }[];
+    constancy: {
+      bestStreakWeeks: number;
+      winners: {
+        youngId: string;
+        name: string;
+        profileImage?: string;
+        bestStreakWeeks: number;
+        attendanceCount: number;
+        stats?: ISeasonPersonStats;
+      }[];
+    };
+  };
+}
+
 export interface ISeasonCreate {
   name: string;
   description?: string;
