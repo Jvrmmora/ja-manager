@@ -1,5 +1,10 @@
 import { apiRequest } from './api';
-import type { ISeason, ISeasonCreate, ISeasonUpdate } from '../types';
+import type {
+  ISeason,
+  ISeasonCreate,
+  ISeasonResultsData,
+  ISeasonUpdate,
+} from '../types';
 
 const API_BASE = 'seasons';
 
@@ -78,7 +83,14 @@ export const seasonService = {
    * Eliminar una temporada
    */
   async delete(id: string): Promise<void> {
-    await apiRequest(`${API_BASE}/${id}`, { method: 'DELETE' });
+    const response = await apiRequest(`${API_BASE}/${id}`, {
+      method: 'DELETE',
+    });
+    const data = await response.json();
+
+    if (!response.ok || data.success === false) {
+      throw new Error(data.message || 'Error al eliminar la temporada');
+    }
   },
 
   /**
@@ -97,6 +109,48 @@ export const seasonService = {
     }
 
     return data.data;
+  },
+
+  /**
+   * Finalizar la temporada activa (congela la premiación, no borra datos)
+   */
+  async complete(id: string): Promise<void> {
+    const response = await apiRequest(`${API_BASE}/${id}/complete`, {
+      method: 'POST',
+    });
+    const data = await response.json();
+
+    if (!response.ok || data.success === false) {
+      throw new Error(data.message || 'Error al finalizar la temporada');
+    }
+  },
+
+  /**
+   * Premiación de una temporada finalizada
+   */
+  async getResults(id: string): Promise<ISeasonResultsData> {
+    const response = await apiRequest(`${API_BASE}/${id}/results`, {
+      method: 'GET',
+    });
+    const data = await response.json();
+
+    if (!response.ok || data.success === false) {
+      throw new Error(data.message || 'Error al cargar la premiación');
+    }
+
+    return data.data;
+  },
+
+  /**
+   * Premiación de la última temporada finalizada (null si no hay)
+   */
+  async getLatestResults(): Promise<ISeasonResultsData | null> {
+    const response = await apiRequest(`${API_BASE}/results/latest`, {
+      method: 'GET',
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.data || null;
   },
 
   /**

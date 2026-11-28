@@ -15,6 +15,7 @@ import BirthdayBanner from '../components/BirthdayBanner';
 import MonthBirthdaysModal from '../components/MonthBirthdaysModal.tsx';
 import BirthdayBoardFullscreen from '../components/BirthdayBoardFullscreen';
 import RankingModal from '../components/RankingModal';
+import PremiacionBanner from '../components/premiacion/PremiacionBanner';
 import ReferralShareModal from '../components/ReferralShareModal';
 import { SeasonProvider, useSeason } from '../context/SeasonContext';
 import { authService } from '../services/auth';
@@ -462,6 +463,8 @@ const YoungDashboard: React.FC<YoungDashboardProps> = ({ onProfileUpdate }) => {
               />
             )}
           </div>
+
+          <PremiacionBanner />
 
           {authService.isFirstLogin() && (
             <div className="flex flex-col sm:flex-row gap-4 rounded-3xl border border-[#F6D6B8] bg-sand-50 p-5 sm:p-6 dark:border-brand-amber/25 dark:bg-ink-900">

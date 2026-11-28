@@ -1,9 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
 import Season from '../models/Season';
 import PointsTransaction from '../models/PointsTransaction';
 import Streak from '../models/Streak';
-import Attendance from '../models/Attendance';
+import {
+  finalizeSeason,
+  getSeasonResults,
+  getLatestSeasonResults,
+} from '../services/seasonResultsService';
+
+// Campos editables por PUT. El estado solo cambia con /activate y /complete,
+// y `results` solo lo escribe el cierre de temporada.
+const EDITABLE_FIELDS = [
+  'name',
+  'description',
+  'startDate',
+  'endDate',
+  'prizes',
+  'settings',
+] as const;
+
+const DELETE_BLOCKED_MESSAGE =
+  'Solo se pueden eliminar temporadas próximas sin datos; las temporadas jugadas quedan en el histórico';
 
 /**
  * Crear una nueva temporada
@@ -22,6 +39,13 @@ export const createSeason = async (
       return res.status(400).json({
         success: false,
         message: 'La fecha de fin debe ser posterior a la fecha de inicio',
+      });
+    }
+
+    if (status === 'COMPLETED') {
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede crear una temporada ya finalizada',
       });
     }
 
@@ -163,7 +187,10 @@ export const updateSeason = async (
 ) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const updates: Record<string, any> = {};
+    for (const field of EDITABLE_FIELDS) {
+      if (req.body?.[field] !== undefined) updates[field] = req.body[field];
+    }
 
     const season = await Season.findById(id);
 
@@ -172,14 +199,6 @@ export const updateSeason = async (
         success: false,
         message: 'Temporada no encontrada',
       });
-    }
-
-    // Si se está activando esta temporada, desactivar las demás
-    if (updates.status === 'ACTIVE' && season.status !== 'ACTIVE') {
-      await Season.updateMany(
-        { _id: { $ne: id }, status: 'ACTIVE' },
-        { status: 'COMPLETED' }
-      );
     }
 
     // Validar fechas si se están actualizando
@@ -238,6 +257,20 @@ export const activateSeason = async (
       });
     }
 
+    if (season.status === 'COMPLETED') {
+      return res.status(409).json({
+        success: false,
+        message:
+          'Una temporada finalizada no se puede reactivar. Crea una temporada nueva.',
+      });
+    }
+
+    // Cerrar la temporada activa (congela su premiación) antes de activar otra
+    const others = await Season.find({ status: 'ACTIVE', _id: { $ne: id } });
+    for (const other of others) {
+      await finalizeSeason(String(other._id), req.user?.userId);
+    }
+
     await season.activate();
 
     res.status(200).json({
@@ -277,12 +310,19 @@ export const completeSeason = async (
       });
     }
 
-    await season.complete();
+    if (season.status !== 'ACTIVE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Solo se puede finalizar la temporada activa',
+      });
+    }
+
+    const finalized = await finalizeSeason(id, req.user?.userId);
 
     res.status(200).json({
       success: true,
       message: 'Temporada finalizada exitosamente',
-      data: season,
+      data: finalized,
     });
   } catch (error) {
     next(error);
@@ -309,55 +349,63 @@ export const deleteSeason = async (
       });
     }
 
-    // Obtener las transacciones de asistencia ANTES de eliminarlas para poder eliminar las asistencias relacionadas
-    const attendanceTransactions = await PointsTransaction.find({
-      seasonId: id,
-      type: 'ATTENDANCE',
-    }).select('eventId youngId');
-
-    // 1. Eliminar todas las asistencias relacionadas con esta temporada
-    // Eliminamos las asistencias que coinciden exactamente con las transacciones de asistencia
-    // de esta temporada (matching both youngId and qrCodeId/eventId)
-    if (attendanceTransactions.length > 0) {
-      // Crear un conjunto de combinaciones únicas de (youngId, qrCodeId) usando string
-      const uniquePairs = new Set<string>();
-      attendanceTransactions.forEach(t => {
-        const youngId = t.youngId?.toString();
-        const qrCodeId = t.eventId?.toString();
-        if (youngId && qrCodeId) {
-          uniquePairs.add(`${youngId}:${qrCodeId}`);
-        }
-      });
-
-      // Construir un array de condiciones $or para eliminar todas las asistencias en una sola consulta
-      const orConditions = Array.from(uniquePairs).map(pair => {
-        const [youngId, qrCodeId] = pair.split(':');
-        return {
-          youngId: new mongoose.Types.ObjectId(youngId),
-          qrCodeId: new mongoose.Types.ObjectId(qrCodeId),
-        };
-      });
-
-      if (orConditions.length > 0) {
-        await Attendance.deleteMany({
-          $or: orConditions,
-        });
-      }
+    // Las temporadas jugadas nunca se borran, así que no hay cascada
+    const hasData =
+      season.status !== 'UPCOMING' ||
+      !!(await PointsTransaction.exists({ seasonId: id })) ||
+      !!(await Streak.exists({ seasonId: id }));
+    if (hasData) {
+      return res
+        .status(409)
+        .json({ success: false, message: DELETE_BLOCKED_MESSAGE });
     }
 
-    // 2. Eliminar todos los puntos (transacciones) de esta temporada
-    await PointsTransaction.deleteMany({ seasonId: id });
-
-    // 3. Eliminar todas las rachas de esta temporada
-    await Streak.deleteMany({ seasonId: id });
-
-    // 4. Finalmente, eliminar la temporada
     await season.deleteOne();
 
     res.status(200).json({
       success: true,
       message: 'Temporada eliminada exitosamente',
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Resultados (premiación) de una temporada finalizada
+ */
+export const getSeasonResultsById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const data = await getSeasonResults(req.params.id);
+
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        message: 'La temporada no existe o todavía no ha finalizado',
+      });
+    }
+
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Resultados de la última temporada finalizada (o null si no hay)
+ */
+export const getLatestResults = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const data = await getLatestSeasonResults();
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }

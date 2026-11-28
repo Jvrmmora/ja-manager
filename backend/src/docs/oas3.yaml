@@ -1686,15 +1686,15 @@ paths:
                   message:
                     type: string
                     example: 'Temporada eliminada exitosamente'
-        '400':
-          description: No se puede eliminar temporada activa
+        '409':
+          description: Solo se pueden eliminar temporadas próximas sin datos
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
                 success: false
-                message: 'No se puede eliminar una temporada activa. Finalízala primero.'
+                message: 'Solo se pueden eliminar temporadas próximas sin datos; las temporadas jugadas quedan en el histórico'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1706,10 +1706,44 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /seasons/results/latest:
+    get:
+      summary: Premiación de la última temporada finalizada
+      description: Devuelve el podio y el Bonus constancia congelados; data es null si no hay ninguna
+      tags: [Seasons]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Resultados de la premiación (o null)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /seasons/{id}/results:
+    get:
+      summary: Premiación de una temporada finalizada
+      description: Si la temporada se cerró antes de existir la premiación, se calcula y guarda la primera vez
+      tags: [Seasons]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resultados de la premiación
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: La temporada no existe o no ha finalizado
+
   /seasons/{id}/activate:
     post:
       summary: Activar temporada
-      description: Activa una temporada y desactiva cualquier otra activa (requiere autenticación)
+      description: Activa una temporada; si hay otra activa la finaliza y congela su premiación (permiso season:manage). Una temporada finalizada no se puede reactivar (409).
       tags: [Seasons]
       security:
         - bearerAuth: []
@@ -1756,7 +1790,7 @@ paths:
   /seasons/{id}/complete:
     post:
       summary: Finalizar temporada
-      description: Marca una temporada como completada (requiere autenticación)
+      description: Finaliza la temporada activa y congela el podio y el Bonus constancia (una persona, sin contar el 1.er puesto), sin borrar datos (permiso season:manage)
       tags: [Seasons]
       security:
         - bearerAuth: []
